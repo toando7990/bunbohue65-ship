@@ -60,8 +60,7 @@ function startRetryQueue(db) {
     if (shutdown.shuttingDown) return;
     try {
       const pending = db.prepare(
-        `SELECT * FROM orders WHERE canister_synced = 0 AND retry_count < ?`
-          .replace('?', String(MAX_RETRIES)),
+        `SELECT * FROM orders WHERE canister_synced = 0 AND retry_count < ?`,
       ).all(MAX_RETRIES);
       for (const row of pending) {
         if (!shouldRetry(row)) continue;
