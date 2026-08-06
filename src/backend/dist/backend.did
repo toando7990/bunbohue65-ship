@@ -1,0 +1,305 @@
+type Value = 
+ variant {
+   "bool": bool;
+   float: float64;
+   "int": int;
+   "nat": nat;
+   "null";
+   "text": text;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type UpgradeState = 
+ record {
+   devices: vec DeviceEntry;
+   menus: vec MenuEntry;
+   orders: vec OrderEntry;
+   pendingActivations: vec PendingActivationEntry;
+   restaurantMenuOverrides: vec RestaurantMenuOverrideEntry;
+   restaurants: vec RestaurantEntry;
+ };
+type Result__1 = 
+ record {
+   hasMore: bool;
+   rows: vec vec Cell;
+ };
+type Result_7 = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Result_6 = 
+ variant {
+   err: text;
+   ok: PendingActivation;
+ };
+type Result_5 = 
+ variant {
+   err: text;
+   ok: OrderStatus;
+ };
+type Result_4 = 
+ variant {
+   err: text;
+   ok: Device;
+ };
+type Result_3 = 
+ variant {
+   err: text;
+   ok;
+ };
+type Result_2 = 
+ variant {
+   err: text;
+   ok: MenuItem;
+ };
+type Result_1 = 
+ variant {
+   err: text;
+   ok: Restaurant;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: Order;
+ };
+type RestaurantMenuOverrideEntry = 
+ record {
+   overrides: vec record {
+                    text;
+                    nat;
+                  };
+   restaurantId: text;
+ };
+type RestaurantId = text;
+type RestaurantEntry = 
+ record {
+   restaurant: Restaurant;
+   restaurantId: text;
+ };
+type Restaurant = 
+ record {
+   address: text;
+   name: text;
+   phone: text;
+   restaurantId: text;
+   visible: bool;
+ };
+type PendingActivationEntry = 
+ record {
+   activation: PendingActivation;
+   code: text;
+ };
+type PendingActivation = 
+ record {
+   code: text;
+   createdAt: int;
+   expiresAt: int;
+   restaurantId: text;
+   role: DeviceRole;
+   used: bool;
+ };
+type PaymentStatus = 
+ variant {
+   paid;
+   refunded;
+   unpaid;
+ };
+type OrderStatus = 
+ record {
+   bookingStatus: BookingStatus;
+   invoiceId: text;
+   invoiceStatus: InvoiceStatus;
+   paymentStatus: PaymentStatus;
+   pdfUrl: text;
+   sharedLink: text;
+   tingeeQrId: text;
+ };
+type OrderItem = 
+ record {
+   itemId: text;
+   name: text;
+   price: nat;
+   quantity: nat;
+   unitName: text;
+   vatRate: nat;
+ };
+type OrderId = text;
+type OrderEntry = 
+ record {
+   order: Order;
+   orderId: OrderId;
+ };
+type Order = 
+ record {
+   ahamoveOrderId: text;
+   amount: nat;
+   bookingStatus: BookingStatus;
+   createdAt: int;
+   cusAddress: text;
+   cusName: text;
+   cusPhone: text;
+   cusTaxCode: text;
+   goodsAmount: nat;
+   invoiceId: text;
+   invoiceStatus: InvoiceStatus;
+   items: vec OrderItem;
+   orderId: text;
+   paymentStatus: PaymentStatus;
+   pdfUrl: text;
+   receiverEmail: text;
+   restaurantId: text;
+   sharedLink: text;
+   shippingFee: nat;
+   taxTotal: nat;
+   tingeeQrId: text;
+   updatedAt: int;
+ };
+type MenuItem = 
+ record {
+   category: text;
+   imageUrl: text;
+   itemId: text;
+   name: text;
+   price: nat;
+   unitName: text;
+   vatRate: nat;
+   visible: bool;
+ };
+type MenuEntry = 
+ record {
+   itemId: text;
+   menu: MenuItem;
+ };
+type InvoiceStatus = 
+ variant {
+   failed;
+   invoiced;
+   none;
+ };
+type Hmac = text;
+type Error = 
+ variant {
+   AmbiguousAttribute: record {
+                         field: text;
+                         sources: vec text;
+                       };
+   FrontendOriginMismatch: record {
+                             expected: vec text;
+                             got: text;
+                           };
+   FrontendOriginsNotConfigured;
+   MalformedCandid;
+   MissingField: text;
+   MixedSsoSources: record {
+                      otherKeys: vec text;
+                      ssoKeys: vec text;
+                    };
+   NoAttributes;
+   Stale: record {ageNs: nat;};
+   UnknownNonce;
+   UntrustedSsoSource: record {domain: text;};
+ };
+type DeviceRole = 
+ variant {
+   admin;
+   cashier;
+   driver;
+ };
+type DeviceId = text;
+type DeviceEntry = 
+ record {
+   device: Device;
+   deviceId: text;
+ };
+type Device = 
+ record {
+   activatedAt: int;
+   active: bool;
+   deviceId: text;
+   restaurantId: text;
+   role: DeviceRole;
+ };
+type Cell = 
+ record {
+   name: text;
+   value: Value;
+ };
+type BookingStatus = 
+ variant {
+   cancelled;
+   completed;
+   confirmed;
+   pending;
+   shipping;
+ };
+service : {
+  _initialize_access_control: () -> ();
+  _internet_identity_sign_in_finish: () -> (Result_7);
+  _internet_identity_sign_in_start: () -> (blob);
+  activateDevice: (code: text, deviceId: DeviceId) -> (Result_4);
+  addItem: (itemId: text, name: text, price: nat, unitName: text, vatRate:
+   nat, category: text, imageUrl: text) -> (Result_2);
+  addRestaurant: (restaurantId: text, name: text, address: text, phone:
+   text) -> (Result_1);
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  cancelOrder: (orderId: text, hmac: text) -> (Result);
+  cleanupExpiredActivations: () -> (nat);
+  createOrder: (orderId: text, restaurantId: text, cusName: text, cusPhone:
+   text, cusAddress: text, cusTaxCode: text, receiverEmail: text, items:
+   vec OrderItem, amount: nat, goodsAmount: nat, shippingFee: nat, taxTotal:
+   nat, ahamoveOrderId: text, tingeeQrId: text, sharedLink: text, hmac:
+   text) -> (Result);
+  deleteItem: (itemId: text) -> (Result_3);
+  deleteRestaurant: (restaurantId: text) -> (Result_3);
+  execute: (qJson: text) -> (Result__1) query;
+  generateActivationCode: (restaurantId: RestaurantId, role: DeviceRole) ->
+   (Result_6);
+  getCallerUserRole: () -> (UserRole) query;
+  /// Returns the canister's own id as text, so the VPS knows which canister
+  /// it is talking to. `Principal.fromActor(Main)` resolves the actor's own
+  /// canister principal at runtime (mo:core/IC.getCanisterId does not exist in
+  /// core 2.6.1).
+  getCanisterIdText: () -> (text) query;
+  getMenu: () -> (vec MenuItem) query;
+  getMenuForRestaurant: (restaurantId: text) -> (vec MenuItem) query;
+  getOrder: (orderId: text) -> (Result);
+  /// Returns the canister's own id as text, so the VPS knows which canister
+  /// it is talking to. `Principal.fromActor(Main)` resolves the actor's own
+  /// canister principal at runtime (mo:core/IC.getCanisterId does not exist in
+  /// core 2.6.1).
+  getOrderStatus: (orderId: text) -> (Result_5) query;
+  getRestaurants: () -> (vec Restaurant) query;
+  getUpgradeState: () -> (UpgradeState);
+  isCallerAdmin: () -> (bool) query;
+  listDevicesByRestaurant: (restaurantId: RestaurantId) -> (vec Device) query;
+  listDevicesByRole: (role: DeviceRole) -> (vec Device) query;
+  listMenus: () -> (vec MenuItem) query;
+  listOrders: () -> (vec Order);
+  listPendingPaymentOrders: (restaurantId: text) -> (vec Order);
+  listRestaurants: () -> (vec Restaurant) query;
+  restoreUpgradeState: ("blob": blob) -> (bool);
+  revokeDevice: (deviceId: DeviceId) -> (Result_4);
+  schema: () -> (text) query;
+  setRestaurantPriceOverride: (restaurantId: text, itemId: text, price:
+   nat) -> (Result_3);
+  setVpsSecret: (newSecret: text) -> (variant {
+                                        err: text;
+                                        ok;
+                                      });
+  snapshotUpgradeState: () -> (blob);
+  updateInvoiceStatus: (orderId: OrderId, invoiceStatus: InvoiceStatus,
+   invoiceId: text, pdfUrl: text, hmac: Hmac) -> (Result);
+  updateItem: (itemId: text, name: text, price: nat, unitName: text, vatRate:
+   nat, category: text, imageUrl: text, visible: bool) -> (Result_2);
+  updatePaymentStatus: (orderId: OrderId, paymentStatus: PaymentStatus, hmac:
+   Hmac) -> (Result);
+  updateRestaurant: (restaurantId: text, name: text, address: text, phone:
+   text, visible: bool) -> (Result_1);
+  updateStatus: (orderId: OrderId, bookingStatus: BookingStatus, hmac:
+   Hmac) -> (Result);
+}
