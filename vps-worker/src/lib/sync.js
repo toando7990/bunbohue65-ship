@@ -94,7 +94,7 @@ function startRetryQueue(db) {
         }
       }
     } catch (e) {
-      console.error('[sync] retry queue error:', e.message);
+      console.error('[sync] retry queue error:', e.message, e.stack);
     }
   });
   return task;
@@ -135,7 +135,7 @@ function startReconciliation(db) {
         );
       }
     } catch (e) {
-      console.error('[sync] reconciliation error:', e.message);
+      console.error('[sync] reconciliation error:', e.message, e.stack);
     }
   });
   return task;
