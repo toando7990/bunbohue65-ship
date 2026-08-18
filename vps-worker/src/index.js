@@ -15,9 +15,10 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const cron = require('node-cron');
+const multer = require('multer');
 
 const { openDb, initSchema, backup } = require('./db');
-const { startRetryQueue, startReconciliation } = require('./lib/sync');
+const { startRetryQueue, startReconciliation, startUnpaidExpiry } = require('./lib/sync');
 const shutdown = require('./lib/shutdown');
 
 const quoteRoutes = require('./routes/quote');
@@ -26,6 +27,7 @@ const webhooksRoutes = require('./routes/webhooks');
 const invoiceRoutes = require('./routes/invoice');
 const analyticsRoutes = require('./routes/analytics');
 const uploadRoutes = require('./routes/upload');
+const customersRoutes = require('./routes/customers');
 
 const cronJobs = [];
 
@@ -61,8 +63,9 @@ app.use('/', quoteRoutes);
 app.use('/', createRoutes);
 app.use('/', webhooksRoutes);
 app.use('/', invoiceRoutes);
-app.use('/', analyticsRoutes);
 app.use('/', uploadRoutes);
+app.use('/', customersRoutes);
+app.use('/', analyticsRoutes);
 
 // Error handler
 app.use((err, req, res, _next) => {
@@ -90,6 +93,9 @@ cronJobs.push(startRetryQueue(db));
 
 // Reconciliation 5 phút
 cronJobs.push(startReconciliation(db));
+
+// Auto-cancel đơn unpaid hết hạn 1 phút (khớp expiry QR 15 phút)
+cronJobs.push(startUnpaidExpiry(db));
 
 // Poll Ahamove 10s (backup cho webhook)
 cronJobs.push(webhooksRoutes.startAhamovePoll(db));

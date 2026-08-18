@@ -1,17 +1,17 @@
 {
-  "overview": "Shipping and invoicing app with Bkav eHoadon integration that fetches invoice PDF download links and stores them on orders.",
+  "overview": "Bunbohue65 Ship is a food-delivery ordering app with driver and customer payment flows, QR payment via Tingee, and a driver pickup queue.",
   "features": [
-    "Fetch invoice PDF download URL via Bkav CmdType 816",
-    "Store PDF URL on each order in the canister",
-    "Automatically retrieve PDF URL right after invoice creation"
+    "Order food with driver or customer payment modes",
+    "Pay via Tingee QR code",
+    "Driver pickup queue for paid orders",
+    "Admin panel for store configuration",
+    "Store open/close hours control"
   ],
-  "category": "productivity",
+  "category": "food-delivery",
   "tags": [
-    "bkav",
-    "invoice",
-    "pdf",
-    "vps-worker",
-    "motoko"
+    "food-delivery",
+    "ordering",
+    "payments"
   ],
-  "last_updated": "2026-08-05T23:48:38.568Z"
+  "last_updated": "2026-08-18T04:47:42.097Z"
 }

@@ -14,6 +14,7 @@ import {
   PaymentStatus,
   type PendingActivation,
   type Restaurant,
+  type StoreHours,
 } from "@/backend";
 import { useActor } from "@caffeineai/core-infrastructure";
 
@@ -55,6 +56,21 @@ export async function listPendingPaymentOrders(
   restaurantId: string,
 ): Promise<Order[]> {
   return actor.listPendingPaymentOrders(restaurantId);
+}
+
+// ---- Driver pickup queue (today's paid+confirmed orders, no PII for non-admin) ----
+export async function listPaidOrdersForPickup(
+  actor: Backend,
+): Promise<Order[]> {
+  return actor.listPaidOrdersForPickup();
+}
+
+// Mark an order as picked up by the driver (sets bookingStatus to #pickedUp).
+export async function markPickedUp(
+  actor: Backend,
+  orderId: string,
+): Promise<Order> {
+  return unwrap(await actor.markPickedUp(orderId));
 }
 
 // ---- Devices ----
@@ -127,7 +143,7 @@ export async function addItem(
       item.unitName,
       item.vatRate,
       item.category,
-      item.imageUrl,
+      item.image,
     ),
   );
 }
@@ -144,7 +160,7 @@ export async function updateItem(
       item.unitName,
       item.vatRate,
       item.category,
-      item.imageUrl,
+      item.image,
       item.visible,
     ),
   );
@@ -221,6 +237,31 @@ export async function setRestaurantPriceOverride(
   unwrap(await actor.setRestaurantPriceOverride(restaurantId, itemId, price));
 }
 
+// ---- Email verification (OTP gate) ----
+export async function sendVerificationCode(
+  actor: Backend,
+  email: string,
+): Promise<void> {
+  const r = await actor.sendVerificationCode(email);
+  if (r.__kind__ === "err") throw new Error(r.err);
+}
+
+export async function verifyEmailCode(
+  actor: Backend,
+  email: string,
+  code: string,
+): Promise<void> {
+  const r = await actor.verifyEmailCode(email, code);
+  if (r.__kind__ === "err") throw new Error(r.err);
+}
+
+export async function isEmailVerified(
+  actor: Backend,
+  email: string,
+): Promise<boolean> {
+  return actor.isEmailVerified(email);
+}
+
 // ---- Auth / authorization ----
 export async function isCallerAdmin(actor: Backend): Promise<boolean> {
   return actor.isCallerAdmin();
@@ -228,6 +269,36 @@ export async function isCallerAdmin(actor: Backend): Promise<boolean> {
 
 export async function getCallerUserRole(actor: Backend) {
   return actor.getCallerUserRole();
+}
+
+// ---- Payment mode (admin only) ----
+export async function getPaymentMode(actor: Backend): Promise<string> {
+  return actor.getPaymentMode();
+}
+
+export async function setPaymentMode(
+  actor: Backend,
+  mode: string,
+): Promise<void> {
+  const r = await actor.setPaymentMode(mode);
+  if (r.__kind__ === "err") throw new Error(r.err);
+}
+
+// ---- Store hours (global, applies to all restaurants) ----
+export async function getStoreHours(actor: Backend): Promise<StoreHours> {
+  return actor.getStoreHours();
+}
+
+export async function setStoreHours(
+  actor: Backend,
+  hours: StoreHours,
+): Promise<void> {
+  const r = await actor.setStoreHours(hours);
+  if (r.__kind__ === "err") throw new Error(r.err);
+}
+
+export async function isStoreOpen(actor: Backend): Promise<boolean> {
+  return actor.isStoreOpen();
 }
 
 // Re-export enums for convenience in components.

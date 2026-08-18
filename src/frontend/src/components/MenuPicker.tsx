@@ -4,10 +4,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, imageBytesToDataUrl } from "@/lib/utils";
 import type { MenuItem } from "@/types";
 import { Minus, Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export interface CartLine {
   itemId: string;
@@ -20,6 +20,8 @@ interface MenuPickerProps {
   cart: Record<string, number>;
   onQuantityChange: (itemId: string, delta: number) => void;
   disabled?: boolean;
+  /** Khi truyền vào: chỉ hiển thị món thuộc danh mục này, ẩn hẳn tab lọc danh mục. */
+  fixedCategory?: string;
 }
 
 const ALL_CATEGORY = "Tất cả";
@@ -45,6 +47,16 @@ function MenuCard({
   disabled?: boolean;
   index: number;
 }) {
+  // Cache one object URL per card so re-renders don't leak new URLs each time.
+  const imageUrl = useMemo(() => imageBytesToDataUrl(item.image), [item.image]);
+
+  // Revoke the cached object URL when the card unmounts.
+  useEffect(() => {
+    return () => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+    };
+  }, [imageUrl]);
+
   return (
     <article
       className={cn(
@@ -54,9 +66,9 @@ function MenuCard({
       data-ocid={`menu_picker.item.${index}`}
     >
       <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted sm:h-24 sm:w-24">
-        {item.imageUrl ? (
+        {imageUrl ? (
           <img
-            src={item.imageUrl}
+            src={imageUrl}
             alt={item.name}
             loading="lazy"
             className="h-full w-full object-cover"
@@ -141,9 +153,13 @@ export function MenuPicker({
   cart,
   onQuantityChange,
   disabled,
+  fixedCategory,
 }: MenuPickerProps) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>(ALL_CATEGORY);
+  // Khi có fixedCategory (trang đặt hàng chỉ muốn hiện "Món chính"), dùng thẳng
+  // giá trị này để lọc, bỏ qua state tab (tab cũng bị ẩn ở JSX bên dưới).
+  const effectiveCategory = fixedCategory ?? category;
 
   const categories = useMemo(() => {
     if (!menu?.length) return [ALL_CATEGORY];
@@ -158,14 +174,17 @@ export function MenuPicker({
     if (!menu) return [];
     return menu.filter((m) => {
       if (!m.visible) return false;
-      if (category !== ALL_CATEGORY && m.category !== category) return false;
+      if (
+        effectiveCategory !== ALL_CATEGORY &&
+        m.category !== effectiveCategory
+      )
+        return false;
       if (query.trim()) {
         return m.name.toLowerCase().includes(query.trim().toLowerCase());
       }
       return true;
     });
-  }, [menu, category, query]);
-
+  }, [menu, effectiveCategory, query]);
   if (isLoading) {
     return (
       <div
@@ -215,35 +234,36 @@ export function MenuPicker({
         </div>
       </div>
 
-      <div
-        className="flex flex-wrap gap-1.5"
-        role="tablist"
-        aria-label="Lọc theo danh mục"
-        data-ocid="menu_picker.category_list"
-      >
-        {categories.map((c) => {
-          const active = c === category;
-          return (
-            <button
-              key={c}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setCategory(c)}
-              data-ocid={`menu_picker.category_tab.${c}`}
-              className={cn(
-                "min-h-[36px] rounded-full border px-3 py-1.5 text-xs font-medium transition-smooth",
-                active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground hover:bg-secondary",
-              )}
-            >
-              {c}
-            </button>
-          );
-        })}
-      </div>
-
+      {!fixedCategory && (
+        <div
+          className="flex flex-wrap gap-1.5"
+          role="tablist"
+          aria-label="Lọc theo danh mục"
+          data-ocid="menu_picker.category_list"
+        >
+          {categories.map((c) => {
+            const active = c === category;
+            return (
+              <button
+                key={c}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setCategory(c)}
+                data-ocid={`menu_picker.category_tab.${c}`}
+                className={cn(
+                  "min-h-[36px] rounded-full border px-3 py-1.5 text-xs font-medium transition-smooth",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-foreground hover:bg-secondary",
+                )}
+              >
+                {c}
+              </button>
+            );
+          })}
+        </div>
+      )}
       {filtered.length === 0 ? (
         <div
           className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-8 text-center"

@@ -2,7 +2,7 @@
 // Page tasks import from here; polling hooks live in their own files.
 
 import { type Backend, createActor } from "@/backend";
-import type { DeviceRole } from "@/backend";
+import type { DeviceRole, StoreHours } from "@/backend";
 import {
   activateDevice as activateDeviceFn,
   addItem as addItemFn,
@@ -13,13 +13,19 @@ import {
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
   getMenuForRestaurant as getMenuForRestaurantFn,
+  getPaymentMode as getPaymentModeFn,
+  getStoreHours as getStoreHoursFn,
   isCallerAdmin as isCallerAdminFn,
+  isStoreOpen as isStoreOpenFn,
   listDevicesByRestaurant as listDevicesByRestaurantFn,
   listMenus as listMenusFn,
   listOrders as listOrdersFn,
   listRestaurants as listRestaurantsFn,
+  markPickedUp as markPickedUpFn,
   revokeDevice as revokeDeviceFn,
   setRestaurantPriceOverride as setOverrideFn,
+  setPaymentMode as setPaymentModeFn,
+  setStoreHours as setStoreHoursFn,
   setVpsSecret as setVpsSecretFn,
   updateItem as updateItemFn,
   updateRestaurant as updateRestaurantFn,
@@ -39,6 +45,21 @@ export function useOrders() {
     queryKey: ["orders"],
     queryFn: () => (actor ? listOrdersFn(actor) : Promise.resolve([])),
     enabled: !!actor && !isFetching,
+  });
+}
+
+// Mark an order as picked up by the driver. Invalidates the paid-for-pickup
+// polling query so the order disappears from the pickup queue immediately.
+export function useMarkPickedUp() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (orderId: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return markPickedUpFn(actor, orderId);
+    },
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["orders", "paid-for-pickup"] }),
   });
 }
 
@@ -247,5 +268,70 @@ export function useSetVpsSecret() {
       if (!actor) throw new Error("Actor not ready");
       return setVpsSecretFn(actor, newSecret);
     },
+  });
+}
+
+// ---- Admin / payment mode ----
+// A9: the payment-mode query drives isCustomerMode on the order page. It
+// refetches on mount, window focus, and network reconnect so the frontend
+// mode always matches the VPS and never drifts into the wrong payment flow.
+export function useGetPaymentMode() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["paymentMode"],
+    queryFn: () => (actor ? getPaymentModeFn(actor) : Promise.resolve("")),
+    enabled: !!actor && !isFetching,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 0,
+  });
+}
+
+export function useSetPaymentMode() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (mode: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return setPaymentModeFn(actor, mode);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["paymentMode"] }),
+  });
+}
+
+// ---- Store hours (global) ----
+export function useGetStoreHours() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["storeHours"],
+    queryFn: () => (actor ? getStoreHoursFn(actor) : Promise.resolve(null)),
+    enabled: !!actor && !isFetching,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useSetStoreHours() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (hours: StoreHours) => {
+      if (!actor) throw new Error("Actor not ready");
+      return setStoreHoursFn(actor, hours);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["storeHours"] }),
+  });
+}
+
+// Whether the store is currently open (drives the waiting/closed screen).
+export function useIsStoreOpen() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["storeOpen"],
+    queryFn: () => (actor ? isStoreOpenFn(actor) : Promise.resolve(true)),
+    enabled: !!actor && !isFetching,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }

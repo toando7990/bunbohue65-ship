@@ -1,3 +1,8 @@
+type VerifyResult = 
+ variant {
+   err: text;
+   ok;
+ };
 type Value = 
  variant {
    "bool": bool;
@@ -21,6 +26,18 @@ type UpgradeState =
    pendingActivations: vec PendingActivationEntry;
    restaurantMenuOverrides: vec RestaurantMenuOverrideEntry;
    restaurants: vec RestaurantEntry;
+ };
+type StoreHours = 
+ record {
+   closeHour: nat;
+   closeMinute: nat;
+   openHour: nat;
+   openMinute: nat;
+ };
+type SendCodeResult = 
+ variant {
+   err: text;
+   ok;
  };
 type Result__1 = 
  record {
@@ -117,6 +134,7 @@ type OrderStatus =
    paymentStatus: PaymentStatus;
    pdfUrl: text;
    sharedLink: text;
+   tingeeQrCode: text;
    tingeeQrId: text;
  };
 type OrderItem = 
@@ -156,13 +174,14 @@ type Order =
    sharedLink: text;
    shippingFee: nat;
    taxTotal: nat;
+   tingeeQrCode: text;
    tingeeQrId: text;
    updatedAt: int;
  };
 type MenuItem = 
  record {
    category: text;
-   imageUrl: text;
+   image: blob;
    itemId: text;
    name: text;
    price: nat;
@@ -204,6 +223,7 @@ type Error =
    UnknownNonce;
    UntrustedSsoSource: record {domain: text;};
  };
+type Email = text;
 type DeviceRole = 
  variant {
    admin;
@@ -235,6 +255,7 @@ type BookingStatus =
    completed;
    confirmed;
    pending;
+   pickedUp;
    shipping;
  };
 service : {
@@ -243,7 +264,7 @@ service : {
   _internet_identity_sign_in_start: () -> (blob);
   activateDevice: (code: text, deviceId: DeviceId) -> (Result_4);
   addItem: (itemId: text, name: text, price: nat, unitName: text, vatRate:
-   nat, category: text, imageUrl: text) -> (Result_2);
+   nat, category: text, image: blob) -> (Result_2);
   addRestaurant: (restaurantId: text, name: text, address: text, phone:
    text) -> (Result_1);
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
@@ -252,8 +273,8 @@ service : {
   createOrder: (orderId: text, restaurantId: text, cusName: text, cusPhone:
    text, cusAddress: text, cusTaxCode: text, receiverEmail: text, items:
    vec OrderItem, amount: nat, goodsAmount: nat, shippingFee: nat, taxTotal:
-   nat, ahamoveOrderId: text, tingeeQrId: text, sharedLink: text, hmac:
-   text) -> (Result);
+   nat, ahamoveOrderId: text, tingeeQrId: text, sharedLink: text,
+   tingeeQrCode: text, hmac: text) -> (Result);
   deleteItem: (itemId: text) -> (Result_3);
   deleteRestaurant: (restaurantId: text) -> (Result_3);
   execute: (qJson: text) -> (Result__1) query;
@@ -268,25 +289,30 @@ service : {
   getMenu: () -> (vec MenuItem) query;
   getMenuForRestaurant: (restaurantId: text) -> (vec MenuItem) query;
   getOrder: (orderId: text) -> (Result);
-  /// Returns the canister's own id as text, so the VPS knows which canister
-  /// it is talking to. `Principal.fromActor(Main)` resolves the actor's own
-  /// canister principal at runtime (mo:core/IC.getCanisterId does not exist in
-  /// core 2.6.1).
   getOrderStatus: (orderId: text) -> (Result_5) query;
+  getPaymentMode: () -> (text) query;
   getRestaurants: () -> (vec Restaurant) query;
+  getStoreHours: () -> (StoreHours) query;
   getUpgradeState: () -> (UpgradeState);
   isCallerAdmin: () -> (bool) query;
+  isEmailVerified: (email: Email) -> (bool) query;
+  isStoreOpen: () -> (bool) query;
   listDevicesByRestaurant: (restaurantId: RestaurantId) -> (vec Device) query;
   listDevicesByRole: (role: DeviceRole) -> (vec Device) query;
   listMenus: () -> (vec MenuItem) query;
   listOrders: () -> (vec Order);
+  listPaidOrdersForPickup: () -> (vec Order);
   listPendingPaymentOrders: (restaurantId: text) -> (vec Order);
   listRestaurants: () -> (vec Restaurant) query;
+  markPickedUp: (orderId: text) -> (Result);
   restoreUpgradeState: ("blob": blob) -> (bool);
   revokeDevice: (deviceId: DeviceId) -> (Result_4);
   schema: () -> (text) query;
+  sendVerificationCode: (email: Email) -> (SendCodeResult);
+  setPaymentMode: (mode: text) -> (Result_3);
   setRestaurantPriceOverride: (restaurantId: text, itemId: text, price:
    nat) -> (Result_3);
+  setStoreHours: (hours: StoreHours) -> (Result_3);
   setVpsSecret: (newSecret: text) -> (variant {
                                         err: text;
                                         ok;
@@ -295,11 +321,12 @@ service : {
   updateInvoiceStatus: (orderId: OrderId, invoiceStatus: InvoiceStatus,
    invoiceId: text, pdfUrl: text, hmac: Hmac) -> (Result);
   updateItem: (itemId: text, name: text, price: nat, unitName: text, vatRate:
-   nat, category: text, imageUrl: text, visible: bool) -> (Result_2);
+   nat, category: text, image: blob, visible: bool) -> (Result_2);
   updatePaymentStatus: (orderId: OrderId, paymentStatus: PaymentStatus, hmac:
    Hmac) -> (Result);
   updateRestaurant: (restaurantId: text, name: text, address: text, phone:
    text, visible: bool) -> (Result_1);
   updateStatus: (orderId: OrderId, bookingStatus: BookingStatus, hmac:
    Hmac) -> (Result);
+  verifyEmailCode: (email: Email, code: text) -> (VerifyResult);
 }

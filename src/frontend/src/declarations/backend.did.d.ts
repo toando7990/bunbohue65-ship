@@ -14,6 +14,7 @@ export type BookingStatus = { 'cancelled' : null } |
   { 'pending' : null } |
   { 'completed' : null } |
   { 'shipping' : null } |
+  { 'pickedUp' : null } |
   { 'confirmed' : null };
 export interface Cell { 'value' : Value, 'name' : string }
 export interface Device {
@@ -28,6 +29,7 @@ export type DeviceId = string;
 export type DeviceRole = { 'admin' : null } |
   { 'cashier' : null } |
   { 'driver' : null };
+export type Email = string;
 export type Error = { 'FrontendOriginsNotConfigured' : null } |
   {
     'MixedSsoSources' : {
@@ -51,9 +53,9 @@ export interface MenuEntry { 'itemId' : string, 'menu' : MenuItem }
 export interface MenuItem {
   'itemId' : string,
   'name' : string,
-  'imageUrl' : string,
   'visible' : boolean,
   'category' : string,
+  'image' : Uint8Array,
   'price' : bigint,
   'vatRate' : bigint,
   'unitName' : string,
@@ -65,6 +67,7 @@ export interface Order {
   'createdAt' : bigint,
   'taxTotal' : bigint,
   'ahamoveOrderId' : string,
+  'tingeeQrCode' : string,
   'shippingFee' : bigint,
   'invoiceId' : string,
   'sharedLink' : string,
@@ -94,6 +97,7 @@ export interface OrderItem {
 }
 export interface OrderStatus {
   'paymentStatus' : PaymentStatus,
+  'tingeeQrCode' : string,
   'invoiceId' : string,
   'sharedLink' : string,
   'bookingStatus' : BookingStatus,
@@ -149,6 +153,14 @@ export type Result_6 = { 'ok' : PendingActivation } |
 export type Result_7 = { 'ok' : null } |
   { 'err' : Error };
 export interface Result__1 { 'hasMore' : boolean, 'rows' : Array<Array<Cell>> }
+export type SendCodeResult = { 'ok' : null } |
+  { 'err' : string };
+export interface StoreHours {
+  'closeMinute' : bigint,
+  'closeHour' : bigint,
+  'openMinute' : bigint,
+  'openHour' : bigint,
+}
 export interface UpgradeState {
   'menus' : Array<MenuEntry>,
   'orders' : Array<OrderEntry>,
@@ -166,13 +178,15 @@ export type Value = { 'int' : bigint } |
   { 'bool' : boolean } |
   { 'null' : null } |
   { 'text' : string };
+export type VerifyResult = { 'ok' : null } |
+  { 'err' : string };
 export interface _SERVICE {
   '_initialize_access_control' : ActorMethod<[], undefined>,
   '_internet_identity_sign_in_finish' : ActorMethod<[], Result_7>,
   '_internet_identity_sign_in_start' : ActorMethod<[], Uint8Array>,
   'activateDevice' : ActorMethod<[string, DeviceId], Result_4>,
   'addItem' : ActorMethod<
-    [string, string, bigint, string, bigint, string, string],
+    [string, string, bigint, string, bigint, string, Uint8Array],
     Result_2
   >,
   'addRestaurant' : ActorMethod<[string, string, string, string], Result_1>,
@@ -197,6 +211,7 @@ export interface _SERVICE {
       string,
       string,
       string,
+      string,
     ],
     Result
   >,
@@ -215,29 +230,32 @@ export interface _SERVICE {
   'getMenu' : ActorMethod<[], Array<MenuItem>>,
   'getMenuForRestaurant' : ActorMethod<[string], Array<MenuItem>>,
   'getOrder' : ActorMethod<[string], Result>,
-  /**
-   * / Returns the canister's own id as text, so the VPS knows which canister
-   * / it is talking to. `Principal.fromActor(Main)` resolves the actor's own
-   * / canister principal at runtime (mo:core/IC.getCanisterId does not exist in
-   * / core 2.6.1).
-   */
   'getOrderStatus' : ActorMethod<[string], Result_5>,
+  'getPaymentMode' : ActorMethod<[], string>,
   'getRestaurants' : ActorMethod<[], Array<Restaurant>>,
+  'getStoreHours' : ActorMethod<[], StoreHours>,
   'getUpgradeState' : ActorMethod<[], UpgradeState>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isEmailVerified' : ActorMethod<[Email], boolean>,
+  'isStoreOpen' : ActorMethod<[], boolean>,
   'listDevicesByRestaurant' : ActorMethod<[RestaurantId], Array<Device>>,
   'listDevicesByRole' : ActorMethod<[DeviceRole], Array<Device>>,
   'listMenus' : ActorMethod<[], Array<MenuItem>>,
   'listOrders' : ActorMethod<[], Array<Order>>,
+  'listPaidOrdersForPickup' : ActorMethod<[], Array<Order>>,
   'listPendingPaymentOrders' : ActorMethod<[string], Array<Order>>,
   'listRestaurants' : ActorMethod<[], Array<Restaurant>>,
+  'markPickedUp' : ActorMethod<[string], Result>,
   'restoreUpgradeState' : ActorMethod<[Uint8Array], boolean>,
   'revokeDevice' : ActorMethod<[DeviceId], Result_4>,
   'schema' : ActorMethod<[], string>,
+  'sendVerificationCode' : ActorMethod<[Email], SendCodeResult>,
+  'setPaymentMode' : ActorMethod<[string], Result_3>,
   'setRestaurantPriceOverride' : ActorMethod<
     [string, string, bigint],
     Result_3
   >,
+  'setStoreHours' : ActorMethod<[StoreHours], Result_3>,
   'setVpsSecret' : ActorMethod<[string], { 'ok' : null } | { 'err' : string }>,
   'snapshotUpgradeState' : ActorMethod<[], Uint8Array>,
   'updateInvoiceStatus' : ActorMethod<
@@ -245,7 +263,7 @@ export interface _SERVICE {
     Result
   >,
   'updateItem' : ActorMethod<
-    [string, string, bigint, string, bigint, string, string, boolean],
+    [string, string, bigint, string, bigint, string, Uint8Array, boolean],
     Result_2
   >,
   'updatePaymentStatus' : ActorMethod<[OrderId, PaymentStatus, Hmac], Result>,
@@ -254,6 +272,7 @@ export interface _SERVICE {
     Result_1
   >,
   'updateStatus' : ActorMethod<[OrderId, BookingStatus, Hmac], Result>,
+  'verifyEmailCode' : ActorMethod<[Email, string], VerifyResult>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

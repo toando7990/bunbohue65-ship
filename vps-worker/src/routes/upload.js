@@ -18,8 +18,8 @@ const crypto = require('crypto');
 
 const router = express.Router();
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', '..', 'uploads');
-const MAX_BYTES = 1 * 1024 * 1024; // 1MB
-const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_BYTES = 5 * 1024 * 1024; // 5MB — khớp frontend
+const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 const storage = multer.memoryStorage();
 const upload = multer({

@@ -14,12 +14,22 @@ import DevicesApi "mixins/devices-api";
 import UpgradeApi "mixins/upgrade-api";
 import SecretApi "mixins/secret-api";
 import MenuApi "mixins/menu-api";
+import EmailVerificationApi "mixins/email-verification-api";
+import PaymentModeConfigApi "mixins/payment-mode-config-api";
+import StoreHoursConfigApi "mixins/store-hours-config-api";
 
 import CoreLib "lib/core";
 import CoreTypes "types/core";
 import DevicesLib "lib/devices";
 import MenuLib "lib/menu";
+import SecretLib "lib/secret";
 import SecretTypes "types/secret";
+import AccessControlLib "lib/access-control";
+import EmailVerificationTypes "types/email-verification";
+import PaymentModeConfigLib "lib/payment-mode-config";
+import PaymentModeConfigTypes "types/payment-mode-config";
+import StoreHoursConfigLib "lib/store-hours-config";
+import StoreHoursConfigTypes "types/store-hours-config";
 
 // Top-level Value modules so the OQL auto-derivation resolver picks them up
 // for the variant fields on the exposed entities.
@@ -29,6 +39,7 @@ import IntValue "mo:caffeineai-oql/IntValue";
 import NatValue "mo:caffeineai-oql/NatValue";
 import RecordValue "mo:caffeineai-oql/RecordValue";
 import TextValue "mo:caffeineai-oql/TextValue";
+import BlobValue "mo:caffeineai-oql/BlobValue";
 
 actor Main {
   // Authorization state — transient (re-initialized on restart, as before).
@@ -36,8 +47,15 @@ actor Main {
 
   // Stable state — initialized by the migration chain (no inline initializers).
   // The 8 stable vars below are supplied by migrations/20260805_140700.mo.
-  let vpsSecret : Text;
-  let vpsSecretPrevious : Text;
+  //
+  // vpsSecret / vpsSecretPrevious are declared `var` (mutable stable) so that
+  // rotations performed via the transient `secretState` wrapper can be
+  // persisted back to stable storage in `system func preupgrade`. With `let`
+  // (immutable) the stable field could never capture a rotated value, so every
+  // upgrade reset the secret to the migration's initial "" and broke HMAC
+  // verification until an admin re-entered the secret on /admin.
+  var vpsSecret : Text;
+  var vpsSecretPrevious : Text;
   let admin : Principal;
   let orders : Map.Map<Text, CoreTypes.Order>;
   let devices : Map.Map<Text, CoreTypes.Device>;
@@ -46,6 +64,43 @@ actor Main {
   let restaurants : Map.Map<Text, CoreTypes.Restaurant>;
   let restaurantMenuOverrides : Map.Map<Text, Map.Map<Text, Nat>>;
 
+  // Email OTP verification state — keyed by lower-cased email address. Supplied
+  // by migrations/20260815_000000.mo (empty Map on fresh install/upgrade).
+  let otpRecords : Map.Map<EmailVerificationTypes.Email, EmailVerificationTypes.OtpRecord>;
+
+  // Global payment-mode flag (12th stable field). Controls who pays shipping:
+  //   #driver   — default; the driver pays at pickup (existing flow)
+  //   #customer — the customer pays; the order ends when the driver picks up
+  //               the goods (markPickedUp sets bookingStatus=#pickedUp).
+  // Supplied by migrations/20260817_000000.mo with default #driver on fresh
+  // install/upgrade. Declared `var` (mutable stable) so that admin rotations
+  // performed via the transient `paymentModeState` wrapper can be persisted
+  // back to stable storage in `system func preupgrade` — same pattern as
+  // `vpsSecret` / `vpsSecretPrevious` above.
+  var paymentMode : PaymentModeConfigTypes.PaymentMode;
+
+  // Global store open/close hours (13th stable field). Controls when the store
+  // accepts orders: when the current time is outside [open, close), both the
+  // driver and customer flows block order placement and show a waiting screen.
+  // Applies to ALL stores (global only — per-store hours are out of scope).
+  // Supplied by migrations/20260818_000000.mo with default 00:00–23:59 (always
+  // open) on fresh install/upgrade. Declared `var` (mutable stable) so that
+  // admin rotations performed via the transient `storeHoursState` wrapper can be
+  // persisted back to stable storage in `system func preupgrade` — same pattern
+  // as `paymentMode` / `vpsSecret` / `vpsSecretPrevious` above.
+  var storeHours : StoreHoursConfigTypes.StoreHours;
+
+  // Stable shuttle for the transient `accessControlState` (line 36). The
+  // access-control state is `transient let` — re-initialized empty on every
+  // (re)start — so admin role assignments made at runtime via
+  // `assignCallerUserRole` are lost across upgrades. This stable `var` pair
+  // persists the role map across upgrades by serializing the non-shared
+  // `Map.Map<Principal, UserRole>` into a shared `[(Principal, UserRole)]`
+  // array. The preupgrade hook copies the live `accessControlState` into the
+  // shuttle; the postupgrade hook re-seeds `accessControlState` from the
+  // shuttle. Same pattern as `vpsSecret` / `vpsSecretPrevious` above.
+  var accessControlShuttle : AccessControlLib.AccessControlShuttle;
+
   // Mutable secret-state record shared with the secret domain. Wraps the two
   // stable secret vars by reference so mixin mutations propagate to actor state.
   transient let secretState : SecretTypes.SecretState = {
@@ -53,10 +108,125 @@ actor Main {
     var vpsSecretPrevious = vpsSecretPrevious;
   };
 
-  // Core domain state record shared with the core-api mixin.
+  // Mutable payment-mode-state record shared with the payment-mode-config
+  // domain. Wraps the stable `var paymentMode` by reference so mixin mutations
+  // (setPaymentMode) propagate to actor state — same shape as `secretState`.
+  // The stable `var` is updated by the preupgrade hook (see
+  // PaymentModeConfigLib.syncToStable) so the value survives upgrades.
+  transient let paymentModeState : PaymentModeConfigTypes.PaymentModeState = {
+    var paymentMode = paymentMode;
+  };
+
+  // Mutable store-hours-state record shared with the store-hours-config domain.
+  // Wraps the stable `var storeHours` by reference so mixin mutations
+  // (setStoreHours) propagate to actor state — same shape as `paymentModeState`.
+  // The stable `var` is updated by the preupgrade hook (see
+  // StoreHoursConfigLib.syncToStable) so the value survives upgrades.
+  transient let storeHoursState : StoreHoursConfigTypes.StoreHoursState = {
+    var storeHours = storeHours;
+  };
+
+  // Upgrade hooks: keep the stable `var vpsSecret` / `var vpsSecretPrevious`
+  // pair in sync with the transient `secretState` wrapper across upgrades.
+  //
+  // `secretState` is `transient let` — it is rebuilt on every (re)start from the
+  // stable `var` pair, copying their CURRENT values into fresh `var` fields of
+  // the wrapper. That copy is one-way: when `setVpsSecret` rotates the secret it
+  // mutates `secretState.vpsSecret`, but the stable `var vpsSecret` is NOT
+  // updated. Without `preupgrade`, the stable `var` retains its pre-rotation
+  // value (or the migration's initial "") and the next start rebuilds
+  // `secretState` from that stale value — the secret resets.
+  //
+  //   preupgrade  : copy secretState.*  -> stable var*   (persist rotation)
+  //   postupgrade : copy stable var*    -> secretState.*  (restore to wrapper)
+  //
+  // Motoko passes primitive `var` actor fields by value, so the helpers cannot
+  // mutate the stable `var` pair directly. Instead each hook builds a fresh
+  // `StableSecretRef` from the current stable values, hands it to the helper for
+  // the copy, then writes the (possibly mutated) ref fields back to the stable
+  // `var` pair. The ref is the by-reference shuttle between the transient
+  // `secretState` wrapper and the stable `var` pair.
+  //
+  // Enhanced orthogonal persistence persists the stable `var` pair
+  // automatically; the hooks only bridge the transient wrapper.
+  system func preupgrade() {
+    let ref : SecretTypes.StableSecretRef = {
+      var vpsSecret = vpsSecret;
+      var vpsSecretPrevious = vpsSecretPrevious;
+    };
+    SecretLib.syncToStable(secretState, ref);
+    vpsSecret := ref.vpsSecret;
+    vpsSecretPrevious := ref.vpsSecretPrevious;
+
+    // Sync accessControlState -> accessControlShuttle AFTER the secret sync so
+    // runtime admin role assignments survive the upgrade. `toStable` returns a
+    // fresh shuttle record (the shuttle's `userRoles` field is immutable, so it
+    // cannot be mutated in place); assign the returned shuttle to the stable
+    // `accessControlShuttle` var.
+    accessControlShuttle := AccessControlLib.toStable(accessControlState);
+
+    // Sync paymentModeState -> stable `var paymentMode` so admin rotations
+    // performed via setPaymentMode survive the upgrade. Same StablePaymentModeRef
+    // shuttle pattern as the secret sync above: build a fresh ref from the
+    // current stable value, hand it to the helper for the copy, then write the
+    // (possibly mutated) ref field back to the stable `var`.
+    let paymentModeRef : PaymentModeConfigTypes.StablePaymentModeRef = {
+      var paymentMode = paymentMode;
+    };
+    PaymentModeConfigLib.syncToStable(paymentModeState, paymentModeRef);
+    paymentMode := paymentModeRef.paymentMode;
+
+    // Sync storeHoursState -> stable `var storeHours` so admin rotations
+    // performed via setStoreHours survive the upgrade. Same StableStoreHoursRef
+    // shuttle pattern as the paymentMode sync above.
+    let storeHoursRef : StoreHoursConfigTypes.StableStoreHoursRef = {
+      var storeHours = storeHours;
+    };
+    StoreHoursConfigLib.syncToStable(storeHoursState, storeHoursRef);
+    storeHours := storeHoursRef.storeHours;
+  };
+
+  system func postupgrade() {
+    let ref : SecretTypes.StableSecretRef = {
+      var vpsSecret = vpsSecret;
+      var vpsSecretPrevious = vpsSecretPrevious;
+    };
+    SecretLib.syncFromStable(secretState, ref);
+
+    // Re-seed accessControlState <- accessControlShuttle AFTER restoring the
+    // secret so the transient `accessControlState` (re-initialized empty at
+    // line 36) picks up the persisted admin role assignments. The shuttle is a
+    // stable `var` record (mutable by reference), so we can pass it directly.
+    AccessControlLib.fromStable(accessControlState, accessControlShuttle);
+
+    // Restore paymentModeState <- stable `var paymentMode` AFTER the access
+    // control re-seed so the transient `paymentModeState` wrapper (rebuilt at
+    // construction from the stable `var`) picks up the persisted value. Same
+    // StablePaymentModeRef shuttle pattern as the secret restore above.
+    let paymentModeRef : PaymentModeConfigTypes.StablePaymentModeRef = {
+      var paymentMode = paymentMode;
+    };
+    PaymentModeConfigLib.syncFromStable(paymentModeState, paymentModeRef);
+
+    // Restore storeHoursState <- stable `var storeHours` AFTER the paymentMode
+    // restore so the transient `storeHoursState` wrapper (rebuilt at
+    // construction from the stable `var`) picks up the persisted value. Same
+    // StableStoreHoursRef shuttle pattern as the paymentMode restore above.
+    let storeHoursRef : StoreHoursConfigTypes.StableStoreHoursRef = {
+      var storeHours = storeHours;
+    };
+    StoreHoursConfigLib.syncFromStable(storeHoursState, storeHoursRef);
+  };
+
+  // Core domain state record shared with the core-api mixin. `secretState` is
+  // the mutable-by-reference SecretState (see above) so createOrder/cancelOrder
+  // read the LIVE secret pair via `state.secretState.vpsSecret` /
+  // `state.secretState.vpsSecretPrevious` even after `setVpsSecret` rotates
+  // them. The previous shape copied the secret into coreState's own var fields,
+  // which froze the value at construction time and broke HMAC verification
+  // after a rotation.
   transient let coreState : CoreLib.State = {
-    var vpsSecret = vpsSecret;
-    var vpsSecretPrevious = vpsSecretPrevious;
+    var secretState = secretState;
     var admin = admin;
     var orders = orders;
     var devices = devices;
@@ -67,12 +237,15 @@ actor Main {
   };
 
   include MixinAuthorization(accessControlState, null);
-  include CoreApi(coreState);
-  include HmacApi(orders, vpsSecret, vpsSecretPrevious);
+  include CoreApi(accessControlState, coreState);
+  include HmacApi(orders, secretState);
   include DevicesApi(accessControlState, devices, pendingActivations);
   include UpgradeApi(accessControlState, orders, devices, pendingActivations, menus, restaurants, restaurantMenuOverrides);
   include SecretApi(secretState, accessControlState);
   include MenuApi(accessControlState, menus, restaurants, restaurantMenuOverrides);
+  include EmailVerificationApi(otpRecords);
+  include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
+  include StoreHoursConfigApi(accessControlState, storeHoursState);
 
   /// Returns the canister's own id as text, so the VPS knows which canister
   /// it is talking to. `Principal.fromActor(Main)` resolves the actor's own
@@ -88,6 +261,7 @@ actor Main {
     case (#pending) "pending";
     case (#confirmed) "confirmed";
     case (#shipping) "shipping";
+    case (#pickedUp) "pickedUp";
     case (#completed) "completed";
     case (#cancelled) "cancelled";
   };
@@ -167,6 +341,7 @@ actor Main {
           invoiceStatus = #none;
           ahamoveOrderId = "";
           tingeeQrId = "";
+          tingeeQrCode = "";
           sharedLink = "";
           invoiceId = "";
           pdfUrl = "";
@@ -190,6 +365,7 @@ actor Main {
         .payload("invoiceStatus", func(o : CoreTypes.Order) : Text = invoiceStatusText(o.invoiceStatus))
         .payload("ahamoveOrderId", func(o : CoreTypes.Order) : Text = o.ahamoveOrderId)
         .payload("tingeeQrId", func(o : CoreTypes.Order) : Text = o.tingeeQrId)
+        .payload("tingeeQrCode", func(o : CoreTypes.Order) : Text = o.tingeeQrCode)
         .payload("sharedLink", func(o : CoreTypes.Order) : Text = o.sharedLink)
         .payload("invoiceId", func(o : CoreTypes.Order) : Text = o.invoiceId)
         // pdfUrl: URL file PDF hoá đơn điện tử (do VPS lấy qua mã lệnh 818 và
@@ -216,7 +392,7 @@ actor Main {
         .controllerOnly()
         .build(),
 
-      // menus: all-primitive record — auto-derive.
+      // menus: all-primitive record — auto-derive (Blob via BlobValue).
       Entity.sample(
         menus.toEntity(
           "menuItem", "MenuItem", "itemId",
@@ -228,7 +404,7 @@ actor Main {
           unitName = "";
           vatRate = 0;
           category = "";
-          imageUrl = "";
+          image = ("" : Blob);
           visible = false;
         },
       )
@@ -288,6 +464,53 @@ actor Main {
         .payload("itemId", func(r) : Text = r.itemId)
         .edge("itemId", "menuItem")
         .payload("price", func(r) : Nat = r.price)
+        .controllerOnly()
+        .build(),
+
+      // paymentMode: singleton config entity (one row). Manual mode over a
+      // one-row iterator on paymentModeState so the global flag is queryable
+      // by the Data Intelligence agent. controllerOnly keeps it private to
+      // users. The single payload column "paymentMode" renders the variant
+      // via PaymentModeConfigTypes.toText so the OQL column arrives as #text.
+      Entity.sample(
+        Entity.manual<PaymentModeConfigTypes.PaymentModeState>(
+          "paymentMode",
+          func() = (object {
+            public func next() : ?PaymentModeConfigTypes.PaymentModeState {
+              ?paymentModeState;
+            };
+          }),
+          "PaymentMode",
+          "paymentMode",
+        ),
+        { var paymentMode = #driver : PaymentModeConfigTypes.PaymentMode },
+      )
+        .payload("paymentMode", func(_ : PaymentModeConfigTypes.PaymentModeState) : Text = PaymentModeConfigTypes.toText(paymentModeState.paymentMode))
+        .controllerOnly()
+        .build(),
+
+      // storeHours: singleton config entity (one row). Manual mode over a
+      // one-row iterator on storeHoursState so the global open/close hours are
+      // queryable by the Data Intelligence agent. controllerOnly keeps it
+      // private to users. Each field of the StoreHours record is exposed as its
+      // own Nat column (openHour/openMinute/closeHour/closeMinute, 24h clock).
+      Entity.sample(
+        Entity.manual<StoreHoursConfigTypes.StoreHoursState>(
+          "storeHours",
+          func() = (object {
+            public func next() : ?StoreHoursConfigTypes.StoreHoursState {
+              ?storeHoursState;
+            };
+          }),
+          "StoreHours",
+          "openHour",
+        ),
+        { var storeHours = StoreHoursConfigTypes.defaultStoreHours },
+      )
+        .payload("openHour", func(_ : StoreHoursConfigTypes.StoreHoursState) : Nat = storeHoursState.storeHours.openHour)
+        .payload("openMinute", func(_ : StoreHoursConfigTypes.StoreHoursState) : Nat = storeHoursState.storeHours.openMinute)
+        .payload("closeHour", func(_ : StoreHoursConfigTypes.StoreHoursState) : Nat = storeHoursState.storeHours.closeHour)
+        .payload("closeMinute", func(_ : StoreHoursConfigTypes.StoreHoursState) : Nat = storeHoursState.storeHours.closeMinute)
         .controllerOnly()
         .build(),
     ];

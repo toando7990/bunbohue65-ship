@@ -21,6 +21,10 @@ const BOOKING_MAP: Record<BookingStatus, VariantSpec> = {
   [BookingStatus.pending]: { variant: "warning", label: "Chờ xác nhận" },
   [BookingStatus.confirmed]: { variant: "info", label: "Đã xác nhận" },
   [BookingStatus.shipping]: { variant: "info", label: "Đang giao" },
+  [BookingStatus.pickedUp]: {
+    variant: "success",
+    label: "Tài xế đã nhận hàng",
+  },
   [BookingStatus.completed]: { variant: "success", label: "Hoàn thành" },
   [BookingStatus.cancelled]: { variant: "destructive", label: "Đã huỷ" },
 };

@@ -55,7 +55,7 @@ const IDL_FACTORY = ({ IDL }) => {
     taxTotal: IDL.Nat,
     bookingStatus: IDL.Variant({
       pending: IDL.Null, confirmed: IDL.Null, shipping: IDL.Null,
-      completed: IDL.Null, cancelled: IDL.Null,
+      pickedUp: IDL.Null, completed: IDL.Null, cancelled: IDL.Null,
     }),
     paymentStatus: IDL.Variant({
       unpaid: IDL.Null, paid: IDL.Null, refunded: IDL.Null,
@@ -99,8 +99,10 @@ const IDL_FACTORY = ({ IDL }) => {
       [IDL.Text, Order.invoiceStatus, IDL.Text, IDL.Text, IDL.Text], [ResultOrder], [],
     ),
     listPendingPaymentOrders: IDL.Func([IDL.Text], [IDL.Vec(Order)], ['query']),
+    cancelOrder: IDL.Func([IDL.Text, IDL.Text], [ResultOrder], []),
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
     getMenuForRestaurant: IDL.Func([IDL.Text], [IDL.Vec(MenuItemRecord)], ['query']),
+    getPaymentMode: IDL.Func([], [IDL.Text], ['query']),
   });
 };
 
@@ -118,20 +120,29 @@ function getActor() {
 
 // createOrder — push order mới vào canister (HMAC verified).
 // Trả về { ok: order } | { err: text }.
+// CRITICAL: amount/goodsAmount phải là integer khi gọi hàm này. Backend
+// canister reconstructs HMAC payload với Int.toText(Nat) — không decimal.
+// BigInt() truncate decimal SAU khi sign → payload mismatch → #err('Invalid
+// HMAC'). Math.round ở đây là safety net: đảm bảo HMAC sign và BigInt() dùng
+// CÙNG giá trị integer kể cả khi caller truyền decimal (vd từ SQLite row cũ).
 async function createOrder(order) {
   const actor = getActor();
+  const amountInt = Math.round(Number(order.amount));
+  const goodsAmountInt = Math.round(Number(order.goodsAmount));
+  const shippingFeeInt = Math.round(Number(order.shippingFee));
+  const taxTotalInt = Math.round(Number(order.taxTotal));
   const hmacSig = hmac.signCreateOrder(
-    VPS_SECRET, order.orderId, order.restaurantId, order.amount, order.goodsAmount,
+    VPS_SECRET, order.orderId, order.restaurantId, amountInt, goodsAmountInt,
   );
   const result = await actor.createOrder(
     order.orderId, order.restaurantId,
     order.cusName, order.cusPhone, order.cusAddress, order.cusTaxCode, order.receiverEmail,
     order.items.map((it) => ({
-      itemId: it.itemId, name: it.name, price: BigInt(it.price),
-      quantity: BigInt(it.quantity), unitName: it.unitName, vatRate: BigInt(it.vatRate),
+      itemId: it.itemId, name: it.name, price: BigInt(Math.round(Number(it.price))),
+      quantity: BigInt(Math.round(Number(it.quantity))), unitName: it.unitName, vatRate: BigInt(Math.round(Number(it.vatRate))),
     })),
-    BigInt(order.amount), BigInt(order.goodsAmount),
-    BigInt(order.shippingFee), BigInt(order.taxTotal),
+    BigInt(amountInt), BigInt(goodsAmountInt),
+    BigInt(shippingFeeInt), BigInt(taxTotalInt),
     order.ahamoveOrderId, order.tingeeQrId, order.sharedLink, hmacSig,
   );
   return result; // { ok } | { err }
@@ -173,6 +184,15 @@ async function listPendingPaymentOrders(restaurantId) {
   return await actor.listPendingPaymentOrders(restaurantId);
 }
 
+// cancelOrder — hủy đơn (bookingStatus=#cancelled). HMAC payload: orderId|cancelled
+// (khớp backend HmacLib.statusPayload(orderId, #cancelled)). Dùng cho cron
+// auto-cancel đơn unpaid hết hạn.
+async function cancelOrder(orderId) {
+  const actor = getActor();
+  const hmacSig = hmac.signUpdateStatus(VPS_SECRET, orderId, 'cancelled');
+  return await actor.cancelOrder(orderId, hmacSig);
+}
+
 // getMenuForRestaurant — query. Trả [MenuItem] (price là BigInt Nat).
 // Dùng trong routes/quote.js để fetch price cho items khi frontend không gửi price.
 async function getMenuForRestaurant(restaurantId) {
@@ -180,8 +200,16 @@ async function getMenuForRestaurant(restaurantId) {
   return await actor.getMenuForRestaurant(restaurantId);
 }
 
+// getPaymentMode — query. Trả 'driver' | 'customer'. Routes/create.js dùng
+// để quyết định có gọi Ahamove createOrder hay không. Default 'driver' nếu
+// canister trả giá trị bất thường.
+async function getPaymentMode() {
+  const actor = getActor();
+  return await actor.getPaymentMode();
+}
+
 module.exports = {
   getActor, createOrder, updateStatus, updatePaymentStatus,
-  updateInvoiceStatus, getOrderStatus, listPendingPaymentOrders,
-  getMenuForRestaurant,
+  updateInvoiceStatus, getOrderStatus, listPendingPaymentOrders, cancelOrder,
+  getMenuForRestaurant, getPaymentMode,
 };

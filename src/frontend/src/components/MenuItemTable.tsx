@@ -1,5 +1,5 @@
 // MenuItemTable — bảng món: name, price (formatVND), unitName, vatRate,
-// category, imageUrl (thumbnail), visible toggle (useUpdateItem),
+// category, image (thumbnail từ canister bytes), visible toggle (useUpdateItem),
 // nút Sửa/Xóa (AlertDialog confirm, useDeleteItem). UI tiếng Việt.
 
 import type { MenuItem } from "@/backend";
@@ -24,8 +24,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useDeleteItem, useUpdateItem } from "@/hooks/useQueries";
+import { imageBytesToDataUrl } from "@/lib/utils";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 function formatVnd(n: bigint): string {
@@ -59,6 +60,24 @@ export function MenuItemTable({
   const deleteMutation = useDeleteItem();
   const [pendingDelete, setPendingDelete] = useState<MenuItem | null>(null);
 
+  // Cache one object URL per item so list renders don't leak new URLs each time.
+  const imageUrls = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const item of items) {
+      map.set(item.itemId, imageBytesToDataUrl(item.image));
+    }
+    return map;
+  }, [items]);
+
+  // Revoke all cached object URLs when the list changes or the table unmounts.
+  useEffect(() => {
+    return () => {
+      for (const url of imageUrls.values()) {
+        if (url) URL.revokeObjectURL(url);
+      }
+    };
+  }, [imageUrls]);
+
   async function handleToggleVisible(item: MenuItem, next: boolean) {
     try {
       await updateMutation.mutateAsync({
@@ -68,7 +87,7 @@ export function MenuItemTable({
         unitName: item.unitName,
         vatRate: item.vatRate,
         category: item.category,
-        imageUrl: item.imageUrl,
+        image: item.image,
         visible: next,
       });
       toast.success(next ? "Đã hiển thị món." : "Đã ẩn món.");
@@ -158,9 +177,9 @@ export function MenuItemTable({
                   data-ocid={`menu.table.row.${index}`}
                 >
                   <TableCell className="pl-3">
-                    {item.imageUrl ? (
+                    {imageUrls.get(item.itemId) ? (
                       <img
-                        src={item.imageUrl}
+                        src={imageUrls.get(item.itemId) ?? undefined}
                         alt={item.name}
                         loading="lazy"
                         className="h-10 w-10 rounded-md border border-border object-cover"

@@ -7,6 +7,13 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export type SendCodeResult = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export type Result_2 = {
     __kind__: "ok";
     ok: MenuItem;
@@ -34,10 +41,6 @@ export type Result_5 = {
     err: string;
 };
 export type RestaurantId = string;
-export interface MenuEntry {
-    itemId: string;
-    menu: MenuItem;
-}
 export type Result_1 = {
     __kind__: "ok";
     ok: Restaurant;
@@ -60,8 +63,13 @@ export type Result_4 = {
     __kind__: "err";
     err: string;
 };
+export interface MenuEntry {
+    itemId: string;
+    menu: MenuItem;
+}
 export interface OrderStatus {
     paymentStatus: PaymentStatus;
+    tingeeQrCode: string;
     invoiceId: string;
     sharedLink: string;
     bookingStatus: BookingStatus;
@@ -99,7 +107,21 @@ export type Value = {
     __kind__: "text";
     text: string;
 };
+export type Email = string;
+export type VerifyResult = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export type DeviceId = string;
+export interface StoreHours {
+    closeMinute: bigint;
+    closeHour: bigint;
+    openMinute: bigint;
+    openHour: bigint;
+}
 export type Result_6 = {
     __kind__: "ok";
     ok: PendingActivation;
@@ -173,6 +195,7 @@ export interface Order {
     createdAt: bigint;
     taxTotal: bigint;
     ahamoveOrderId: string;
+    tingeeQrCode: string;
     shippingFee: bigint;
     invoiceId: string;
     sharedLink: string;
@@ -200,9 +223,9 @@ export interface Device {
 export interface MenuItem {
     itemId: string;
     name: string;
-    imageUrl: string;
     visible: boolean;
     category: string;
+    image: Uint8Array;
     price: bigint;
     vatRate: bigint;
     unitName: string;
@@ -248,6 +271,7 @@ export enum BookingStatus {
     pending = "pending",
     completed = "completed",
     shipping = "shipping",
+    pickedUp = "pickedUp",
     confirmed = "confirmed"
 }
 export enum DeviceRole {
@@ -272,12 +296,12 @@ export enum UserRole {
 }
 export interface backendInterface {
     activateDevice(code: string, deviceId: DeviceId): Promise<Result_4>;
-    addItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, imageUrl: string): Promise<Result_2>;
+    addItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array): Promise<Result_2>;
     addRestaurant(restaurantId: string, name: string, address: string, phone: string): Promise<Result_1>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
-    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, hmac: string): Promise<Result>;
+    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, hmac: string): Promise<Result>;
     deleteItem(itemId: string): Promise<Result_3>;
     deleteRestaurant(restaurantId: string): Promise<Result_3>;
     execute(qJson: string): Promise<Result__1>;
@@ -293,26 +317,29 @@ export interface backendInterface {
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
     getOrder(orderId: string): Promise<Result>;
-    /**
-     * / Returns the canister's own id as text, so the VPS knows which canister
-     * / it is talking to. `Principal.fromActor(Main)` resolves the actor's own
-     * / canister principal at runtime (mo:core/IC.getCanisterId does not exist in
-     * / core 2.6.1).
-     */
     getOrderStatus(orderId: string): Promise<Result_5>;
+    getPaymentMode(): Promise<string>;
     getRestaurants(): Promise<Array<Restaurant>>;
+    getStoreHours(): Promise<StoreHours>;
     getUpgradeState(): Promise<UpgradeState>;
     isCallerAdmin(): Promise<boolean>;
+    isEmailVerified(email: Email): Promise<boolean>;
+    isStoreOpen(): Promise<boolean>;
     listDevicesByRestaurant(restaurantId: RestaurantId): Promise<Array<Device>>;
     listDevicesByRole(role: DeviceRole): Promise<Array<Device>>;
     listMenus(): Promise<Array<MenuItem>>;
     listOrders(): Promise<Array<Order>>;
+    listPaidOrdersForPickup(): Promise<Array<Order>>;
     listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
     listRestaurants(): Promise<Array<Restaurant>>;
+    markPickedUp(orderId: string): Promise<Result>;
     restoreUpgradeState(blob: Uint8Array): Promise<boolean>;
     revokeDevice(deviceId: DeviceId): Promise<Result_4>;
     schema(): Promise<string>;
+    sendVerificationCode(email: Email): Promise<SendCodeResult>;
+    setPaymentMode(mode: string): Promise<Result_3>;
     setRestaurantPriceOverride(restaurantId: string, itemId: string, price: bigint): Promise<Result_3>;
+    setStoreHours(hours: StoreHours): Promise<Result_3>;
     setVpsSecret(newSecret: string): Promise<{
         __kind__: "ok";
         ok: null;
@@ -322,8 +349,9 @@ export interface backendInterface {
     }>;
     snapshotUpgradeState(): Promise<Uint8Array>;
     updateInvoiceStatus(orderId: OrderId, invoiceStatus: InvoiceStatus, invoiceId: string, pdfUrl: string, hmac: Hmac): Promise<Result>;
-    updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, imageUrl: string, visible: boolean): Promise<Result_2>;
+    updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array, visible: boolean): Promise<Result_2>;
     updatePaymentStatus(orderId: OrderId, paymentStatus: PaymentStatus, hmac: Hmac): Promise<Result>;
     updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_1>;
     updateStatus(orderId: OrderId, bookingStatus: BookingStatus, hmac: Hmac): Promise<Result>;
+    verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }

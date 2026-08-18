@@ -5,22 +5,24 @@
 // `lib/hmac`. The canister performs 0 HTTP outcalls — the VPS is the only
 // external actor and must sign each request with the shared secret.
 //
-// State is injected: `orders` (the core order store), `vpsSecret`, and
-// `vpsSecretPrevious` (the rotation-window pair). All three are owned by the
-// core domain and declared in `main.mo`; this mixin only reads/writes through
-// them.
+// State is injected: `orders` (the core order store) and `secretState` (the
+// mutable-by-reference SecretState owned by main.mo). Reading
+// `secretState.vpsSecret` / `secretState.vpsSecretPrevious` here always sees
+// the CURRENT secret pair, even after `setVpsSecret` rotates them — this fixes
+// the stale-snapshot rotation bug (previously the mixin captured the raw
+// stable vars at `include` time, so HMAC verification used a frozen secret).
 
 import Result "mo:core/Result";
 import Time "mo:core/Time";
 
 import Types "../types/hmac";
 import CoreTypes "../types/core";
+import SecretTypes "../types/secret";
 import HmacLib "../lib/hmac";
 
 mixin (
   orders : CoreTypes.OrderStore,
-  vpsSecret : Types.Secret,
-  vpsSecretPrevious : Types.Secret,
+  secretState : SecretTypes.SecretState,
 ) {
   // Verify HMAC (payload = orderId|<BookingStatus variant name>); on success
   // update bookingStatus + updatedAt = Time.now() and return the order.
@@ -30,7 +32,7 @@ mixin (
     hmac : Types.Hmac,
   ) : async Result.Result<CoreTypes.Order, Text> {
     let payload = HmacLib.statusPayload(orderId, bookingStatus);
-    if (not HmacLib.verifyHmac(vpsSecret, vpsSecretPrevious, payload, hmac)) {
+    if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
     };
     HmacLib.applyStatus(orders, orderId, bookingStatus, Time.now());
@@ -44,7 +46,7 @@ mixin (
     hmac : Types.Hmac,
   ) : async Result.Result<CoreTypes.Order, Text> {
     let payload = HmacLib.paymentPayload(orderId, paymentStatus);
-    if (not HmacLib.verifyHmac(vpsSecret, vpsSecretPrevious, payload, hmac)) {
+    if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
     };
     HmacLib.applyPaymentStatus(orders, orderId, paymentStatus, Time.now());
@@ -62,7 +64,7 @@ mixin (
     hmac : Types.Hmac,
   ) : async Result.Result<CoreTypes.Order, Text> {
     let payload = HmacLib.invoicePayload(orderId, invoiceStatus, invoiceId, pdfUrl);
-    if (not HmacLib.verifyHmac(vpsSecret, vpsSecretPrevious, payload, hmac)) {
+    if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
     };
     HmacLib.applyInvoiceStatus(orders, orderId, invoiceStatus, invoiceId, pdfUrl, Time.now());

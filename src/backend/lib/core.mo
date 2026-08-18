@@ -4,6 +4,7 @@ import Int "mo:core/Int";
 import Time "mo:core/Time";
 import Principal "mo:core/Principal";
 import CoreTypes "../types/core";
+import SecretTypes "../types/secret";
 
 // Domain logic for the core domain (orders).
 // Stateless module functions operating on injected state. Device/menu/restaurant
@@ -22,9 +23,14 @@ module {
   public type InvoiceStatus = CoreTypes.InvoiceStatus;
 
   // Stable state shape passed in from the actor / mixin layer.
+  // `secretState` is the mutable-by-reference SecretState owned by main.mo;
+  // reading `secretState.vpsSecret` / `secretState.vpsSecretPrevious` here
+  // always sees the CURRENT secret pair, even after `setVpsSecret` rotates
+  // them. This fixes the stale-snapshot rotation bug: previously coreState
+  // copied the secret into its own var fields at construction time, so HMAC
+  // verification in createOrder/cancelOrder used a frozen secret.
   public type State = {
-    var vpsSecret : Text;
-    var vpsSecretPrevious : Text;
+    var secretState : SecretTypes.SecretState;
     var admin : Principal;
     var orders : Map.Map<Text, Order>;
     var devices : Map.Map<Text, Device>;
@@ -34,19 +40,82 @@ module {
     var restaurantMenuOverrides : Map.Map<Text, Map.Map<Text, Nat>>;
   };
 
+  // --- Day-based retention (UTC+7) ---
+
+  // Nanosecond constants for the UTC+7 day-boundary math. `Time.now()` returns
+  // nanoseconds since epoch (Int). Computed via functions because module-level
+  // `let` bindings must be static expressions (arithmetic is non-static).
+  func HOUR_NS() : Int { 3600 * 1000000000 };
+  func DAY_NS() : Int { 24 * HOUR_NS() };
+  func MINUTE_NS() : Int { 60 * 1000000000 };
+  func UTC7_OFFSET_NS() : Int { 7 * HOUR_NS() };
+  func GRACE_NS() : Int { 5 * MINUTE_NS() };
+
+  // Start of the current UTC+7 day, in nanoseconds since epoch. Computed by
+  // shifting `now` forward by the UTC+7 offset, truncating to a whole day, then
+  // shifting back. `now` is always positive (post-1970), so Int division
+  // truncates toward zero == floor.
+  func utc7DayStart(now : Int) : Int {
+    let shifted = now + UTC7_OFFSET_NS();
+    (shifted / DAY_NS()) * DAY_NS() - UTC7_OFFSET_NS();
+  };
+
+  // Retention boundary: orders with createdAt < this are pruned. Normally the
+  // start of today (UTC+7). During the 5-minute grace period after midnight
+  // (UTC+7) the boundary is pushed back a full day, so yesterday's orders are
+  // still served until 00:05 and only then removed.
+  func retentionBoundary(now : Int) : Int {
+    let dayStart = utc7DayStart(now);
+    if (now - dayStart < GRACE_NS()) { dayStart - DAY_NS() } else { dayStart };
+  };
+
+  // Day-based retention: remove every order whose createdAt belongs to a
+  // previous UTC+7 day (with a 5-minute grace period after midnight). Called at
+  // the start of every order read/write operation so the canister only ever
+  // serves today's orders; the VPS keeps full history and only syncs the
+  // current day.
+  public func pruneOldOrders(state : State) : () {
+    let boundary = retentionBoundary(Time.now());
+    let snapshot = state.orders.toArray();
+    for ((id, o) in snapshot.values()) {
+      if (o.createdAt < boundary) {
+        state.orders.remove(id);
+      };
+    };
+  };
+
   // --- Orders ---
+
+  // Persist a fully-formed Order record into the orders store. The caller
+  // (mixins/core-api.mo createOrder) is responsible for HMAC verification and
+  // for building the Order literal including tingeeQrCode; this function only
+  // writes it. Overwrites any existing entry with the same orderId.
   public func createOrder(state : State, order : Order) : () {
+    pruneOldOrders(state);
     state.orders.add(order.orderId, order);
   };
 
+  // Return all orders as an array snapshot, ordered by Map.entries() (B-tree
+  // key order, i.e. lexicographic by orderId). PII gating is the mixin's
+  // responsibility (it calls sanitizePii per record when the caller is not an
+  // admin); this function returns the raw records.
   public func listOrders(state : State) : [Order] {
-    state.orders.toArray().map(func((_id : Text, o : Order)) : Order { o });
+    pruneOldOrders(state);
+    let snapshot = state.orders.toArray();
+    snapshot.map(func((_id, o) : (Text, Order)) : Order { o });
   };
 
+  // Look up a single order by orderId. Returns null when absent. PII gating is
+  // the mixin's responsibility.
   public func getOrder(state : State, orderId : Text) : ?Order {
+    pruneOldOrders(state);
     state.orders.get(orderId);
   };
 
+  // Builds the lightweight OrderStatus snapshot for the frontend 5s poll.
+  // Includes tingeeQrCode (synced from Order.tingeeQrCode) so OrderTracker.tsx
+  // can render the QR via <QRCodeSVG> when paymentStatus is #unpaid. Returns
+  // null when the order does not exist.
   public func getOrderStatus(state : State, orderId : Text) : ?OrderStatus {
     switch (state.orders.get(orderId)) {
       case null { null };
@@ -57,34 +126,38 @@ module {
           invoiceStatus = o.invoiceStatus;
           tingeeQrId = o.tingeeQrId;
           sharedLink = o.sharedLink;
+          tingeeQrCode = o.tingeeQrCode;
           invoiceId = o.invoiceId;
-          // Đồng bộ pdfUrl từ Order sang snapshot cho frontend poll.
           pdfUrl = o.pdfUrl;
         };
       };
     };
   };
 
-  public func listPendingPaymentOrders(
-    state : State,
-    restaurantId : Text,
-  ) : [Order] {
-    let pending = state.orders.toArray()
-      .filter(func((_id : Text, o : Order)) : Bool {
-        Text.equal(o.restaurantId, restaurantId) and o.paymentStatus == #unpaid and o.bookingStatus != #cancelled;
-      })
-      .map(func((_id : Text, o : Order)) : Order { o });
-    let sorted = pending.sort(func(a : Order, b : Order) : { #less; #equal; #greater } {
-      Int.compare(a.createdAt, b.createdAt);
+  // Return all orders for a restaurant whose paymentStatus is #unpaid, as an
+  // array snapshot. PII gating is the mixin's responsibility.
+  public func listPendingPaymentOrders(state : State, restaurantId : Text) : [Order] {
+    pruneOldOrders(state);
+    let snapshot = state.orders.toArray();
+    let pending = snapshot.filter(func((_id, o) : (Text, Order)) : Bool {
+      o.restaurantId == restaurantId and o.paymentStatus == #unpaid;
     });
-    sorted;
+    pending.map(func((_id, o) : (Text, Order)) : Order { o });
   };
 
+  // Set bookingStatus=#cancelled on an existing order and return the updated
+  // record. Returns null when the order does not exist. HMAC verification is
+  // the mixin's responsibility.
   public func cancelOrder(state : State, orderId : Text) : ?Order {
+    pruneOldOrders(state);
     switch (state.orders.get(orderId)) {
       case null { null };
       case (?o) {
-        let updated : Order = { o with bookingStatus = #cancelled; updatedAt = Time.now() };
+        let updated : Order = {
+          o with
+          bookingStatus = #cancelled;
+          updatedAt = Time.now();
+        };
         state.orders.add(orderId, updated);
         ?updated;
       };

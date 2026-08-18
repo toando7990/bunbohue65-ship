@@ -33340,1609 +33340,137 @@ function checkDCE() {
 }
 var clientExports = client.exports;
 const ReactDOM = /* @__PURE__ */ getDefaultExportFromCjs(clientExports);
-const Error$1 = Variant({
-  "FrontendOriginsNotConfigured": Null,
-  "MixedSsoSources": Record({
-    "otherKeys": Vec(Text),
-    "ssoKeys": Vec(Text)
-  }),
-  "Stale": Record({ "ageNs": Nat }),
-  "MalformedCandid": Null,
-  "AmbiguousAttribute": Record({
-    "field": Text,
-    "sources": Vec(Text)
-  }),
-  "NoAttributes": Null,
-  "UnknownNonce": Null,
-  "UntrustedSsoSource": Record({ "domain": Text }),
-  "MissingField": Text,
-  "FrontendOriginMismatch": Record({
-    "got": Text,
-    "expected": Vec(Text)
-  })
-});
-const Result_7 = Variant({ "ok": Null, "err": Error$1 });
-const DeviceId = Text;
-const DeviceRole$1 = Variant({
-  "admin": Null,
-  "cashier": Null,
-  "driver": Null
-});
-const Device = Record({
-  "active": Bool,
-  "activatedAt": Int,
-  "role": DeviceRole$1,
-  "restaurantId": Text,
-  "deviceId": Text
-});
-const Result_4 = Variant({ "ok": Device, "err": Text });
-const MenuItem = Record({
-  "itemId": Text,
-  "name": Text,
-  "imageUrl": Text,
-  "visible": Bool,
-  "category": Text,
-  "price": Nat,
-  "vatRate": Nat,
-  "unitName": Text
-});
-const Result_2 = Variant({ "ok": MenuItem, "err": Text });
-const Restaurant = Record({
-  "name": Text,
-  "restaurantId": Text,
-  "address": Text,
-  "visible": Bool,
-  "phone": Text
-});
-const Result_1 = Variant({ "ok": Restaurant, "err": Text });
-const UserRole = Variant({
-  "admin": Null,
-  "user": Null,
-  "guest": Null
-});
-const PaymentStatus$1 = Variant({
-  "paid": Null,
-  "refunded": Null,
-  "unpaid": Null
-});
-const BookingStatus$1 = Variant({
-  "cancelled": Null,
-  "pending": Null,
-  "completed": Null,
-  "shipping": Null,
-  "confirmed": Null
-});
-const OrderItem = Record({
-  "itemId": Text,
-  "name": Text,
-  "quantity": Nat,
-  "price": Nat,
-  "vatRate": Nat,
-  "unitName": Text
-});
-const InvoiceStatus$1 = Variant({
-  "none": Null,
-  "invoiced": Null,
-  "failed": Null
-});
-const Order = Record({
-  "paymentStatus": PaymentStatus$1,
-  "cusTaxCode": Text,
-  "cusName": Text,
-  "createdAt": Int,
-  "taxTotal": Nat,
-  "ahamoveOrderId": Text,
-  "shippingFee": Nat,
-  "invoiceId": Text,
-  "sharedLink": Text,
-  "cusPhone": Text,
-  "orderId": Text,
-  "restaurantId": Text,
-  "updatedAt": Int,
-  "bookingStatus": BookingStatus$1,
-  "receiverEmail": Text,
-  "pdfUrl": Text,
-  "tingeeQrId": Text,
-  "goodsAmount": Nat,
-  "items": Vec(OrderItem),
-  "amount": Nat,
-  "cusAddress": Text,
-  "invoiceStatus": InvoiceStatus$1
-});
-const Result = Variant({ "ok": Order, "err": Text });
-const Result_3 = Variant({ "ok": Null, "err": Text });
-const Value$1 = Variant({
-  "int": Int,
-  "nat": Nat,
-  "float": Float64,
-  "bool": Bool,
-  "null": Null,
-  "text": Text
-});
-const Cell = Record({ "value": Value$1, "name": Text });
-const Result__1 = Record({
-  "hasMore": Bool,
-  "rows": Vec(Vec(Cell))
-});
-const RestaurantId = Text;
-const PendingActivation = Record({
-  "expiresAt": Int,
-  "code": Text,
-  "createdAt": Int,
-  "role": DeviceRole$1,
-  "used": Bool,
-  "restaurantId": Text
-});
-const Result_6 = Variant({
-  "ok": PendingActivation,
-  "err": Text
-});
-const OrderStatus = Record({
-  "paymentStatus": PaymentStatus$1,
-  "invoiceId": Text,
-  "sharedLink": Text,
-  "bookingStatus": BookingStatus$1,
-  "pdfUrl": Text,
-  "tingeeQrId": Text,
-  "invoiceStatus": InvoiceStatus$1
-});
-const Result_5 = Variant({ "ok": OrderStatus, "err": Text });
-const MenuEntry = Record({ "itemId": Text, "menu": MenuItem });
-const OrderId = Text;
-const OrderEntry = Record({ "order": Order, "orderId": OrderId });
-const RestaurantEntry = Record({
-  "restaurantId": Text,
-  "restaurant": Restaurant
-});
-const RestaurantMenuOverrideEntry = Record({
-  "restaurantId": Text,
-  "overrides": Vec(Tuple(Text, Nat))
-});
-const DeviceEntry = Record({
-  "device": Device,
-  "deviceId": Text
-});
-const PendingActivationEntry = Record({
-  "code": Text,
-  "activation": PendingActivation
-});
-const UpgradeState = Record({
-  "menus": Vec(MenuEntry),
-  "orders": Vec(OrderEntry),
-  "restaurants": Vec(RestaurantEntry),
-  "restaurantMenuOverrides": Vec(RestaurantMenuOverrideEntry),
-  "devices": Vec(DeviceEntry),
-  "pendingActivations": Vec(PendingActivationEntry)
-});
-const Hmac = Text;
-Service({
-  "_initialize_access_control": Func([], [], []),
-  "_internet_identity_sign_in_finish": Func([], [Result_7], []),
-  "_internet_identity_sign_in_start": Func([], [Vec(Nat8)], []),
-  "activateDevice": Func([Text, DeviceId], [Result_4], []),
-  "addItem": Func(
-    [Text, Text, Nat, Text, Nat, Text, Text],
-    [Result_2],
-    []
-  ),
-  "addRestaurant": Func(
-    [Text, Text, Text, Text],
-    [Result_1],
-    []
-  ),
-  "assignCallerUserRole": Func([Principal2, UserRole], [], []),
-  "cancelOrder": Func([Text, Text], [Result], []),
-  "cleanupExpiredActivations": Func([], [Nat], []),
-  "createOrder": Func(
-    [
-      Text,
-      Text,
-      Text,
-      Text,
-      Text,
-      Text,
-      Text,
-      Vec(OrderItem),
-      Nat,
-      Nat,
-      Nat,
-      Nat,
-      Text,
-      Text,
-      Text,
-      Text
-    ],
-    [Result],
-    []
-  ),
-  "deleteItem": Func([Text], [Result_3], []),
-  "deleteRestaurant": Func([Text], [Result_3], []),
-  "execute": Func([Text], [Result__1], ["query"]),
-  "generateActivationCode": Func(
-    [RestaurantId, DeviceRole$1],
-    [Result_6],
-    []
-  ),
-  "getCallerUserRole": Func([], [UserRole], ["query"]),
-  "getCanisterIdText": Func([], [Text], ["query"]),
-  "getMenu": Func([], [Vec(MenuItem)], ["query"]),
-  "getMenuForRestaurant": Func([Text], [Vec(MenuItem)], ["query"]),
-  "getOrder": Func([Text], [Result], []),
-  "getOrderStatus": Func([Text], [Result_5], ["query"]),
-  "getRestaurants": Func([], [Vec(Restaurant)], ["query"]),
-  "getUpgradeState": Func([], [UpgradeState], []),
-  "isCallerAdmin": Func([], [Bool], ["query"]),
-  "listDevicesByRestaurant": Func(
-    [RestaurantId],
-    [Vec(Device)],
-    ["query"]
-  ),
-  "listDevicesByRole": Func([DeviceRole$1], [Vec(Device)], ["query"]),
-  "listMenus": Func([], [Vec(MenuItem)], ["query"]),
-  "listOrders": Func([], [Vec(Order)], []),
-  "listPendingPaymentOrders": Func([Text], [Vec(Order)], []),
-  "listRestaurants": Func([], [Vec(Restaurant)], ["query"]),
-  "restoreUpgradeState": Func([Vec(Nat8)], [Bool], []),
-  "revokeDevice": Func([DeviceId], [Result_4], []),
-  "schema": Func([], [Text], ["query"]),
-  "setRestaurantPriceOverride": Func(
-    [Text, Text, Nat],
-    [Result_3],
-    []
-  ),
-  "setVpsSecret": Func(
-    [Text],
-    [Variant({ "ok": Null, "err": Text })],
-    []
-  ),
-  "snapshotUpgradeState": Func([], [Vec(Nat8)], []),
-  "updateInvoiceStatus": Func(
-    [OrderId, InvoiceStatus$1, Text, Text, Hmac],
-    [Result],
-    []
-  ),
-  "updateItem": Func(
-    [
-      Text,
-      Text,
-      Nat,
-      Text,
-      Nat,
-      Text,
-      Text,
-      Bool
-    ],
-    [Result_2],
-    []
-  ),
-  "updatePaymentStatus": Func(
-    [OrderId, PaymentStatus$1, Hmac],
-    [Result],
-    []
-  ),
-  "updateRestaurant": Func(
-    [Text, Text, Text, Text, Bool],
-    [Result_1],
-    []
-  ),
-  "updateStatus": Func([OrderId, BookingStatus$1, Hmac], [Result], [])
-});
-const idlFactory = ({ IDL: IDL2 }) => {
-  const Error2 = IDL2.Variant({
-    "FrontendOriginsNotConfigured": IDL2.Null,
-    "MixedSsoSources": IDL2.Record({
-      "otherKeys": IDL2.Vec(IDL2.Text),
-      "ssoKeys": IDL2.Vec(IDL2.Text)
-    }),
-    "Stale": IDL2.Record({ "ageNs": IDL2.Nat }),
-    "MalformedCandid": IDL2.Null,
-    "AmbiguousAttribute": IDL2.Record({
-      "field": IDL2.Text,
-      "sources": IDL2.Vec(IDL2.Text)
-    }),
-    "NoAttributes": IDL2.Null,
-    "UnknownNonce": IDL2.Null,
-    "UntrustedSsoSource": IDL2.Record({ "domain": IDL2.Text }),
-    "MissingField": IDL2.Text,
-    "FrontendOriginMismatch": IDL2.Record({
-      "got": IDL2.Text,
-      "expected": IDL2.Vec(IDL2.Text)
-    })
-  });
-  const Result_72 = IDL2.Variant({ "ok": IDL2.Null, "err": Error2 });
-  const DeviceId2 = IDL2.Text;
-  const DeviceRole2 = IDL2.Variant({
-    "admin": IDL2.Null,
-    "cashier": IDL2.Null,
-    "driver": IDL2.Null
-  });
-  const Device2 = IDL2.Record({
-    "active": IDL2.Bool,
-    "activatedAt": IDL2.Int,
-    "role": DeviceRole2,
-    "restaurantId": IDL2.Text,
-    "deviceId": IDL2.Text
-  });
-  const Result_42 = IDL2.Variant({ "ok": Device2, "err": IDL2.Text });
-  const MenuItem2 = IDL2.Record({
-    "itemId": IDL2.Text,
-    "name": IDL2.Text,
-    "imageUrl": IDL2.Text,
-    "visible": IDL2.Bool,
-    "category": IDL2.Text,
-    "price": IDL2.Nat,
-    "vatRate": IDL2.Nat,
-    "unitName": IDL2.Text
-  });
-  const Result_22 = IDL2.Variant({ "ok": MenuItem2, "err": IDL2.Text });
-  const Restaurant2 = IDL2.Record({
-    "name": IDL2.Text,
-    "restaurantId": IDL2.Text,
-    "address": IDL2.Text,
-    "visible": IDL2.Bool,
-    "phone": IDL2.Text
-  });
-  const Result_12 = IDL2.Variant({ "ok": Restaurant2, "err": IDL2.Text });
-  const UserRole2 = IDL2.Variant({
-    "admin": IDL2.Null,
-    "user": IDL2.Null,
-    "guest": IDL2.Null
-  });
-  const PaymentStatus2 = IDL2.Variant({
-    "paid": IDL2.Null,
-    "refunded": IDL2.Null,
-    "unpaid": IDL2.Null
-  });
-  const BookingStatus2 = IDL2.Variant({
-    "cancelled": IDL2.Null,
-    "pending": IDL2.Null,
-    "completed": IDL2.Null,
-    "shipping": IDL2.Null,
-    "confirmed": IDL2.Null
-  });
-  const OrderItem2 = IDL2.Record({
-    "itemId": IDL2.Text,
-    "name": IDL2.Text,
-    "quantity": IDL2.Nat,
-    "price": IDL2.Nat,
-    "vatRate": IDL2.Nat,
-    "unitName": IDL2.Text
-  });
-  const InvoiceStatus2 = IDL2.Variant({
-    "none": IDL2.Null,
-    "invoiced": IDL2.Null,
-    "failed": IDL2.Null
-  });
-  const Order2 = IDL2.Record({
-    "paymentStatus": PaymentStatus2,
-    "cusTaxCode": IDL2.Text,
-    "cusName": IDL2.Text,
-    "createdAt": IDL2.Int,
-    "taxTotal": IDL2.Nat,
-    "ahamoveOrderId": IDL2.Text,
-    "shippingFee": IDL2.Nat,
-    "invoiceId": IDL2.Text,
-    "sharedLink": IDL2.Text,
-    "cusPhone": IDL2.Text,
-    "orderId": IDL2.Text,
-    "restaurantId": IDL2.Text,
-    "updatedAt": IDL2.Int,
-    "bookingStatus": BookingStatus2,
-    "receiverEmail": IDL2.Text,
-    "pdfUrl": IDL2.Text,
-    "tingeeQrId": IDL2.Text,
-    "goodsAmount": IDL2.Nat,
-    "items": IDL2.Vec(OrderItem2),
-    "amount": IDL2.Nat,
-    "cusAddress": IDL2.Text,
-    "invoiceStatus": InvoiceStatus2
-  });
-  const Result2 = IDL2.Variant({ "ok": Order2, "err": IDL2.Text });
-  const Result_32 = IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text });
-  const Value2 = IDL2.Variant({
-    "int": IDL2.Int,
-    "nat": IDL2.Nat,
-    "float": IDL2.Float64,
-    "bool": IDL2.Bool,
-    "null": IDL2.Null,
-    "text": IDL2.Text
-  });
-  const Cell2 = IDL2.Record({ "value": Value2, "name": IDL2.Text });
-  const Result__12 = IDL2.Record({
-    "hasMore": IDL2.Bool,
-    "rows": IDL2.Vec(IDL2.Vec(Cell2))
-  });
-  const RestaurantId2 = IDL2.Text;
-  const PendingActivation2 = IDL2.Record({
-    "expiresAt": IDL2.Int,
-    "code": IDL2.Text,
-    "createdAt": IDL2.Int,
-    "role": DeviceRole2,
-    "used": IDL2.Bool,
-    "restaurantId": IDL2.Text
-  });
-  const Result_62 = IDL2.Variant({ "ok": PendingActivation2, "err": IDL2.Text });
-  const OrderStatus2 = IDL2.Record({
-    "paymentStatus": PaymentStatus2,
-    "invoiceId": IDL2.Text,
-    "sharedLink": IDL2.Text,
-    "bookingStatus": BookingStatus2,
-    "pdfUrl": IDL2.Text,
-    "tingeeQrId": IDL2.Text,
-    "invoiceStatus": InvoiceStatus2
-  });
-  const Result_52 = IDL2.Variant({ "ok": OrderStatus2, "err": IDL2.Text });
-  const MenuEntry2 = IDL2.Record({ "itemId": IDL2.Text, "menu": MenuItem2 });
-  const OrderId2 = IDL2.Text;
-  const OrderEntry2 = IDL2.Record({ "order": Order2, "orderId": OrderId2 });
-  const RestaurantEntry2 = IDL2.Record({
-    "restaurantId": IDL2.Text,
-    "restaurant": Restaurant2
-  });
-  const RestaurantMenuOverrideEntry2 = IDL2.Record({
-    "restaurantId": IDL2.Text,
-    "overrides": IDL2.Vec(IDL2.Tuple(IDL2.Text, IDL2.Nat))
-  });
-  const DeviceEntry2 = IDL2.Record({ "device": Device2, "deviceId": IDL2.Text });
-  const PendingActivationEntry2 = IDL2.Record({
-    "code": IDL2.Text,
-    "activation": PendingActivation2
-  });
-  const UpgradeState2 = IDL2.Record({
-    "menus": IDL2.Vec(MenuEntry2),
-    "orders": IDL2.Vec(OrderEntry2),
-    "restaurants": IDL2.Vec(RestaurantEntry2),
-    "restaurantMenuOverrides": IDL2.Vec(RestaurantMenuOverrideEntry2),
-    "devices": IDL2.Vec(DeviceEntry2),
-    "pendingActivations": IDL2.Vec(PendingActivationEntry2)
-  });
-  const Hmac2 = IDL2.Text;
-  return IDL2.Service({
-    "_initialize_access_control": IDL2.Func([], [], []),
-    "_internet_identity_sign_in_finish": IDL2.Func([], [Result_72], []),
-    "_internet_identity_sign_in_start": IDL2.Func([], [IDL2.Vec(IDL2.Nat8)], []),
-    "activateDevice": IDL2.Func([IDL2.Text, DeviceId2], [Result_42], []),
-    "addItem": IDL2.Func(
-      [IDL2.Text, IDL2.Text, IDL2.Nat, IDL2.Text, IDL2.Nat, IDL2.Text, IDL2.Text],
-      [Result_22],
-      []
-    ),
-    "addRestaurant": IDL2.Func(
-      [IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Text],
-      [Result_12],
-      []
-    ),
-    "assignCallerUserRole": IDL2.Func([IDL2.Principal, UserRole2], [], []),
-    "cancelOrder": IDL2.Func([IDL2.Text, IDL2.Text], [Result2], []),
-    "cleanupExpiredActivations": IDL2.Func([], [IDL2.Nat], []),
-    "createOrder": IDL2.Func(
-      [
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Vec(OrderItem2),
-        IDL2.Nat,
-        IDL2.Nat,
-        IDL2.Nat,
-        IDL2.Nat,
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Text
-      ],
-      [Result2],
-      []
-    ),
-    "deleteItem": IDL2.Func([IDL2.Text], [Result_32], []),
-    "deleteRestaurant": IDL2.Func([IDL2.Text], [Result_32], []),
-    "execute": IDL2.Func([IDL2.Text], [Result__12], ["query"]),
-    "generateActivationCode": IDL2.Func(
-      [RestaurantId2, DeviceRole2],
-      [Result_62],
-      []
-    ),
-    "getCallerUserRole": IDL2.Func([], [UserRole2], ["query"]),
-    "getCanisterIdText": IDL2.Func([], [IDL2.Text], ["query"]),
-    "getMenu": IDL2.Func([], [IDL2.Vec(MenuItem2)], ["query"]),
-    "getMenuForRestaurant": IDL2.Func(
-      [IDL2.Text],
-      [IDL2.Vec(MenuItem2)],
-      ["query"]
-    ),
-    "getOrder": IDL2.Func([IDL2.Text], [Result2], []),
-    "getOrderStatus": IDL2.Func([IDL2.Text], [Result_52], ["query"]),
-    "getRestaurants": IDL2.Func([], [IDL2.Vec(Restaurant2)], ["query"]),
-    "getUpgradeState": IDL2.Func([], [UpgradeState2], []),
-    "isCallerAdmin": IDL2.Func([], [IDL2.Bool], ["query"]),
-    "listDevicesByRestaurant": IDL2.Func(
-      [RestaurantId2],
-      [IDL2.Vec(Device2)],
-      ["query"]
-    ),
-    "listDevicesByRole": IDL2.Func([DeviceRole2], [IDL2.Vec(Device2)], ["query"]),
-    "listMenus": IDL2.Func([], [IDL2.Vec(MenuItem2)], ["query"]),
-    "listOrders": IDL2.Func([], [IDL2.Vec(Order2)], []),
-    "listPendingPaymentOrders": IDL2.Func([IDL2.Text], [IDL2.Vec(Order2)], []),
-    "listRestaurants": IDL2.Func([], [IDL2.Vec(Restaurant2)], ["query"]),
-    "restoreUpgradeState": IDL2.Func([IDL2.Vec(IDL2.Nat8)], [IDL2.Bool], []),
-    "revokeDevice": IDL2.Func([DeviceId2], [Result_42], []),
-    "schema": IDL2.Func([], [IDL2.Text], ["query"]),
-    "setRestaurantPriceOverride": IDL2.Func(
-      [IDL2.Text, IDL2.Text, IDL2.Nat],
-      [Result_32],
-      []
-    ),
-    "setVpsSecret": IDL2.Func(
-      [IDL2.Text],
-      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
-      []
-    ),
-    "snapshotUpgradeState": IDL2.Func([], [IDL2.Vec(IDL2.Nat8)], []),
-    "updateInvoiceStatus": IDL2.Func(
-      [OrderId2, InvoiceStatus2, IDL2.Text, IDL2.Text, Hmac2],
-      [Result2],
-      []
-    ),
-    "updateItem": IDL2.Func(
-      [
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Nat,
-        IDL2.Text,
-        IDL2.Nat,
-        IDL2.Text,
-        IDL2.Text,
-        IDL2.Bool
-      ],
-      [Result_22],
-      []
-    ),
-    "updatePaymentStatus": IDL2.Func(
-      [OrderId2, PaymentStatus2, Hmac2],
-      [Result2],
-      []
-    ),
-    "updateRestaurant": IDL2.Func(
-      [IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Bool],
-      [Result_12],
-      []
-    ),
-    "updateStatus": IDL2.Func([OrderId2, BookingStatus2, Hmac2], [Result2], [])
-  });
-};
-var BookingStatus = /* @__PURE__ */ ((BookingStatus2) => {
-  BookingStatus2["cancelled"] = "cancelled";
-  BookingStatus2["pending"] = "pending";
-  BookingStatus2["completed"] = "completed";
-  BookingStatus2["shipping"] = "shipping";
-  BookingStatus2["confirmed"] = "confirmed";
-  return BookingStatus2;
-})(BookingStatus || {});
-var DeviceRole = /* @__PURE__ */ ((DeviceRole2) => {
-  DeviceRole2["admin"] = "admin";
-  DeviceRole2["cashier"] = "cashier";
-  DeviceRole2["driver"] = "driver";
-  return DeviceRole2;
-})(DeviceRole || {});
-var InvoiceStatus = /* @__PURE__ */ ((InvoiceStatus2) => {
-  InvoiceStatus2["none"] = "none";
-  InvoiceStatus2["invoiced"] = "invoiced";
-  InvoiceStatus2["failed"] = "failed";
-  return InvoiceStatus2;
-})(InvoiceStatus || {});
-var PaymentStatus = /* @__PURE__ */ ((PaymentStatus2) => {
-  PaymentStatus2["paid"] = "paid";
-  PaymentStatus2["refunded"] = "refunded";
-  PaymentStatus2["unpaid"] = "unpaid";
-  return PaymentStatus2;
-})(PaymentStatus || {});
-class Backend {
-  constructor(actor, _uploadFile, _downloadFile, processError2) {
-    this.actor = actor;
-    this._uploadFile = _uploadFile;
-    this._downloadFile = _downloadFile;
-    this.processError = processError2;
-  }
-  async _initialize_access_control() {
-    if (this.processError) {
-      try {
-        const result = await this.actor._initialize_access_control();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor._initialize_access_control();
-      return result;
-    }
-  }
-  async _internet_identity_sign_in_finish() {
-    if (this.processError) {
-      try {
-        const result = await this.actor._internet_identity_sign_in_finish();
-        return from_candid_Result_7_n1(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor._internet_identity_sign_in_finish();
-      return from_candid_Result_7_n1(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async _internet_identity_sign_in_start() {
-    if (this.processError) {
-      try {
-        const result = await this.actor._internet_identity_sign_in_start();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor._internet_identity_sign_in_start();
-      return result;
-    }
-  }
-  async activateDevice(arg0, arg1) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.activateDevice(arg0, arg1);
-        return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.activateDevice(arg0, arg1);
-      return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async addItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.addItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-        return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.addItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-      return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async addRestaurant(arg0, arg1, arg2, arg3) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.addRestaurant(arg0, arg1, arg2, arg3);
-        return from_candid_Result_1_n13(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.addRestaurant(arg0, arg1, arg2, arg3);
-      return from_candid_Result_1_n13(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async assignCallerUserRole(arg0, arg1) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n15(this._uploadFile, this._downloadFile, arg1));
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n15(this._uploadFile, this._downloadFile, arg1));
-      return result;
-    }
-  }
-  async cancelOrder(arg0, arg1) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.cancelOrder(arg0, arg1);
-        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.cancelOrder(arg0, arg1);
-      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async cleanupExpiredActivations() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.cleanupExpiredActivations();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.cleanupExpiredActivations();
-      return result;
-    }
-  }
-  async createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
-        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
-      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async deleteItem(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.deleteItem(arg0);
-        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.deleteItem(arg0);
-      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async deleteRestaurant(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.deleteRestaurant(arg0);
-        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.deleteRestaurant(arg0);
-      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async execute(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.execute(arg0);
-        return from_candid_Result__1_n29(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.execute(arg0);
-      return from_candid_Result__1_n29(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async generateActivationCode(arg0, arg1) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg1));
-        return from_candid_Result_6_n39(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg1));
-      return from_candid_Result_6_n39(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async getCallerUserRole() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getCallerUserRole();
-        return from_candid_UserRole_n43(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getCallerUserRole();
-      return from_candid_UserRole_n43(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async getCanisterIdText() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getCanisterIdText();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getCanisterIdText();
-      return result;
-    }
-  }
-  async getMenu() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getMenu();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getMenu();
-      return result;
-    }
-  }
-  async getMenuForRestaurant(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getMenuForRestaurant(arg0);
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getMenuForRestaurant(arg0);
-      return result;
-    }
-  }
-  async getOrder(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getOrder(arg0);
-        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getOrder(arg0);
-      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async getOrderStatus(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getOrderStatus(arg0);
-        return from_candid_Result_5_n45(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getOrderStatus(arg0);
-      return from_candid_Result_5_n45(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async getRestaurants() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getRestaurants();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getRestaurants();
-      return result;
-    }
-  }
-  async getUpgradeState() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getUpgradeState();
-        return from_candid_UpgradeState_n49(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getUpgradeState();
-      return from_candid_UpgradeState_n49(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async isCallerAdmin() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.isCallerAdmin();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.isCallerAdmin();
-      return result;
-    }
-  }
-  async listDevicesByRestaurant(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.listDevicesByRestaurant(arg0);
-        return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.listDevicesByRestaurant(arg0);
-      return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async listDevicesByRole(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg0));
-        return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg0));
-      return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async listMenus() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.listMenus();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.listMenus();
-      return result;
-    }
-  }
-  async listOrders() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.listOrders();
-        return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.listOrders();
-      return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async listPendingPaymentOrders(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.listPendingPaymentOrders(arg0);
-        return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.listPendingPaymentOrders(arg0);
-      return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async listRestaurants() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.listRestaurants();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.listRestaurants();
-      return result;
-    }
-  }
-  async restoreUpgradeState(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.restoreUpgradeState(arg0);
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.restoreUpgradeState(arg0);
-      return result;
-    }
-  }
-  async revokeDevice(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.revokeDevice(arg0);
-        return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.revokeDevice(arg0);
-      return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async schema() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.schema();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.schema();
-      return result;
-    }
-  }
-  async setRestaurantPriceOverride(arg0, arg1, arg2) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.setRestaurantPriceOverride(arg0, arg1, arg2);
-        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.setRestaurantPriceOverride(arg0, arg1, arg2);
-      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async setVpsSecret(arg0) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.setVpsSecret(arg0);
-        return from_candid_variant_n28(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.setVpsSecret(arg0);
-      return from_candid_variant_n28(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async snapshotUpgradeState() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.snapshotUpgradeState();
-        return result;
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.snapshotUpgradeState();
-      return result;
-    }
-  }
-  async updateInvoiceStatus(arg0, arg1, arg2, arg3, arg4) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n62(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
-        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n62(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
-      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async updateItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.updateItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-        return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.updateItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-      return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async updatePaymentStatus(arg0, arg1, arg2) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n64(this._uploadFile, this._downloadFile, arg1), arg2);
-        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n64(this._uploadFile, this._downloadFile, arg1), arg2);
-      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async updateRestaurant(arg0, arg1, arg2, arg3, arg4) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.updateRestaurant(arg0, arg1, arg2, arg3, arg4);
-        return from_candid_Result_1_n13(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.updateRestaurant(arg0, arg1, arg2, arg3, arg4);
-      return from_candid_Result_1_n13(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async updateStatus(arg0, arg1, arg2) {
-    if (this.processError) {
-      try {
-        const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n66(this._uploadFile, this._downloadFile, arg1), arg2);
-        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n66(this._uploadFile, this._downloadFile, arg1), arg2);
-      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
-    }
+function setRef(ref, value) {
+  if (typeof ref === "function") {
+    return ref(value);
+  } else if (ref !== null && ref !== void 0) {
+    ref.current = value;
   }
 }
-function from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n24(_uploadFile, _downloadFile, value);
-}
-function from_candid_Cell_n33(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n34(_uploadFile, _downloadFile, value);
-}
-function from_candid_DeviceEntry_n55(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n56(_uploadFile, _downloadFile, value);
-}
-function from_candid_DeviceRole_n9(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n10(_uploadFile, _downloadFile, value);
-}
-function from_candid_Device_n7(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n8(_uploadFile, _downloadFile, value);
-}
-function from_candid_Error_n3(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n4(_uploadFile, _downloadFile, value);
-}
-function from_candid_InvoiceStatus_n25(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n26(_uploadFile, _downloadFile, value);
-}
-function from_candid_OrderEntry_n52(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n53(_uploadFile, _downloadFile, value);
-}
-function from_candid_OrderStatus_n47(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n48(_uploadFile, _downloadFile, value);
-}
-function from_candid_Order_n19(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n20(_uploadFile, _downloadFile, value);
-}
-function from_candid_PaymentStatus_n21(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n22(_uploadFile, _downloadFile, value);
-}
-function from_candid_PendingActivationEntry_n58(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n59(_uploadFile, _downloadFile, value);
-}
-function from_candid_PendingActivation_n41(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n42(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result_1_n13(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n14(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result_2_n11(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n12(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result_3_n27(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n28(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result_4_n5(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n6(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result_5_n45(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n46(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result_6_n39(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n40(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result_7_n1(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n2(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result__1_n29(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n30(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result_n17(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n18(_uploadFile, _downloadFile, value);
-}
-function from_candid_UpgradeState_n49(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n50(_uploadFile, _downloadFile, value);
-}
-function from_candid_UserRole_n43(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n44(_uploadFile, _downloadFile, value);
-}
-function from_candid_Value_n35(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n36(_uploadFile, _downloadFile, value);
-}
-function from_candid_record_n20(_uploadFile, _downloadFile, value) {
-  return {
-    paymentStatus: from_candid_PaymentStatus_n21(_uploadFile, _downloadFile, value.paymentStatus),
-    cusTaxCode: value.cusTaxCode,
-    cusName: value.cusName,
-    createdAt: value.createdAt,
-    taxTotal: value.taxTotal,
-    ahamoveOrderId: value.ahamoveOrderId,
-    shippingFee: value.shippingFee,
-    invoiceId: value.invoiceId,
-    sharedLink: value.sharedLink,
-    cusPhone: value.cusPhone,
-    orderId: value.orderId,
-    restaurantId: value.restaurantId,
-    updatedAt: value.updatedAt,
-    bookingStatus: from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value.bookingStatus),
-    receiverEmail: value.receiverEmail,
-    pdfUrl: value.pdfUrl,
-    tingeeQrId: value.tingeeQrId,
-    goodsAmount: value.goodsAmount,
-    items: value.items,
-    amount: value.amount,
-    cusAddress: value.cusAddress,
-    invoiceStatus: from_candid_InvoiceStatus_n25(_uploadFile, _downloadFile, value.invoiceStatus)
+function composeRefs(...refs) {
+  return (node) => {
+    let hasCleanup = false;
+    const cleanups = refs.map((ref) => {
+      const cleanup = setRef(ref, node);
+      if (!hasCleanup && typeof cleanup == "function") {
+        hasCleanup = true;
+      }
+      return cleanup;
+    });
+    if (hasCleanup) {
+      return () => {
+        for (let i = 0; i < cleanups.length; i++) {
+          const cleanup = cleanups[i];
+          if (typeof cleanup == "function") {
+            cleanup();
+          } else {
+            setRef(refs[i], null);
+          }
+        }
+      };
+    }
   };
 }
-function from_candid_record_n30(_uploadFile, _downloadFile, value) {
-  return {
-    hasMore: value.hasMore,
-    rows: from_candid_vec_n31(_uploadFile, _downloadFile, value.rows)
-  };
+function useComposedRefs(...refs) {
+  return reactExports.useCallback(composeRefs(...refs), refs);
 }
-function from_candid_record_n34(_uploadFile, _downloadFile, value) {
-  return {
-    value: from_candid_Value_n35(_uploadFile, _downloadFile, value.value),
-    name: value.name
-  };
+var REACT_LAZY_TYPE = Symbol.for("react.lazy");
+var use = React$5[" use ".trim().toString()];
+function isPromiseLike(value) {
+  return typeof value === "object" && value !== null && "then" in value;
 }
-function from_candid_record_n42(_uploadFile, _downloadFile, value) {
-  return {
-    expiresAt: value.expiresAt,
-    code: value.code,
-    createdAt: value.createdAt,
-    role: from_candid_DeviceRole_n9(_uploadFile, _downloadFile, value.role),
-    used: value.used,
-    restaurantId: value.restaurantId
-  };
+function isLazyComponent(element) {
+  return element != null && typeof element === "object" && "$$typeof" in element && element.$$typeof === REACT_LAZY_TYPE && "_payload" in element && isPromiseLike(element._payload);
 }
-function from_candid_record_n48(_uploadFile, _downloadFile, value) {
-  return {
-    paymentStatus: from_candid_PaymentStatus_n21(_uploadFile, _downloadFile, value.paymentStatus),
-    invoiceId: value.invoiceId,
-    sharedLink: value.sharedLink,
-    bookingStatus: from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value.bookingStatus),
-    pdfUrl: value.pdfUrl,
-    tingeeQrId: value.tingeeQrId,
-    invoiceStatus: from_candid_InvoiceStatus_n25(_uploadFile, _downloadFile, value.invoiceStatus)
-  };
-}
-function from_candid_record_n50(_uploadFile, _downloadFile, value) {
-  return {
-    menus: value.menus,
-    orders: from_candid_vec_n51(_uploadFile, _downloadFile, value.orders),
-    restaurants: value.restaurants,
-    restaurantMenuOverrides: value.restaurantMenuOverrides,
-    devices: from_candid_vec_n54(_uploadFile, _downloadFile, value.devices),
-    pendingActivations: from_candid_vec_n57(_uploadFile, _downloadFile, value.pendingActivations)
-  };
-}
-function from_candid_record_n53(_uploadFile, _downloadFile, value) {
-  return {
-    order: from_candid_Order_n19(_uploadFile, _downloadFile, value.order),
-    orderId: value.orderId
-  };
-}
-function from_candid_record_n56(_uploadFile, _downloadFile, value) {
-  return {
-    device: from_candid_Device_n7(_uploadFile, _downloadFile, value.device),
-    deviceId: value.deviceId
-  };
-}
-function from_candid_record_n59(_uploadFile, _downloadFile, value) {
-  return {
-    code: value.code,
-    activation: from_candid_PendingActivation_n41(_uploadFile, _downloadFile, value.activation)
-  };
-}
-function from_candid_record_n8(_uploadFile, _downloadFile, value) {
-  return {
-    active: value.active,
-    activatedAt: value.activatedAt,
-    role: from_candid_DeviceRole_n9(_uploadFile, _downloadFile, value.role),
-    restaurantId: value.restaurantId,
-    deviceId: value.deviceId
-  };
-}
-function from_candid_variant_n10(_uploadFile, _downloadFile, value) {
-  return "admin" in value ? "admin" : "cashier" in value ? "cashier" : "driver" in value ? "driver" : value;
-}
-function from_candid_variant_n12(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: value.ok
-  } : "err" in value ? {
-    __kind__: "err",
-    err: value.err
-  } : value;
-}
-function from_candid_variant_n14(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: value.ok
-  } : "err" in value ? {
-    __kind__: "err",
-    err: value.err
-  } : value;
-}
-function from_candid_variant_n18(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: from_candid_Order_n19(_uploadFile, _downloadFile, value.ok)
-  } : "err" in value ? {
-    __kind__: "err",
-    err: value.err
-  } : value;
-}
-function from_candid_variant_n2(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: value.ok
-  } : "err" in value ? {
-    __kind__: "err",
-    err: from_candid_Error_n3(_uploadFile, _downloadFile, value.err)
-  } : value;
-}
-function from_candid_variant_n22(_uploadFile, _downloadFile, value) {
-  return "paid" in value ? "paid" : "refunded" in value ? "refunded" : "unpaid" in value ? "unpaid" : value;
-}
-function from_candid_variant_n24(_uploadFile, _downloadFile, value) {
-  return "cancelled" in value ? "cancelled" : "pending" in value ? "pending" : "completed" in value ? "completed" : "shipping" in value ? "shipping" : "confirmed" in value ? "confirmed" : value;
-}
-function from_candid_variant_n26(_uploadFile, _downloadFile, value) {
-  return "none" in value ? "none" : "invoiced" in value ? "invoiced" : "failed" in value ? "failed" : value;
-}
-function from_candid_variant_n28(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: value.ok
-  } : "err" in value ? {
-    __kind__: "err",
-    err: value.err
-  } : value;
-}
-function from_candid_variant_n36(_uploadFile, _downloadFile, value) {
-  return "int" in value ? {
-    __kind__: "int",
-    int: value.int
-  } : "nat" in value ? {
-    __kind__: "nat",
-    nat: value.nat
-  } : "float" in value ? {
-    __kind__: "float",
-    float: value.float
-  } : "bool" in value ? {
-    __kind__: "bool",
-    bool: value.bool
-  } : "null" in value ? {
-    __kind__: "null",
-    null: value.null
-  } : "text" in value ? {
-    __kind__: "text",
-    text: value.text
-  } : value;
-}
-function from_candid_variant_n4(_uploadFile, _downloadFile, value) {
-  return "FrontendOriginsNotConfigured" in value ? {
-    __kind__: "FrontendOriginsNotConfigured",
-    FrontendOriginsNotConfigured: value.FrontendOriginsNotConfigured
-  } : "MixedSsoSources" in value ? {
-    __kind__: "MixedSsoSources",
-    MixedSsoSources: value.MixedSsoSources
-  } : "Stale" in value ? {
-    __kind__: "Stale",
-    Stale: value.Stale
-  } : "MalformedCandid" in value ? {
-    __kind__: "MalformedCandid",
-    MalformedCandid: value.MalformedCandid
-  } : "AmbiguousAttribute" in value ? {
-    __kind__: "AmbiguousAttribute",
-    AmbiguousAttribute: value.AmbiguousAttribute
-  } : "NoAttributes" in value ? {
-    __kind__: "NoAttributes",
-    NoAttributes: value.NoAttributes
-  } : "UnknownNonce" in value ? {
-    __kind__: "UnknownNonce",
-    UnknownNonce: value.UnknownNonce
-  } : "UntrustedSsoSource" in value ? {
-    __kind__: "UntrustedSsoSource",
-    UntrustedSsoSource: value.UntrustedSsoSource
-  } : "MissingField" in value ? {
-    __kind__: "MissingField",
-    MissingField: value.MissingField
-  } : "FrontendOriginMismatch" in value ? {
-    __kind__: "FrontendOriginMismatch",
-    FrontendOriginMismatch: value.FrontendOriginMismatch
-  } : value;
-}
-function from_candid_variant_n40(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: from_candid_PendingActivation_n41(_uploadFile, _downloadFile, value.ok)
-  } : "err" in value ? {
-    __kind__: "err",
-    err: value.err
-  } : value;
-}
-function from_candid_variant_n44(_uploadFile, _downloadFile, value) {
-  return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
-}
-function from_candid_variant_n46(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: from_candid_OrderStatus_n47(_uploadFile, _downloadFile, value.ok)
-  } : "err" in value ? {
-    __kind__: "err",
-    err: value.err
-  } : value;
-}
-function from_candid_variant_n6(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: from_candid_Device_n7(_uploadFile, _downloadFile, value.ok)
-  } : "err" in value ? {
-    __kind__: "err",
-    err: value.err
-  } : value;
-}
-function from_candid_vec_n31(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_vec_n32(_uploadFile, _downloadFile, x3));
-}
-function from_candid_vec_n32(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_Cell_n33(_uploadFile, _downloadFile, x3));
-}
-function from_candid_vec_n51(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_OrderEntry_n52(_uploadFile, _downloadFile, x3));
-}
-function from_candid_vec_n54(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_DeviceEntry_n55(_uploadFile, _downloadFile, x3));
-}
-function from_candid_vec_n57(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_PendingActivationEntry_n58(_uploadFile, _downloadFile, x3));
-}
-function from_candid_vec_n60(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_Device_n7(_uploadFile, _downloadFile, x3));
-}
-function from_candid_vec_n61(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_Order_n19(_uploadFile, _downloadFile, x3));
-}
-function to_candid_BookingStatus_n66(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n67(_uploadFile, _downloadFile, value);
-}
-function to_candid_DeviceRole_n37(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n38(_uploadFile, _downloadFile, value);
-}
-function to_candid_InvoiceStatus_n62(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n63(_uploadFile, _downloadFile, value);
-}
-function to_candid_PaymentStatus_n64(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n65(_uploadFile, _downloadFile, value);
-}
-function to_candid_UserRole_n15(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n16(_uploadFile, _downloadFile, value);
-}
-function to_candid_variant_n16(_uploadFile, _downloadFile, value) {
-  return value == "admin" ? {
-    admin: null
-  } : value == "user" ? {
-    user: null
-  } : value == "guest" ? {
-    guest: null
-  } : value;
-}
-function to_candid_variant_n38(_uploadFile, _downloadFile, value) {
-  return value == "admin" ? {
-    admin: null
-  } : value == "cashier" ? {
-    cashier: null
-  } : value == "driver" ? {
-    driver: null
-  } : value;
-}
-function to_candid_variant_n63(_uploadFile, _downloadFile, value) {
-  return value == "none" ? {
-    none: null
-  } : value == "invoiced" ? {
-    invoiced: null
-  } : value == "failed" ? {
-    failed: null
-  } : value;
-}
-function to_candid_variant_n65(_uploadFile, _downloadFile, value) {
-  return value == "paid" ? {
-    paid: null
-  } : value == "refunded" ? {
-    refunded: null
-  } : value == "unpaid" ? {
-    unpaid: null
-  } : value;
-}
-function to_candid_variant_n67(_uploadFile, _downloadFile, value) {
-  return value == "cancelled" ? {
-    cancelled: null
-  } : value == "pending" ? {
-    pending: null
-  } : value == "completed" ? {
-    completed: null
-  } : value == "shipping" ? {
-    shipping: null
-  } : value == "confirmed" ? {
-    confirmed: null
-  } : value;
-}
-function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
-  const agent = options.agent || HttpAgent.createSync({
-    ...options.agentOptions
+// @__NO_SIDE_EFFECTS__
+function createSlot$1(ownerName) {
+  const SlotClone = /* @__PURE__ */ createSlotClone$1(ownerName);
+  const Slot2 = reactExports.forwardRef((props, forwardedRef) => {
+    let { children, ...slotProps } = props;
+    if (isLazyComponent(children) && typeof use === "function") {
+      children = use(children._payload);
+    }
+    const childrenArray = reactExports.Children.toArray(children);
+    const slottable = childrenArray.find(isSlottable$1);
+    if (slottable) {
+      const newElement = slottable.props.children;
+      const newChildren = childrenArray.map((child) => {
+        if (child === slottable) {
+          if (reactExports.Children.count(newElement) > 1) return reactExports.Children.only(null);
+          return reactExports.isValidElement(newElement) ? newElement.props.children : null;
+        } else {
+          return child;
+        }
+      });
+      return /* @__PURE__ */ jsxRuntimeExports.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: reactExports.isValidElement(newElement) ? reactExports.cloneElement(newElement, void 0, newChildren) : null });
+    }
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
   });
-  if (options.agent && options.agentOptions) {
-    console.warn("Detected both agent and agentOptions passed to createActor. Ignoring agentOptions and proceeding with the provided agent.");
-  }
-  const actor = Actor.createActor(idlFactory, {
-    agent,
-    canisterId,
-    ...options.actorOptions
-  });
-  return new Backend(actor, _uploadFile, _downloadFile, options.processError);
+  Slot2.displayName = `${ownerName}.Slot`;
+  return Slot2;
 }
-function useAuth() {
-  const ii = useInternetIdentity();
-  const { actor, isFetching } = useActor(createActor);
-  const adminQuery = useQuery({
-    queryKey: ["auth", "isAdmin", !!ii.identity],
-    queryFn: async () => {
-      if (!actor) return false;
-      try {
-        return await actor.isCallerAdmin();
-      } catch {
-        return false;
+var Slot$2 = /* @__PURE__ */ createSlot$1("Slot");
+// @__NO_SIDE_EFFECTS__
+function createSlotClone$1(ownerName) {
+  const SlotClone = reactExports.forwardRef((props, forwardedRef) => {
+    let { children, ...slotProps } = props;
+    if (isLazyComponent(children) && typeof use === "function") {
+      children = use(children._payload);
+    }
+    if (reactExports.isValidElement(children)) {
+      const childrenRef = getElementRef$2(children);
+      const props2 = mergeProps$1(slotProps, children.props);
+      if (children.type !== reactExports.Fragment) {
+        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
       }
-    },
-    enabled: !!ii.identity && !!actor && !isFetching,
-    staleTime: 6e4
+      return reactExports.cloneElement(children, props2);
+    }
+    return reactExports.Children.count(children) > 1 ? reactExports.Children.only(null) : null;
   });
-  return {
-    isAuthenticated: ii.isAuthenticated,
-    isInitializing: ii.isInitializing,
-    login: ii.login,
-    clear: ii.clear,
-    isAdmin: Boolean(adminQuery.data),
-    isAdminLoading: adminQuery.isLoading && !!ii.identity
-  };
+  SlotClone.displayName = `${ownerName}.SlotClone`;
+  return SlotClone;
+}
+var SLOTTABLE_IDENTIFIER$1 = Symbol("radix.slottable");
+function isSlottable$1(child) {
+  return reactExports.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER$1;
+}
+function mergeProps$1(slotProps, childProps) {
+  const overrideProps = { ...childProps };
+  for (const propName in childProps) {
+    const slotPropValue = slotProps[propName];
+    const childPropValue = childProps[propName];
+    const isHandler = /^on[A-Z]/.test(propName);
+    if (isHandler) {
+      if (slotPropValue && childPropValue) {
+        overrideProps[propName] = (...args) => {
+          const result = childPropValue(...args);
+          slotPropValue(...args);
+          return result;
+        };
+      } else if (slotPropValue) {
+        overrideProps[propName] = slotPropValue;
+      }
+    } else if (propName === "style") {
+      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
+    } else if (propName === "className") {
+      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
+    }
+  }
+  return { ...slotProps, ...overrideProps };
+}
+function getElementRef$2(element) {
+  var _a2, _b2;
+  let getter = (_a2 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a2.get;
+  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.ref;
+  }
+  getter = (_b2 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b2.get;
+  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.props.ref;
+  }
+  return element.props.ref || element.ref;
 }
 function r(e) {
   var t, f2, n = "";
@@ -34957,6 +33485,46 @@ function clsx() {
   for (var e, t, f2 = 0, n = "", o = arguments.length; f2 < o; f2++) (e = arguments[f2]) && (t = r(e)) && (n && (n += " "), n += t);
   return n;
 }
+const falsyToString = (value) => typeof value === "boolean" ? `${value}` : value === 0 ? "0" : value;
+const cx = clsx;
+const cva = (base, config) => (props) => {
+  var _config_compoundVariants;
+  if ((config === null || config === void 0 ? void 0 : config.variants) == null) return cx(base, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
+  const { variants, defaultVariants } = config;
+  const getVariantClassNames = Object.keys(variants).map((variant) => {
+    const variantProp = props === null || props === void 0 ? void 0 : props[variant];
+    const defaultVariantProp = defaultVariants === null || defaultVariants === void 0 ? void 0 : defaultVariants[variant];
+    if (variantProp === null) return null;
+    const variantKey = falsyToString(variantProp) || falsyToString(defaultVariantProp);
+    return variants[variant][variantKey];
+  });
+  const propsWithoutUndefined = props && Object.entries(props).reduce((acc, param) => {
+    let [key, value] = param;
+    if (value === void 0) {
+      return acc;
+    }
+    acc[key] = value;
+    return acc;
+  }, {});
+  const getCompoundVariantClassNames = config === null || config === void 0 ? void 0 : (_config_compoundVariants = config.compoundVariants) === null || _config_compoundVariants === void 0 ? void 0 : _config_compoundVariants.reduce((acc, param) => {
+    let { class: cvClass, className: cvClassName, ...compoundVariantOptions } = param;
+    return Object.entries(compoundVariantOptions).every((param2) => {
+      let [key, value] = param2;
+      return Array.isArray(value) ? value.includes({
+        ...defaultVariants,
+        ...propsWithoutUndefined
+      }[key]) : {
+        ...defaultVariants,
+        ...propsWithoutUndefined
+      }[key] === value;
+    }) ? [
+      ...acc,
+      cvClass,
+      cvClassName
+    ] : acc;
+  }, []);
+  return cx(base, getVariantClassNames, getCompoundVariantClassNames, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
+};
 const CLASS_PART_SEPARATOR = "-";
 const createClassGroupUtils = (config) => {
   const classMap = createClassMap(config);
@@ -37418,6 +35986,3657 @@ const getDefaultConfig = () => {
 const twMerge = /* @__PURE__ */ createTailwindMerge(getDefaultConfig);
 function cn(...inputs) {
   return twMerge(clsx(inputs));
+}
+function imageBytesToDataUrl(bytes) {
+  if (!bytes || bytes.length === 0) return null;
+  const blob = new Blob([bytes], { type: "image/jpeg" });
+  return URL.createObjectURL(blob);
+}
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+        destructive: "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+        outline: "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+        secondary: "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+        link: "text-primary underline-offset-4 hover:underline"
+      },
+      size: {
+        default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        icon: "size-9"
+      }
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default"
+    }
+  }
+);
+function Button({
+  className,
+  variant,
+  size: size2,
+  asChild = false,
+  ...props
+}) {
+  const Comp = asChild ? Slot$2 : "button";
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Comp,
+    {
+      "data-slot": "button",
+      className: cn(buttonVariants({ variant, size: size2, className })),
+      ...props
+    }
+  );
+}
+function Input({ className, type, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "input",
+    {
+      type,
+      "data-slot": "input",
+      className: cn(
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        className
+      ),
+      ...props
+    }
+  );
+}
+const Error$1 = Variant({
+  "FrontendOriginsNotConfigured": Null,
+  "MixedSsoSources": Record({
+    "otherKeys": Vec(Text),
+    "ssoKeys": Vec(Text)
+  }),
+  "Stale": Record({ "ageNs": Nat }),
+  "MalformedCandid": Null,
+  "AmbiguousAttribute": Record({
+    "field": Text,
+    "sources": Vec(Text)
+  }),
+  "NoAttributes": Null,
+  "UnknownNonce": Null,
+  "UntrustedSsoSource": Record({ "domain": Text }),
+  "MissingField": Text,
+  "FrontendOriginMismatch": Record({
+    "got": Text,
+    "expected": Vec(Text)
+  })
+});
+const Result_7 = Variant({ "ok": Null, "err": Error$1 });
+const DeviceId = Text;
+const DeviceRole$1 = Variant({
+  "admin": Null,
+  "cashier": Null,
+  "driver": Null
+});
+const Device = Record({
+  "active": Bool,
+  "activatedAt": Int,
+  "role": DeviceRole$1,
+  "restaurantId": Text,
+  "deviceId": Text
+});
+const Result_4 = Variant({ "ok": Device, "err": Text });
+const MenuItem = Record({
+  "itemId": Text,
+  "name": Text,
+  "visible": Bool,
+  "category": Text,
+  "image": Vec(Nat8),
+  "price": Nat,
+  "vatRate": Nat,
+  "unitName": Text
+});
+const Result_2 = Variant({ "ok": MenuItem, "err": Text });
+const Restaurant = Record({
+  "name": Text,
+  "restaurantId": Text,
+  "address": Text,
+  "visible": Bool,
+  "phone": Text
+});
+const Result_1 = Variant({ "ok": Restaurant, "err": Text });
+const UserRole = Variant({
+  "admin": Null,
+  "user": Null,
+  "guest": Null
+});
+const PaymentStatus$1 = Variant({
+  "paid": Null,
+  "refunded": Null,
+  "unpaid": Null
+});
+const BookingStatus$1 = Variant({
+  "cancelled": Null,
+  "pending": Null,
+  "completed": Null,
+  "shipping": Null,
+  "pickedUp": Null,
+  "confirmed": Null
+});
+const OrderItem = Record({
+  "itemId": Text,
+  "name": Text,
+  "quantity": Nat,
+  "price": Nat,
+  "vatRate": Nat,
+  "unitName": Text
+});
+const InvoiceStatus$1 = Variant({
+  "none": Null,
+  "invoiced": Null,
+  "failed": Null
+});
+const Order = Record({
+  "paymentStatus": PaymentStatus$1,
+  "cusTaxCode": Text,
+  "cusName": Text,
+  "createdAt": Int,
+  "taxTotal": Nat,
+  "ahamoveOrderId": Text,
+  "tingeeQrCode": Text,
+  "shippingFee": Nat,
+  "invoiceId": Text,
+  "sharedLink": Text,
+  "cusPhone": Text,
+  "orderId": Text,
+  "restaurantId": Text,
+  "updatedAt": Int,
+  "bookingStatus": BookingStatus$1,
+  "receiverEmail": Text,
+  "pdfUrl": Text,
+  "tingeeQrId": Text,
+  "goodsAmount": Nat,
+  "items": Vec(OrderItem),
+  "amount": Nat,
+  "cusAddress": Text,
+  "invoiceStatus": InvoiceStatus$1
+});
+const Result = Variant({ "ok": Order, "err": Text });
+const Result_3 = Variant({ "ok": Null, "err": Text });
+const Value$1 = Variant({
+  "int": Int,
+  "nat": Nat,
+  "float": Float64,
+  "bool": Bool,
+  "null": Null,
+  "text": Text
+});
+const Cell = Record({ "value": Value$1, "name": Text });
+const Result__1 = Record({
+  "hasMore": Bool,
+  "rows": Vec(Vec(Cell))
+});
+const RestaurantId = Text;
+const PendingActivation = Record({
+  "expiresAt": Int,
+  "code": Text,
+  "createdAt": Int,
+  "role": DeviceRole$1,
+  "used": Bool,
+  "restaurantId": Text
+});
+const Result_6 = Variant({
+  "ok": PendingActivation,
+  "err": Text
+});
+const OrderStatus = Record({
+  "paymentStatus": PaymentStatus$1,
+  "tingeeQrCode": Text,
+  "invoiceId": Text,
+  "sharedLink": Text,
+  "bookingStatus": BookingStatus$1,
+  "pdfUrl": Text,
+  "tingeeQrId": Text,
+  "invoiceStatus": InvoiceStatus$1
+});
+const Result_5 = Variant({ "ok": OrderStatus, "err": Text });
+const StoreHours = Record({
+  "closeMinute": Nat,
+  "closeHour": Nat,
+  "openMinute": Nat,
+  "openHour": Nat
+});
+const MenuEntry = Record({ "itemId": Text, "menu": MenuItem });
+const OrderId = Text;
+const OrderEntry = Record({ "order": Order, "orderId": OrderId });
+const RestaurantEntry = Record({
+  "restaurantId": Text,
+  "restaurant": Restaurant
+});
+const RestaurantMenuOverrideEntry = Record({
+  "restaurantId": Text,
+  "overrides": Vec(Tuple(Text, Nat))
+});
+const DeviceEntry = Record({
+  "device": Device,
+  "deviceId": Text
+});
+const PendingActivationEntry = Record({
+  "code": Text,
+  "activation": PendingActivation
+});
+const UpgradeState = Record({
+  "menus": Vec(MenuEntry),
+  "orders": Vec(OrderEntry),
+  "restaurants": Vec(RestaurantEntry),
+  "restaurantMenuOverrides": Vec(RestaurantMenuOverrideEntry),
+  "devices": Vec(DeviceEntry),
+  "pendingActivations": Vec(PendingActivationEntry)
+});
+const Email = Text;
+const SendCodeResult = Variant({
+  "ok": Null,
+  "err": Text
+});
+const Hmac = Text;
+const VerifyResult = Variant({ "ok": Null, "err": Text });
+Service({
+  "_initialize_access_control": Func([], [], []),
+  "_internet_identity_sign_in_finish": Func([], [Result_7], []),
+  "_internet_identity_sign_in_start": Func([], [Vec(Nat8)], []),
+  "activateDevice": Func([Text, DeviceId], [Result_4], []),
+  "addItem": Func(
+    [
+      Text,
+      Text,
+      Nat,
+      Text,
+      Nat,
+      Text,
+      Vec(Nat8)
+    ],
+    [Result_2],
+    []
+  ),
+  "addRestaurant": Func(
+    [Text, Text, Text, Text],
+    [Result_1],
+    []
+  ),
+  "assignCallerUserRole": Func([Principal2, UserRole], [], []),
+  "cancelOrder": Func([Text, Text], [Result], []),
+  "cleanupExpiredActivations": Func([], [Nat], []),
+  "createOrder": Func(
+    [
+      Text,
+      Text,
+      Text,
+      Text,
+      Text,
+      Text,
+      Text,
+      Vec(OrderItem),
+      Nat,
+      Nat,
+      Nat,
+      Nat,
+      Text,
+      Text,
+      Text,
+      Text,
+      Text
+    ],
+    [Result],
+    []
+  ),
+  "deleteItem": Func([Text], [Result_3], []),
+  "deleteRestaurant": Func([Text], [Result_3], []),
+  "execute": Func([Text], [Result__1], ["query"]),
+  "generateActivationCode": Func(
+    [RestaurantId, DeviceRole$1],
+    [Result_6],
+    []
+  ),
+  "getCallerUserRole": Func([], [UserRole], ["query"]),
+  "getCanisterIdText": Func([], [Text], ["query"]),
+  "getMenu": Func([], [Vec(MenuItem)], ["query"]),
+  "getMenuForRestaurant": Func([Text], [Vec(MenuItem)], ["query"]),
+  "getOrder": Func([Text], [Result], []),
+  "getOrderStatus": Func([Text], [Result_5], ["query"]),
+  "getPaymentMode": Func([], [Text], ["query"]),
+  "getRestaurants": Func([], [Vec(Restaurant)], ["query"]),
+  "getStoreHours": Func([], [StoreHours], ["query"]),
+  "getUpgradeState": Func([], [UpgradeState], []),
+  "isCallerAdmin": Func([], [Bool], ["query"]),
+  "isEmailVerified": Func([Email], [Bool], ["query"]),
+  "isStoreOpen": Func([], [Bool], ["query"]),
+  "listDevicesByRestaurant": Func(
+    [RestaurantId],
+    [Vec(Device)],
+    ["query"]
+  ),
+  "listDevicesByRole": Func([DeviceRole$1], [Vec(Device)], ["query"]),
+  "listMenus": Func([], [Vec(MenuItem)], ["query"]),
+  "listOrders": Func([], [Vec(Order)], []),
+  "listPaidOrdersForPickup": Func([], [Vec(Order)], []),
+  "listPendingPaymentOrders": Func([Text], [Vec(Order)], []),
+  "listRestaurants": Func([], [Vec(Restaurant)], ["query"]),
+  "markPickedUp": Func([Text], [Result], []),
+  "restoreUpgradeState": Func([Vec(Nat8)], [Bool], []),
+  "revokeDevice": Func([DeviceId], [Result_4], []),
+  "schema": Func([], [Text], ["query"]),
+  "sendVerificationCode": Func([Email], [SendCodeResult], []),
+  "setPaymentMode": Func([Text], [Result_3], []),
+  "setRestaurantPriceOverride": Func(
+    [Text, Text, Nat],
+    [Result_3],
+    []
+  ),
+  "setStoreHours": Func([StoreHours], [Result_3], []),
+  "setVpsSecret": Func(
+    [Text],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
+  "snapshotUpgradeState": Func([], [Vec(Nat8)], []),
+  "updateInvoiceStatus": Func(
+    [OrderId, InvoiceStatus$1, Text, Text, Hmac],
+    [Result],
+    []
+  ),
+  "updateItem": Func(
+    [
+      Text,
+      Text,
+      Nat,
+      Text,
+      Nat,
+      Text,
+      Vec(Nat8),
+      Bool
+    ],
+    [Result_2],
+    []
+  ),
+  "updatePaymentStatus": Func(
+    [OrderId, PaymentStatus$1, Hmac],
+    [Result],
+    []
+  ),
+  "updateRestaurant": Func(
+    [Text, Text, Text, Text, Bool],
+    [Result_1],
+    []
+  ),
+  "updateStatus": Func([OrderId, BookingStatus$1, Hmac], [Result], []),
+  "verifyEmailCode": Func([Email, Text], [VerifyResult], [])
+});
+const idlFactory = ({ IDL: IDL2 }) => {
+  const Error2 = IDL2.Variant({
+    "FrontendOriginsNotConfigured": IDL2.Null,
+    "MixedSsoSources": IDL2.Record({
+      "otherKeys": IDL2.Vec(IDL2.Text),
+      "ssoKeys": IDL2.Vec(IDL2.Text)
+    }),
+    "Stale": IDL2.Record({ "ageNs": IDL2.Nat }),
+    "MalformedCandid": IDL2.Null,
+    "AmbiguousAttribute": IDL2.Record({
+      "field": IDL2.Text,
+      "sources": IDL2.Vec(IDL2.Text)
+    }),
+    "NoAttributes": IDL2.Null,
+    "UnknownNonce": IDL2.Null,
+    "UntrustedSsoSource": IDL2.Record({ "domain": IDL2.Text }),
+    "MissingField": IDL2.Text,
+    "FrontendOriginMismatch": IDL2.Record({
+      "got": IDL2.Text,
+      "expected": IDL2.Vec(IDL2.Text)
+    })
+  });
+  const Result_72 = IDL2.Variant({ "ok": IDL2.Null, "err": Error2 });
+  const DeviceId2 = IDL2.Text;
+  const DeviceRole2 = IDL2.Variant({
+    "admin": IDL2.Null,
+    "cashier": IDL2.Null,
+    "driver": IDL2.Null
+  });
+  const Device2 = IDL2.Record({
+    "active": IDL2.Bool,
+    "activatedAt": IDL2.Int,
+    "role": DeviceRole2,
+    "restaurantId": IDL2.Text,
+    "deviceId": IDL2.Text
+  });
+  const Result_42 = IDL2.Variant({ "ok": Device2, "err": IDL2.Text });
+  const MenuItem2 = IDL2.Record({
+    "itemId": IDL2.Text,
+    "name": IDL2.Text,
+    "visible": IDL2.Bool,
+    "category": IDL2.Text,
+    "image": IDL2.Vec(IDL2.Nat8),
+    "price": IDL2.Nat,
+    "vatRate": IDL2.Nat,
+    "unitName": IDL2.Text
+  });
+  const Result_22 = IDL2.Variant({ "ok": MenuItem2, "err": IDL2.Text });
+  const Restaurant2 = IDL2.Record({
+    "name": IDL2.Text,
+    "restaurantId": IDL2.Text,
+    "address": IDL2.Text,
+    "visible": IDL2.Bool,
+    "phone": IDL2.Text
+  });
+  const Result_12 = IDL2.Variant({ "ok": Restaurant2, "err": IDL2.Text });
+  const UserRole2 = IDL2.Variant({
+    "admin": IDL2.Null,
+    "user": IDL2.Null,
+    "guest": IDL2.Null
+  });
+  const PaymentStatus2 = IDL2.Variant({
+    "paid": IDL2.Null,
+    "refunded": IDL2.Null,
+    "unpaid": IDL2.Null
+  });
+  const BookingStatus2 = IDL2.Variant({
+    "cancelled": IDL2.Null,
+    "pending": IDL2.Null,
+    "completed": IDL2.Null,
+    "shipping": IDL2.Null,
+    "pickedUp": IDL2.Null,
+    "confirmed": IDL2.Null
+  });
+  const OrderItem2 = IDL2.Record({
+    "itemId": IDL2.Text,
+    "name": IDL2.Text,
+    "quantity": IDL2.Nat,
+    "price": IDL2.Nat,
+    "vatRate": IDL2.Nat,
+    "unitName": IDL2.Text
+  });
+  const InvoiceStatus2 = IDL2.Variant({
+    "none": IDL2.Null,
+    "invoiced": IDL2.Null,
+    "failed": IDL2.Null
+  });
+  const Order2 = IDL2.Record({
+    "paymentStatus": PaymentStatus2,
+    "cusTaxCode": IDL2.Text,
+    "cusName": IDL2.Text,
+    "createdAt": IDL2.Int,
+    "taxTotal": IDL2.Nat,
+    "ahamoveOrderId": IDL2.Text,
+    "tingeeQrCode": IDL2.Text,
+    "shippingFee": IDL2.Nat,
+    "invoiceId": IDL2.Text,
+    "sharedLink": IDL2.Text,
+    "cusPhone": IDL2.Text,
+    "orderId": IDL2.Text,
+    "restaurantId": IDL2.Text,
+    "updatedAt": IDL2.Int,
+    "bookingStatus": BookingStatus2,
+    "receiverEmail": IDL2.Text,
+    "pdfUrl": IDL2.Text,
+    "tingeeQrId": IDL2.Text,
+    "goodsAmount": IDL2.Nat,
+    "items": IDL2.Vec(OrderItem2),
+    "amount": IDL2.Nat,
+    "cusAddress": IDL2.Text,
+    "invoiceStatus": InvoiceStatus2
+  });
+  const Result2 = IDL2.Variant({ "ok": Order2, "err": IDL2.Text });
+  const Result_32 = IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text });
+  const Value2 = IDL2.Variant({
+    "int": IDL2.Int,
+    "nat": IDL2.Nat,
+    "float": IDL2.Float64,
+    "bool": IDL2.Bool,
+    "null": IDL2.Null,
+    "text": IDL2.Text
+  });
+  const Cell2 = IDL2.Record({ "value": Value2, "name": IDL2.Text });
+  const Result__12 = IDL2.Record({
+    "hasMore": IDL2.Bool,
+    "rows": IDL2.Vec(IDL2.Vec(Cell2))
+  });
+  const RestaurantId2 = IDL2.Text;
+  const PendingActivation2 = IDL2.Record({
+    "expiresAt": IDL2.Int,
+    "code": IDL2.Text,
+    "createdAt": IDL2.Int,
+    "role": DeviceRole2,
+    "used": IDL2.Bool,
+    "restaurantId": IDL2.Text
+  });
+  const Result_62 = IDL2.Variant({ "ok": PendingActivation2, "err": IDL2.Text });
+  const OrderStatus2 = IDL2.Record({
+    "paymentStatus": PaymentStatus2,
+    "tingeeQrCode": IDL2.Text,
+    "invoiceId": IDL2.Text,
+    "sharedLink": IDL2.Text,
+    "bookingStatus": BookingStatus2,
+    "pdfUrl": IDL2.Text,
+    "tingeeQrId": IDL2.Text,
+    "invoiceStatus": InvoiceStatus2
+  });
+  const Result_52 = IDL2.Variant({ "ok": OrderStatus2, "err": IDL2.Text });
+  const StoreHours2 = IDL2.Record({
+    "closeMinute": IDL2.Nat,
+    "closeHour": IDL2.Nat,
+    "openMinute": IDL2.Nat,
+    "openHour": IDL2.Nat
+  });
+  const MenuEntry2 = IDL2.Record({ "itemId": IDL2.Text, "menu": MenuItem2 });
+  const OrderId2 = IDL2.Text;
+  const OrderEntry2 = IDL2.Record({ "order": Order2, "orderId": OrderId2 });
+  const RestaurantEntry2 = IDL2.Record({
+    "restaurantId": IDL2.Text,
+    "restaurant": Restaurant2
+  });
+  const RestaurantMenuOverrideEntry2 = IDL2.Record({
+    "restaurantId": IDL2.Text,
+    "overrides": IDL2.Vec(IDL2.Tuple(IDL2.Text, IDL2.Nat))
+  });
+  const DeviceEntry2 = IDL2.Record({ "device": Device2, "deviceId": IDL2.Text });
+  const PendingActivationEntry2 = IDL2.Record({
+    "code": IDL2.Text,
+    "activation": PendingActivation2
+  });
+  const UpgradeState2 = IDL2.Record({
+    "menus": IDL2.Vec(MenuEntry2),
+    "orders": IDL2.Vec(OrderEntry2),
+    "restaurants": IDL2.Vec(RestaurantEntry2),
+    "restaurantMenuOverrides": IDL2.Vec(RestaurantMenuOverrideEntry2),
+    "devices": IDL2.Vec(DeviceEntry2),
+    "pendingActivations": IDL2.Vec(PendingActivationEntry2)
+  });
+  const Email2 = IDL2.Text;
+  const SendCodeResult2 = IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text });
+  const Hmac2 = IDL2.Text;
+  const VerifyResult2 = IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text });
+  return IDL2.Service({
+    "_initialize_access_control": IDL2.Func([], [], []),
+    "_internet_identity_sign_in_finish": IDL2.Func([], [Result_72], []),
+    "_internet_identity_sign_in_start": IDL2.Func([], [IDL2.Vec(IDL2.Nat8)], []),
+    "activateDevice": IDL2.Func([IDL2.Text, DeviceId2], [Result_42], []),
+    "addItem": IDL2.Func(
+      [
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Nat,
+        IDL2.Text,
+        IDL2.Nat,
+        IDL2.Text,
+        IDL2.Vec(IDL2.Nat8)
+      ],
+      [Result_22],
+      []
+    ),
+    "addRestaurant": IDL2.Func(
+      [IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Text],
+      [Result_12],
+      []
+    ),
+    "assignCallerUserRole": IDL2.Func([IDL2.Principal, UserRole2], [], []),
+    "cancelOrder": IDL2.Func([IDL2.Text, IDL2.Text], [Result2], []),
+    "cleanupExpiredActivations": IDL2.Func([], [IDL2.Nat], []),
+    "createOrder": IDL2.Func(
+      [
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Vec(OrderItem2),
+        IDL2.Nat,
+        IDL2.Nat,
+        IDL2.Nat,
+        IDL2.Nat,
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Text
+      ],
+      [Result2],
+      []
+    ),
+    "deleteItem": IDL2.Func([IDL2.Text], [Result_32], []),
+    "deleteRestaurant": IDL2.Func([IDL2.Text], [Result_32], []),
+    "execute": IDL2.Func([IDL2.Text], [Result__12], ["query"]),
+    "generateActivationCode": IDL2.Func(
+      [RestaurantId2, DeviceRole2],
+      [Result_62],
+      []
+    ),
+    "getCallerUserRole": IDL2.Func([], [UserRole2], ["query"]),
+    "getCanisterIdText": IDL2.Func([], [IDL2.Text], ["query"]),
+    "getMenu": IDL2.Func([], [IDL2.Vec(MenuItem2)], ["query"]),
+    "getMenuForRestaurant": IDL2.Func(
+      [IDL2.Text],
+      [IDL2.Vec(MenuItem2)],
+      ["query"]
+    ),
+    "getOrder": IDL2.Func([IDL2.Text], [Result2], []),
+    "getOrderStatus": IDL2.Func([IDL2.Text], [Result_52], ["query"]),
+    "getPaymentMode": IDL2.Func([], [IDL2.Text], ["query"]),
+    "getRestaurants": IDL2.Func([], [IDL2.Vec(Restaurant2)], ["query"]),
+    "getStoreHours": IDL2.Func([], [StoreHours2], ["query"]),
+    "getUpgradeState": IDL2.Func([], [UpgradeState2], []),
+    "isCallerAdmin": IDL2.Func([], [IDL2.Bool], ["query"]),
+    "isEmailVerified": IDL2.Func([Email2], [IDL2.Bool], ["query"]),
+    "isStoreOpen": IDL2.Func([], [IDL2.Bool], ["query"]),
+    "listDevicesByRestaurant": IDL2.Func(
+      [RestaurantId2],
+      [IDL2.Vec(Device2)],
+      ["query"]
+    ),
+    "listDevicesByRole": IDL2.Func([DeviceRole2], [IDL2.Vec(Device2)], ["query"]),
+    "listMenus": IDL2.Func([], [IDL2.Vec(MenuItem2)], ["query"]),
+    "listOrders": IDL2.Func([], [IDL2.Vec(Order2)], []),
+    "listPaidOrdersForPickup": IDL2.Func([], [IDL2.Vec(Order2)], []),
+    "listPendingPaymentOrders": IDL2.Func([IDL2.Text], [IDL2.Vec(Order2)], []),
+    "listRestaurants": IDL2.Func([], [IDL2.Vec(Restaurant2)], ["query"]),
+    "markPickedUp": IDL2.Func([IDL2.Text], [Result2], []),
+    "restoreUpgradeState": IDL2.Func([IDL2.Vec(IDL2.Nat8)], [IDL2.Bool], []),
+    "revokeDevice": IDL2.Func([DeviceId2], [Result_42], []),
+    "schema": IDL2.Func([], [IDL2.Text], ["query"]),
+    "sendVerificationCode": IDL2.Func([Email2], [SendCodeResult2], []),
+    "setPaymentMode": IDL2.Func([IDL2.Text], [Result_32], []),
+    "setRestaurantPriceOverride": IDL2.Func(
+      [IDL2.Text, IDL2.Text, IDL2.Nat],
+      [Result_32],
+      []
+    ),
+    "setStoreHours": IDL2.Func([StoreHours2], [Result_32], []),
+    "setVpsSecret": IDL2.Func(
+      [IDL2.Text],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
+    "snapshotUpgradeState": IDL2.Func([], [IDL2.Vec(IDL2.Nat8)], []),
+    "updateInvoiceStatus": IDL2.Func(
+      [OrderId2, InvoiceStatus2, IDL2.Text, IDL2.Text, Hmac2],
+      [Result2],
+      []
+    ),
+    "updateItem": IDL2.Func(
+      [
+        IDL2.Text,
+        IDL2.Text,
+        IDL2.Nat,
+        IDL2.Text,
+        IDL2.Nat,
+        IDL2.Text,
+        IDL2.Vec(IDL2.Nat8),
+        IDL2.Bool
+      ],
+      [Result_22],
+      []
+    ),
+    "updatePaymentStatus": IDL2.Func(
+      [OrderId2, PaymentStatus2, Hmac2],
+      [Result2],
+      []
+    ),
+    "updateRestaurant": IDL2.Func(
+      [IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Bool],
+      [Result_12],
+      []
+    ),
+    "updateStatus": IDL2.Func([OrderId2, BookingStatus2, Hmac2], [Result2], []),
+    "verifyEmailCode": IDL2.Func([Email2, IDL2.Text], [VerifyResult2], [])
+  });
+};
+var BookingStatus = /* @__PURE__ */ ((BookingStatus2) => {
+  BookingStatus2["cancelled"] = "cancelled";
+  BookingStatus2["pending"] = "pending";
+  BookingStatus2["completed"] = "completed";
+  BookingStatus2["shipping"] = "shipping";
+  BookingStatus2["pickedUp"] = "pickedUp";
+  BookingStatus2["confirmed"] = "confirmed";
+  return BookingStatus2;
+})(BookingStatus || {});
+var DeviceRole = /* @__PURE__ */ ((DeviceRole2) => {
+  DeviceRole2["admin"] = "admin";
+  DeviceRole2["cashier"] = "cashier";
+  DeviceRole2["driver"] = "driver";
+  return DeviceRole2;
+})(DeviceRole || {});
+var InvoiceStatus = /* @__PURE__ */ ((InvoiceStatus2) => {
+  InvoiceStatus2["none"] = "none";
+  InvoiceStatus2["invoiced"] = "invoiced";
+  InvoiceStatus2["failed"] = "failed";
+  return InvoiceStatus2;
+})(InvoiceStatus || {});
+var PaymentStatus = /* @__PURE__ */ ((PaymentStatus2) => {
+  PaymentStatus2["paid"] = "paid";
+  PaymentStatus2["refunded"] = "refunded";
+  PaymentStatus2["unpaid"] = "unpaid";
+  return PaymentStatus2;
+})(PaymentStatus || {});
+class Backend {
+  constructor(actor, _uploadFile, _downloadFile, processError2) {
+    this.actor = actor;
+    this._uploadFile = _uploadFile;
+    this._downloadFile = _downloadFile;
+    this.processError = processError2;
+  }
+  async _initialize_access_control() {
+    if (this.processError) {
+      try {
+        const result = await this.actor._initialize_access_control();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor._initialize_access_control();
+      return result;
+    }
+  }
+  async _internet_identity_sign_in_finish() {
+    if (this.processError) {
+      try {
+        const result = await this.actor._internet_identity_sign_in_finish();
+        return from_candid_Result_7_n1(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor._internet_identity_sign_in_finish();
+      return from_candid_Result_7_n1(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async _internet_identity_sign_in_start() {
+    if (this.processError) {
+      try {
+        const result = await this.actor._internet_identity_sign_in_start();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor._internet_identity_sign_in_start();
+      return result;
+    }
+  }
+  async activateDevice(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.activateDevice(arg0, arg1);
+        return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.activateDevice(arg0, arg1);
+      return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async addItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.addItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+        return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.addItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+      return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async addRestaurant(arg0, arg1, arg2, arg3) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.addRestaurant(arg0, arg1, arg2, arg3);
+        return from_candid_Result_1_n13(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.addRestaurant(arg0, arg1, arg2, arg3);
+      return from_candid_Result_1_n13(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async assignCallerUserRole(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n15(this._uploadFile, this._downloadFile, arg1));
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n15(this._uploadFile, this._downloadFile, arg1));
+      return result;
+    }
+  }
+  async cancelOrder(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.cancelOrder(arg0, arg1);
+        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.cancelOrder(arg0, arg1);
+      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async cleanupExpiredActivations() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.cleanupExpiredActivations();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.cleanupExpiredActivations();
+      return result;
+    }
+  }
+  async createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16);
+        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16);
+      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async deleteItem(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.deleteItem(arg0);
+        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.deleteItem(arg0);
+      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async deleteRestaurant(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.deleteRestaurant(arg0);
+        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.deleteRestaurant(arg0);
+      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async execute(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.execute(arg0);
+        return from_candid_Result__1_n29(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.execute(arg0);
+      return from_candid_Result__1_n29(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async generateActivationCode(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg1));
+        return from_candid_Result_6_n39(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg1));
+      return from_candid_Result_6_n39(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getCallerUserRole() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getCallerUserRole();
+        return from_candid_UserRole_n43(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getCallerUserRole();
+      return from_candid_UserRole_n43(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getCanisterIdText() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getCanisterIdText();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getCanisterIdText();
+      return result;
+    }
+  }
+  async getMenu() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getMenu();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getMenu();
+      return result;
+    }
+  }
+  async getMenuForRestaurant(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getMenuForRestaurant(arg0);
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getMenuForRestaurant(arg0);
+      return result;
+    }
+  }
+  async getOrder(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getOrder(arg0);
+        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getOrder(arg0);
+      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getOrderStatus(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getOrderStatus(arg0);
+        return from_candid_Result_5_n45(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getOrderStatus(arg0);
+      return from_candid_Result_5_n45(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getPaymentMode() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getPaymentMode();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getPaymentMode();
+      return result;
+    }
+  }
+  async getRestaurants() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getRestaurants();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getRestaurants();
+      return result;
+    }
+  }
+  async getStoreHours() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getStoreHours();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getStoreHours();
+      return result;
+    }
+  }
+  async getUpgradeState() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getUpgradeState();
+        return from_candid_UpgradeState_n49(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getUpgradeState();
+      return from_candid_UpgradeState_n49(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async isCallerAdmin() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.isCallerAdmin();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.isCallerAdmin();
+      return result;
+    }
+  }
+  async isEmailVerified(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.isEmailVerified(arg0);
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.isEmailVerified(arg0);
+      return result;
+    }
+  }
+  async isStoreOpen() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.isStoreOpen();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.isStoreOpen();
+      return result;
+    }
+  }
+  async listDevicesByRestaurant(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.listDevicesByRestaurant(arg0);
+        return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.listDevicesByRestaurant(arg0);
+      return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async listDevicesByRole(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg0));
+        return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg0));
+      return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async listMenus() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.listMenus();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.listMenus();
+      return result;
+    }
+  }
+  async listOrders() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.listOrders();
+        return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.listOrders();
+      return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async listPaidOrdersForPickup() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.listPaidOrdersForPickup();
+        return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.listPaidOrdersForPickup();
+      return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async listPendingPaymentOrders(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.listPendingPaymentOrders(arg0);
+        return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.listPendingPaymentOrders(arg0);
+      return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async listRestaurants() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.listRestaurants();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.listRestaurants();
+      return result;
+    }
+  }
+  async markPickedUp(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.markPickedUp(arg0);
+        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.markPickedUp(arg0);
+      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async restoreUpgradeState(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.restoreUpgradeState(arg0);
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.restoreUpgradeState(arg0);
+      return result;
+    }
+  }
+  async revokeDevice(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.revokeDevice(arg0);
+        return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.revokeDevice(arg0);
+      return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async schema() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.schema();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.schema();
+      return result;
+    }
+  }
+  async sendVerificationCode(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.sendVerificationCode(arg0);
+        return from_candid_SendCodeResult_n62(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.sendVerificationCode(arg0);
+      return from_candid_SendCodeResult_n62(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async setPaymentMode(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.setPaymentMode(arg0);
+        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.setPaymentMode(arg0);
+      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async setRestaurantPriceOverride(arg0, arg1, arg2) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.setRestaurantPriceOverride(arg0, arg1, arg2);
+        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.setRestaurantPriceOverride(arg0, arg1, arg2);
+      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async setStoreHours(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.setStoreHours(arg0);
+        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.setStoreHours(arg0);
+      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async setVpsSecret(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.setVpsSecret(arg0);
+        return from_candid_variant_n28(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.setVpsSecret(arg0);
+      return from_candid_variant_n28(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async snapshotUpgradeState() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.snapshotUpgradeState();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.snapshotUpgradeState();
+      return result;
+    }
+  }
+  async updateInvoiceStatus(arg0, arg1, arg2, arg3, arg4) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n63(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
+        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n63(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
+      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async updateItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.updateItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+        return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.updateItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+      return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async updatePaymentStatus(arg0, arg1, arg2) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n65(this._uploadFile, this._downloadFile, arg1), arg2);
+        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n65(this._uploadFile, this._downloadFile, arg1), arg2);
+      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async updateRestaurant(arg0, arg1, arg2, arg3, arg4) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.updateRestaurant(arg0, arg1, arg2, arg3, arg4);
+        return from_candid_Result_1_n13(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.updateRestaurant(arg0, arg1, arg2, arg3, arg4);
+      return from_candid_Result_1_n13(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async updateStatus(arg0, arg1, arg2) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n67(this._uploadFile, this._downloadFile, arg1), arg2);
+        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n67(this._uploadFile, this._downloadFile, arg1), arg2);
+      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async verifyEmailCode(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.verifyEmailCode(arg0, arg1);
+        return from_candid_VerifyResult_n69(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.verifyEmailCode(arg0, arg1);
+      return from_candid_VerifyResult_n69(this._uploadFile, this._downloadFile, result);
+    }
+  }
+}
+function from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n24(_uploadFile, _downloadFile, value);
+}
+function from_candid_Cell_n33(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n34(_uploadFile, _downloadFile, value);
+}
+function from_candid_DeviceEntry_n55(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n56(_uploadFile, _downloadFile, value);
+}
+function from_candid_DeviceRole_n9(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n10(_uploadFile, _downloadFile, value);
+}
+function from_candid_Device_n7(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n8(_uploadFile, _downloadFile, value);
+}
+function from_candid_Error_n3(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n4(_uploadFile, _downloadFile, value);
+}
+function from_candid_InvoiceStatus_n25(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n26(_uploadFile, _downloadFile, value);
+}
+function from_candid_OrderEntry_n52(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n53(_uploadFile, _downloadFile, value);
+}
+function from_candid_OrderStatus_n47(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n48(_uploadFile, _downloadFile, value);
+}
+function from_candid_Order_n19(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n20(_uploadFile, _downloadFile, value);
+}
+function from_candid_PaymentStatus_n21(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n22(_uploadFile, _downloadFile, value);
+}
+function from_candid_PendingActivationEntry_n58(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n59(_uploadFile, _downloadFile, value);
+}
+function from_candid_PendingActivation_n41(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n42(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result_1_n13(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n14(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result_2_n11(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n12(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result_3_n27(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n28(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result_4_n5(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n6(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result_5_n45(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n46(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result_6_n39(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n40(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result_7_n1(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n2(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result__1_n29(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n30(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result_n17(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n18(_uploadFile, _downloadFile, value);
+}
+function from_candid_SendCodeResult_n62(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n28(_uploadFile, _downloadFile, value);
+}
+function from_candid_UpgradeState_n49(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n50(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n43(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n44(_uploadFile, _downloadFile, value);
+}
+function from_candid_Value_n35(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n36(_uploadFile, _downloadFile, value);
+}
+function from_candid_VerifyResult_n69(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n28(_uploadFile, _downloadFile, value);
+}
+function from_candid_record_n20(_uploadFile, _downloadFile, value) {
+  return {
+    paymentStatus: from_candid_PaymentStatus_n21(_uploadFile, _downloadFile, value.paymentStatus),
+    cusTaxCode: value.cusTaxCode,
+    cusName: value.cusName,
+    createdAt: value.createdAt,
+    taxTotal: value.taxTotal,
+    ahamoveOrderId: value.ahamoveOrderId,
+    tingeeQrCode: value.tingeeQrCode,
+    shippingFee: value.shippingFee,
+    invoiceId: value.invoiceId,
+    sharedLink: value.sharedLink,
+    cusPhone: value.cusPhone,
+    orderId: value.orderId,
+    restaurantId: value.restaurantId,
+    updatedAt: value.updatedAt,
+    bookingStatus: from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value.bookingStatus),
+    receiverEmail: value.receiverEmail,
+    pdfUrl: value.pdfUrl,
+    tingeeQrId: value.tingeeQrId,
+    goodsAmount: value.goodsAmount,
+    items: value.items,
+    amount: value.amount,
+    cusAddress: value.cusAddress,
+    invoiceStatus: from_candid_InvoiceStatus_n25(_uploadFile, _downloadFile, value.invoiceStatus)
+  };
+}
+function from_candid_record_n30(_uploadFile, _downloadFile, value) {
+  return {
+    hasMore: value.hasMore,
+    rows: from_candid_vec_n31(_uploadFile, _downloadFile, value.rows)
+  };
+}
+function from_candid_record_n34(_uploadFile, _downloadFile, value) {
+  return {
+    value: from_candid_Value_n35(_uploadFile, _downloadFile, value.value),
+    name: value.name
+  };
+}
+function from_candid_record_n42(_uploadFile, _downloadFile, value) {
+  return {
+    expiresAt: value.expiresAt,
+    code: value.code,
+    createdAt: value.createdAt,
+    role: from_candid_DeviceRole_n9(_uploadFile, _downloadFile, value.role),
+    used: value.used,
+    restaurantId: value.restaurantId
+  };
+}
+function from_candid_record_n48(_uploadFile, _downloadFile, value) {
+  return {
+    paymentStatus: from_candid_PaymentStatus_n21(_uploadFile, _downloadFile, value.paymentStatus),
+    tingeeQrCode: value.tingeeQrCode,
+    invoiceId: value.invoiceId,
+    sharedLink: value.sharedLink,
+    bookingStatus: from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value.bookingStatus),
+    pdfUrl: value.pdfUrl,
+    tingeeQrId: value.tingeeQrId,
+    invoiceStatus: from_candid_InvoiceStatus_n25(_uploadFile, _downloadFile, value.invoiceStatus)
+  };
+}
+function from_candid_record_n50(_uploadFile, _downloadFile, value) {
+  return {
+    menus: value.menus,
+    orders: from_candid_vec_n51(_uploadFile, _downloadFile, value.orders),
+    restaurants: value.restaurants,
+    restaurantMenuOverrides: value.restaurantMenuOverrides,
+    devices: from_candid_vec_n54(_uploadFile, _downloadFile, value.devices),
+    pendingActivations: from_candid_vec_n57(_uploadFile, _downloadFile, value.pendingActivations)
+  };
+}
+function from_candid_record_n53(_uploadFile, _downloadFile, value) {
+  return {
+    order: from_candid_Order_n19(_uploadFile, _downloadFile, value.order),
+    orderId: value.orderId
+  };
+}
+function from_candid_record_n56(_uploadFile, _downloadFile, value) {
+  return {
+    device: from_candid_Device_n7(_uploadFile, _downloadFile, value.device),
+    deviceId: value.deviceId
+  };
+}
+function from_candid_record_n59(_uploadFile, _downloadFile, value) {
+  return {
+    code: value.code,
+    activation: from_candid_PendingActivation_n41(_uploadFile, _downloadFile, value.activation)
+  };
+}
+function from_candid_record_n8(_uploadFile, _downloadFile, value) {
+  return {
+    active: value.active,
+    activatedAt: value.activatedAt,
+    role: from_candid_DeviceRole_n9(_uploadFile, _downloadFile, value.role),
+    restaurantId: value.restaurantId,
+    deviceId: value.deviceId
+  };
+}
+function from_candid_variant_n10(_uploadFile, _downloadFile, value) {
+  return "admin" in value ? "admin" : "cashier" in value ? "cashier" : "driver" in value ? "driver" : value;
+}
+function from_candid_variant_n12(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: value.ok
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n14(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: value.ok
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n18(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: from_candid_Order_n19(_uploadFile, _downloadFile, value.ok)
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n2(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: value.ok
+  } : "err" in value ? {
+    __kind__: "err",
+    err: from_candid_Error_n3(_uploadFile, _downloadFile, value.err)
+  } : value;
+}
+function from_candid_variant_n22(_uploadFile, _downloadFile, value) {
+  return "paid" in value ? "paid" : "refunded" in value ? "refunded" : "unpaid" in value ? "unpaid" : value;
+}
+function from_candid_variant_n24(_uploadFile, _downloadFile, value) {
+  return "cancelled" in value ? "cancelled" : "pending" in value ? "pending" : "completed" in value ? "completed" : "shipping" in value ? "shipping" : "pickedUp" in value ? "pickedUp" : "confirmed" in value ? "confirmed" : value;
+}
+function from_candid_variant_n26(_uploadFile, _downloadFile, value) {
+  return "none" in value ? "none" : "invoiced" in value ? "invoiced" : "failed" in value ? "failed" : value;
+}
+function from_candid_variant_n28(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: value.ok
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n36(_uploadFile, _downloadFile, value) {
+  return "int" in value ? {
+    __kind__: "int",
+    int: value.int
+  } : "nat" in value ? {
+    __kind__: "nat",
+    nat: value.nat
+  } : "float" in value ? {
+    __kind__: "float",
+    float: value.float
+  } : "bool" in value ? {
+    __kind__: "bool",
+    bool: value.bool
+  } : "null" in value ? {
+    __kind__: "null",
+    null: value.null
+  } : "text" in value ? {
+    __kind__: "text",
+    text: value.text
+  } : value;
+}
+function from_candid_variant_n4(_uploadFile, _downloadFile, value) {
+  return "FrontendOriginsNotConfigured" in value ? {
+    __kind__: "FrontendOriginsNotConfigured",
+    FrontendOriginsNotConfigured: value.FrontendOriginsNotConfigured
+  } : "MixedSsoSources" in value ? {
+    __kind__: "MixedSsoSources",
+    MixedSsoSources: value.MixedSsoSources
+  } : "Stale" in value ? {
+    __kind__: "Stale",
+    Stale: value.Stale
+  } : "MalformedCandid" in value ? {
+    __kind__: "MalformedCandid",
+    MalformedCandid: value.MalformedCandid
+  } : "AmbiguousAttribute" in value ? {
+    __kind__: "AmbiguousAttribute",
+    AmbiguousAttribute: value.AmbiguousAttribute
+  } : "NoAttributes" in value ? {
+    __kind__: "NoAttributes",
+    NoAttributes: value.NoAttributes
+  } : "UnknownNonce" in value ? {
+    __kind__: "UnknownNonce",
+    UnknownNonce: value.UnknownNonce
+  } : "UntrustedSsoSource" in value ? {
+    __kind__: "UntrustedSsoSource",
+    UntrustedSsoSource: value.UntrustedSsoSource
+  } : "MissingField" in value ? {
+    __kind__: "MissingField",
+    MissingField: value.MissingField
+  } : "FrontendOriginMismatch" in value ? {
+    __kind__: "FrontendOriginMismatch",
+    FrontendOriginMismatch: value.FrontendOriginMismatch
+  } : value;
+}
+function from_candid_variant_n40(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: from_candid_PendingActivation_n41(_uploadFile, _downloadFile, value.ok)
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n44(_uploadFile, _downloadFile, value) {
+  return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
+}
+function from_candid_variant_n46(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: from_candid_OrderStatus_n47(_uploadFile, _downloadFile, value.ok)
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n6(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: from_candid_Device_n7(_uploadFile, _downloadFile, value.ok)
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_vec_n31(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_vec_n32(_uploadFile, _downloadFile, x3));
+}
+function from_candid_vec_n32(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_Cell_n33(_uploadFile, _downloadFile, x3));
+}
+function from_candid_vec_n51(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_OrderEntry_n52(_uploadFile, _downloadFile, x3));
+}
+function from_candid_vec_n54(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_DeviceEntry_n55(_uploadFile, _downloadFile, x3));
+}
+function from_candid_vec_n57(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_PendingActivationEntry_n58(_uploadFile, _downloadFile, x3));
+}
+function from_candid_vec_n60(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_Device_n7(_uploadFile, _downloadFile, x3));
+}
+function from_candid_vec_n61(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_Order_n19(_uploadFile, _downloadFile, x3));
+}
+function to_candid_BookingStatus_n67(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n68(_uploadFile, _downloadFile, value);
+}
+function to_candid_DeviceRole_n37(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n38(_uploadFile, _downloadFile, value);
+}
+function to_candid_InvoiceStatus_n63(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n64(_uploadFile, _downloadFile, value);
+}
+function to_candid_PaymentStatus_n65(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n66(_uploadFile, _downloadFile, value);
+}
+function to_candid_UserRole_n15(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n16(_uploadFile, _downloadFile, value);
+}
+function to_candid_variant_n16(_uploadFile, _downloadFile, value) {
+  return value == "admin" ? {
+    admin: null
+  } : value == "user" ? {
+    user: null
+  } : value == "guest" ? {
+    guest: null
+  } : value;
+}
+function to_candid_variant_n38(_uploadFile, _downloadFile, value) {
+  return value == "admin" ? {
+    admin: null
+  } : value == "cashier" ? {
+    cashier: null
+  } : value == "driver" ? {
+    driver: null
+  } : value;
+}
+function to_candid_variant_n64(_uploadFile, _downloadFile, value) {
+  return value == "none" ? {
+    none: null
+  } : value == "invoiced" ? {
+    invoiced: null
+  } : value == "failed" ? {
+    failed: null
+  } : value;
+}
+function to_candid_variant_n66(_uploadFile, _downloadFile, value) {
+  return value == "paid" ? {
+    paid: null
+  } : value == "refunded" ? {
+    refunded: null
+  } : value == "unpaid" ? {
+    unpaid: null
+  } : value;
+}
+function to_candid_variant_n68(_uploadFile, _downloadFile, value) {
+  return value == "cancelled" ? {
+    cancelled: null
+  } : value == "pending" ? {
+    pending: null
+  } : value == "completed" ? {
+    completed: null
+  } : value == "shipping" ? {
+    shipping: null
+  } : value == "pickedUp" ? {
+    pickedUp: null
+  } : value == "confirmed" ? {
+    confirmed: null
+  } : value;
+}
+function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
+  const agent = options.agent || HttpAgent.createSync({
+    ...options.agentOptions
+  });
+  if (options.agent && options.agentOptions) {
+    console.warn("Detected both agent and agentOptions passed to createActor. Ignoring agentOptions and proceeding with the provided agent.");
+  }
+  const actor = Actor.createActor(idlFactory, {
+    agent,
+    canisterId,
+    ...options.actorOptions
+  });
+  return new Backend(actor, _uploadFile, _downloadFile, options.processError);
+}
+function useCanister() {
+  const { actor, isFetching } = useActor(createActor);
+  return { actor, isFetching };
+}
+function unwrap(result) {
+  if (result.__kind__ === "ok") return result.ok;
+  throw new Error(result.err);
+}
+async function listOrders(actor) {
+  return actor.listOrders();
+}
+async function getOrder(actor, orderId) {
+  return unwrap(await actor.getOrder(orderId));
+}
+async function getOrderStatus(actor, orderId) {
+  return unwrap(await actor.getOrderStatus(orderId));
+}
+async function listPaidOrdersForPickup(actor) {
+  return actor.listPaidOrdersForPickup();
+}
+async function markPickedUp(actor, orderId) {
+  return unwrap(await actor.markPickedUp(orderId));
+}
+async function generateActivationCode(actor, restaurantId, role) {
+  return unwrap(await actor.generateActivationCode(restaurantId, role));
+}
+async function activateDevice(actor, code, deviceId) {
+  return unwrap(await actor.activateDevice(code, deviceId));
+}
+async function revokeDevice(actor, deviceId) {
+  return unwrap(await actor.revokeDevice(deviceId));
+}
+async function cleanupExpiredActivations(actor) {
+  return actor.cleanupExpiredActivations();
+}
+async function listDevicesByRestaurant(actor, restaurantId) {
+  return actor.listDevicesByRestaurant(restaurantId);
+}
+async function setVpsSecret(actor, newSecret) {
+  const r2 = await actor.setVpsSecret(newSecret);
+  if (r2.__kind__ === "err") throw new Error(r2.err);
+}
+async function getCanisterIdText(actor) {
+  return actor.getCanisterIdText();
+}
+async function addItem(actor, item) {
+  return unwrap(
+    await actor.addItem(
+      item.itemId,
+      item.name,
+      item.price,
+      item.unitName,
+      item.vatRate,
+      item.category,
+      item.image
+    )
+  );
+}
+async function updateItem(actor, item) {
+  return unwrap(
+    await actor.updateItem(
+      item.itemId,
+      item.name,
+      item.price,
+      item.unitName,
+      item.vatRate,
+      item.category,
+      item.image,
+      item.visible
+    )
+  );
+}
+async function deleteItem(actor, itemId) {
+  unwrap(await actor.deleteItem(itemId));
+}
+async function listMenus(actor) {
+  return actor.listMenus();
+}
+async function getMenuForRestaurant(actor, restaurantId) {
+  return actor.getMenuForRestaurant(restaurantId);
+}
+async function addRestaurant(actor, r2) {
+  return unwrap(
+    await actor.addRestaurant(r2.restaurantId, r2.name, r2.address, r2.phone)
+  );
+}
+async function updateRestaurant(actor, r2) {
+  return unwrap(
+    await actor.updateRestaurant(
+      r2.restaurantId,
+      r2.name,
+      r2.address,
+      r2.phone,
+      r2.visible
+    )
+  );
+}
+async function deleteRestaurant(actor, restaurantId) {
+  unwrap(await actor.deleteRestaurant(restaurantId));
+}
+async function listRestaurants(actor) {
+  return actor.listRestaurants();
+}
+async function setRestaurantPriceOverride(actor, restaurantId, itemId, price) {
+  unwrap(await actor.setRestaurantPriceOverride(restaurantId, itemId, price));
+}
+async function sendVerificationCode(actor, email) {
+  const r2 = await actor.sendVerificationCode(email);
+  if (r2.__kind__ === "err") throw new Error(r2.err);
+}
+async function verifyEmailCode(actor, email, code) {
+  const r2 = await actor.verifyEmailCode(email, code);
+  if (r2.__kind__ === "err") throw new Error(r2.err);
+}
+async function isEmailVerified(actor, email) {
+  return actor.isEmailVerified(email);
+}
+async function getPaymentMode(actor) {
+  return actor.getPaymentMode();
+}
+async function setPaymentMode(actor, mode) {
+  const r2 = await actor.setPaymentMode(mode);
+  if (r2.__kind__ === "err") throw new Error(r2.err);
+}
+async function getStoreHours(actor) {
+  return actor.getStoreHours();
+}
+async function setStoreHours(actor, hours) {
+  const r2 = await actor.setStoreHours(hours);
+  if (r2.__kind__ === "err") throw new Error(r2.err);
+}
+async function isStoreOpen(actor) {
+  return actor.isStoreOpen();
+}
+const STORAGE_KEY = "bbh_verified_email";
+function getVerifiedEmail() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.email === "string" && parsed.email.length > 0 && parsed.verified === true) {
+      return { email: parsed.email, verified: true };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+function setVerifiedEmail(email) {
+  const state = { email, verified: true };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function clearVerifiedEmail() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+const REQUIRED_KEYS = [
+  "backend_host",
+  "backend_canister_id",
+  "project_id",
+  "storage_gateway_url"
+];
+const II_DERIVATION_ORIGIN_LIVE = "https://bunbohue65-ship-l4d.caffeine.xyz";
+const II_DERIVATION_ORIGIN_DRAFT = "https://simple-purple-6pr-draft.caffeine.xyz";
+function resolveIiDerivationOrigin(rawIiDerivationOrigin, backendHost) {
+  if (typeof rawIiDerivationOrigin === "string" && rawIiDerivationOrigin.trim() !== "" && rawIiDerivationOrigin.trim() !== "undefined") {
+    return rawIiDerivationOrigin.trim();
+  }
+  if (typeof backendHost === "string" && backendHost.trim() !== "" && backendHost.trim() !== "undefined") {
+    return backendHost.includes("-draft.") ? II_DERIVATION_ORIGIN_DRAFT : II_DERIVATION_ORIGIN_LIVE;
+  }
+  return II_DERIVATION_ORIGIN_LIVE;
+}
+function isInvalidValue(value) {
+  return typeof value !== "string" || value.trim() === "" || value.trim() === "undefined";
+}
+function findInvalidKeys(raw) {
+  if (typeof raw !== "object" || raw === null) {
+    return [...REQUIRED_KEYS];
+  }
+  const record = raw;
+  const invalid = [];
+  for (const key of REQUIRED_KEYS) {
+    if (!(key in record) || isInvalidValue(record[key])) {
+      invalid.push(key);
+    }
+  }
+  return invalid;
+}
+let cachedConfig = null;
+async function loadEnv() {
+  if (cachedConfig) return cachedConfig;
+  let response;
+  try {
+    response = await fetch("/env.json", { cache: "no-store" });
+  } catch {
+    throw new Error(
+      "Không thể tải cấu hình môi trường (env.json). Vui lòng kiểm tra kết nối mạng và tải lại trang."
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      `Không tìm thấy tệp cấu hình env.json (HTTP ${response.status}). Vui lòng liên hệ quản trị viên.`
+    );
+  }
+  let raw;
+  try {
+    raw = await response.json();
+  } catch {
+    throw new Error(
+      "Tệp env.json không hợp lệ (lỗi định dạng JSON). Vui lòng liên hệ quản trị viên."
+    );
+  }
+  const invalid = findInvalidKeys(raw);
+  if (invalid.length > 0) {
+    throw new Error(
+      `Cấu hình môi trường chưa được thiết lập đầy đủ. Các khoá còn thiếu hoặc không hợp lệ: ${invalid.join(", ")}. Vui lòng liên hệ quản trị viên để cấu hình trước khi sử dụng ứng dụng.`
+    );
+  }
+  const record = raw;
+  const vpsUrlRaw = record.vps_url;
+  const iiDerivationOriginRaw = record.ii_derivation_origin;
+  cachedConfig = {
+    backend_host: record.backend_host.trim(),
+    backend_canister_id: record.backend_canister_id.trim(),
+    project_id: record.project_id.trim(),
+    ii_derivation_origin: resolveIiDerivationOrigin(
+      iiDerivationOriginRaw,
+      record.backend_host
+    ),
+    storage_gateway_url: record.storage_gateway_url.trim(),
+    vps_url: typeof vpsUrlRaw === "string" && vpsUrlRaw.trim() !== "undefined" ? vpsUrlRaw.trim() : ""
+  };
+  return cachedConfig;
+}
+function getEnv() {
+  return cachedConfig;
+}
+const PROD_FALLBACK_URL = "http://103.149.170.47:3000";
+function getVpsUrl() {
+  const env = getEnv();
+  if ((env == null ? void 0 : env.vps_url) && env.vps_url.trim() !== "") {
+    return env.vps_url.trim();
+  }
+  return PROD_FALLBACK_URL;
+}
+const ANALYTICS_API_KEY = "";
+const DEFAULT_TIMEOUT_MS = 15e3;
+class VpsHttpError extends Error {
+  constructor(status, body, message) {
+    super(message ?? `VPS request failed: ${status}`);
+    __publicField(this, "status");
+    __publicField(this, "body");
+    this.name = "VpsHttpError";
+    this.status = status;
+    this.body = body;
+  }
+}
+function extractErrorMessage(body) {
+  if (body == null) return null;
+  if (typeof body === "string") return body.trim() === "" ? null : body;
+  if (typeof body === "object") {
+    const maybe = body;
+    const err = maybe.error ?? maybe.message ?? maybe.detail;
+    if (typeof err === "string" && err.trim() !== "") return err;
+  }
+  return null;
+}
+async function vpsFetch(options) {
+  const {
+    method,
+    path,
+    body,
+    headers = {},
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    isFormData = false
+  } = options;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const finalHeaders = { ...headers };
+  if (!isFormData) {
+    finalHeaders["Content-Type"] = "application/json";
+  }
+  if (path.startsWith("/analytics") && ANALYTICS_API_KEY) ;
+  const init = {
+    method,
+    headers: finalHeaders,
+    signal: controller.signal
+  };
+  if (body !== void 0) {
+    init.body = isFormData ? body : JSON.stringify(body);
+  }
+  try {
+    const res = await fetch(`${getVpsUrl()}${path}`, init);
+    const text = await res.text();
+    const parsed = text ? safeParse(text) : null;
+    if (!res.ok) {
+      const extracted = extractErrorMessage(parsed);
+      throw new VpsHttpError(
+        res.status,
+        parsed ?? text,
+        extracted ?? `VPS request failed: ${res.status}`
+      );
+    }
+    return parsed;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function safeParse(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+async function quote(payload) {
+  return vpsFetch({
+    method: "POST",
+    path: "/quote",
+    body: payload
+  });
+}
+async function create(payload) {
+  return vpsFetch({
+    method: "POST",
+    path: "/order/create",
+    body: payload
+  });
+}
+async function getInvoice(orderId) {
+  return vpsFetch({
+    method: "GET",
+    path: `/invoice/${encodeURIComponent(orderId)}`
+  });
+}
+async function upsertCustomer(email) {
+  try {
+    await vpsFetch({
+      method: "POST",
+      path: "/customers",
+      body: { email }
+    });
+  } catch {
+  }
+}
+async function getCustomer(email) {
+  try {
+    return await vpsFetch({
+      method: "GET",
+      path: `/customers/${encodeURIComponent(email)}`
+    });
+  } catch (err) {
+    if (err instanceof VpsHttpError && err.status === 404) {
+      return null;
+    }
+    throw err;
+  }
+}
+async function getAnalytics(range = "30d") {
+  try {
+    return await vpsFetch({
+      method: "GET",
+      path: `/analytics?range=${encodeURIComponent(range)}`
+    });
+  } catch (err) {
+    if (err instanceof VpsHttpError && err.status === 401) {
+      const detail = "Analytics chưa cấu hình API key trên frontend (thiếu biến VITE_ANALYTICS_API_KEY). Vui lòng liên hệ quản trị viên để thiết lập.";
+      throw new VpsHttpError(err.status, err.body, detail);
+    }
+    throw err;
+  }
+}
+getVpsUrl();
+function useEmailVerification() {
+  const { actor, isFetching } = useActor(createActor);
+  const [verifiedEmail, setVerifiedEmailState] = reactExports.useState(() => {
+    const stored = getVerifiedEmail();
+    return stored ? stored.email : null;
+  });
+  const sendCode = reactExports.useCallback(
+    async (email) => {
+      if (!actor)
+        throw new Error("Chưa kết nối được máy chủ. Vui lòng thử lại.");
+      await sendVerificationCode(actor, email);
+    },
+    [actor]
+  );
+  const verifyCode = reactExports.useCallback(
+    async (email, code) => {
+      if (!actor)
+        throw new Error("Chưa kết nối được máy chủ. Vui lòng thử lại.");
+      await verifyEmailCode(actor, email, code);
+      setVerifiedEmail(email);
+      setVerifiedEmailState(email);
+      void upsertCustomer(email);
+    },
+    [actor]
+  );
+  const checkVerified = reactExports.useCallback(
+    async (email) => {
+      if (!actor) return false;
+      return isEmailVerified(actor, email);
+    },
+    [actor]
+  );
+  const reset = reactExports.useCallback(() => {
+    clearVerifiedEmail();
+    setVerifiedEmailState(null);
+  }, []);
+  return {
+    verifiedEmail,
+    isVerified: verifiedEmail !== null,
+    isInitializing: isFetching,
+    sendCode,
+    verifyCode,
+    checkVerified,
+    reset
+  };
+}
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+const toCamelCase = (string) => string.replace(
+  /^([A-Z])|[\s-_]+(\w)/g,
+  (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase()
+);
+const toPascalCase = (string) => {
+  const camelCase = toCamelCase(string);
+  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
+};
+const mergeClasses = (...classes) => classes.filter((className, index2, array) => {
+  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index2;
+}).join(" ").trim();
+const hasA11yProp = (props) => {
+  for (const prop in props) {
+    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
+      return true;
+    }
+  }
+};
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+var defaultAttributes = {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: 24,
+  height: 24,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+};
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const Icon$1 = reactExports.forwardRef(
+  ({
+    color = "currentColor",
+    size: size2 = 24,
+    strokeWidth = 2,
+    absoluteStrokeWidth,
+    className = "",
+    children,
+    iconNode,
+    ...rest
+  }, ref) => reactExports.createElement(
+    "svg",
+    {
+      ref,
+      ...defaultAttributes,
+      width: size2,
+      height: size2,
+      stroke: color,
+      strokeWidth: absoluteStrokeWidth ? Number(strokeWidth) * 24 / Number(size2) : strokeWidth,
+      className: mergeClasses("lucide", className),
+      ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
+      ...rest
+    },
+    [
+      ...iconNode.map(([tag, attrs]) => reactExports.createElement(tag, attrs)),
+      ...Array.isArray(children) ? children : [children]
+    ]
+  )
+);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const createLucideIcon = (iconName, iconNode) => {
+  const Component2 = reactExports.forwardRef(
+    ({ className, ...props }, ref) => reactExports.createElement(Icon$1, {
+      ref,
+      iconNode,
+      className: mergeClasses(
+        `lucide-${toKebabCase(toPascalCase(iconName))}`,
+        `lucide-${iconName}`,
+        className
+      ),
+      ...props
+    })
+  );
+  Component2.displayName = toPascalCase(iconName);
+  return Component2;
+};
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$L = [
+  ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
+  ["path", { d: "M19 12H5", key: "x3x0zl" }]
+];
+const ArrowLeft = createLucideIcon("arrow-left", __iconNode$L);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$K = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+];
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$K);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$J = [
+  ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }],
+  ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }],
+  ["path", { d: "M6 12h.01M18 12h.01", key: "113zkx" }]
+];
+const Banknote = createLucideIcon("banknote", __iconNode$J);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$I = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$I);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$H = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$H);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$G = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+const ChevronUp = createLucideIcon("chevron-up", __iconNode$G);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$F = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
+  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+];
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$F);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$E = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+];
+const CircleCheck = createLucideIcon("circle-check", __iconNode$E);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$D = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
+];
+const Clock = createLucideIcon("clock", __iconNode$D);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$C = [
+  ["path", { d: "M12 13v8", key: "1l5pq0" }],
+  ["path", { d: "M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242", key: "1pljnt" }],
+  ["path", { d: "m8 17 4-4 4 4", key: "1quai1" }]
+];
+const CloudUpload = createLucideIcon("cloud-upload", __iconNode$C);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$B = [
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
+];
+const Copy = createLucideIcon("copy", __iconNode$B);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$A = [
+  ["path", { d: "M12 15V3", key: "m9g1x1" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
+  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
+];
+const Download = createLucideIcon("download", __iconNode$A);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$z = [
+  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
+  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
+  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
+];
+const ExternalLink = createLucideIcon("external-link", __iconNode$z);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$y = [
+  [
+    "path",
+    {
+      d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
+      key: "ct8e1f"
+    }
+  ],
+  ["path", { d: "M14.084 14.158a3 3 0 0 1-4.242-4.242", key: "151rxh" }],
+  [
+    "path",
+    {
+      d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
+      key: "13bj9a"
+    }
+  ],
+  ["path", { d: "m2 2 20 20", key: "1ooewy" }]
+];
+const EyeOff = createLucideIcon("eye-off", __iconNode$y);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$x = [
+  [
+    "path",
+    {
+      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+      key: "1nclc0"
+    }
+  ],
+  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
+];
+const Eye = createLucideIcon("eye", __iconNode$x);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$w = [
+  ["path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", key: "1rqfz7" }],
+  ["path", { d: "M14 2v4a2 2 0 0 0 2 2h4", key: "tnqrlb" }],
+  ["path", { d: "M10 9H8", key: "b1mrlr" }],
+  ["path", { d: "M16 13H8", key: "t4e002" }],
+  ["path", { d: "M16 17H8", key: "z1uh3a" }]
+];
+const FileText = createLucideIcon("file-text", __iconNode$w);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$v = [
+  ["path", { d: "M16 5h6", key: "1vod17" }],
+  ["path", { d: "M19 2v6", key: "4bpg5p" }],
+  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
+];
+const ImagePlus = createLucideIcon("image-plus", __iconNode$v);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$u = [
+  [
+    "path",
+    {
+      d: "M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z",
+      key: "1s6t7t"
+    }
+  ],
+  ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
+];
+const KeyRound = createLucideIcon("key-round", __iconNode$u);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$t = [
+  ["path", { d: "M10 12h11", key: "6m4ad9" }],
+  ["path", { d: "M10 18h11", key: "11hvi2" }],
+  ["path", { d: "M10 6h11", key: "c7qv1k" }],
+  ["path", { d: "M4 10h2", key: "16xx2s" }],
+  ["path", { d: "M4 6h1v4", key: "cnovpq" }],
+  ["path", { d: "M6 18H4c0-1 2-2 2-3s-1-1.5-2-1", key: "m9a95d" }]
+];
+const ListOrdered = createLucideIcon("list-ordered", __iconNode$t);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$s = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+const LoaderCircle = createLucideIcon("loader-circle", __iconNode$s);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$r = [
+  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
+  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
+];
+const Mail = createLucideIcon("mail", __iconNode$r);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$q = [
+  [
+    "path",
+    {
+      d: "M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",
+      key: "1r0f0z"
+    }
+  ],
+  ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }]
+];
+const MapPin = createLucideIcon("map-pin", __iconNode$q);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$p = [["path", { d: "M5 12h14", key: "1ays0h" }]];
+const Minus = createLucideIcon("minus", __iconNode$p);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$o = [
+  ["path", { d: "m16 16 2 2 4-4", key: "gfu2re" }],
+  [
+    "path",
+    {
+      d: "M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14",
+      key: "e7tb2h"
+    }
+  ],
+  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }],
+  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
+  ["line", { x1: "12", x2: "12", y1: "22", y2: "12", key: "a4e8g8" }]
+];
+const PackageCheck = createLucideIcon("package-check", __iconNode$o);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$n = [
+  [
+    "path",
+    {
+      d: "M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14",
+      key: "e7tb2h"
+    }
+  ],
+  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }],
+  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
+  ["line", { x1: "12", x2: "12", y1: "22", y2: "12", key: "a4e8g8" }],
+  ["circle", { cx: "18.5", cy: "15.5", r: "2.5", key: "b5zd12" }],
+  ["path", { d: "M20.27 17.27 22 19", key: "1l4muz" }]
+];
+const PackageSearch = createLucideIcon("package-search", __iconNode$n);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$m = [
+  [
+    "path",
+    {
+      d: "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z",
+      key: "1a0edw"
+    }
+  ],
+  ["path", { d: "M12 22V12", key: "d0xqtd" }],
+  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
+  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
+];
+const Package = createLucideIcon("package", __iconNode$m);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$l = [
+  [
+    "path",
+    {
+      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+      key: "1a8usu"
+    }
+  ],
+  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
+];
+const Pencil = createLucideIcon("pencil", __iconNode$l);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$k = [
+  [
+    "path",
+    {
+      d: "M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384",
+      key: "9njp5v"
+    }
+  ]
+];
+const Phone = createLucideIcon("phone", __iconNode$k);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$j = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
+];
+const Plus = createLucideIcon("plus", __iconNode$j);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$i = [
+  [
+    "path",
+    { d: "M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", key: "q3az6g" }
+  ],
+  ["path", { d: "M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8", key: "1h4pet" }],
+  ["path", { d: "M12 17.5v-11", key: "1jc1ny" }]
+];
+const Receipt = createLucideIcon("receipt", __iconNode$i);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$h = [
+  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+  ["path", { d: "M8 16H3v5", key: "1cv678" }]
+];
+const RefreshCw = createLucideIcon("refresh-cw", __iconNode$h);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$g = [
+  [
+    "path",
+    {
+      d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+      key: "1c8476"
+    }
+  ],
+  ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7", key: "1ydtos" }],
+  ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7", key: "t51u73" }]
+];
+const Save = createLucideIcon("save", __iconNode$g);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$f = [
+  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
+  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
+];
+const Search = createLucideIcon("search", __iconNode$f);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$e = [
+  [
+    "path",
+    {
+      d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+      key: "oel41y"
+    }
+  ],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+];
+const ShieldCheck = createLucideIcon("shield-check", __iconNode$e);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$d = [
+  ["path", { d: "m2 2 20 20", key: "1ooewy" }],
+  [
+    "path",
+    {
+      d: "M5 5a1 1 0 0 0-1 1v7c0 5 3.5 7.5 7.67 8.94a1 1 0 0 0 .67.01c2.35-.82 4.48-1.97 5.9-3.71",
+      key: "1jlk70"
+    }
+  ],
+  [
+    "path",
+    {
+      d: "M9.309 3.652A12.252 12.252 0 0 0 11.24 2.28a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7a9.784 9.784 0 0 1-.08 1.264",
+      key: "18rp1v"
+    }
+  ]
+];
+const ShieldOff = createLucideIcon("shield-off", __iconNode$d);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$c = [
+  ["path", { d: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z", key: "hou9p0" }],
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M16 10a4 4 0 0 1-8 0", key: "1ltviw" }]
+];
+const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$c);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$b = [
+  ["circle", { cx: "8", cy: "21", r: "1", key: "jimo8o" }],
+  ["circle", { cx: "19", cy: "21", r: "1", key: "13723u" }],
+  [
+    "path",
+    {
+      d: "M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12",
+      key: "9zh506"
+    }
+  ]
+];
+const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$b);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$a = [
+  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
+  ["path", { d: "M12 18h.01", key: "mhygvu" }]
+];
+const Smartphone = createLucideIcon("smartphone", __iconNode$a);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$9 = [
+  [
+    "path",
+    {
+      d: "M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z",
+      key: "4pj2yx"
+    }
+  ],
+  ["path", { d: "M20 3v4", key: "1olli1" }],
+  ["path", { d: "M22 5h-4", key: "1gvqau" }],
+  ["path", { d: "M4 17v2", key: "vumght" }],
+  ["path", { d: "M5 18H3", key: "zchphs" }]
+];
+const Sparkles = createLucideIcon("sparkles", __iconNode$9);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$8 = [
+  [
+    "path",
+    {
+      d: "M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z",
+      key: "vktsd0"
+    }
+  ],
+  ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
+];
+const Tag = createLucideIcon("tag", __iconNode$8);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$7 = [
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
+  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
+  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
+  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
+];
+const Trash2 = createLucideIcon("trash-2", __iconNode$7);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$6 = [
+  ["path", { d: "M16 7h6v6", key: "box55l" }],
+  ["path", { d: "m22 7-8.5 8.5-5-5L2 17", key: "1t1m79" }]
+];
+const TrendingUp = createLucideIcon("trending-up", __iconNode$6);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$5 = [
+  ["path", { d: "M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2", key: "wrbu53" }],
+  ["path", { d: "M15 18H9", key: "1lyqi6" }],
+  [
+    "path",
+    {
+      d: "M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14",
+      key: "lysw3i"
+    }
+  ],
+  ["circle", { cx: "17", cy: "18", r: "2", key: "332jqn" }],
+  ["circle", { cx: "7", cy: "18", r: "2", key: "19iecd" }]
+];
+const Truck = createLucideIcon("truck", __iconNode$5);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$4 = [
+  ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
+  ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }]
+];
+const User = createLucideIcon("user", __iconNode$4);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$3 = [
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
+  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+];
+const Users = createLucideIcon("users", __iconNode$3);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$2 = [
+  ["path", { d: "m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8", key: "n7qcjb" }],
+  [
+    "path",
+    { d: "M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7", key: "d0u48b" }
+  ],
+  ["path", { d: "m2.1 21.8 6.4-6.3", key: "yn04lh" }],
+  ["path", { d: "m19 5-7 7", key: "194lzd" }]
+];
+const UtensilsCrossed = createLucideIcon("utensils-crossed", __iconNode$2);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$1 = [
+  [
+    "path",
+    {
+      d: "M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1",
+      key: "18etb6"
+    }
+  ],
+  ["path", { d: "M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4", key: "xoc0q4" }]
+];
+const Wallet = createLucideIcon("wallet", __iconNode$1);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode = [
+  ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
+  ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
+];
+const X = createLucideIcon("x", __iconNode);
+var jt = (n) => {
+  switch (n) {
+    case "success":
+      return ee;
+    case "info":
+      return ae;
+    case "warning":
+      return oe;
+    case "error":
+      return se;
+    default:
+      return null;
+  }
+}, te = Array(12).fill(0), Yt = ({ visible: n, className: e }) => React$4.createElement("div", { className: ["sonner-loading-wrapper", e].filter(Boolean).join(" "), "data-visible": n }, React$4.createElement("div", { className: "sonner-spinner" }, te.map((t, a2) => React$4.createElement("div", { className: "sonner-loading-bar", key: `spinner-bar-${a2}` })))), ee = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z", clipRule: "evenodd" })), oe = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z", clipRule: "evenodd" })), ae = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z", clipRule: "evenodd" })), se = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z", clipRule: "evenodd" })), Ot = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }, React$4.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }), React$4.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" }));
+var Ft = () => {
+  let [n, e] = React$4.useState(document.hidden);
+  return React$4.useEffect(() => {
+    let t = () => {
+      e(document.hidden);
+    };
+    return document.addEventListener("visibilitychange", t), () => window.removeEventListener("visibilitychange", t);
+  }, []), n;
+};
+var bt = 1, yt = class {
+  constructor() {
+    this.subscribe = (e) => (this.subscribers.push(e), () => {
+      let t = this.subscribers.indexOf(e);
+      this.subscribers.splice(t, 1);
+    });
+    this.publish = (e) => {
+      this.subscribers.forEach((t) => t(e));
+    };
+    this.addToast = (e) => {
+      this.publish(e), this.toasts = [...this.toasts, e];
+    };
+    this.create = (e) => {
+      var S2;
+      let { message: t, ...a2 } = e, u2 = typeof (e == null ? void 0 : e.id) == "number" || ((S2 = e.id) == null ? void 0 : S2.length) > 0 ? e.id : bt++, f2 = this.toasts.find((g2) => g2.id === u2), w2 = e.dismissible === void 0 ? true : e.dismissible;
+      return this.dismissedToasts.has(u2) && this.dismissedToasts.delete(u2), f2 ? this.toasts = this.toasts.map((g2) => g2.id === u2 ? (this.publish({ ...g2, ...e, id: u2, title: t }), { ...g2, ...e, id: u2, dismissible: w2, title: t }) : g2) : this.addToast({ title: t, ...a2, dismissible: w2, id: u2 }), u2;
+    };
+    this.dismiss = (e) => (this.dismissedToasts.add(e), e || this.toasts.forEach((t) => {
+      this.subscribers.forEach((a2) => a2({ id: t.id, dismiss: true }));
+    }), this.subscribers.forEach((t) => t({ id: e, dismiss: true })), e);
+    this.message = (e, t) => this.create({ ...t, message: e });
+    this.error = (e, t) => this.create({ ...t, message: e, type: "error" });
+    this.success = (e, t) => this.create({ ...t, type: "success", message: e });
+    this.info = (e, t) => this.create({ ...t, type: "info", message: e });
+    this.warning = (e, t) => this.create({ ...t, type: "warning", message: e });
+    this.loading = (e, t) => this.create({ ...t, type: "loading", message: e });
+    this.promise = (e, t) => {
+      if (!t) return;
+      let a2;
+      t.loading !== void 0 && (a2 = this.create({ ...t, promise: e, type: "loading", message: t.loading, description: typeof t.description != "function" ? t.description : void 0 }));
+      let u2 = e instanceof Promise ? e : e(), f2 = a2 !== void 0, w2, S2 = u2.then(async (i) => {
+        if (w2 = ["resolve", i], React$4.isValidElement(i)) f2 = false, this.create({ id: a2, type: "default", message: i });
+        else if (ie(i) && !i.ok) {
+          f2 = false;
+          let T2 = typeof t.error == "function" ? await t.error(`HTTP error! status: ${i.status}`) : t.error, F2 = typeof t.description == "function" ? await t.description(`HTTP error! status: ${i.status}`) : t.description;
+          this.create({ id: a2, type: "error", message: T2, description: F2 });
+        } else if (t.success !== void 0) {
+          f2 = false;
+          let T2 = typeof t.success == "function" ? await t.success(i) : t.success, F2 = typeof t.description == "function" ? await t.description(i) : t.description;
+          this.create({ id: a2, type: "success", message: T2, description: F2 });
+        }
+      }).catch(async (i) => {
+        if (w2 = ["reject", i], t.error !== void 0) {
+          f2 = false;
+          let D = typeof t.error == "function" ? await t.error(i) : t.error, T2 = typeof t.description == "function" ? await t.description(i) : t.description;
+          this.create({ id: a2, type: "error", message: D, description: T2 });
+        }
+      }).finally(() => {
+        var i;
+        f2 && (this.dismiss(a2), a2 = void 0), (i = t.finally) == null || i.call(t);
+      }), g2 = () => new Promise((i, D) => S2.then(() => w2[0] === "reject" ? D(w2[1]) : i(w2[1])).catch(D));
+      return typeof a2 != "string" && typeof a2 != "number" ? { unwrap: g2 } : Object.assign(a2, { unwrap: g2 });
+    };
+    this.custom = (e, t) => {
+      let a2 = (t == null ? void 0 : t.id) || bt++;
+      return this.create({ jsx: e(a2), id: a2, ...t }), a2;
+    };
+    this.getActiveToasts = () => this.toasts.filter((e) => !this.dismissedToasts.has(e.id));
+    this.subscribers = [], this.toasts = [], this.dismissedToasts = /* @__PURE__ */ new Set();
+  }
+}, v = new yt(), ne = (n, e) => {
+  let t = (e == null ? void 0 : e.id) || bt++;
+  return v.addToast({ title: n, ...e, id: t }), t;
+}, ie = (n) => n && typeof n == "object" && "ok" in n && typeof n.ok == "boolean" && "status" in n && typeof n.status == "number", le = ne, ce = () => v.toasts, de = () => v.getActiveToasts(), ue = Object.assign(le, { success: v.success, info: v.info, warning: v.warning, error: v.error, custom: v.custom, message: v.message, promise: v.promise, dismiss: v.dismiss, loading: v.loading }, { getHistory: ce, getToasts: de });
+function wt(n, { insertAt: e } = {}) {
+  if (typeof document == "undefined") return;
+  let t = document.head || document.getElementsByTagName("head")[0], a2 = document.createElement("style");
+  a2.type = "text/css", e === "top" && t.firstChild ? t.insertBefore(a2, t.firstChild) : t.appendChild(a2), a2.styleSheet ? a2.styleSheet.cssText = n : a2.appendChild(document.createTextNode(n));
+}
+wt(`:where(html[dir="ltr"]),:where([data-sonner-toaster][dir="ltr"]){--toast-icon-margin-start: -3px;--toast-icon-margin-end: 4px;--toast-svg-margin-start: -1px;--toast-svg-margin-end: 0px;--toast-button-margin-start: auto;--toast-button-margin-end: 0;--toast-close-button-start: 0;--toast-close-button-end: unset;--toast-close-button-transform: translate(-35%, -35%)}:where(html[dir="rtl"]),:where([data-sonner-toaster][dir="rtl"]){--toast-icon-margin-start: 4px;--toast-icon-margin-end: -3px;--toast-svg-margin-start: 0px;--toast-svg-margin-end: -1px;--toast-button-margin-start: 0;--toast-button-margin-end: auto;--toast-close-button-start: unset;--toast-close-button-end: 0;--toast-close-button-transform: translate(35%, -35%)}:where([data-sonner-toaster]){position:fixed;width:var(--width);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;--gray1: hsl(0, 0%, 99%);--gray2: hsl(0, 0%, 97.3%);--gray3: hsl(0, 0%, 95.1%);--gray4: hsl(0, 0%, 93%);--gray5: hsl(0, 0%, 90.9%);--gray6: hsl(0, 0%, 88.7%);--gray7: hsl(0, 0%, 85.8%);--gray8: hsl(0, 0%, 78%);--gray9: hsl(0, 0%, 56.1%);--gray10: hsl(0, 0%, 52.3%);--gray11: hsl(0, 0%, 43.5%);--gray12: hsl(0, 0%, 9%);--border-radius: 8px;box-sizing:border-box;padding:0;margin:0;list-style:none;outline:none;z-index:999999999;transition:transform .4s ease}:where([data-sonner-toaster][data-lifted="true"]){transform:translateY(-10px)}@media (hover: none) and (pointer: coarse){:where([data-sonner-toaster][data-lifted="true"]){transform:none}}:where([data-sonner-toaster][data-x-position="right"]){right:var(--offset-right)}:where([data-sonner-toaster][data-x-position="left"]){left:var(--offset-left)}:where([data-sonner-toaster][data-x-position="center"]){left:50%;transform:translate(-50%)}:where([data-sonner-toaster][data-y-position="top"]){top:var(--offset-top)}:where([data-sonner-toaster][data-y-position="bottom"]){bottom:var(--offset-bottom)}:where([data-sonner-toast]){--y: translateY(100%);--lift-amount: calc(var(--lift) * var(--gap));z-index:var(--z-index);position:absolute;opacity:0;transform:var(--y);filter:blur(0);touch-action:none;transition:transform .4s,opacity .4s,height .4s,box-shadow .2s;box-sizing:border-box;outline:none;overflow-wrap:anywhere}:where([data-sonner-toast][data-styled="true"]){padding:16px;background:var(--normal-bg);border:1px solid var(--normal-border);color:var(--normal-text);border-radius:var(--border-radius);box-shadow:0 4px 12px #0000001a;width:var(--width);font-size:13px;display:flex;align-items:center;gap:6px}:where([data-sonner-toast]:focus-visible){box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast][data-y-position="top"]){top:0;--y: translateY(-100%);--lift: 1;--lift-amount: calc(1 * var(--gap))}:where([data-sonner-toast][data-y-position="bottom"]){bottom:0;--y: translateY(100%);--lift: -1;--lift-amount: calc(var(--lift) * var(--gap))}:where([data-sonner-toast]) :where([data-description]){font-weight:400;line-height:1.4;color:inherit}:where([data-sonner-toast]) :where([data-title]){font-weight:500;line-height:1.5;color:inherit}:where([data-sonner-toast]) :where([data-icon]){display:flex;height:16px;width:16px;position:relative;justify-content:flex-start;align-items:center;flex-shrink:0;margin-left:var(--toast-icon-margin-start);margin-right:var(--toast-icon-margin-end)}:where([data-sonner-toast][data-promise="true"]) :where([data-icon])>svg{opacity:0;transform:scale(.8);transform-origin:center;animation:sonner-fade-in .3s ease forwards}:where([data-sonner-toast]) :where([data-icon])>*{flex-shrink:0}:where([data-sonner-toast]) :where([data-icon]) svg{margin-left:var(--toast-svg-margin-start);margin-right:var(--toast-svg-margin-end)}:where([data-sonner-toast]) :where([data-content]){display:flex;flex-direction:column;gap:2px}[data-sonner-toast][data-styled=true] [data-button]{border-radius:4px;padding-left:8px;padding-right:8px;height:24px;font-size:12px;color:var(--normal-bg);background:var(--normal-text);margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end);border:none;cursor:pointer;outline:none;display:flex;align-items:center;flex-shrink:0;transition:opacity .4s,box-shadow .2s}:where([data-sonner-toast]) :where([data-button]):focus-visible{box-shadow:0 0 0 2px #0006}:where([data-sonner-toast]) :where([data-button]):first-of-type{margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end)}:where([data-sonner-toast]) :where([data-cancel]){color:var(--normal-text);background:rgba(0,0,0,.08)}:where([data-sonner-toast][data-theme="dark"]) :where([data-cancel]){background:rgba(255,255,255,.3)}:where([data-sonner-toast]) :where([data-close-button]){position:absolute;left:var(--toast-close-button-start);right:var(--toast-close-button-end);top:0;height:20px;width:20px;display:flex;justify-content:center;align-items:center;padding:0;color:var(--gray12);border:1px solid var(--gray4);transform:var(--toast-close-button-transform);border-radius:50%;cursor:pointer;z-index:1;transition:opacity .1s,background .2s,border-color .2s}[data-sonner-toast] [data-close-button]{background:var(--gray1)}:where([data-sonner-toast]) :where([data-close-button]):focus-visible{box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast]) :where([data-disabled="true"]){cursor:not-allowed}:where([data-sonner-toast]):hover :where([data-close-button]):hover{background:var(--gray2);border-color:var(--gray5)}:where([data-sonner-toast][data-swiping="true"]):before{content:"";position:absolute;left:-50%;right:-50%;height:100%;z-index:-1}:where([data-sonner-toast][data-y-position="top"][data-swiping="true"]):before{bottom:50%;transform:scaleY(3) translateY(50%)}:where([data-sonner-toast][data-y-position="bottom"][data-swiping="true"]):before{top:50%;transform:scaleY(3) translateY(-50%)}:where([data-sonner-toast][data-swiping="false"][data-removed="true"]):before{content:"";position:absolute;inset:0;transform:scaleY(2)}:where([data-sonner-toast]):after{content:"";position:absolute;left:0;height:calc(var(--gap) + 1px);bottom:100%;width:100%}:where([data-sonner-toast][data-mounted="true"]){--y: translateY(0);opacity:1}:where([data-sonner-toast][data-expanded="false"][data-front="false"]){--scale: var(--toasts-before) * .05 + 1;--y: translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)));height:var(--front-toast-height)}:where([data-sonner-toast])>*{transition:opacity .4s}:where([data-sonner-toast][data-expanded="false"][data-front="false"][data-styled="true"])>*{opacity:0}:where([data-sonner-toast][data-visible="false"]){opacity:0;pointer-events:none}:where([data-sonner-toast][data-mounted="true"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset)));height:var(--initial-height)}:where([data-sonner-toast][data-removed="true"][data-front="true"][data-swipe-out="false"]){--y: translateY(calc(var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="false"]){--y: translateY(40%);opacity:0;transition:transform .5s,opacity .2s}:where([data-sonner-toast][data-removed="true"][data-front="false"]):before{height:calc(var(--initial-height) + 20%)}[data-sonner-toast][data-swiping=true]{transform:var(--y) translateY(var(--swipe-amount-y, 0px)) translate(var(--swipe-amount-x, 0px));transition:none}[data-sonner-toast][data-swiped=true]{user-select:none}[data-sonner-toast][data-swipe-out=true][data-y-position=bottom],[data-sonner-toast][data-swipe-out=true][data-y-position=top]{animation-duration:.2s;animation-timing-function:ease-out;animation-fill-mode:forwards}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=left]{animation-name:swipe-out-left}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=right]{animation-name:swipe-out-right}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=up]{animation-name:swipe-out-up}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=down]{animation-name:swipe-out-down}@keyframes swipe-out-left{0%{transform:var(--y) translate(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translate(calc(var(--swipe-amount-x) - 100%));opacity:0}}@keyframes swipe-out-right{0%{transform:var(--y) translate(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translate(calc(var(--swipe-amount-x) + 100%));opacity:0}}@keyframes swipe-out-up{0%{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) - 100%));opacity:0}}@keyframes swipe-out-down{0%{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) + 100%));opacity:0}}@media (max-width: 600px){[data-sonner-toaster]{position:fixed;right:var(--mobile-offset-right);left:var(--mobile-offset-left);width:100%}[data-sonner-toaster][dir=rtl]{left:calc(var(--mobile-offset-left) * -1)}[data-sonner-toaster] [data-sonner-toast]{left:0;right:0;width:calc(100% - var(--mobile-offset-left) * 2)}[data-sonner-toaster][data-x-position=left]{left:var(--mobile-offset-left)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--mobile-offset-bottom)}[data-sonner-toaster][data-y-position=top]{top:var(--mobile-offset-top)}[data-sonner-toaster][data-x-position=center]{left:var(--mobile-offset-left);right:var(--mobile-offset-right);transform:none}}[data-sonner-toaster][data-theme=light]{--normal-bg: #fff;--normal-border: var(--gray4);--normal-text: var(--gray12);--success-bg: hsl(143, 85%, 96%);--success-border: hsl(145, 92%, 91%);--success-text: hsl(140, 100%, 27%);--info-bg: hsl(208, 100%, 97%);--info-border: hsl(221, 91%, 91%);--info-text: hsl(210, 92%, 45%);--warning-bg: hsl(49, 100%, 97%);--warning-border: hsl(49, 91%, 91%);--warning-text: hsl(31, 92%, 45%);--error-bg: hsl(359, 100%, 97%);--error-border: hsl(359, 100%, 94%);--error-text: hsl(360, 100%, 45%)}[data-sonner-toaster][data-theme=light] [data-sonner-toast][data-invert=true]{--normal-bg: #000;--normal-border: hsl(0, 0%, 20%);--normal-text: var(--gray1)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast][data-invert=true]{--normal-bg: #fff;--normal-border: var(--gray3);--normal-text: var(--gray12)}[data-sonner-toaster][data-theme=dark]{--normal-bg: #000;--normal-bg-hover: hsl(0, 0%, 12%);--normal-border: hsl(0, 0%, 20%);--normal-border-hover: hsl(0, 0%, 25%);--normal-text: var(--gray1);--success-bg: hsl(150, 100%, 6%);--success-border: hsl(147, 100%, 12%);--success-text: hsl(150, 86%, 65%);--info-bg: hsl(215, 100%, 6%);--info-border: hsl(223, 100%, 12%);--info-text: hsl(216, 87%, 65%);--warning-bg: hsl(64, 100%, 6%);--warning-border: hsl(60, 100%, 12%);--warning-text: hsl(46, 87%, 65%);--error-bg: hsl(358, 76%, 10%);--error-border: hsl(357, 89%, 16%);--error-text: hsl(358, 100%, 81%)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast] [data-close-button]{background:var(--normal-bg);border-color:var(--normal-border);color:var(--normal-text)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast] [data-close-button]:hover{background:var(--normal-bg-hover);border-color:var(--normal-border-hover)}[data-rich-colors=true][data-sonner-toast][data-type=success],[data-rich-colors=true][data-sonner-toast][data-type=success] [data-close-button]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=info],[data-rich-colors=true][data-sonner-toast][data-type=info] [data-close-button]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning],[data-rich-colors=true][data-sonner-toast][data-type=warning] [data-close-button]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=error],[data-rich-colors=true][data-sonner-toast][data-type=error] [data-close-button]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}.sonner-loading-wrapper{--size: 16px;height:var(--size);width:var(--size);position:absolute;inset:0;z-index:10}.sonner-loading-wrapper[data-visible=false]{transform-origin:center;animation:sonner-fade-out .2s ease forwards}.sonner-spinner{position:relative;top:50%;left:50%;height:var(--size);width:var(--size)}.sonner-loading-bar{animation:sonner-spin 1.2s linear infinite;background:var(--gray11);border-radius:6px;height:8%;left:-10%;position:absolute;top:-3.9%;width:24%}.sonner-loading-bar:nth-child(1){animation-delay:-1.2s;transform:rotate(.0001deg) translate(146%)}.sonner-loading-bar:nth-child(2){animation-delay:-1.1s;transform:rotate(30deg) translate(146%)}.sonner-loading-bar:nth-child(3){animation-delay:-1s;transform:rotate(60deg) translate(146%)}.sonner-loading-bar:nth-child(4){animation-delay:-.9s;transform:rotate(90deg) translate(146%)}.sonner-loading-bar:nth-child(5){animation-delay:-.8s;transform:rotate(120deg) translate(146%)}.sonner-loading-bar:nth-child(6){animation-delay:-.7s;transform:rotate(150deg) translate(146%)}.sonner-loading-bar:nth-child(7){animation-delay:-.6s;transform:rotate(180deg) translate(146%)}.sonner-loading-bar:nth-child(8){animation-delay:-.5s;transform:rotate(210deg) translate(146%)}.sonner-loading-bar:nth-child(9){animation-delay:-.4s;transform:rotate(240deg) translate(146%)}.sonner-loading-bar:nth-child(10){animation-delay:-.3s;transform:rotate(270deg) translate(146%)}.sonner-loading-bar:nth-child(11){animation-delay:-.2s;transform:rotate(300deg) translate(146%)}.sonner-loading-bar:nth-child(12){animation-delay:-.1s;transform:rotate(330deg) translate(146%)}@keyframes sonner-fade-in{0%{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}@keyframes sonner-fade-out{0%{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.8)}}@keyframes sonner-spin{0%{opacity:1}to{opacity:.15}}@media (prefers-reduced-motion){[data-sonner-toast],[data-sonner-toast]>*,.sonner-loading-bar{transition:none!important;animation:none!important}}.sonner-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transform-origin:center;transition:opacity .2s,transform .2s}.sonner-loader[data-visible=false]{opacity:0;transform:scale(.8) translate(-50%,-50%)}
+`);
+function tt(n) {
+  return n.label !== void 0;
+}
+var pe = 3, me = "32px", ge = "16px", Wt = 4e3, he = 356, be = 14, ye = 20, we = 200;
+function M$1(...n) {
+  return n.filter(Boolean).join(" ");
+}
+function xe(n) {
+  let [e, t] = n.split("-"), a2 = [];
+  return e && a2.push(e), t && a2.push(t), a2;
+}
+var ve = (n) => {
+  var Dt, Pt, Nt, Bt, Ct, kt, It, Mt, Ht, At, Lt;
+  let { invert: e, toast: t, unstyled: a2, interacting: u2, setHeights: f2, visibleToasts: w2, heights: S2, index: g2, toasts: i, expanded: D, removeToast: T2, defaultRichColors: F2, closeButton: et2, style: ut2, cancelButtonStyle: ft2, actionButtonStyle: l2, className: ot2 = "", descriptionClassName: at = "", duration: X2, position: st2, gap: pt, loadingIcon: rt2, expandByDefault: B2, classNames: s, icons: P2, closeButtonAriaLabel: nt2 = "Close toast", pauseWhenPageIsHidden: it2 } = n, [Y2, C2] = React$4.useState(null), [lt, J2] = React$4.useState(null), [W2, H2] = React$4.useState(false), [A, mt] = React$4.useState(false), [L2, z2] = React$4.useState(false), [ct2, d2] = React$4.useState(false), [h2, y2] = React$4.useState(false), [R2, j2] = React$4.useState(0), [p2, _2] = React$4.useState(0), O2 = React$4.useRef(t.duration || X2 || Wt), G2 = React$4.useRef(null), k2 = React$4.useRef(null), Vt = g2 === 0, Ut = g2 + 1 <= w2, N2 = t.type, V2 = t.dismissible !== false, Kt = t.className || "", Xt = t.descriptionClassName || "", dt = React$4.useMemo(() => S2.findIndex((r2) => r2.toastId === t.id) || 0, [S2, t.id]), Jt = React$4.useMemo(() => {
+    var r2;
+    return (r2 = t.closeButton) != null ? r2 : et2;
+  }, [t.closeButton, et2]), Tt = React$4.useMemo(() => t.duration || X2 || Wt, [t.duration, X2]), gt2 = React$4.useRef(0), U2 = React$4.useRef(0), St = React$4.useRef(0), K2 = React$4.useRef(null), [Gt, Qt] = st2.split("-"), Rt = React$4.useMemo(() => S2.reduce((r2, m2, c2) => c2 >= dt ? r2 : r2 + m2.height, 0), [S2, dt]), Et = Ft(), qt = t.invert || e, ht = N2 === "loading";
+  U2.current = React$4.useMemo(() => dt * pt + Rt, [dt, Rt]), React$4.useEffect(() => {
+    O2.current = Tt;
+  }, [Tt]), React$4.useEffect(() => {
+    H2(true);
+  }, []), React$4.useEffect(() => {
+    let r2 = k2.current;
+    if (r2) {
+      let m2 = r2.getBoundingClientRect().height;
+      return _2(m2), f2((c2) => [{ toastId: t.id, height: m2, position: t.position }, ...c2]), () => f2((c2) => c2.filter((b2) => b2.toastId !== t.id));
+    }
+  }, [f2, t.id]), React$4.useLayoutEffect(() => {
+    if (!W2) return;
+    let r2 = k2.current, m2 = r2.style.height;
+    r2.style.height = "auto";
+    let c2 = r2.getBoundingClientRect().height;
+    r2.style.height = m2, _2(c2), f2((b2) => b2.find((x3) => x3.toastId === t.id) ? b2.map((x3) => x3.toastId === t.id ? { ...x3, height: c2 } : x3) : [{ toastId: t.id, height: c2, position: t.position }, ...b2]);
+  }, [W2, t.title, t.description, f2, t.id]);
+  let $2 = React$4.useCallback(() => {
+    mt(true), j2(U2.current), f2((r2) => r2.filter((m2) => m2.toastId !== t.id)), setTimeout(() => {
+      T2(t);
+    }, we);
+  }, [t, T2, f2, U2]);
+  React$4.useEffect(() => {
+    if (t.promise && N2 === "loading" || t.duration === 1 / 0 || t.type === "loading") return;
+    let r2;
+    return D || u2 || it2 && Et ? (() => {
+      if (St.current < gt2.current) {
+        let b2 = (/* @__PURE__ */ new Date()).getTime() - gt2.current;
+        O2.current = O2.current - b2;
+      }
+      St.current = (/* @__PURE__ */ new Date()).getTime();
+    })() : (() => {
+      O2.current !== 1 / 0 && (gt2.current = (/* @__PURE__ */ new Date()).getTime(), r2 = setTimeout(() => {
+        var b2;
+        (b2 = t.onAutoClose) == null || b2.call(t, t), $2();
+      }, O2.current));
+    })(), () => clearTimeout(r2);
+  }, [D, u2, t, N2, it2, Et, $2]), React$4.useEffect(() => {
+    t.delete && $2();
+  }, [$2, t.delete]);
+  function Zt() {
+    var r2, m2, c2;
+    return P2 != null && P2.loading ? React$4.createElement("div", { className: M$1(s == null ? void 0 : s.loader, (r2 = t == null ? void 0 : t.classNames) == null ? void 0 : r2.loader, "sonner-loader"), "data-visible": N2 === "loading" }, P2.loading) : rt2 ? React$4.createElement("div", { className: M$1(s == null ? void 0 : s.loader, (m2 = t == null ? void 0 : t.classNames) == null ? void 0 : m2.loader, "sonner-loader"), "data-visible": N2 === "loading" }, rt2) : React$4.createElement(Yt, { className: M$1(s == null ? void 0 : s.loader, (c2 = t == null ? void 0 : t.classNames) == null ? void 0 : c2.loader), visible: N2 === "loading" });
+  }
+  return React$4.createElement("li", { tabIndex: 0, ref: k2, className: M$1(ot2, Kt, s == null ? void 0 : s.toast, (Dt = t == null ? void 0 : t.classNames) == null ? void 0 : Dt.toast, s == null ? void 0 : s.default, s == null ? void 0 : s[N2], (Pt = t == null ? void 0 : t.classNames) == null ? void 0 : Pt[N2]), "data-sonner-toast": "", "data-rich-colors": (Nt = t.richColors) != null ? Nt : F2, "data-styled": !(t.jsx || t.unstyled || a2), "data-mounted": W2, "data-promise": !!t.promise, "data-swiped": h2, "data-removed": A, "data-visible": Ut, "data-y-position": Gt, "data-x-position": Qt, "data-index": g2, "data-front": Vt, "data-swiping": L2, "data-dismissible": V2, "data-type": N2, "data-invert": qt, "data-swipe-out": ct2, "data-swipe-direction": lt, "data-expanded": !!(D || B2 && W2), style: { "--index": g2, "--toasts-before": g2, "--z-index": i.length - g2, "--offset": `${A ? R2 : U2.current}px`, "--initial-height": B2 ? "auto" : `${p2}px`, ...ut2, ...t.style }, onDragEnd: () => {
+    z2(false), C2(null), K2.current = null;
+  }, onPointerDown: (r2) => {
+    ht || !V2 || (G2.current = /* @__PURE__ */ new Date(), j2(U2.current), r2.target.setPointerCapture(r2.pointerId), r2.target.tagName !== "BUTTON" && (z2(true), K2.current = { x: r2.clientX, y: r2.clientY }));
+  }, onPointerUp: () => {
+    var x3, Q2, q2, Z2;
+    if (ct2 || !V2) return;
+    K2.current = null;
+    let r2 = Number(((x3 = k2.current) == null ? void 0 : x3.style.getPropertyValue("--swipe-amount-x").replace("px", "")) || 0), m2 = Number(((Q2 = k2.current) == null ? void 0 : Q2.style.getPropertyValue("--swipe-amount-y").replace("px", "")) || 0), c2 = (/* @__PURE__ */ new Date()).getTime() - ((q2 = G2.current) == null ? void 0 : q2.getTime()), b2 = Y2 === "x" ? r2 : m2, I = Math.abs(b2) / c2;
+    if (Math.abs(b2) >= ye || I > 0.11) {
+      j2(U2.current), (Z2 = t.onDismiss) == null || Z2.call(t, t), J2(Y2 === "x" ? r2 > 0 ? "right" : "left" : m2 > 0 ? "down" : "up"), $2(), d2(true), y2(false);
+      return;
+    }
+    z2(false), C2(null);
+  }, onPointerMove: (r2) => {
+    var Q2, q2, Z2, zt;
+    if (!K2.current || !V2 || ((Q2 = window.getSelection()) == null ? void 0 : Q2.toString().length) > 0) return;
+    let c2 = r2.clientY - K2.current.y, b2 = r2.clientX - K2.current.x, I = (q2 = n.swipeDirections) != null ? q2 : xe(st2);
+    !Y2 && (Math.abs(b2) > 1 || Math.abs(c2) > 1) && C2(Math.abs(b2) > Math.abs(c2) ? "x" : "y");
+    let x3 = { x: 0, y: 0 };
+    Y2 === "y" ? (I.includes("top") || I.includes("bottom")) && (I.includes("top") && c2 < 0 || I.includes("bottom") && c2 > 0) && (x3.y = c2) : Y2 === "x" && (I.includes("left") || I.includes("right")) && (I.includes("left") && b2 < 0 || I.includes("right") && b2 > 0) && (x3.x = b2), (Math.abs(x3.x) > 0 || Math.abs(x3.y) > 0) && y2(true), (Z2 = k2.current) == null || Z2.style.setProperty("--swipe-amount-x", `${x3.x}px`), (zt = k2.current) == null || zt.style.setProperty("--swipe-amount-y", `${x3.y}px`);
+  } }, Jt && !t.jsx ? React$4.createElement("button", { "aria-label": nt2, "data-disabled": ht, "data-close-button": true, onClick: ht || !V2 ? () => {
+  } : () => {
+    var r2;
+    $2(), (r2 = t.onDismiss) == null || r2.call(t, t);
+  }, className: M$1(s == null ? void 0 : s.closeButton, (Bt = t == null ? void 0 : t.classNames) == null ? void 0 : Bt.closeButton) }, (Ct = P2 == null ? void 0 : P2.close) != null ? Ct : Ot) : null, t.jsx || reactExports.isValidElement(t.title) ? t.jsx ? t.jsx : typeof t.title == "function" ? t.title() : t.title : React$4.createElement(React$4.Fragment, null, N2 || t.icon || t.promise ? React$4.createElement("div", { "data-icon": "", className: M$1(s == null ? void 0 : s.icon, (kt = t == null ? void 0 : t.classNames) == null ? void 0 : kt.icon) }, t.promise || t.type === "loading" && !t.icon ? t.icon || Zt() : null, t.type !== "loading" ? t.icon || (P2 == null ? void 0 : P2[N2]) || jt(N2) : null) : null, React$4.createElement("div", { "data-content": "", className: M$1(s == null ? void 0 : s.content, (It = t == null ? void 0 : t.classNames) == null ? void 0 : It.content) }, React$4.createElement("div", { "data-title": "", className: M$1(s == null ? void 0 : s.title, (Mt = t == null ? void 0 : t.classNames) == null ? void 0 : Mt.title) }, typeof t.title == "function" ? t.title() : t.title), t.description ? React$4.createElement("div", { "data-description": "", className: M$1(at, Xt, s == null ? void 0 : s.description, (Ht = t == null ? void 0 : t.classNames) == null ? void 0 : Ht.description) }, typeof t.description == "function" ? t.description() : t.description) : null), reactExports.isValidElement(t.cancel) ? t.cancel : t.cancel && tt(t.cancel) ? React$4.createElement("button", { "data-button": true, "data-cancel": true, style: t.cancelButtonStyle || ft2, onClick: (r2) => {
+    var m2, c2;
+    tt(t.cancel) && V2 && ((c2 = (m2 = t.cancel).onClick) == null || c2.call(m2, r2), $2());
+  }, className: M$1(s == null ? void 0 : s.cancelButton, (At = t == null ? void 0 : t.classNames) == null ? void 0 : At.cancelButton) }, t.cancel.label) : null, reactExports.isValidElement(t.action) ? t.action : t.action && tt(t.action) ? React$4.createElement("button", { "data-button": true, "data-action": true, style: t.actionButtonStyle || l2, onClick: (r2) => {
+    var m2, c2;
+    tt(t.action) && ((c2 = (m2 = t.action).onClick) == null || c2.call(m2, r2), !r2.defaultPrevented && $2());
+  }, className: M$1(s == null ? void 0 : s.actionButton, (Lt = t == null ? void 0 : t.classNames) == null ? void 0 : Lt.actionButton) }, t.action.label) : null));
+};
+function _t() {
+  if (typeof window == "undefined" || typeof document == "undefined") return "ltr";
+  let n = document.documentElement.getAttribute("dir");
+  return n === "auto" || !n ? window.getComputedStyle(document.documentElement).direction : n;
+}
+function Te(n, e) {
+  let t = {};
+  return [n, e].forEach((a2, u2) => {
+    let f2 = u2 === 1, w2 = f2 ? "--mobile-offset" : "--offset", S2 = f2 ? ge : me;
+    function g2(i) {
+      ["top", "right", "bottom", "left"].forEach((D) => {
+        t[`${w2}-${D}`] = typeof i == "number" ? `${i}px` : i;
+      });
+    }
+    typeof a2 == "number" || typeof a2 == "string" ? g2(a2) : typeof a2 == "object" ? ["top", "right", "bottom", "left"].forEach((i) => {
+      a2[i] === void 0 ? t[`${w2}-${i}`] = S2 : t[`${w2}-${i}`] = typeof a2[i] == "number" ? `${a2[i]}px` : a2[i];
+    }) : g2(S2);
+  }), t;
+}
+var $e = reactExports.forwardRef(function(e, t) {
+  let { invert: a2, position: u2 = "bottom-right", hotkey: f2 = ["altKey", "KeyT"], expand: w2, closeButton: S2, className: g2, offset: i, mobileOffset: D, theme: T2 = "light", richColors: F2, duration: et2, style: ut2, visibleToasts: ft2 = pe, toastOptions: l2, dir: ot2 = _t(), gap: at = be, loadingIcon: X2, icons: st2, containerAriaLabel: pt = "Notifications", pauseWhenPageIsHidden: rt2 } = e, [B2, s] = React$4.useState([]), P2 = React$4.useMemo(() => Array.from(new Set([u2].concat(B2.filter((d2) => d2.position).map((d2) => d2.position)))), [B2, u2]), [nt2, it2] = React$4.useState([]), [Y2, C2] = React$4.useState(false), [lt, J2] = React$4.useState(false), [W2, H2] = React$4.useState(T2 !== "system" ? T2 : typeof window != "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"), A = React$4.useRef(null), mt = f2.join("+").replace(/Key/g, "").replace(/Digit/g, ""), L2 = React$4.useRef(null), z2 = React$4.useRef(false), ct2 = React$4.useCallback((d2) => {
+    s((h2) => {
+      var y2;
+      return (y2 = h2.find((R2) => R2.id === d2.id)) != null && y2.delete || v.dismiss(d2.id), h2.filter(({ id: R2 }) => R2 !== d2.id);
+    });
+  }, []);
+  return React$4.useEffect(() => v.subscribe((d2) => {
+    if (d2.dismiss) {
+      s((h2) => h2.map((y2) => y2.id === d2.id ? { ...y2, delete: true } : y2));
+      return;
+    }
+    setTimeout(() => {
+      ReactDOM$2.flushSync(() => {
+        s((h2) => {
+          let y2 = h2.findIndex((R2) => R2.id === d2.id);
+          return y2 !== -1 ? [...h2.slice(0, y2), { ...h2[y2], ...d2 }, ...h2.slice(y2 + 1)] : [d2, ...h2];
+        });
+      });
+    });
+  }), []), React$4.useEffect(() => {
+    if (T2 !== "system") {
+      H2(T2);
+      return;
+    }
+    if (T2 === "system" && (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? H2("dark") : H2("light")), typeof window == "undefined") return;
+    let d2 = window.matchMedia("(prefers-color-scheme: dark)");
+    try {
+      d2.addEventListener("change", ({ matches: h2 }) => {
+        H2(h2 ? "dark" : "light");
+      });
+    } catch (h2) {
+      d2.addListener(({ matches: y2 }) => {
+        try {
+          H2(y2 ? "dark" : "light");
+        } catch (R2) {
+          console.error(R2);
+        }
+      });
+    }
+  }, [T2]), React$4.useEffect(() => {
+    B2.length <= 1 && C2(false);
+  }, [B2]), React$4.useEffect(() => {
+    let d2 = (h2) => {
+      var R2, j2;
+      f2.every((p2) => h2[p2] || h2.code === p2) && (C2(true), (R2 = A.current) == null || R2.focus()), h2.code === "Escape" && (document.activeElement === A.current || (j2 = A.current) != null && j2.contains(document.activeElement)) && C2(false);
+    };
+    return document.addEventListener("keydown", d2), () => document.removeEventListener("keydown", d2);
+  }, [f2]), React$4.useEffect(() => {
+    if (A.current) return () => {
+      L2.current && (L2.current.focus({ preventScroll: true }), L2.current = null, z2.current = false);
+    };
+  }, [A.current]), React$4.createElement("section", { ref: t, "aria-label": `${pt} ${mt}`, tabIndex: -1, "aria-live": "polite", "aria-relevant": "additions text", "aria-atomic": "false", suppressHydrationWarning: true }, P2.map((d2, h2) => {
+    var j2;
+    let [y2, R2] = d2.split("-");
+    return B2.length ? React$4.createElement("ol", { key: d2, dir: ot2 === "auto" ? _t() : ot2, tabIndex: -1, ref: A, className: g2, "data-sonner-toaster": true, "data-theme": W2, "data-y-position": y2, "data-lifted": Y2 && B2.length > 1 && !w2, "data-x-position": R2, style: { "--front-toast-height": `${((j2 = nt2[0]) == null ? void 0 : j2.height) || 0}px`, "--width": `${he}px`, "--gap": `${at}px`, ...ut2, ...Te(i, D) }, onBlur: (p2) => {
+      z2.current && !p2.currentTarget.contains(p2.relatedTarget) && (z2.current = false, L2.current && (L2.current.focus({ preventScroll: true }), L2.current = null));
+    }, onFocus: (p2) => {
+      p2.target instanceof HTMLElement && p2.target.dataset.dismissible === "false" || z2.current || (z2.current = true, L2.current = p2.relatedTarget);
+    }, onMouseEnter: () => C2(true), onMouseMove: () => C2(true), onMouseLeave: () => {
+      lt || C2(false);
+    }, onDragEnd: () => C2(false), onPointerDown: (p2) => {
+      p2.target instanceof HTMLElement && p2.target.dataset.dismissible === "false" || J2(true);
+    }, onPointerUp: () => J2(false) }, B2.filter((p2) => !p2.position && h2 === 0 || p2.position === d2).map((p2, _2) => {
+      var O2, G2;
+      return React$4.createElement(ve, { key: p2.id, icons: st2, index: _2, toast: p2, defaultRichColors: F2, duration: (O2 = l2 == null ? void 0 : l2.duration) != null ? O2 : et2, className: l2 == null ? void 0 : l2.className, descriptionClassName: l2 == null ? void 0 : l2.descriptionClassName, invert: a2, visibleToasts: ft2, closeButton: (G2 = l2 == null ? void 0 : l2.closeButton) != null ? G2 : S2, interacting: lt, position: d2, style: l2 == null ? void 0 : l2.style, unstyled: l2 == null ? void 0 : l2.unstyled, classNames: l2 == null ? void 0 : l2.classNames, cancelButtonStyle: l2 == null ? void 0 : l2.cancelButtonStyle, actionButtonStyle: l2 == null ? void 0 : l2.actionButtonStyle, removeToast: ct2, toasts: B2.filter((k2) => k2.position == p2.position), heights: nt2.filter((k2) => k2.position == p2.position), setHeights: it2, expandByDefault: w2, gap: at, loadingIcon: X2, expanded: Y2, pauseWhenPageIsHidden: rt2, swipeDirections: e.swipeDirections });
+    })) : null;
+  }));
+});
+const EMAIL_RE$1 = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const OTP_LENGTH = 6;
+const OTP_POSITIONS = Array.from({ length: OTP_LENGTH }, (_2, i) => i);
+function EmailVerificationGate({
+  children
+}) {
+  const { isVerified, isInitializing, sendCode, verifyCode } = useEmailVerification();
+  const [email, setEmail] = reactExports.useState("");
+  const [emailError, setEmailError] = reactExports.useState(null);
+  const [codeSent, setCodeSent] = reactExports.useState(false);
+  const [sending, setSending] = reactExports.useState(false);
+  const [verifying, setVerifying] = reactExports.useState(false);
+  const [otp, setOtp] = reactExports.useState(Array(6).fill(""));
+  const [otpError, setOtpError] = reactExports.useState(null);
+  const [success, setSuccess] = reactExports.useState(false);
+  const [resendIn, setResendIn] = reactExports.useState(0);
+  const inputsRef = reactExports.useRef([]);
+  reactExports.useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = window.setTimeout(() => setResendIn((v2) => v2 - 1), 1e3);
+    return () => window.clearTimeout(t);
+  }, [resendIn]);
+  reactExports.useEffect(() => {
+    var _a2;
+    if (codeSent) {
+      (_a2 = inputsRef.current[0]) == null ? void 0 : _a2.focus();
+    }
+  }, [codeSent]);
+  reactExports.useEffect(() => {
+    const stored = getVerifiedEmail();
+    if (stored) {
+      void upsertCustomer(stored.email);
+    }
+  }, []);
+  if (isVerified) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children });
+  }
+  if (isInitializing) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bbh-verify-theme flex min-h-[70vh] items-center justify-center bg-background px-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex items-center gap-3 text-muted-foreground",
+        "data-ocid": "verify.loading_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm", children: "Đang kiểm tra trạng thái xác nhận…" })
+        ]
+      }
+    ) });
+  }
+  const handleSendCode = async (e) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!EMAIL_RE$1.test(trimmed)) {
+      setEmailError("Vui lòng nhập địa chỉ email hợp lệ.");
+      return;
+    }
+    setEmailError(null);
+    setSending(true);
+    try {
+      await sendCode(trimmed);
+      setCodeSent(true);
+      setOtp(Array(6).fill(""));
+      setOtpError(null);
+      setResendIn(60);
+      ue.success("Mã xác nhận đã được gửi tới email của bạn.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Không gửi được mã. Vui lòng thử lại.";
+      ue.error(msg);
+      setEmailError(msg);
+    } finally {
+      setSending(false);
+    }
+  };
+  const handleOtpChange = (index2, value) => {
+    var _a2;
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const next = [...otp];
+    next[index2] = digit;
+    setOtp(next);
+    setOtpError(null);
+    if (digit && index2 < 5) {
+      (_a2 = inputsRef.current[index2 + 1]) == null ? void 0 : _a2.focus();
+    }
+  };
+  const handleOtpKeyDown = (index2, e) => {
+    var _a2;
+    if (e.key === "Backspace" && !otp[index2] && index2 > 0) {
+      (_a2 = inputsRef.current[index2 - 1]) == null ? void 0 : _a2.focus();
+    }
+  };
+  const handlePaste = (e) => {
+    var _a2;
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!text) return;
+    e.preventDefault();
+    const next = Array(6).fill("");
+    for (let i = 0; i < text.length; i++) next[i] = text[i];
+    setOtp(next);
+    setOtpError(null);
+    (_a2 = inputsRef.current[Math.min(text.length, 5)]) == null ? void 0 : _a2.focus();
+  };
+  const handleVerify = async (e) => {
+    var _a2;
+    e.preventDefault();
+    const code = otp.join("");
+    if (code.length !== 6) {
+      setOtpError("Vui lòng nhập đủ 6 chữ số mã xác nhận.");
+      return;
+    }
+    setVerifying(true);
+    try {
+      await verifyCode(email.trim(), code);
+      setSuccess(true);
+      ue.success("Xác nhận email thành công!");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Mã xác nhận không đúng hoặc đã hết hạn.";
+      setOtpError(msg);
+      setOtp(Array(6).fill(""));
+      (_a2 = inputsRef.current[0]) == null ? void 0 : _a2.focus();
+    } finally {
+      setVerifying(false);
+    }
+  };
+  if (success) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bbh-verify-theme flex min-h-[70vh] items-center justify-center bg-background px-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "w-full max-w-md rounded-2xl border bg-card p-8 text-center shadow-subtle",
+        "data-ocid": "verify.success_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "verify-success-mark", children: /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-6 w-6" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "mt-4 font-display text-2xl font-semibold tracking-tight", children: "Xác nhận thành công" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-2 text-sm text-muted-foreground", children: "Cảm ơn bạn đã xác nhận email. Đang đưa bạn vào thực đơn…" })
+        ]
+      }
+    ) });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bbh-verify-theme flex min-h-[70vh] items-center justify-center bg-background px-4 py-10", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-full max-w-md", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-2xl border bg-card p-6 shadow-subtle md:p-8", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "h-6 w-6" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-semibold tracking-tight", children: "Xác nhận email" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Bún Bò Huế 65 — đặt món an toàn" })
+      ] })
+    ] }),
+    !codeSent ? /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSendCode, className: "mt-6 space-y-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "label",
+          {
+            htmlFor: "verify-email",
+            className: "text-sm font-medium text-foreground",
+            children: "Địa chỉ email"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Mail, { className: "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              id: "verify-email",
+              type: "email",
+              inputMode: "email",
+              autoComplete: "email",
+              placeholder: "you@example.com",
+              value: email,
+              onChange: (e) => {
+                setEmail(e.target.value);
+                setEmailError(null);
+              },
+              "aria-invalid": !!emailError,
+              "aria-describedby": emailError ? "verify-email-error" : void 0,
+              className: "pl-9",
+              "data-ocid": "verify.email_input"
+            }
+          )
+        ] }),
+        emailError ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "p",
+          {
+            id: "verify-email-error",
+            className: "text-sm text-destructive",
+            "data-ocid": "verify.email_error",
+            children: emailError
+          }
+        ) : null
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Button,
+        {
+          type: "submit",
+          size: "lg",
+          className: "w-full",
+          disabled: sending,
+          "data-ocid": "verify.send_code_button",
+          children: [
+            sending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin" }) : null,
+            sending ? "Đang gửi…" : "Gửi mã xác nhận"
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Chúng tôi sẽ gửi mã OTP 6 chữ số tới email của bạn. Mã có hiệu lực trong 15 phút." })
+    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleVerify, className: "mt-6 space-y-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "label",
+          {
+            htmlFor: "verify-otp-0",
+            className: "text-sm font-medium text-foreground",
+            children: "Nhập mã xác nhận"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground", children: [
+          "Mã 6 chữ số đã được gửi tới",
+          " ",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: email })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "fieldset",
+          {
+            className: "flex justify-between gap-2",
+            "aria-label": "Mã xác nhận 6 chữ số",
+            onPaste: handlePaste,
+            children: OTP_POSITIONS.map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                id: i === 0 ? "verify-otp-0" : void 0,
+                ref: (el) => {
+                  inputsRef.current[i] = el;
+                },
+                type: "text",
+                inputMode: "numeric",
+                autoComplete: "one-time-code",
+                maxLength: 1,
+                value: otp[i],
+                onChange: (e) => handleOtpChange(i, e.target.value),
+                onKeyDown: (e) => handleOtpKeyDown(i, e),
+                "aria-label": `Chữ số ${i + 1}`,
+                "aria-invalid": !!otpError,
+                className: `otp-input ${otp[i] ? "otp-input-filled" : ""} ${otpError ? "otp-input-error" : ""}`,
+                "data-ocid": `verify.otp_input.${i + 1}`
+              },
+              `otp-pos-${i}`
+            ))
+          }
+        ),
+        otpError ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "p",
+          {
+            className: "text-sm text-destructive",
+            "data-ocid": "verify.otp_error",
+            children: otpError
+          }
+        ) : null
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Button,
+        {
+          type: "submit",
+          size: "lg",
+          className: "w-full",
+          disabled: verifying,
+          "data-ocid": "verify.confirm_button",
+          children: [
+            verifying ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin" }) : null,
+            verifying ? "Đang xác nhận…" : "Xác nhận"
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-sm", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => setCodeSent(false),
+            className: "text-muted-foreground underline-offset-4 hover:text-foreground hover:underline",
+            "data-ocid": "verify.change_email_button",
+            children: "Đổi email"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            disabled: resendIn > 0,
+            onClick: handleSendCode,
+            className: "text-primary underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-50",
+            "data-ocid": "verify.resend_button",
+            children: resendIn > 0 ? `Gửi lại sau ${resendIn}s` : "Gửi lại mã"
+          }
+        )
+      ] })
+    ] })
+  ] }) }) });
+}
+function useAuth() {
+  const ii = useInternetIdentity();
+  const { actor, isFetching } = useActor(createActor);
+  const adminQuery = useQuery({
+    queryKey: ["auth", "isAdmin", !!ii.identity],
+    queryFn: async () => {
+      if (!actor) return false;
+      try {
+        return await actor.isCallerAdmin();
+      } catch {
+        return false;
+      }
+    },
+    enabled: !!ii.identity && !!actor && !isFetching,
+    staleTime: 6e4
+  });
+  return {
+    isAuthenticated: ii.isAuthenticated,
+    isInitializing: ii.isInitializing,
+    login: ii.login,
+    clear: ii.clear,
+    isAdmin: Boolean(adminQuery.data),
+    isAdminLoading: adminQuery.isLoading && !!ii.identity
+  };
 }
 var prefix = "Invariant failed";
 function invariant(condition, message) {
@@ -42637,740 +44856,9 @@ function RouterContextProvider({
 function RouterProvider({ router: router2, ...rest }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(RouterContextProvider, { router: router2, ...rest, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Matches, {}) });
 }
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-const toCamelCase = (string) => string.replace(
-  /^([A-Z])|[\s-_]+(\w)/g,
-  (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase()
-);
-const toPascalCase = (string) => {
-  const camelCase = toCamelCase(string);
-  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
-};
-const mergeClasses = (...classes) => classes.filter((className, index2, array) => {
-  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index2;
-}).join(" ").trim();
-const hasA11yProp = (props) => {
-  for (const prop in props) {
-    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
-      return true;
-    }
-  }
-};
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-var defaultAttributes = {
-  xmlns: "http://www.w3.org/2000/svg",
-  width: 24,
-  height: 24,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round"
-};
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const Icon$1 = reactExports.forwardRef(
-  ({
-    color = "currentColor",
-    size: size2 = 24,
-    strokeWidth = 2,
-    absoluteStrokeWidth,
-    className = "",
-    children,
-    iconNode,
-    ...rest
-  }, ref) => reactExports.createElement(
-    "svg",
-    {
-      ref,
-      ...defaultAttributes,
-      width: size2,
-      height: size2,
-      stroke: color,
-      strokeWidth: absoluteStrokeWidth ? Number(strokeWidth) * 24 / Number(size2) : strokeWidth,
-      className: mergeClasses("lucide", className),
-      ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
-      ...rest
-    },
-    [
-      ...iconNode.map(([tag, attrs]) => reactExports.createElement(tag, attrs)),
-      ...Array.isArray(children) ? children : [children]
-    ]
-  )
-);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const createLucideIcon = (iconName, iconNode) => {
-  const Component2 = reactExports.forwardRef(
-    ({ className, ...props }, ref) => reactExports.createElement(Icon$1, {
-      ref,
-      iconNode,
-      className: mergeClasses(
-        `lucide-${toKebabCase(toPascalCase(iconName))}`,
-        `lucide-${iconName}`,
-        className
-      ),
-      ...props
-    })
-  );
-  Component2.displayName = toPascalCase(iconName);
-  return Component2;
-};
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$I = [
-  ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
-  ["path", { d: "M19 12H5", key: "x3x0zl" }]
-];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$I);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$H = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
-];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$H);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$G = [
-  ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }],
-  ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }],
-  ["path", { d: "M6 12h.01M18 12h.01", key: "113zkx" }]
-];
-const Banknote = createLucideIcon("banknote", __iconNode$G);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$F = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$F);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$E = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$E);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$D = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-const ChevronUp = createLucideIcon("chevron-up", __iconNode$D);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$C = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
-  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
-];
-const CircleAlert = createLucideIcon("circle-alert", __iconNode$C);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$B = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
-];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$B);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$A = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
-];
-const Clock = createLucideIcon("clock", __iconNode$A);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$z = [
-  ["path", { d: "M12 13v8", key: "1l5pq0" }],
-  ["path", { d: "M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242", key: "1pljnt" }],
-  ["path", { d: "m8 17 4-4 4 4", key: "1quai1" }]
-];
-const CloudUpload = createLucideIcon("cloud-upload", __iconNode$z);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$y = [
-  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
-  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
-];
-const Copy = createLucideIcon("copy", __iconNode$y);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$x = [
-  ["path", { d: "M12 15V3", key: "m9g1x1" }],
-  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
-  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
-];
-const Download = createLucideIcon("download", __iconNode$x);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$w = [
-  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
-  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
-  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
-];
-const ExternalLink = createLucideIcon("external-link", __iconNode$w);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$v = [
-  [
-    "path",
-    {
-      d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
-      key: "ct8e1f"
-    }
-  ],
-  ["path", { d: "M14.084 14.158a3 3 0 0 1-4.242-4.242", key: "151rxh" }],
-  [
-    "path",
-    {
-      d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
-      key: "13bj9a"
-    }
-  ],
-  ["path", { d: "m2 2 20 20", key: "1ooewy" }]
-];
-const EyeOff = createLucideIcon("eye-off", __iconNode$v);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$u = [
-  [
-    "path",
-    {
-      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
-      key: "1nclc0"
-    }
-  ],
-  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
-];
-const Eye = createLucideIcon("eye", __iconNode$u);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$t = [
-  ["path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", key: "1rqfz7" }],
-  ["path", { d: "M14 2v4a2 2 0 0 0 2 2h4", key: "tnqrlb" }],
-  ["path", { d: "M10 9H8", key: "b1mrlr" }],
-  ["path", { d: "M16 13H8", key: "t4e002" }],
-  ["path", { d: "M16 17H8", key: "z1uh3a" }]
-];
-const FileText = createLucideIcon("file-text", __iconNode$t);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$s = [
-  ["path", { d: "M16 5h6", key: "1vod17" }],
-  ["path", { d: "M19 2v6", key: "4bpg5p" }],
-  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
-];
-const ImagePlus = createLucideIcon("image-plus", __iconNode$s);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$r = [
-  [
-    "path",
-    {
-      d: "M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z",
-      key: "1s6t7t"
-    }
-  ],
-  ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
-];
-const KeyRound = createLucideIcon("key-round", __iconNode$r);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$q = [
-  ["path", { d: "M10 12h11", key: "6m4ad9" }],
-  ["path", { d: "M10 18h11", key: "11hvi2" }],
-  ["path", { d: "M10 6h11", key: "c7qv1k" }],
-  ["path", { d: "M4 10h2", key: "16xx2s" }],
-  ["path", { d: "M4 6h1v4", key: "cnovpq" }],
-  ["path", { d: "M6 18H4c0-1 2-2 2-3s-1-1.5-2-1", key: "m9a95d" }]
-];
-const ListOrdered = createLucideIcon("list-ordered", __iconNode$q);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$p = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-const LoaderCircle = createLucideIcon("loader-circle", __iconNode$p);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$o = [
-  ["path", { d: "m16 17 5-5-5-5", key: "1bji2h" }],
-  ["path", { d: "M21 12H9", key: "dn1m92" }],
-  ["path", { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", key: "1uf3rs" }]
-];
-const LogOut = createLucideIcon("log-out", __iconNode$o);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$n = [
-  [
-    "path",
-    {
-      d: "M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",
-      key: "1r0f0z"
-    }
-  ],
-  ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }]
-];
-const MapPin = createLucideIcon("map-pin", __iconNode$n);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$m = [["path", { d: "M5 12h14", key: "1ays0h" }]];
-const Minus = createLucideIcon("minus", __iconNode$m);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$l = [
-  [
-    "path",
-    {
-      d: "M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14",
-      key: "e7tb2h"
-    }
-  ],
-  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }],
-  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
-  ["line", { x1: "12", x2: "12", y1: "22", y2: "12", key: "a4e8g8" }],
-  ["circle", { cx: "18.5", cy: "15.5", r: "2.5", key: "b5zd12" }],
-  ["path", { d: "M20.27 17.27 22 19", key: "1l4muz" }]
-];
-const PackageSearch = createLucideIcon("package-search", __iconNode$l);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$k = [
-  [
-    "path",
-    {
-      d: "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z",
-      key: "1a0edw"
-    }
-  ],
-  ["path", { d: "M12 22V12", key: "d0xqtd" }],
-  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
-  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
-];
-const Package = createLucideIcon("package", __iconNode$k);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$j = [
-  [
-    "path",
-    {
-      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
-      key: "1a8usu"
-    }
-  ],
-  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
-];
-const Pencil = createLucideIcon("pencil", __iconNode$j);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$i = [
-  [
-    "path",
-    {
-      d: "M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384",
-      key: "9njp5v"
-    }
-  ]
-];
-const Phone = createLucideIcon("phone", __iconNode$i);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$h = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "M12 5v14", key: "s699le" }]
-];
-const Plus = createLucideIcon("plus", __iconNode$h);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$g = [
-  [
-    "path",
-    { d: "M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", key: "q3az6g" }
-  ],
-  ["path", { d: "M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8", key: "1h4pet" }],
-  ["path", { d: "M12 17.5v-11", key: "1jc1ny" }]
-];
-const Receipt = createLucideIcon("receipt", __iconNode$g);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$f = [
-  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
-  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
-  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
-  ["path", { d: "M8 16H3v5", key: "1cv678" }]
-];
-const RefreshCw = createLucideIcon("refresh-cw", __iconNode$f);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$e = [
-  [
-    "path",
-    {
-      d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
-      key: "1c8476"
-    }
-  ],
-  ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7", key: "1ydtos" }],
-  ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7", key: "t51u73" }]
-];
-const Save = createLucideIcon("save", __iconNode$e);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$d = [
-  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
-  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
-];
-const Search = createLucideIcon("search", __iconNode$d);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$c = [
-  [
-    "path",
-    {
-      d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
-      key: "oel41y"
-    }
-  ],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
-];
-const ShieldCheck = createLucideIcon("shield-check", __iconNode$c);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$b = [
-  ["path", { d: "m2 2 20 20", key: "1ooewy" }],
-  [
-    "path",
-    {
-      d: "M5 5a1 1 0 0 0-1 1v7c0 5 3.5 7.5 7.67 8.94a1 1 0 0 0 .67.01c2.35-.82 4.48-1.97 5.9-3.71",
-      key: "1jlk70"
-    }
-  ],
-  [
-    "path",
-    {
-      d: "M9.309 3.652A12.252 12.252 0 0 0 11.24 2.28a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7a9.784 9.784 0 0 1-.08 1.264",
-      key: "18rp1v"
-    }
-  ]
-];
-const ShieldOff = createLucideIcon("shield-off", __iconNode$b);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$a = [
-  ["path", { d: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z", key: "hou9p0" }],
-  ["path", { d: "M3 6h18", key: "d0wm0j" }],
-  ["path", { d: "M16 10a4 4 0 0 1-8 0", key: "1ltviw" }]
-];
-const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$a);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$9 = [
-  ["circle", { cx: "8", cy: "21", r: "1", key: "jimo8o" }],
-  ["circle", { cx: "19", cy: "21", r: "1", key: "13723u" }],
-  [
-    "path",
-    {
-      d: "M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12",
-      key: "9zh506"
-    }
-  ]
-];
-const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$9);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$8 = [
-  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
-  ["path", { d: "M12 18h.01", key: "mhygvu" }]
-];
-const Smartphone = createLucideIcon("smartphone", __iconNode$8);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$7 = [
-  [
-    "path",
-    {
-      d: "M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z",
-      key: "4pj2yx"
-    }
-  ],
-  ["path", { d: "M20 3v4", key: "1olli1" }],
-  ["path", { d: "M22 5h-4", key: "1gvqau" }],
-  ["path", { d: "M4 17v2", key: "vumght" }],
-  ["path", { d: "M5 18H3", key: "zchphs" }]
-];
-const Sparkles = createLucideIcon("sparkles", __iconNode$7);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$6 = [
-  [
-    "path",
-    {
-      d: "M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z",
-      key: "vktsd0"
-    }
-  ],
-  ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
-];
-const Tag = createLucideIcon("tag", __iconNode$6);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$5 = [
-  ["path", { d: "M3 6h18", key: "d0wm0j" }],
-  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
-  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
-  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
-  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
-];
-const Trash2 = createLucideIcon("trash-2", __iconNode$5);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$4 = [
-  ["path", { d: "M16 7h6v6", key: "box55l" }],
-  ["path", { d: "m22 7-8.5 8.5-5-5L2 17", key: "1t1m79" }]
-];
-const TrendingUp = createLucideIcon("trending-up", __iconNode$4);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$3 = [
-  ["path", { d: "M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2", key: "wrbu53" }],
-  ["path", { d: "M15 18H9", key: "1lyqi6" }],
-  [
-    "path",
-    {
-      d: "M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14",
-      key: "lysw3i"
-    }
-  ],
-  ["circle", { cx: "17", cy: "18", r: "2", key: "332jqn" }],
-  ["circle", { cx: "7", cy: "18", r: "2", key: "19iecd" }]
-];
-const Truck = createLucideIcon("truck", __iconNode$3);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$2 = [
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
-  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
-];
-const Users = createLucideIcon("users", __iconNode$2);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$1 = [
-  ["path", { d: "m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8", key: "n7qcjb" }],
-  [
-    "path",
-    { d: "M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7", key: "d0u48b" }
-  ],
-  ["path", { d: "m2.1 21.8 6.4-6.3", key: "yn04lh" }],
-  ["path", { d: "m19 5-7 7", key: "194lzd" }]
-];
-const UtensilsCrossed = createLucideIcon("utensils-crossed", __iconNode$1);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode = [
-  ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
-  ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
-];
-const X = createLucideIcon("x", __iconNode);
 const PRIMARY_NAV = [
-  { to: "/", label: "Đặt hàng", icon: UtensilsCrossed },
-  { to: "/track", label: "Theo dõi đơn", icon: Truck },
-  { to: "/driver", label: "Thanh toán", icon: ShieldCheck }
+  { to: "/", label: "Đặt món", icon: UtensilsCrossed },
+  { to: "/track", label: "Theo dõi đơn", icon: Truck }
 ];
 const ADMIN_NAV = [
   { to: "/admin", label: "Quản lý", icon: ShieldCheck, adminOnly: true },
@@ -43396,7 +44884,7 @@ const ADMIN_NAV = [
 ];
 function NavLink({ item, onClick }) {
   const router2 = useRouterState();
-  const isActive = item.to === "/" ? router2.location.pathname === "/" : router2.location.pathname.startsWith(item.to);
+  const isActive = item.to === "/" || item.to === "/admin" ? router2.location.pathname === item.to : router2.location.pathname.startsWith(item.to);
   const Icon2 = item.icon;
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     Link,
@@ -43412,34 +44900,6 @@ function NavLink({ item, onClick }) {
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4 shrink-0", "aria-hidden": "true" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "truncate", children: item.label })
-      ]
-    }
-  );
-}
-function AdminLoginButton() {
-  const { isAuthenticated, login, clear } = useAuth();
-  if (isAuthenticated) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "button",
-      {
-        type: "button",
-        onClick: clear,
-        "data-ocid": "nav.admin.logout_button",
-        className: "flex min-h-[44px] items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-smooth hover:bg-secondary md:min-h-0",
-        children: "Đăng xuất"
-      }
-    );
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "button",
-    {
-      type: "button",
-      onClick: login,
-      "data-ocid": "nav.admin.login_button",
-      className: "flex min-h-[44px] items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-smooth hover:bg-secondary md:min-h-0",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "h-4 w-4", "aria-hidden": "true" }),
-        "Đăng nhập II"
       ]
     }
   );
@@ -43475,8 +44935,7 @@ function Layout({ children }) {
             "aria-label": "Điều hướng chính",
             children: [
               PRIMARY_NAV.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(NavLink, { item }, item.to)),
-              showAdmin && visibleAdminNav.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(NavLink, { item }, item.to)),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(AdminLoginButton, {})
+              showAdmin && visibleAdminNav.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(NavLink, { item }, item.to))
             ]
           }
         ),
@@ -43515,8 +44974,7 @@ function Layout({ children }) {
                 onClick: () => setMobileOpen(false)
               },
               item.to
-            )),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(AdminLoginButton, {})
+            ))
           ]
         }
       )
@@ -43551,7 +45009,7 @@ function Layout({ children }) {
     )
   ] });
 }
-var M$1 = (e, i, s, u2, m2, a2, l2, h2) => {
+var M = (e, i, s, u2, m2, a2, l2, h2) => {
   let d2 = document.documentElement, w2 = ["light", "dark"];
   function p2(n) {
     (Array.isArray(e) ? e : [e]).forEach((y2) => {
@@ -43579,283 +45037,7 @@ var x2 = reactExports.createContext(void 0), U = { setTheme: (e) => {
 };
 reactExports.memo(({ forcedTheme: e, storageKey: i, attribute: s, enableSystem: u2, enableColorScheme: m2, defaultTheme: a2, value: l2, themes: h2, nonce: d2, scriptProps: w2 }) => {
   let p2 = JSON.stringify([s, i, a2, e, h2, l2, u2, m2]).slice(1, -1);
-  return reactExports.createElement("script", { ...w2, suppressHydrationWarning: true, nonce: typeof window == "undefined" ? d2 : "", dangerouslySetInnerHTML: { __html: `(${M$1.toString()})(${p2})` } });
-});
-var jt = (n) => {
-  switch (n) {
-    case "success":
-      return ee;
-    case "info":
-      return ae;
-    case "warning":
-      return oe;
-    case "error":
-      return se;
-    default:
-      return null;
-  }
-}, te = Array(12).fill(0), Yt = ({ visible: n, className: e }) => React$4.createElement("div", { className: ["sonner-loading-wrapper", e].filter(Boolean).join(" "), "data-visible": n }, React$4.createElement("div", { className: "sonner-spinner" }, te.map((t, a2) => React$4.createElement("div", { className: "sonner-loading-bar", key: `spinner-bar-${a2}` })))), ee = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z", clipRule: "evenodd" })), oe = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z", clipRule: "evenodd" })), ae = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z", clipRule: "evenodd" })), se = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z", clipRule: "evenodd" })), Ot = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }, React$4.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }), React$4.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" }));
-var Ft = () => {
-  let [n, e] = React$4.useState(document.hidden);
-  return React$4.useEffect(() => {
-    let t = () => {
-      e(document.hidden);
-    };
-    return document.addEventListener("visibilitychange", t), () => window.removeEventListener("visibilitychange", t);
-  }, []), n;
-};
-var bt = 1, yt = class {
-  constructor() {
-    this.subscribe = (e) => (this.subscribers.push(e), () => {
-      let t = this.subscribers.indexOf(e);
-      this.subscribers.splice(t, 1);
-    });
-    this.publish = (e) => {
-      this.subscribers.forEach((t) => t(e));
-    };
-    this.addToast = (e) => {
-      this.publish(e), this.toasts = [...this.toasts, e];
-    };
-    this.create = (e) => {
-      var S2;
-      let { message: t, ...a2 } = e, u2 = typeof (e == null ? void 0 : e.id) == "number" || ((S2 = e.id) == null ? void 0 : S2.length) > 0 ? e.id : bt++, f2 = this.toasts.find((g2) => g2.id === u2), w2 = e.dismissible === void 0 ? true : e.dismissible;
-      return this.dismissedToasts.has(u2) && this.dismissedToasts.delete(u2), f2 ? this.toasts = this.toasts.map((g2) => g2.id === u2 ? (this.publish({ ...g2, ...e, id: u2, title: t }), { ...g2, ...e, id: u2, dismissible: w2, title: t }) : g2) : this.addToast({ title: t, ...a2, dismissible: w2, id: u2 }), u2;
-    };
-    this.dismiss = (e) => (this.dismissedToasts.add(e), e || this.toasts.forEach((t) => {
-      this.subscribers.forEach((a2) => a2({ id: t.id, dismiss: true }));
-    }), this.subscribers.forEach((t) => t({ id: e, dismiss: true })), e);
-    this.message = (e, t) => this.create({ ...t, message: e });
-    this.error = (e, t) => this.create({ ...t, message: e, type: "error" });
-    this.success = (e, t) => this.create({ ...t, type: "success", message: e });
-    this.info = (e, t) => this.create({ ...t, type: "info", message: e });
-    this.warning = (e, t) => this.create({ ...t, type: "warning", message: e });
-    this.loading = (e, t) => this.create({ ...t, type: "loading", message: e });
-    this.promise = (e, t) => {
-      if (!t) return;
-      let a2;
-      t.loading !== void 0 && (a2 = this.create({ ...t, promise: e, type: "loading", message: t.loading, description: typeof t.description != "function" ? t.description : void 0 }));
-      let u2 = e instanceof Promise ? e : e(), f2 = a2 !== void 0, w2, S2 = u2.then(async (i) => {
-        if (w2 = ["resolve", i], React$4.isValidElement(i)) f2 = false, this.create({ id: a2, type: "default", message: i });
-        else if (ie(i) && !i.ok) {
-          f2 = false;
-          let T2 = typeof t.error == "function" ? await t.error(`HTTP error! status: ${i.status}`) : t.error, F2 = typeof t.description == "function" ? await t.description(`HTTP error! status: ${i.status}`) : t.description;
-          this.create({ id: a2, type: "error", message: T2, description: F2 });
-        } else if (t.success !== void 0) {
-          f2 = false;
-          let T2 = typeof t.success == "function" ? await t.success(i) : t.success, F2 = typeof t.description == "function" ? await t.description(i) : t.description;
-          this.create({ id: a2, type: "success", message: T2, description: F2 });
-        }
-      }).catch(async (i) => {
-        if (w2 = ["reject", i], t.error !== void 0) {
-          f2 = false;
-          let D = typeof t.error == "function" ? await t.error(i) : t.error, T2 = typeof t.description == "function" ? await t.description(i) : t.description;
-          this.create({ id: a2, type: "error", message: D, description: T2 });
-        }
-      }).finally(() => {
-        var i;
-        f2 && (this.dismiss(a2), a2 = void 0), (i = t.finally) == null || i.call(t);
-      }), g2 = () => new Promise((i, D) => S2.then(() => w2[0] === "reject" ? D(w2[1]) : i(w2[1])).catch(D));
-      return typeof a2 != "string" && typeof a2 != "number" ? { unwrap: g2 } : Object.assign(a2, { unwrap: g2 });
-    };
-    this.custom = (e, t) => {
-      let a2 = (t == null ? void 0 : t.id) || bt++;
-      return this.create({ jsx: e(a2), id: a2, ...t }), a2;
-    };
-    this.getActiveToasts = () => this.toasts.filter((e) => !this.dismissedToasts.has(e.id));
-    this.subscribers = [], this.toasts = [], this.dismissedToasts = /* @__PURE__ */ new Set();
-  }
-}, v = new yt(), ne = (n, e) => {
-  let t = (e == null ? void 0 : e.id) || bt++;
-  return v.addToast({ title: n, ...e, id: t }), t;
-}, ie = (n) => n && typeof n == "object" && "ok" in n && typeof n.ok == "boolean" && "status" in n && typeof n.status == "number", le = ne, ce = () => v.toasts, de = () => v.getActiveToasts(), ue = Object.assign(le, { success: v.success, info: v.info, warning: v.warning, error: v.error, custom: v.custom, message: v.message, promise: v.promise, dismiss: v.dismiss, loading: v.loading }, { getHistory: ce, getToasts: de });
-function wt(n, { insertAt: e } = {}) {
-  if (typeof document == "undefined") return;
-  let t = document.head || document.getElementsByTagName("head")[0], a2 = document.createElement("style");
-  a2.type = "text/css", e === "top" && t.firstChild ? t.insertBefore(a2, t.firstChild) : t.appendChild(a2), a2.styleSheet ? a2.styleSheet.cssText = n : a2.appendChild(document.createTextNode(n));
-}
-wt(`:where(html[dir="ltr"]),:where([data-sonner-toaster][dir="ltr"]){--toast-icon-margin-start: -3px;--toast-icon-margin-end: 4px;--toast-svg-margin-start: -1px;--toast-svg-margin-end: 0px;--toast-button-margin-start: auto;--toast-button-margin-end: 0;--toast-close-button-start: 0;--toast-close-button-end: unset;--toast-close-button-transform: translate(-35%, -35%)}:where(html[dir="rtl"]),:where([data-sonner-toaster][dir="rtl"]){--toast-icon-margin-start: 4px;--toast-icon-margin-end: -3px;--toast-svg-margin-start: 0px;--toast-svg-margin-end: -1px;--toast-button-margin-start: 0;--toast-button-margin-end: auto;--toast-close-button-start: unset;--toast-close-button-end: 0;--toast-close-button-transform: translate(35%, -35%)}:where([data-sonner-toaster]){position:fixed;width:var(--width);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;--gray1: hsl(0, 0%, 99%);--gray2: hsl(0, 0%, 97.3%);--gray3: hsl(0, 0%, 95.1%);--gray4: hsl(0, 0%, 93%);--gray5: hsl(0, 0%, 90.9%);--gray6: hsl(0, 0%, 88.7%);--gray7: hsl(0, 0%, 85.8%);--gray8: hsl(0, 0%, 78%);--gray9: hsl(0, 0%, 56.1%);--gray10: hsl(0, 0%, 52.3%);--gray11: hsl(0, 0%, 43.5%);--gray12: hsl(0, 0%, 9%);--border-radius: 8px;box-sizing:border-box;padding:0;margin:0;list-style:none;outline:none;z-index:999999999;transition:transform .4s ease}:where([data-sonner-toaster][data-lifted="true"]){transform:translateY(-10px)}@media (hover: none) and (pointer: coarse){:where([data-sonner-toaster][data-lifted="true"]){transform:none}}:where([data-sonner-toaster][data-x-position="right"]){right:var(--offset-right)}:where([data-sonner-toaster][data-x-position="left"]){left:var(--offset-left)}:where([data-sonner-toaster][data-x-position="center"]){left:50%;transform:translate(-50%)}:where([data-sonner-toaster][data-y-position="top"]){top:var(--offset-top)}:where([data-sonner-toaster][data-y-position="bottom"]){bottom:var(--offset-bottom)}:where([data-sonner-toast]){--y: translateY(100%);--lift-amount: calc(var(--lift) * var(--gap));z-index:var(--z-index);position:absolute;opacity:0;transform:var(--y);filter:blur(0);touch-action:none;transition:transform .4s,opacity .4s,height .4s,box-shadow .2s;box-sizing:border-box;outline:none;overflow-wrap:anywhere}:where([data-sonner-toast][data-styled="true"]){padding:16px;background:var(--normal-bg);border:1px solid var(--normal-border);color:var(--normal-text);border-radius:var(--border-radius);box-shadow:0 4px 12px #0000001a;width:var(--width);font-size:13px;display:flex;align-items:center;gap:6px}:where([data-sonner-toast]:focus-visible){box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast][data-y-position="top"]){top:0;--y: translateY(-100%);--lift: 1;--lift-amount: calc(1 * var(--gap))}:where([data-sonner-toast][data-y-position="bottom"]){bottom:0;--y: translateY(100%);--lift: -1;--lift-amount: calc(var(--lift) * var(--gap))}:where([data-sonner-toast]) :where([data-description]){font-weight:400;line-height:1.4;color:inherit}:where([data-sonner-toast]) :where([data-title]){font-weight:500;line-height:1.5;color:inherit}:where([data-sonner-toast]) :where([data-icon]){display:flex;height:16px;width:16px;position:relative;justify-content:flex-start;align-items:center;flex-shrink:0;margin-left:var(--toast-icon-margin-start);margin-right:var(--toast-icon-margin-end)}:where([data-sonner-toast][data-promise="true"]) :where([data-icon])>svg{opacity:0;transform:scale(.8);transform-origin:center;animation:sonner-fade-in .3s ease forwards}:where([data-sonner-toast]) :where([data-icon])>*{flex-shrink:0}:where([data-sonner-toast]) :where([data-icon]) svg{margin-left:var(--toast-svg-margin-start);margin-right:var(--toast-svg-margin-end)}:where([data-sonner-toast]) :where([data-content]){display:flex;flex-direction:column;gap:2px}[data-sonner-toast][data-styled=true] [data-button]{border-radius:4px;padding-left:8px;padding-right:8px;height:24px;font-size:12px;color:var(--normal-bg);background:var(--normal-text);margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end);border:none;cursor:pointer;outline:none;display:flex;align-items:center;flex-shrink:0;transition:opacity .4s,box-shadow .2s}:where([data-sonner-toast]) :where([data-button]):focus-visible{box-shadow:0 0 0 2px #0006}:where([data-sonner-toast]) :where([data-button]):first-of-type{margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end)}:where([data-sonner-toast]) :where([data-cancel]){color:var(--normal-text);background:rgba(0,0,0,.08)}:where([data-sonner-toast][data-theme="dark"]) :where([data-cancel]){background:rgba(255,255,255,.3)}:where([data-sonner-toast]) :where([data-close-button]){position:absolute;left:var(--toast-close-button-start);right:var(--toast-close-button-end);top:0;height:20px;width:20px;display:flex;justify-content:center;align-items:center;padding:0;color:var(--gray12);border:1px solid var(--gray4);transform:var(--toast-close-button-transform);border-radius:50%;cursor:pointer;z-index:1;transition:opacity .1s,background .2s,border-color .2s}[data-sonner-toast] [data-close-button]{background:var(--gray1)}:where([data-sonner-toast]) :where([data-close-button]):focus-visible{box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast]) :where([data-disabled="true"]){cursor:not-allowed}:where([data-sonner-toast]):hover :where([data-close-button]):hover{background:var(--gray2);border-color:var(--gray5)}:where([data-sonner-toast][data-swiping="true"]):before{content:"";position:absolute;left:-50%;right:-50%;height:100%;z-index:-1}:where([data-sonner-toast][data-y-position="top"][data-swiping="true"]):before{bottom:50%;transform:scaleY(3) translateY(50%)}:where([data-sonner-toast][data-y-position="bottom"][data-swiping="true"]):before{top:50%;transform:scaleY(3) translateY(-50%)}:where([data-sonner-toast][data-swiping="false"][data-removed="true"]):before{content:"";position:absolute;inset:0;transform:scaleY(2)}:where([data-sonner-toast]):after{content:"";position:absolute;left:0;height:calc(var(--gap) + 1px);bottom:100%;width:100%}:where([data-sonner-toast][data-mounted="true"]){--y: translateY(0);opacity:1}:where([data-sonner-toast][data-expanded="false"][data-front="false"]){--scale: var(--toasts-before) * .05 + 1;--y: translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)));height:var(--front-toast-height)}:where([data-sonner-toast])>*{transition:opacity .4s}:where([data-sonner-toast][data-expanded="false"][data-front="false"][data-styled="true"])>*{opacity:0}:where([data-sonner-toast][data-visible="false"]){opacity:0;pointer-events:none}:where([data-sonner-toast][data-mounted="true"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset)));height:var(--initial-height)}:where([data-sonner-toast][data-removed="true"][data-front="true"][data-swipe-out="false"]){--y: translateY(calc(var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="false"]){--y: translateY(40%);opacity:0;transition:transform .5s,opacity .2s}:where([data-sonner-toast][data-removed="true"][data-front="false"]):before{height:calc(var(--initial-height) + 20%)}[data-sonner-toast][data-swiping=true]{transform:var(--y) translateY(var(--swipe-amount-y, 0px)) translate(var(--swipe-amount-x, 0px));transition:none}[data-sonner-toast][data-swiped=true]{user-select:none}[data-sonner-toast][data-swipe-out=true][data-y-position=bottom],[data-sonner-toast][data-swipe-out=true][data-y-position=top]{animation-duration:.2s;animation-timing-function:ease-out;animation-fill-mode:forwards}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=left]{animation-name:swipe-out-left}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=right]{animation-name:swipe-out-right}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=up]{animation-name:swipe-out-up}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=down]{animation-name:swipe-out-down}@keyframes swipe-out-left{0%{transform:var(--y) translate(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translate(calc(var(--swipe-amount-x) - 100%));opacity:0}}@keyframes swipe-out-right{0%{transform:var(--y) translate(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translate(calc(var(--swipe-amount-x) + 100%));opacity:0}}@keyframes swipe-out-up{0%{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) - 100%));opacity:0}}@keyframes swipe-out-down{0%{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) + 100%));opacity:0}}@media (max-width: 600px){[data-sonner-toaster]{position:fixed;right:var(--mobile-offset-right);left:var(--mobile-offset-left);width:100%}[data-sonner-toaster][dir=rtl]{left:calc(var(--mobile-offset-left) * -1)}[data-sonner-toaster] [data-sonner-toast]{left:0;right:0;width:calc(100% - var(--mobile-offset-left) * 2)}[data-sonner-toaster][data-x-position=left]{left:var(--mobile-offset-left)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--mobile-offset-bottom)}[data-sonner-toaster][data-y-position=top]{top:var(--mobile-offset-top)}[data-sonner-toaster][data-x-position=center]{left:var(--mobile-offset-left);right:var(--mobile-offset-right);transform:none}}[data-sonner-toaster][data-theme=light]{--normal-bg: #fff;--normal-border: var(--gray4);--normal-text: var(--gray12);--success-bg: hsl(143, 85%, 96%);--success-border: hsl(145, 92%, 91%);--success-text: hsl(140, 100%, 27%);--info-bg: hsl(208, 100%, 97%);--info-border: hsl(221, 91%, 91%);--info-text: hsl(210, 92%, 45%);--warning-bg: hsl(49, 100%, 97%);--warning-border: hsl(49, 91%, 91%);--warning-text: hsl(31, 92%, 45%);--error-bg: hsl(359, 100%, 97%);--error-border: hsl(359, 100%, 94%);--error-text: hsl(360, 100%, 45%)}[data-sonner-toaster][data-theme=light] [data-sonner-toast][data-invert=true]{--normal-bg: #000;--normal-border: hsl(0, 0%, 20%);--normal-text: var(--gray1)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast][data-invert=true]{--normal-bg: #fff;--normal-border: var(--gray3);--normal-text: var(--gray12)}[data-sonner-toaster][data-theme=dark]{--normal-bg: #000;--normal-bg-hover: hsl(0, 0%, 12%);--normal-border: hsl(0, 0%, 20%);--normal-border-hover: hsl(0, 0%, 25%);--normal-text: var(--gray1);--success-bg: hsl(150, 100%, 6%);--success-border: hsl(147, 100%, 12%);--success-text: hsl(150, 86%, 65%);--info-bg: hsl(215, 100%, 6%);--info-border: hsl(223, 100%, 12%);--info-text: hsl(216, 87%, 65%);--warning-bg: hsl(64, 100%, 6%);--warning-border: hsl(60, 100%, 12%);--warning-text: hsl(46, 87%, 65%);--error-bg: hsl(358, 76%, 10%);--error-border: hsl(357, 89%, 16%);--error-text: hsl(358, 100%, 81%)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast] [data-close-button]{background:var(--normal-bg);border-color:var(--normal-border);color:var(--normal-text)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast] [data-close-button]:hover{background:var(--normal-bg-hover);border-color:var(--normal-border-hover)}[data-rich-colors=true][data-sonner-toast][data-type=success],[data-rich-colors=true][data-sonner-toast][data-type=success] [data-close-button]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=info],[data-rich-colors=true][data-sonner-toast][data-type=info] [data-close-button]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning],[data-rich-colors=true][data-sonner-toast][data-type=warning] [data-close-button]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=error],[data-rich-colors=true][data-sonner-toast][data-type=error] [data-close-button]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}.sonner-loading-wrapper{--size: 16px;height:var(--size);width:var(--size);position:absolute;inset:0;z-index:10}.sonner-loading-wrapper[data-visible=false]{transform-origin:center;animation:sonner-fade-out .2s ease forwards}.sonner-spinner{position:relative;top:50%;left:50%;height:var(--size);width:var(--size)}.sonner-loading-bar{animation:sonner-spin 1.2s linear infinite;background:var(--gray11);border-radius:6px;height:8%;left:-10%;position:absolute;top:-3.9%;width:24%}.sonner-loading-bar:nth-child(1){animation-delay:-1.2s;transform:rotate(.0001deg) translate(146%)}.sonner-loading-bar:nth-child(2){animation-delay:-1.1s;transform:rotate(30deg) translate(146%)}.sonner-loading-bar:nth-child(3){animation-delay:-1s;transform:rotate(60deg) translate(146%)}.sonner-loading-bar:nth-child(4){animation-delay:-.9s;transform:rotate(90deg) translate(146%)}.sonner-loading-bar:nth-child(5){animation-delay:-.8s;transform:rotate(120deg) translate(146%)}.sonner-loading-bar:nth-child(6){animation-delay:-.7s;transform:rotate(150deg) translate(146%)}.sonner-loading-bar:nth-child(7){animation-delay:-.6s;transform:rotate(180deg) translate(146%)}.sonner-loading-bar:nth-child(8){animation-delay:-.5s;transform:rotate(210deg) translate(146%)}.sonner-loading-bar:nth-child(9){animation-delay:-.4s;transform:rotate(240deg) translate(146%)}.sonner-loading-bar:nth-child(10){animation-delay:-.3s;transform:rotate(270deg) translate(146%)}.sonner-loading-bar:nth-child(11){animation-delay:-.2s;transform:rotate(300deg) translate(146%)}.sonner-loading-bar:nth-child(12){animation-delay:-.1s;transform:rotate(330deg) translate(146%)}@keyframes sonner-fade-in{0%{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}@keyframes sonner-fade-out{0%{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.8)}}@keyframes sonner-spin{0%{opacity:1}to{opacity:.15}}@media (prefers-reduced-motion){[data-sonner-toast],[data-sonner-toast]>*,.sonner-loading-bar{transition:none!important;animation:none!important}}.sonner-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transform-origin:center;transition:opacity .2s,transform .2s}.sonner-loader[data-visible=false]{opacity:0;transform:scale(.8) translate(-50%,-50%)}
-`);
-function tt(n) {
-  return n.label !== void 0;
-}
-var pe = 3, me = "32px", ge = "16px", Wt = 4e3, he = 356, be = 14, ye = 20, we = 200;
-function M(...n) {
-  return n.filter(Boolean).join(" ");
-}
-function xe(n) {
-  let [e, t] = n.split("-"), a2 = [];
-  return e && a2.push(e), t && a2.push(t), a2;
-}
-var ve = (n) => {
-  var Dt, Pt, Nt, Bt, Ct, kt, It, Mt, Ht, At, Lt;
-  let { invert: e, toast: t, unstyled: a2, interacting: u2, setHeights: f2, visibleToasts: w2, heights: S2, index: g2, toasts: i, expanded: D, removeToast: T2, defaultRichColors: F2, closeButton: et2, style: ut2, cancelButtonStyle: ft2, actionButtonStyle: l2, className: ot2 = "", descriptionClassName: at = "", duration: X2, position: st2, gap: pt, loadingIcon: rt2, expandByDefault: B2, classNames: s, icons: P2, closeButtonAriaLabel: nt2 = "Close toast", pauseWhenPageIsHidden: it2 } = n, [Y2, C2] = React$4.useState(null), [lt, J2] = React$4.useState(null), [W2, H2] = React$4.useState(false), [A, mt] = React$4.useState(false), [L2, z2] = React$4.useState(false), [ct2, d2] = React$4.useState(false), [h2, y2] = React$4.useState(false), [R2, j2] = React$4.useState(0), [p2, _2] = React$4.useState(0), O2 = React$4.useRef(t.duration || X2 || Wt), G2 = React$4.useRef(null), k2 = React$4.useRef(null), Vt = g2 === 0, Ut = g2 + 1 <= w2, N2 = t.type, V2 = t.dismissible !== false, Kt = t.className || "", Xt = t.descriptionClassName || "", dt = React$4.useMemo(() => S2.findIndex((r2) => r2.toastId === t.id) || 0, [S2, t.id]), Jt = React$4.useMemo(() => {
-    var r2;
-    return (r2 = t.closeButton) != null ? r2 : et2;
-  }, [t.closeButton, et2]), Tt = React$4.useMemo(() => t.duration || X2 || Wt, [t.duration, X2]), gt2 = React$4.useRef(0), U2 = React$4.useRef(0), St = React$4.useRef(0), K2 = React$4.useRef(null), [Gt, Qt] = st2.split("-"), Rt = React$4.useMemo(() => S2.reduce((r2, m2, c2) => c2 >= dt ? r2 : r2 + m2.height, 0), [S2, dt]), Et = Ft(), qt = t.invert || e, ht = N2 === "loading";
-  U2.current = React$4.useMemo(() => dt * pt + Rt, [dt, Rt]), React$4.useEffect(() => {
-    O2.current = Tt;
-  }, [Tt]), React$4.useEffect(() => {
-    H2(true);
-  }, []), React$4.useEffect(() => {
-    let r2 = k2.current;
-    if (r2) {
-      let m2 = r2.getBoundingClientRect().height;
-      return _2(m2), f2((c2) => [{ toastId: t.id, height: m2, position: t.position }, ...c2]), () => f2((c2) => c2.filter((b2) => b2.toastId !== t.id));
-    }
-  }, [f2, t.id]), React$4.useLayoutEffect(() => {
-    if (!W2) return;
-    let r2 = k2.current, m2 = r2.style.height;
-    r2.style.height = "auto";
-    let c2 = r2.getBoundingClientRect().height;
-    r2.style.height = m2, _2(c2), f2((b2) => b2.find((x3) => x3.toastId === t.id) ? b2.map((x3) => x3.toastId === t.id ? { ...x3, height: c2 } : x3) : [{ toastId: t.id, height: c2, position: t.position }, ...b2]);
-  }, [W2, t.title, t.description, f2, t.id]);
-  let $2 = React$4.useCallback(() => {
-    mt(true), j2(U2.current), f2((r2) => r2.filter((m2) => m2.toastId !== t.id)), setTimeout(() => {
-      T2(t);
-    }, we);
-  }, [t, T2, f2, U2]);
-  React$4.useEffect(() => {
-    if (t.promise && N2 === "loading" || t.duration === 1 / 0 || t.type === "loading") return;
-    let r2;
-    return D || u2 || it2 && Et ? (() => {
-      if (St.current < gt2.current) {
-        let b2 = (/* @__PURE__ */ new Date()).getTime() - gt2.current;
-        O2.current = O2.current - b2;
-      }
-      St.current = (/* @__PURE__ */ new Date()).getTime();
-    })() : (() => {
-      O2.current !== 1 / 0 && (gt2.current = (/* @__PURE__ */ new Date()).getTime(), r2 = setTimeout(() => {
-        var b2;
-        (b2 = t.onAutoClose) == null || b2.call(t, t), $2();
-      }, O2.current));
-    })(), () => clearTimeout(r2);
-  }, [D, u2, t, N2, it2, Et, $2]), React$4.useEffect(() => {
-    t.delete && $2();
-  }, [$2, t.delete]);
-  function Zt() {
-    var r2, m2, c2;
-    return P2 != null && P2.loading ? React$4.createElement("div", { className: M(s == null ? void 0 : s.loader, (r2 = t == null ? void 0 : t.classNames) == null ? void 0 : r2.loader, "sonner-loader"), "data-visible": N2 === "loading" }, P2.loading) : rt2 ? React$4.createElement("div", { className: M(s == null ? void 0 : s.loader, (m2 = t == null ? void 0 : t.classNames) == null ? void 0 : m2.loader, "sonner-loader"), "data-visible": N2 === "loading" }, rt2) : React$4.createElement(Yt, { className: M(s == null ? void 0 : s.loader, (c2 = t == null ? void 0 : t.classNames) == null ? void 0 : c2.loader), visible: N2 === "loading" });
-  }
-  return React$4.createElement("li", { tabIndex: 0, ref: k2, className: M(ot2, Kt, s == null ? void 0 : s.toast, (Dt = t == null ? void 0 : t.classNames) == null ? void 0 : Dt.toast, s == null ? void 0 : s.default, s == null ? void 0 : s[N2], (Pt = t == null ? void 0 : t.classNames) == null ? void 0 : Pt[N2]), "data-sonner-toast": "", "data-rich-colors": (Nt = t.richColors) != null ? Nt : F2, "data-styled": !(t.jsx || t.unstyled || a2), "data-mounted": W2, "data-promise": !!t.promise, "data-swiped": h2, "data-removed": A, "data-visible": Ut, "data-y-position": Gt, "data-x-position": Qt, "data-index": g2, "data-front": Vt, "data-swiping": L2, "data-dismissible": V2, "data-type": N2, "data-invert": qt, "data-swipe-out": ct2, "data-swipe-direction": lt, "data-expanded": !!(D || B2 && W2), style: { "--index": g2, "--toasts-before": g2, "--z-index": i.length - g2, "--offset": `${A ? R2 : U2.current}px`, "--initial-height": B2 ? "auto" : `${p2}px`, ...ut2, ...t.style }, onDragEnd: () => {
-    z2(false), C2(null), K2.current = null;
-  }, onPointerDown: (r2) => {
-    ht || !V2 || (G2.current = /* @__PURE__ */ new Date(), j2(U2.current), r2.target.setPointerCapture(r2.pointerId), r2.target.tagName !== "BUTTON" && (z2(true), K2.current = { x: r2.clientX, y: r2.clientY }));
-  }, onPointerUp: () => {
-    var x3, Q2, q2, Z2;
-    if (ct2 || !V2) return;
-    K2.current = null;
-    let r2 = Number(((x3 = k2.current) == null ? void 0 : x3.style.getPropertyValue("--swipe-amount-x").replace("px", "")) || 0), m2 = Number(((Q2 = k2.current) == null ? void 0 : Q2.style.getPropertyValue("--swipe-amount-y").replace("px", "")) || 0), c2 = (/* @__PURE__ */ new Date()).getTime() - ((q2 = G2.current) == null ? void 0 : q2.getTime()), b2 = Y2 === "x" ? r2 : m2, I = Math.abs(b2) / c2;
-    if (Math.abs(b2) >= ye || I > 0.11) {
-      j2(U2.current), (Z2 = t.onDismiss) == null || Z2.call(t, t), J2(Y2 === "x" ? r2 > 0 ? "right" : "left" : m2 > 0 ? "down" : "up"), $2(), d2(true), y2(false);
-      return;
-    }
-    z2(false), C2(null);
-  }, onPointerMove: (r2) => {
-    var Q2, q2, Z2, zt;
-    if (!K2.current || !V2 || ((Q2 = window.getSelection()) == null ? void 0 : Q2.toString().length) > 0) return;
-    let c2 = r2.clientY - K2.current.y, b2 = r2.clientX - K2.current.x, I = (q2 = n.swipeDirections) != null ? q2 : xe(st2);
-    !Y2 && (Math.abs(b2) > 1 || Math.abs(c2) > 1) && C2(Math.abs(b2) > Math.abs(c2) ? "x" : "y");
-    let x3 = { x: 0, y: 0 };
-    Y2 === "y" ? (I.includes("top") || I.includes("bottom")) && (I.includes("top") && c2 < 0 || I.includes("bottom") && c2 > 0) && (x3.y = c2) : Y2 === "x" && (I.includes("left") || I.includes("right")) && (I.includes("left") && b2 < 0 || I.includes("right") && b2 > 0) && (x3.x = b2), (Math.abs(x3.x) > 0 || Math.abs(x3.y) > 0) && y2(true), (Z2 = k2.current) == null || Z2.style.setProperty("--swipe-amount-x", `${x3.x}px`), (zt = k2.current) == null || zt.style.setProperty("--swipe-amount-y", `${x3.y}px`);
-  } }, Jt && !t.jsx ? React$4.createElement("button", { "aria-label": nt2, "data-disabled": ht, "data-close-button": true, onClick: ht || !V2 ? () => {
-  } : () => {
-    var r2;
-    $2(), (r2 = t.onDismiss) == null || r2.call(t, t);
-  }, className: M(s == null ? void 0 : s.closeButton, (Bt = t == null ? void 0 : t.classNames) == null ? void 0 : Bt.closeButton) }, (Ct = P2 == null ? void 0 : P2.close) != null ? Ct : Ot) : null, t.jsx || reactExports.isValidElement(t.title) ? t.jsx ? t.jsx : typeof t.title == "function" ? t.title() : t.title : React$4.createElement(React$4.Fragment, null, N2 || t.icon || t.promise ? React$4.createElement("div", { "data-icon": "", className: M(s == null ? void 0 : s.icon, (kt = t == null ? void 0 : t.classNames) == null ? void 0 : kt.icon) }, t.promise || t.type === "loading" && !t.icon ? t.icon || Zt() : null, t.type !== "loading" ? t.icon || (P2 == null ? void 0 : P2[N2]) || jt(N2) : null) : null, React$4.createElement("div", { "data-content": "", className: M(s == null ? void 0 : s.content, (It = t == null ? void 0 : t.classNames) == null ? void 0 : It.content) }, React$4.createElement("div", { "data-title": "", className: M(s == null ? void 0 : s.title, (Mt = t == null ? void 0 : t.classNames) == null ? void 0 : Mt.title) }, typeof t.title == "function" ? t.title() : t.title), t.description ? React$4.createElement("div", { "data-description": "", className: M(at, Xt, s == null ? void 0 : s.description, (Ht = t == null ? void 0 : t.classNames) == null ? void 0 : Ht.description) }, typeof t.description == "function" ? t.description() : t.description) : null), reactExports.isValidElement(t.cancel) ? t.cancel : t.cancel && tt(t.cancel) ? React$4.createElement("button", { "data-button": true, "data-cancel": true, style: t.cancelButtonStyle || ft2, onClick: (r2) => {
-    var m2, c2;
-    tt(t.cancel) && V2 && ((c2 = (m2 = t.cancel).onClick) == null || c2.call(m2, r2), $2());
-  }, className: M(s == null ? void 0 : s.cancelButton, (At = t == null ? void 0 : t.classNames) == null ? void 0 : At.cancelButton) }, t.cancel.label) : null, reactExports.isValidElement(t.action) ? t.action : t.action && tt(t.action) ? React$4.createElement("button", { "data-button": true, "data-action": true, style: t.actionButtonStyle || l2, onClick: (r2) => {
-    var m2, c2;
-    tt(t.action) && ((c2 = (m2 = t.action).onClick) == null || c2.call(m2, r2), !r2.defaultPrevented && $2());
-  }, className: M(s == null ? void 0 : s.actionButton, (Lt = t == null ? void 0 : t.classNames) == null ? void 0 : Lt.actionButton) }, t.action.label) : null));
-};
-function _t() {
-  if (typeof window == "undefined" || typeof document == "undefined") return "ltr";
-  let n = document.documentElement.getAttribute("dir");
-  return n === "auto" || !n ? window.getComputedStyle(document.documentElement).direction : n;
-}
-function Te(n, e) {
-  let t = {};
-  return [n, e].forEach((a2, u2) => {
-    let f2 = u2 === 1, w2 = f2 ? "--mobile-offset" : "--offset", S2 = f2 ? ge : me;
-    function g2(i) {
-      ["top", "right", "bottom", "left"].forEach((D) => {
-        t[`${w2}-${D}`] = typeof i == "number" ? `${i}px` : i;
-      });
-    }
-    typeof a2 == "number" || typeof a2 == "string" ? g2(a2) : typeof a2 == "object" ? ["top", "right", "bottom", "left"].forEach((i) => {
-      a2[i] === void 0 ? t[`${w2}-${i}`] = S2 : t[`${w2}-${i}`] = typeof a2[i] == "number" ? `${a2[i]}px` : a2[i];
-    }) : g2(S2);
-  }), t;
-}
-var $e = reactExports.forwardRef(function(e, t) {
-  let { invert: a2, position: u2 = "bottom-right", hotkey: f2 = ["altKey", "KeyT"], expand: w2, closeButton: S2, className: g2, offset: i, mobileOffset: D, theme: T2 = "light", richColors: F2, duration: et2, style: ut2, visibleToasts: ft2 = pe, toastOptions: l2, dir: ot2 = _t(), gap: at = be, loadingIcon: X2, icons: st2, containerAriaLabel: pt = "Notifications", pauseWhenPageIsHidden: rt2 } = e, [B2, s] = React$4.useState([]), P2 = React$4.useMemo(() => Array.from(new Set([u2].concat(B2.filter((d2) => d2.position).map((d2) => d2.position)))), [B2, u2]), [nt2, it2] = React$4.useState([]), [Y2, C2] = React$4.useState(false), [lt, J2] = React$4.useState(false), [W2, H2] = React$4.useState(T2 !== "system" ? T2 : typeof window != "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"), A = React$4.useRef(null), mt = f2.join("+").replace(/Key/g, "").replace(/Digit/g, ""), L2 = React$4.useRef(null), z2 = React$4.useRef(false), ct2 = React$4.useCallback((d2) => {
-    s((h2) => {
-      var y2;
-      return (y2 = h2.find((R2) => R2.id === d2.id)) != null && y2.delete || v.dismiss(d2.id), h2.filter(({ id: R2 }) => R2 !== d2.id);
-    });
-  }, []);
-  return React$4.useEffect(() => v.subscribe((d2) => {
-    if (d2.dismiss) {
-      s((h2) => h2.map((y2) => y2.id === d2.id ? { ...y2, delete: true } : y2));
-      return;
-    }
-    setTimeout(() => {
-      ReactDOM$2.flushSync(() => {
-        s((h2) => {
-          let y2 = h2.findIndex((R2) => R2.id === d2.id);
-          return y2 !== -1 ? [...h2.slice(0, y2), { ...h2[y2], ...d2 }, ...h2.slice(y2 + 1)] : [d2, ...h2];
-        });
-      });
-    });
-  }), []), React$4.useEffect(() => {
-    if (T2 !== "system") {
-      H2(T2);
-      return;
-    }
-    if (T2 === "system" && (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? H2("dark") : H2("light")), typeof window == "undefined") return;
-    let d2 = window.matchMedia("(prefers-color-scheme: dark)");
-    try {
-      d2.addEventListener("change", ({ matches: h2 }) => {
-        H2(h2 ? "dark" : "light");
-      });
-    } catch (h2) {
-      d2.addListener(({ matches: y2 }) => {
-        try {
-          H2(y2 ? "dark" : "light");
-        } catch (R2) {
-          console.error(R2);
-        }
-      });
-    }
-  }, [T2]), React$4.useEffect(() => {
-    B2.length <= 1 && C2(false);
-  }, [B2]), React$4.useEffect(() => {
-    let d2 = (h2) => {
-      var R2, j2;
-      f2.every((p2) => h2[p2] || h2.code === p2) && (C2(true), (R2 = A.current) == null || R2.focus()), h2.code === "Escape" && (document.activeElement === A.current || (j2 = A.current) != null && j2.contains(document.activeElement)) && C2(false);
-    };
-    return document.addEventListener("keydown", d2), () => document.removeEventListener("keydown", d2);
-  }, [f2]), React$4.useEffect(() => {
-    if (A.current) return () => {
-      L2.current && (L2.current.focus({ preventScroll: true }), L2.current = null, z2.current = false);
-    };
-  }, [A.current]), React$4.createElement("section", { ref: t, "aria-label": `${pt} ${mt}`, tabIndex: -1, "aria-live": "polite", "aria-relevant": "additions text", "aria-atomic": "false", suppressHydrationWarning: true }, P2.map((d2, h2) => {
-    var j2;
-    let [y2, R2] = d2.split("-");
-    return B2.length ? React$4.createElement("ol", { key: d2, dir: ot2 === "auto" ? _t() : ot2, tabIndex: -1, ref: A, className: g2, "data-sonner-toaster": true, "data-theme": W2, "data-y-position": y2, "data-lifted": Y2 && B2.length > 1 && !w2, "data-x-position": R2, style: { "--front-toast-height": `${((j2 = nt2[0]) == null ? void 0 : j2.height) || 0}px`, "--width": `${he}px`, "--gap": `${at}px`, ...ut2, ...Te(i, D) }, onBlur: (p2) => {
-      z2.current && !p2.currentTarget.contains(p2.relatedTarget) && (z2.current = false, L2.current && (L2.current.focus({ preventScroll: true }), L2.current = null));
-    }, onFocus: (p2) => {
-      p2.target instanceof HTMLElement && p2.target.dataset.dismissible === "false" || z2.current || (z2.current = true, L2.current = p2.relatedTarget);
-    }, onMouseEnter: () => C2(true), onMouseMove: () => C2(true), onMouseLeave: () => {
-      lt || C2(false);
-    }, onDragEnd: () => C2(false), onPointerDown: (p2) => {
-      p2.target instanceof HTMLElement && p2.target.dataset.dismissible === "false" || J2(true);
-    }, onPointerUp: () => J2(false) }, B2.filter((p2) => !p2.position && h2 === 0 || p2.position === d2).map((p2, _2) => {
-      var O2, G2;
-      return React$4.createElement(ve, { key: p2.id, icons: st2, index: _2, toast: p2, defaultRichColors: F2, duration: (O2 = l2 == null ? void 0 : l2.duration) != null ? O2 : et2, className: l2 == null ? void 0 : l2.className, descriptionClassName: l2 == null ? void 0 : l2.descriptionClassName, invert: a2, visibleToasts: ft2, closeButton: (G2 = l2 == null ? void 0 : l2.closeButton) != null ? G2 : S2, interacting: lt, position: d2, style: l2 == null ? void 0 : l2.style, unstyled: l2 == null ? void 0 : l2.unstyled, classNames: l2 == null ? void 0 : l2.classNames, cancelButtonStyle: l2 == null ? void 0 : l2.cancelButtonStyle, actionButtonStyle: l2 == null ? void 0 : l2.actionButtonStyle, removeToast: ct2, toasts: B2.filter((k2) => k2.position == p2.position), heights: nt2.filter((k2) => k2.position == p2.position), setHeights: it2, expandByDefault: w2, gap: at, loadingIcon: X2, expanded: Y2, pauseWhenPageIsHidden: rt2, swipeDirections: e.swipeDirections });
-    })) : null;
-  }));
+  return reactExports.createElement("script", { ...w2, suppressHydrationWarning: true, nonce: typeof window == "undefined" ? d2 : "", dangerouslySetInnerHTML: { __html: `(${M.toString()})(${p2})` } });
 });
 const Toaster = ({ ...props }) => {
   const { theme = "system" } = z();
@@ -43873,232 +45055,58 @@ const Toaster = ({ ...props }) => {
     }
   );
 };
-function setRef(ref, value) {
-  if (typeof ref === "function") {
-    return ref(value);
-  } else if (ref !== null && ref !== void 0) {
-    ref.current = value;
-  }
-}
-function composeRefs(...refs) {
-  return (node) => {
-    let hasCleanup = false;
-    const cleanups = refs.map((ref) => {
-      const cleanup = setRef(ref, node);
-      if (!hasCleanup && typeof cleanup == "function") {
-        hasCleanup = true;
-      }
-      return cleanup;
-    });
-    if (hasCleanup) {
-      return () => {
-        for (let i = 0; i < cleanups.length; i++) {
-          const cleanup = cleanups[i];
-          if (typeof cleanup == "function") {
-            cleanup();
-          } else {
-            setRef(refs[i], null);
-          }
-        }
-      };
-    }
-  };
-}
-function useComposedRefs(...refs) {
-  return reactExports.useCallback(composeRefs(...refs), refs);
-}
-var REACT_LAZY_TYPE = Symbol.for("react.lazy");
-var use = React$5[" use ".trim().toString()];
-function isPromiseLike(value) {
-  return typeof value === "object" && value !== null && "then" in value;
-}
-function isLazyComponent(element) {
-  return element != null && typeof element === "object" && "$$typeof" in element && element.$$typeof === REACT_LAZY_TYPE && "_payload" in element && isPromiseLike(element._payload);
-}
-// @__NO_SIDE_EFFECTS__
-function createSlot$1(ownerName) {
-  const SlotClone = /* @__PURE__ */ createSlotClone$1(ownerName);
-  const Slot2 = reactExports.forwardRef((props, forwardedRef) => {
-    let { children, ...slotProps } = props;
-    if (isLazyComponent(children) && typeof use === "function") {
-      children = use(children._payload);
-    }
-    const childrenArray = reactExports.Children.toArray(children);
-    const slottable = childrenArray.find(isSlottable$1);
-    if (slottable) {
-      const newElement = slottable.props.children;
-      const newChildren = childrenArray.map((child) => {
-        if (child === slottable) {
-          if (reactExports.Children.count(newElement) > 1) return reactExports.Children.only(null);
-          return reactExports.isValidElement(newElement) ? newElement.props.children : null;
-        } else {
-          return child;
-        }
-      });
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: reactExports.isValidElement(newElement) ? reactExports.cloneElement(newElement, void 0, newChildren) : null });
-    }
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
-  });
-  Slot2.displayName = `${ownerName}.Slot`;
-  return Slot2;
-}
-var Slot$2 = /* @__PURE__ */ createSlot$1("Slot");
-// @__NO_SIDE_EFFECTS__
-function createSlotClone$1(ownerName) {
-  const SlotClone = reactExports.forwardRef((props, forwardedRef) => {
-    let { children, ...slotProps } = props;
-    if (isLazyComponent(children) && typeof use === "function") {
-      children = use(children._payload);
-    }
-    if (reactExports.isValidElement(children)) {
-      const childrenRef = getElementRef$2(children);
-      const props2 = mergeProps$1(slotProps, children.props);
-      if (children.type !== reactExports.Fragment) {
-        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-      }
-      return reactExports.cloneElement(children, props2);
-    }
-    return reactExports.Children.count(children) > 1 ? reactExports.Children.only(null) : null;
-  });
-  SlotClone.displayName = `${ownerName}.SlotClone`;
-  return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER$1 = Symbol("radix.slottable");
-function isSlottable$1(child) {
-  return reactExports.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER$1;
-}
-function mergeProps$1(slotProps, childProps) {
-  const overrideProps = { ...childProps };
-  for (const propName in childProps) {
-    const slotPropValue = slotProps[propName];
-    const childPropValue = childProps[propName];
-    const isHandler = /^on[A-Z]/.test(propName);
-    if (isHandler) {
-      if (slotPropValue && childPropValue) {
-        overrideProps[propName] = (...args) => {
-          const result = childPropValue(...args);
-          slotPropValue(...args);
-          return result;
-        };
-      } else if (slotPropValue) {
-        overrideProps[propName] = slotPropValue;
-      }
-    } else if (propName === "style") {
-      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
-    } else if (propName === "className") {
-      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-    }
-  }
-  return { ...slotProps, ...overrideProps };
-}
-function getElementRef$2(element) {
-  var _a2, _b2;
-  let getter = (_a2 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a2.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b2 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b2.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-const falsyToString = (value) => typeof value === "boolean" ? `${value}` : value === 0 ? "0" : value;
-const cx = clsx;
-const cva = (base, config) => (props) => {
-  var _config_compoundVariants;
-  if ((config === null || config === void 0 ? void 0 : config.variants) == null) return cx(base, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
-  const { variants, defaultVariants } = config;
-  const getVariantClassNames = Object.keys(variants).map((variant) => {
-    const variantProp = props === null || props === void 0 ? void 0 : props[variant];
-    const defaultVariantProp = defaultVariants === null || defaultVariants === void 0 ? void 0 : defaultVariants[variant];
-    if (variantProp === null) return null;
-    const variantKey = falsyToString(variantProp) || falsyToString(defaultVariantProp);
-    return variants[variant][variantKey];
-  });
-  const propsWithoutUndefined = props && Object.entries(props).reduce((acc, param) => {
-    let [key, value] = param;
-    if (value === void 0) {
-      return acc;
-    }
-    acc[key] = value;
-    return acc;
-  }, {});
-  const getCompoundVariantClassNames = config === null || config === void 0 ? void 0 : (_config_compoundVariants = config.compoundVariants) === null || _config_compoundVariants === void 0 ? void 0 : _config_compoundVariants.reduce((acc, param) => {
-    let { class: cvClass, className: cvClassName, ...compoundVariantOptions } = param;
-    return Object.entries(compoundVariantOptions).every((param2) => {
-      let [key, value] = param2;
-      return Array.isArray(value) ? value.includes({
-        ...defaultVariants,
-        ...propsWithoutUndefined
-      }[key]) : {
-        ...defaultVariants,
-        ...propsWithoutUndefined
-      }[key] === value;
-    }) ? [
-      ...acc,
-      cvClass,
-      cvClassName
-    ] : acc;
-  }, []);
-  return cx(base, getVariantClassNames, getCompoundVariantClassNames, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
-};
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
-        outline: "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
-        secondary: "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline"
-      },
-      size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9"
-      }
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default"
-    }
-  }
-);
-function Button({
-  className,
-  variant,
-  size: size2,
-  asChild = false,
-  ...props
-}) {
-  const Comp = asChild ? Slot$2 : "button";
+function Card({ className, ...props }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Comp,
+    "div",
     {
-      "data-slot": "button",
-      className: cn(buttonVariants({ variant, size: size2, className })),
+      "data-slot": "card",
+      className: cn(
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        className
+      ),
       ...props
     }
   );
 }
-function Input({ className, type, ...props }) {
+function CardHeader({ className, ...props }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "input",
+    "div",
     {
-      type,
-      "data-slot": "input",
+      "data-slot": "card-header",
       className: cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
         className
       ),
+      ...props
+    }
+  );
+}
+function CardTitle({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "card-title",
+      className: cn("leading-none font-semibold", className),
+      ...props
+    }
+  );
+}
+function CardDescription({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "card-description",
+      className: cn("text-muted-foreground text-sm", className),
+      ...props
+    }
+  );
+}
+function CardContent({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "card-content",
+      className: cn("px-6", className),
       ...props
     }
   );
@@ -44167,6 +45175,1118 @@ function Label({
         className
       ),
       ...props
+    }
+  );
+}
+function useActorOrNull() {
+  const { actor, isFetching } = useActor(createActor);
+  return { actor, isFetching };
+}
+function useOrders() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["orders"],
+    queryFn: () => actor ? listOrders(actor) : Promise.resolve([]),
+    enabled: !!actor && !isFetching
+  });
+}
+function useMarkPickedUp() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (orderId) => {
+      if (!actor) throw new Error("Actor not ready");
+      return markPickedUp(actor, orderId);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["orders", "paid-for-pickup"] })
+  });
+}
+function useMenus() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["menus"],
+    queryFn: () => actor ? listMenus(actor) : Promise.resolve([]),
+    enabled: !!actor && !isFetching
+  });
+}
+function useMenuForRestaurant(restaurantId) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["menu", restaurantId],
+    queryFn: () => actor && restaurantId ? getMenuForRestaurant(actor, restaurantId) : Promise.resolve([]),
+    enabled: !!actor && !isFetching && !!restaurantId
+  });
+}
+function useUpdateItem() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (item) => {
+      if (!actor) throw new Error("Actor not ready");
+      return updateItem(actor, item);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["menus"] })
+  });
+}
+function useAddItem() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (item) => {
+      if (!actor) throw new Error("Actor not ready");
+      return addItem(actor, item);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["menus"] })
+  });
+}
+function useDeleteItem() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (itemId) => {
+      if (!actor) throw new Error("Actor not ready");
+      return deleteItem(actor, itemId);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["menus"] })
+  });
+}
+function useRestaurants() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["restaurants"],
+    queryFn: () => actor ? listRestaurants(actor) : Promise.resolve([]),
+    enabled: !!actor && !isFetching
+  });
+}
+function useAddRestaurant() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (r2) => {
+      if (!actor) throw new Error("Actor not ready");
+      return addRestaurant(actor, r2);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["restaurants"] })
+  });
+}
+function useUpdateRestaurant() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (r2) => {
+      if (!actor) throw new Error("Actor not ready");
+      return updateRestaurant(actor, r2);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["restaurants"] })
+  });
+}
+function useDeleteRestaurant() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (restaurantId) => {
+      if (!actor) throw new Error("Actor not ready");
+      return deleteRestaurant(actor, restaurantId);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["restaurants"] })
+  });
+}
+function useSetRestaurantPriceOverride() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args) => {
+      if (!actor) throw new Error("Actor not ready");
+      return setRestaurantPriceOverride(actor, args.restaurantId, args.itemId, args.price);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["menu"] })
+  });
+}
+function useDevicesByRestaurant(restaurantId) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["devices", restaurantId],
+    queryFn: () => actor && restaurantId ? listDevicesByRestaurant(actor, restaurantId) : Promise.resolve([]),
+    enabled: !!actor && !isFetching && !!restaurantId
+  });
+}
+function useGenerateActivationCode() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args) => {
+      if (!actor) throw new Error("Actor not ready");
+      return generateActivationCode(actor, args.restaurantId, args.role);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] })
+  });
+}
+function useRevokeDevice() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (deviceId) => {
+      if (!actor) throw new Error("Actor not ready");
+      return revokeDevice(actor, deviceId);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] })
+  });
+}
+function useCleanupExpiredActivations() {
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: () => {
+      if (!actor) throw new Error("Actor not ready");
+      return cleanupExpiredActivations(actor);
+    }
+  });
+}
+function useCanisterIdText() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["canister-id"],
+    queryFn: () => actor ? getCanisterIdText(actor) : Promise.resolve(""),
+    enabled: !!actor && !isFetching
+  });
+}
+function useSetVpsSecret() {
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (newSecret) => {
+      if (!actor) throw new Error("Actor not ready");
+      return setVpsSecret(actor, newSecret);
+    }
+  });
+}
+function useGetPaymentMode() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["paymentMode"],
+    queryFn: () => actor ? getPaymentMode(actor) : Promise.resolve(""),
+    enabled: !!actor && !isFetching,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 0
+  });
+}
+function useSetPaymentMode() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (mode) => {
+      if (!actor) throw new Error("Actor not ready");
+      return setPaymentMode(actor, mode);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["paymentMode"] })
+  });
+}
+function useGetStoreHours() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["storeHours"],
+    queryFn: () => actor ? getStoreHours(actor) : Promise.resolve(null),
+    enabled: !!actor && !isFetching,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
+  });
+}
+function useSetStoreHours() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (hours) => {
+      if (!actor) throw new Error("Actor not ready");
+      return setStoreHours(actor, hours);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["storeHours"] })
+  });
+}
+function useIsStoreOpen() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["storeOpen"],
+    queryFn: () => actor ? isStoreOpen(actor) : Promise.resolve(true),
+    enabled: !!actor && !isFetching,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
+  });
+}
+function pad2(n) {
+  return n.toString().padStart(2, "0");
+}
+function formatTime$2(hour, minute) {
+  return `${pad2(hour)}:${pad2(minute)}`;
+}
+function SectionCard$1({
+  icon: Icon2,
+  title,
+  description,
+  children,
+  testId
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": testId, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+        title
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: description })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children })
+  ] });
+}
+function AdminPanel() {
+  const [newSecret, setNewSecret] = reactExports.useState("");
+  const [secretInputKey, setSecretInputKey] = reactExports.useState(0);
+  const [paymentModeDraft, setPaymentModeDraft] = reactExports.useState(
+    null
+  );
+  const [openHour, setOpenHour] = reactExports.useState("");
+  const [openMinute, setOpenMinute] = reactExports.useState("");
+  const [closeHour, setCloseHour] = reactExports.useState("");
+  const [closeMinute, setCloseMinute] = reactExports.useState("");
+  const setSecretMutation = useSetVpsSecret();
+  const canisterIdQuery = useCanisterIdText();
+  const paymentModeQuery = useGetPaymentMode();
+  const setPaymentModeMutation = useSetPaymentMode();
+  const storeHoursQuery = useGetStoreHours();
+  const setStoreHoursMutation = useSetStoreHours();
+  reactExports.useEffect(() => {
+    if (storeHoursQuery.data) {
+      setOpenHour(storeHoursQuery.data.openHour.toString());
+      setOpenMinute(storeHoursQuery.data.openMinute.toString());
+      setCloseHour(storeHoursQuery.data.closeHour.toString());
+      setCloseMinute(storeHoursQuery.data.closeMinute.toString());
+    }
+  }, [storeHoursQuery.data]);
+  const currentPaymentMode = paymentModeDraft ?? (paymentModeQuery.data === "customer" ? "customer" : "driver");
+  async function handleSetSecret(e) {
+    e.preventDefault();
+    if (!newSecret.trim()) {
+      ue.error("Vui lòng nhập secret mới.");
+      return;
+    }
+    if (newSecret.length < 8) {
+      ue.error("Secret phải có ít nhất 8 ký tự.");
+      return;
+    }
+    try {
+      await setSecretMutation.mutateAsync(newSecret.trim());
+      ue.success("Đã cập nhật secret VPS.");
+      setNewSecret("");
+      setSecretInputKey((k2) => k2 + 1);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể cập nhật secret.";
+      ue.error(message);
+    }
+  }
+  async function copyCanisterId() {
+    const id = canisterIdQuery.data;
+    if (!id) return;
+    try {
+      await navigator.clipboard.writeText(id);
+      ue.success("Đã sao chép Canister ID.");
+    } catch {
+      ue.error("Không sao chép được. Vui lòng sao chép thủ công.");
+    }
+  }
+  async function handleUpdatePaymentMode(e) {
+    e.preventDefault();
+    try {
+      await setPaymentModeMutation.mutateAsync(currentPaymentMode);
+      ue.success("Đã cập nhật chế độ thanh toán đơn.");
+      setPaymentModeDraft(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể cập nhật chế độ thanh toán.";
+      ue.error(message);
+    }
+  }
+  async function handleUpdateStoreHours(e) {
+    e.preventDefault();
+    const oh = Number(openHour);
+    const om = Number(openMinute);
+    const ch = Number(closeHour);
+    const cm = Number(closeMinute);
+    if (!Number.isInteger(oh) || oh < 0 || oh > 23 || !Number.isInteger(om) || om < 0 || om > 59 || !Number.isInteger(ch) || ch < 0 || ch > 23 || !Number.isInteger(cm) || cm < 0 || cm > 59) {
+      ue.error("Giờ phải nằm trong khoảng hợp lệ (00:00 – 23:59).");
+      return;
+    }
+    try {
+      await setStoreHoursMutation.mutateAsync({
+        openHour: BigInt(oh),
+        openMinute: BigInt(om),
+        closeHour: BigInt(ch),
+        closeMinute: BigInt(cm)
+      });
+      ue.success("Đã cập nhật giờ mở/đóng cửa hàng.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể cập nhật giờ mở/đóng cửa hàng.";
+      ue.error(message);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-5xl px-4 py-8 md:px-6 md:py-10",
+      "data-ocid": "admin.page",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "h1",
+            {
+              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+              "data-ocid": "admin.title",
+              children: "Quản lý"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Cấu hình hệ thống, mã kích hoạt, thiết bị và canister." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard$1,
+            {
+              icon: KeyRound,
+              title: "Canister ID",
+              description: "Định danh canister dùng để VPS xác thực HMAC.",
+              testId: "admin.canister_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-col gap-3", children: canisterIdQuery.isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "div",
+                {
+                  className: "flex items-center gap-2 text-sm text-muted-foreground",
+                  "data-ocid": "admin.canister.loading_state",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+                    "Đang tải Canister ID…"
+                  ]
+                }
+              ) : canisterIdQuery.isError ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "p",
+                {
+                  className: "text-sm text-destructive",
+                  "data-ocid": "admin.canister.error_state",
+                  children: "Không tải được Canister ID."
+                }
+              ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "code",
+                  {
+                    className: "min-w-0 flex-1 truncate rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs text-foreground",
+                    title: canisterIdQuery.data ?? "",
+                    "data-ocid": "admin.canister.id_value",
+                    children: canisterIdQuery.data || "—"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "outline",
+                    size: "icon",
+                    onClick: copyCanisterId,
+                    disabled: !canisterIdQuery.data,
+                    "data-ocid": "admin.canister.copy_button",
+                    "aria-label": "Sao chép Canister ID",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                )
+              ] }) })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard$1,
+            {
+              icon: ShieldOff,
+              title: "Cập nhật secret VPS",
+              description: "Đặt lại khóa bí mật dùng để ký HMAC giữa canister và VPS worker.",
+              testId: "admin.secret_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleSetSecret,
+                  className: "flex flex-col gap-3",
+                  "data-ocid": "admin.secret_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "vps-secret", className: "text-sm font-medium", children: "Secret mới" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Input,
+                        {
+                          id: "vps-secret",
+                          type: "password",
+                          value: newSecret,
+                          onChange: (e) => setNewSecret(e.target.value),
+                          placeholder: "Ít nhất 8 ký tự",
+                          minLength: 8,
+                          autoComplete: "off",
+                          "data-ocid": "admin.secret_input"
+                        },
+                        secretInputKey
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        disabled: setSecretMutation.isPending || !newSecret.trim(),
+                        "data-ocid": "admin.secret.submit_button",
+                        className: "w-full sm:w-auto",
+                        children: [
+                          setSecretMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Cập nhật secret"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              )
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard$1,
+            {
+              icon: Wallet,
+              title: "Chế độ thanh toán đơn",
+              description: "Chọn ai là người thanh toán tiền đơn: tài xế trả trước rồi thanh toán lại, hoặc khách trả trực tiếp cho tài xế khi nhận hàng.",
+              testId: "admin.payment_mode_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleUpdatePaymentMode,
+                  className: "flex flex-col gap-3",
+                  "data-ocid": "admin.payment_mode_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "fieldset",
+                      {
+                        className: "flex flex-col gap-2",
+                        "data-ocid": "admin.payment_mode_fieldset",
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("legend", { className: "sr-only", children: "Chế độ thanh toán đơn" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "label",
+                            {
+                              className: "flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-smooth hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+                              "data-ocid": "admin.payment_mode.option.driver",
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "input",
+                                  {
+                                    type: "radio",
+                                    name: "paymentMode",
+                                    value: "driver",
+                                    checked: currentPaymentMode === "driver",
+                                    onChange: () => setPaymentModeDraft("driver"),
+                                    className: "mt-0.5 h-4 w-4 accent-primary",
+                                    "data-ocid": "admin.payment_mode.radio.driver"
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex flex-col", children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-foreground", children: "Tài xế trả tiền đơn" }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Tài xế thanh toán trước cho đơn, sau đó quyết toán với nhà." })
+                                ] })
+                              ]
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "label",
+                            {
+                              className: "flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-smooth hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+                              "data-ocid": "admin.payment_mode.option.customer",
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "input",
+                                  {
+                                    type: "radio",
+                                    name: "paymentMode",
+                                    value: "customer",
+                                    checked: currentPaymentMode === "customer",
+                                    onChange: () => setPaymentModeDraft("customer"),
+                                    className: "mt-0.5 h-4 w-4 accent-primary",
+                                    "data-ocid": "admin.payment_mode.radio.customer"
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex flex-col", children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-foreground", children: "Khách trả tiền đơn" }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Khách thanh toán trực tiếp cho tài xế khi nhận hàng." })
+                                ] })
+                              ]
+                            }
+                          )
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "div",
+                      {
+                        className: "text-xs text-muted-foreground",
+                        "data-ocid": "admin.payment_mode.current_value",
+                        children: paymentModeQuery.isLoading ? "Đang tải chế độ hiện tại…" : `Chế độ hiện tại: ${currentPaymentMode === "driver" ? "Tài xế trả tiền đơn" : "Khách trả tiền đơn"}`
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        disabled: setPaymentModeMutation.isPending || paymentModeQuery.isLoading || paymentModeDraft === null,
+                        "data-ocid": "admin.payment_mode.submit_button",
+                        className: "w-full sm:w-auto",
+                        children: [
+                          setPaymentModeMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Wallet, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Cập nhật"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              )
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard$1,
+            {
+              icon: Clock,
+              title: "Giờ mở/đóng cửa hàng",
+              description: "Cấu hình giờ mở và đóng cửa toàn cục, áp dụng chung cho tất cả cửa hàng. Ngoài giờ này, cả tài xế và khách đều không thể đặt hàng.",
+              testId: "admin.store_hours_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleUpdateStoreHours,
+                  className: "flex flex-col gap-3",
+                  "data-ocid": "admin.store_hours_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          Label,
+                          {
+                            htmlFor: "store-open-hour",
+                            className: "text-sm font-medium",
+                            children: "Giờ mở cửa"
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            Input,
+                            {
+                              id: "store-open-hour",
+                              type: "number",
+                              min: 0,
+                              max: 23,
+                              value: openHour,
+                              onChange: (e) => setOpenHour(e.target.value),
+                              placeholder: "08",
+                              inputMode: "numeric",
+                              "aria-label": "Giờ mở cửa",
+                              "data-ocid": "admin.store_hours.open_hour_input",
+                              className: "text-center font-mono"
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: ":" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            Input,
+                            {
+                              type: "number",
+                              min: 0,
+                              max: 59,
+                              value: openMinute,
+                              onChange: (e) => setOpenMinute(e.target.value),
+                              placeholder: "00",
+                              inputMode: "numeric",
+                              "aria-label": "Phút mở cửa",
+                              "data-ocid": "admin.store_hours.open_minute_input",
+                              className: "text-center font-mono"
+                            }
+                          )
+                        ] })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          Label,
+                          {
+                            htmlFor: "store-close-hour",
+                            className: "text-sm font-medium",
+                            children: "Giờ đóng cửa"
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            Input,
+                            {
+                              id: "store-close-hour",
+                              type: "number",
+                              min: 0,
+                              max: 23,
+                              value: closeHour,
+                              onChange: (e) => setCloseHour(e.target.value),
+                              placeholder: "22",
+                              inputMode: "numeric",
+                              "aria-label": "Giờ đóng cửa",
+                              "data-ocid": "admin.store_hours.close_hour_input",
+                              className: "text-center font-mono"
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: ":" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            Input,
+                            {
+                              type: "number",
+                              min: 0,
+                              max: 59,
+                              value: closeMinute,
+                              onChange: (e) => setCloseMinute(e.target.value),
+                              placeholder: "00",
+                              inputMode: "numeric",
+                              "aria-label": "Phút đóng cửa",
+                              "data-ocid": "admin.store_hours.close_minute_input",
+                              className: "text-center font-mono"
+                            }
+                          )
+                        ] })
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "div",
+                      {
+                        className: "text-xs text-muted-foreground",
+                        "data-ocid": "admin.store_hours.current_value",
+                        children: storeHoursQuery.isLoading ? "Đang tải giờ hiện tại…" : storeHoursQuery.data ? `Giờ hiện tại: ${formatTime$2(
+                          Number(storeHoursQuery.data.openHour),
+                          Number(storeHoursQuery.data.openMinute)
+                        )} – ${formatTime$2(
+                          Number(storeHoursQuery.data.closeHour),
+                          Number(storeHoursQuery.data.closeMinute)
+                        )}` : "Chưa cấu hình giờ mở/đóng."
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        disabled: setStoreHoursMutation.isPending || storeHoursQuery.isLoading || !openHour || !openMinute || !closeHour || !closeMinute,
+                        "data-ocid": "admin.store_hours.submit_button",
+                        className: "w-full sm:w-auto",
+                        children: [
+                          setStoreHoursMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Lưu giờ mở/đóng"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              )
+            }
+          )
+        ] })
+      ]
+    }
+  );
+}
+function Table({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "table-container",
+      className: "relative w-full overflow-x-auto",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "table",
+        {
+          "data-slot": "table",
+          className: cn("w-full caption-bottom text-sm", className),
+          ...props
+        }
+      )
+    }
+  );
+}
+function TableHeader({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "thead",
+    {
+      "data-slot": "table-header",
+      className: cn("[&_tr]:border-b", className),
+      ...props
+    }
+  );
+}
+function TableBody({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "tbody",
+    {
+      "data-slot": "table-body",
+      className: cn("[&_tr:last-child]:border-0", className),
+      ...props
+    }
+  );
+}
+function TableRow({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "tr",
+    {
+      "data-slot": "table-row",
+      className: cn(
+        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function TableHead({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "th",
+    {
+      "data-slot": "table-head",
+      className: cn(
+        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function TableCell({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "td",
+    {
+      "data-slot": "table-cell",
+      className: cn(
+        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function formatVnd$9(n) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+  }).format(n);
+}
+function CustomersTable({ data, testId }) {
+  if (data.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        "data-ocid": testId ?? "customers_table.empty_state",
+        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
+        children: "Chưa có dữ liệu khách hàng."
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "data-ocid": testId ?? "customers_table", className: "w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "w-[40%]", children: "Khách hàng" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Số điện thoại" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Số đơn" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Tổng chi" })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: data.map((row, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      TableRow,
+      {
+        "data-ocid": `customers_table.row.${i + 1}`,
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium text-foreground", children: row.cusName }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-sm text-muted-foreground", children: row.cusPhone || "—" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono", children: row.orderCount }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$9(row.totalSpent) })
+        ]
+      },
+      `${row.cusName}-${i}`
+    )) })
+  ] }) });
+}
+const STATUS_STYLES = {
+  paid: {
+    label: "Đã thanh toán",
+    barClass: "fill-success",
+    textClass: "text-success"
+  },
+  pending: {
+    label: "Đang chờ",
+    barClass: "fill-warning",
+    textClass: "text-warning-foreground"
+  },
+  shipping: {
+    label: "Đang giao",
+    barClass: "fill-info",
+    textClass: "text-info"
+  },
+  cancelled: {
+    label: "Đã hủy",
+    barClass: "fill-destructive",
+    textClass: "text-destructive"
+  }
+};
+function styleFor(status) {
+  return STATUS_STYLES[status] ?? {
+    label: status,
+    barClass: "fill-primary",
+    textClass: "text-primary"
+  };
+}
+function OrdersChart({ data, testId }) {
+  const { rows, maxCount } = reactExports.useMemo(() => {
+    const max2 = data.reduce((m2, d2) => Math.max(m2, d2.count), 0);
+    return { rows: data, maxCount: max2 };
+  }, [data]);
+  if (data.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        "data-ocid": testId ?? "orders_chart.empty_state",
+        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
+        children: "Chưa có dữ liệu đơn hàng theo trạng thái."
+      }
+    );
+  }
+  const total = data.reduce((s, d2) => s + d2.count, 0);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-ocid": testId ?? "orders_chart",
+      className: "flex flex-col gap-3",
+      role: "img",
+      "aria-label": "Biểu đồ đơn hàng theo trạng thái",
+      children: rows.map((row, i) => {
+        const style2 = styleFor(row.status);
+        const pct = maxCount <= 0 ? 0 : row.count / maxCount * 100;
+        const sharePct = total <= 0 ? 0 : row.count / total * 100;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            "data-ocid": `orders_chart.row.${i + 1}`,
+            className: "flex flex-col gap-1.5",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2 text-sm", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: style2.label }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-mono text-xs text-muted-foreground", children: [
+                  row.count,
+                  " (",
+                  sharePct.toFixed(0),
+                  "%)"
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-3 w-full overflow-hidden rounded-full bg-secondary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: cn(
+                    "h-full rounded-full transition-smooth",
+                    style2.barClass.replace("fill-", "bg-")
+                  ),
+                  style: { width: `${pct}%` },
+                  "data-ocid": `orders_chart.bar.${i + 1}`
+                }
+              ) })
+            ]
+          },
+          row.status
+        );
+      })
+    }
+  );
+}
+function formatVndShort(n) {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)} tỷ`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)} tr`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(0)}k`;
+  return `${n}`;
+}
+function formatVnd$8(n) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+  }).format(n);
+}
+function formatDayLabel(iso) {
+  const [y2, m2, d2] = iso.split("-");
+  if (!y2 || !m2 || !d2) return iso;
+  return `${d2}/${m2}`;
+}
+const VIEW_WIDTH = 640;
+const VIEW_HEIGHT = 240;
+const PAD_LEFT = 8;
+const PAD_RIGHT = 8;
+const PAD_TOP = 16;
+const PAD_BOTTOM = 28;
+const PLOT_WIDTH = VIEW_WIDTH - PAD_LEFT - PAD_RIGHT;
+const PLOT_HEIGHT = VIEW_HEIGHT - PAD_TOP - PAD_BOTTOM;
+function RevenueChart({ data, testId }) {
+  const { bars, yTicks } = reactExports.useMemo(() => {
+    const max2 = data.reduce((m2, d2) => Math.max(m2, d2.revenue), 0);
+    const niceMax = max2 <= 0 ? 1 : Math.ceil(max2 * 1.1);
+    const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => ({
+      ratio: t,
+      value: Math.round(niceMax * t)
+    }));
+    const n = data.length;
+    const slot = n > 0 ? PLOT_WIDTH / n : PLOT_WIDTH;
+    const barW = Math.min(slot * 0.62, 36);
+    const computed = data.map((d2, i) => {
+      const h2 = max2 <= 0 ? 0 : d2.revenue / niceMax * PLOT_HEIGHT;
+      const x3 = PAD_LEFT + i * slot + (slot - barW) / 2;
+      const y2 = PAD_TOP + (PLOT_HEIGHT - h2);
+      return { ...d2, x: x3, y: y2, w: barW, h: h2 };
+    });
+    return { bars: computed, yTicks: ticks };
+  }, [data]);
+  if (data.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        "data-ocid": testId ?? "revenue_chart.empty_state",
+        className: "flex h-[240px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
+        children: "Chưa có dữ liệu doanh thu trong khoảng đã chọn."
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-ocid": testId ?? "revenue_chart",
+      className: "w-full",
+      role: "img",
+      "aria-label": "Biểu đồ doanh thu theo thời gian",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "svg",
+        {
+          viewBox: `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`,
+          className: "w-full",
+          preserveAspectRatio: "xMidYMid meet",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: "Biểu đồ doanh thu" }),
+            yTicks.map((t) => {
+              const y2 = PAD_TOP + PLOT_HEIGHT - t.ratio * PLOT_HEIGHT;
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs("g", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "line",
+                  {
+                    x1: PAD_LEFT,
+                    x2: VIEW_WIDTH - PAD_RIGHT,
+                    y1: y2,
+                    y2,
+                    stroke: "currentColor",
+                    strokeWidth: 1,
+                    className: "text-border",
+                    strokeDasharray: t.ratio === 0 ? "0" : "3 3"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "text",
+                  {
+                    x: PAD_LEFT + 2,
+                    y: y2 - 2,
+                    fontSize: 10,
+                    className: "fill-muted-foreground",
+                    children: formatVndShort(t.value)
+                  }
+                )
+              ] }, `y-${t.ratio}`);
+            }),
+            bars.map((b2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "g",
+              {
+                "data-ocid": `revenue_chart.point.${i + 1}`,
+                className: "transition-smooth",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "rect",
+                    {
+                      x: b2.x,
+                      y: b2.y,
+                      width: b2.w,
+                      height: Math.max(b2.h, 0),
+                      rx: 3,
+                      className: "fill-primary transition-smooth hover:fill-primary/80",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: `${formatDayLabel(b2.date)}: ${formatVnd$8(b2.revenue)}` })
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "text",
+                    {
+                      x: b2.x + b2.w / 2,
+                      y: VIEW_HEIGHT - 10,
+                      fontSize: 10,
+                      textAnchor: "middle",
+                      className: "fill-muted-foreground",
+                      children: formatDayLabel(b2.date)
+                    }
+                  )
+                ]
+              },
+              b2.date
+            ))
+          ]
+        }
+      )
+    }
+  );
+}
+const TONE_STYLES = {
+  primary: {
+    iconWrap: "bg-primary/10 text-primary",
+    value: "text-primary"
+  },
+  success: {
+    iconWrap: "bg-success/15 text-success",
+    value: "text-success"
+  },
+  warning: {
+    iconWrap: "bg-warning/20 text-warning-foreground",
+    value: "text-warning-foreground"
+  },
+  info: {
+    iconWrap: "bg-info/15 text-info",
+    value: "text-info"
+  }
+};
+function StatCard({
+  label,
+  value,
+  icon: Icon2,
+  hint,
+  tone = "primary",
+  testId
+}) {
+  const styles = TONE_STYLES[tone];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      "data-ocid": testId ?? "stat.card",
+      className: "flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-smooth hover:shadow-md",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-muted-foreground", children: label }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "span",
+            {
+              className: cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                styles.iconWrap
+              ),
+              "aria-hidden": "true",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4" })
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "span",
+            {
+              className: cn(
+                "font-display text-2xl font-bold tracking-tight md:text-3xl",
+                styles.value
+              ),
+              children: value
+            }
+          ),
+          hint ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: hint }) : null
+        ] })
+      ]
     }
   );
 }
@@ -47673,12 +49793,12 @@ var styleHookSingleton = function() {
 };
 var styleSingleton = function() {
   var useStyle = styleHookSingleton();
-  var Sheet = function(_a2) {
+  var Sheet2 = function(_a2) {
     var styles = _a2.styles, dynamic = _a2.dynamic;
     useStyle(styles, dynamic);
     return null;
   };
-  return Sheet;
+  return Sheet2;
 };
 var zeroGap = {
   left: 0,
@@ -49300,1330 +51420,12 @@ function SelectScrollDownButton({
     }
   );
 }
-function useCanister() {
-  const { actor, isFetching } = useActor(createActor);
-  return { actor, isFetching };
-}
-function unwrap(result) {
-  if (result.__kind__ === "ok") return result.ok;
-  throw new Error(result.err);
-}
-async function listOrders(actor) {
-  return actor.listOrders();
-}
-async function getOrderStatus(actor, orderId) {
-  return unwrap(await actor.getOrderStatus(orderId));
-}
-async function generateActivationCode(actor, restaurantId, role) {
-  return unwrap(await actor.generateActivationCode(restaurantId, role));
-}
-async function activateDevice(actor, code, deviceId) {
-  return unwrap(await actor.activateDevice(code, deviceId));
-}
-async function revokeDevice(actor, deviceId) {
-  return unwrap(await actor.revokeDevice(deviceId));
-}
-async function cleanupExpiredActivations(actor) {
-  return actor.cleanupExpiredActivations();
-}
-async function listDevicesByRestaurant(actor, restaurantId) {
-  return actor.listDevicesByRestaurant(restaurantId);
-}
-async function setVpsSecret(actor, newSecret) {
-  const r2 = await actor.setVpsSecret(newSecret);
-  if (r2.__kind__ === "err") throw new Error(r2.err);
-}
-async function getCanisterIdText(actor) {
-  return actor.getCanisterIdText();
-}
-async function addItem(actor, item) {
-  return unwrap(
-    await actor.addItem(
-      item.itemId,
-      item.name,
-      item.price,
-      item.unitName,
-      item.vatRate,
-      item.category,
-      item.imageUrl
-    )
-  );
-}
-async function updateItem(actor, item) {
-  return unwrap(
-    await actor.updateItem(
-      item.itemId,
-      item.name,
-      item.price,
-      item.unitName,
-      item.vatRate,
-      item.category,
-      item.imageUrl,
-      item.visible
-    )
-  );
-}
-async function deleteItem(actor, itemId) {
-  unwrap(await actor.deleteItem(itemId));
-}
-async function listMenus(actor) {
-  return actor.listMenus();
-}
-async function getMenuForRestaurant(actor, restaurantId) {
-  return actor.getMenuForRestaurant(restaurantId);
-}
-async function addRestaurant(actor, r2) {
-  return unwrap(
-    await actor.addRestaurant(r2.restaurantId, r2.name, r2.address, r2.phone)
-  );
-}
-async function updateRestaurant(actor, r2) {
-  return unwrap(
-    await actor.updateRestaurant(
-      r2.restaurantId,
-      r2.name,
-      r2.address,
-      r2.phone,
-      r2.visible
-    )
-  );
-}
-async function deleteRestaurant(actor, restaurantId) {
-  unwrap(await actor.deleteRestaurant(restaurantId));
-}
-async function listRestaurants(actor) {
-  return actor.listRestaurants();
-}
-async function setRestaurantPriceOverride(actor, restaurantId, itemId, price) {
-  unwrap(await actor.setRestaurantPriceOverride(restaurantId, itemId, price));
-}
-function useActorOrNull() {
-  const { actor, isFetching } = useActor(createActor);
-  return { actor, isFetching };
-}
-function useOrders() {
-  const { actor, isFetching } = useActorOrNull();
-  return useQuery({
-    queryKey: ["orders"],
-    queryFn: () => actor ? listOrders(actor) : Promise.resolve([]),
-    enabled: !!actor && !isFetching
-  });
-}
-function useMenus() {
-  const { actor, isFetching } = useActorOrNull();
-  return useQuery({
-    queryKey: ["menus"],
-    queryFn: () => actor ? listMenus(actor) : Promise.resolve([]),
-    enabled: !!actor && !isFetching
-  });
-}
-function useMenuForRestaurant(restaurantId) {
-  const { actor, isFetching } = useActorOrNull();
-  return useQuery({
-    queryKey: ["menu", restaurantId],
-    queryFn: () => actor && restaurantId ? getMenuForRestaurant(actor, restaurantId) : Promise.resolve([]),
-    enabled: !!actor && !isFetching && !!restaurantId
-  });
-}
-function useUpdateItem() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (item) => {
-      if (!actor) throw new Error("Actor not ready");
-      return updateItem(actor, item);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["menus"] })
-  });
-}
-function useAddItem() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (item) => {
-      if (!actor) throw new Error("Actor not ready");
-      return addItem(actor, item);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["menus"] })
-  });
-}
-function useDeleteItem() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (itemId) => {
-      if (!actor) throw new Error("Actor not ready");
-      return deleteItem(actor, itemId);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["menus"] })
-  });
-}
-function useRestaurants() {
-  const { actor, isFetching } = useActorOrNull();
-  return useQuery({
-    queryKey: ["restaurants"],
-    queryFn: () => actor ? listRestaurants(actor) : Promise.resolve([]),
-    enabled: !!actor && !isFetching
-  });
-}
-function useAddRestaurant() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (r2) => {
-      if (!actor) throw new Error("Actor not ready");
-      return addRestaurant(actor, r2);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["restaurants"] })
-  });
-}
-function useUpdateRestaurant() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (r2) => {
-      if (!actor) throw new Error("Actor not ready");
-      return updateRestaurant(actor, r2);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["restaurants"] })
-  });
-}
-function useDeleteRestaurant() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (restaurantId) => {
-      if (!actor) throw new Error("Actor not ready");
-      return deleteRestaurant(actor, restaurantId);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["restaurants"] })
-  });
-}
-function useSetRestaurantPriceOverride() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (args) => {
-      if (!actor) throw new Error("Actor not ready");
-      return setRestaurantPriceOverride(actor, args.restaurantId, args.itemId, args.price);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["menu"] })
-  });
-}
-function useDevicesByRestaurant(restaurantId) {
-  const { actor, isFetching } = useActorOrNull();
-  return useQuery({
-    queryKey: ["devices", restaurantId],
-    queryFn: () => actor && restaurantId ? listDevicesByRestaurant(actor, restaurantId) : Promise.resolve([]),
-    enabled: !!actor && !isFetching && !!restaurantId
-  });
-}
-function useGenerateActivationCode() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (args) => {
-      if (!actor) throw new Error("Actor not ready");
-      return generateActivationCode(actor, args.restaurantId, args.role);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] })
-  });
-}
-function useRevokeDevice() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (deviceId) => {
-      if (!actor) throw new Error("Actor not ready");
-      return revokeDevice(actor, deviceId);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] })
-  });
-}
-function useCleanupExpiredActivations() {
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: () => {
-      if (!actor) throw new Error("Actor not ready");
-      return cleanupExpiredActivations(actor);
-    }
-  });
-}
-function useCanisterIdText() {
-  const { actor, isFetching } = useActorOrNull();
-  return useQuery({
-    queryKey: ["canister-id"],
-    queryFn: () => actor ? getCanisterIdText(actor) : Promise.resolve(""),
-    enabled: !!actor && !isFetching
-  });
-}
-function useSetVpsSecret() {
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (newSecret) => {
-      if (!actor) throw new Error("Actor not ready");
-      return setVpsSecret(actor, newSecret);
-    }
-  });
-}
-const ROLE_OPTIONS = [
-  { value: DeviceRole.cashier, label: "Thu ngân" },
-  { value: DeviceRole.driver, label: "Tài xế" },
-  { value: DeviceRole.admin, label: "Quản trị" }
-];
-function formatExpiry(ns) {
-  if (!ns || ns <= 0n) return "—";
-  try {
-    const ms2 = Number(ns / 1000000n);
-    if (!Number.isFinite(ms2) || ms2 <= 0) return "—";
-    return new Date(ms2).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  } catch {
-    return "—";
-  }
-}
-function ActivationCodeForm() {
-  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
-  const generateMutation = useGenerateActivationCode();
-  const [restaurantId, setRestaurantId] = reactExports.useState("");
-  const [role, setRole] = reactExports.useState(DeviceRole.cashier);
-  const [result, setResult] = reactExports.useState(null);
-  const canSubmit = !!restaurantId && !!role && !generateMutation.isPending;
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!restaurantId || !role) {
-      ue.error("Vui lòng chọn nhà hàng và vai trò.");
-      return;
-    }
-    try {
-      const pending = await generateMutation.mutateAsync({
-        restaurantId,
-        role
-      });
-      setResult({
-        code: pending.code,
-        expiresAt: pending.expiresAt,
-        restaurantId,
-        role
-      });
-      ue.success("Đã tạo mã kích hoạt thành công.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể tạo mã kích hoạt.";
-      ue.error(message);
-    }
-  }
-  async function copyCode() {
-    if (!(result == null ? void 0 : result.code)) return;
-    try {
-      await navigator.clipboard.writeText(result.code);
-      ue.success("Đã sao chép mã kích hoạt.");
-    } catch {
-      ue.error("Không sao chép được mã. Vui lòng sao chép thủ công.");
-    }
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "form",
-    {
-      onSubmit: handleSubmit,
-      className: "flex flex-col gap-4",
-      "data-ocid": "activation.form",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "activation-restaurant", className: "text-sm font-medium", children: "Nhà hàng" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            Select,
-            {
-              value: restaurantId,
-              onValueChange: (v2) => {
-                setRestaurantId(v2);
-                setResult(null);
-              },
-              disabled: restaurantsLoading,
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  SelectTrigger,
-                  {
-                    id: "activation-restaurant",
-                    className: "w-full",
-                    "data-ocid": "activation.restaurant_select",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      SelectValue,
-                      {
-                        placeholder: restaurantsLoading ? "Đang tải…" : "Chọn nhà hàng"
-                      }
-                    )
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: restaurants && restaurants.length > 0 ? restaurants.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  SelectItem,
-                  {
-                    value: r2.restaurantId,
-                    "data-ocid": `activation.restaurant_option.${r2.restaurantId}`,
-                    children: r2.name || r2.restaurantId
-                  },
-                  r2.restaurantId
-                )) : /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "__none", disabled: true, children: "Chưa có nhà hàng" }) })
-              ]
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "activation-role", className: "text-sm font-medium", children: "Vai trò" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            Select,
-            {
-              value: role,
-              onValueChange: (v2) => {
-                setRole(v2);
-                setResult(null);
-              },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  SelectTrigger,
-                  {
-                    id: "activation-role",
-                    className: "w-full",
-                    "data-ocid": "activation.role_select",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: "Chọn vai trò" })
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: ROLE_OPTIONS.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  SelectItem,
-                  {
-                    value: opt.value,
-                    "data-ocid": `activation.role_option.${opt.value}`,
-                    children: opt.label
-                  },
-                  opt.value
-                )) })
-              ]
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          Button,
-          {
-            type: "submit",
-            disabled: !canSubmit,
-            "data-ocid": "activation.submit_button",
-            className: "w-full sm:w-auto",
-            children: [
-              generateMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(KeyRound, { className: "h-4 w-4", "aria-hidden": "true" }),
-              "Tạo mã kích hoạt"
-            ]
-          }
-        ),
-        result && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col gap-3 rounded-lg border border-success/40 bg-success/10 p-4",
-            "data-ocid": "activation.result",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-medium uppercase tracking-wide text-success", children: "Mã kích hoạt" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    Input,
-                    {
-                      readOnly: true,
-                      value: result.code,
-                      className: "font-mono text-lg font-semibold tracking-widest",
-                      "data-ocid": "activation.code_input",
-                      "aria-label": "Mã kích hoạt 6 ký tự"
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    Button,
-                    {
-                      type: "button",
-                      variant: "outline",
-                      size: "icon",
-                      onClick: copyCode,
-                      "data-ocid": "activation.copy_button",
-                      "aria-label": "Sao chép mã kích hoạt",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
-                    }
-                  )
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1 text-sm", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Hết hạn lúc:" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: formatExpiry(result.expiresAt) })
-              ] })
-            ]
-          }
-        )
-      ]
-    }
-  );
-}
-function Card({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "card",
-      className: cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function CardHeader({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "card-header",
-      className: cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function CardTitle({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "card-title",
-      className: cn("leading-none font-semibold", className),
-      ...props
-    }
-  );
-}
-function CardDescription({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "card-description",
-      className: cn("text-muted-foreground text-sm", className),
-      ...props
-    }
-  );
-}
-function CardContent({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "card-content",
-      className: cn("px-6", className),
-      ...props
-    }
-  );
-}
-function SectionCard({
-  icon: Icon2,
-  title,
-  description,
-  children,
-  testId
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": testId, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
-        title
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: description })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children })
-  ] });
-}
-function AdminPanel() {
-  const [newSecret, setNewSecret] = reactExports.useState("");
-  const [revokeDeviceId, setRevokeDeviceId] = reactExports.useState("");
-  const [cleanedCount, setCleanedCount] = reactExports.useState(null);
-  const setSecretMutation = useSetVpsSecret();
-  const revokeMutation = useRevokeDevice();
-  const cleanupMutation = useCleanupExpiredActivations();
-  const canisterIdQuery = useCanisterIdText();
-  async function handleSetSecret(e) {
-    e.preventDefault();
-    if (!newSecret.trim()) {
-      ue.error("Vui lòng nhập secret mới.");
-      return;
-    }
-    if (newSecret.length < 8) {
-      ue.error("Secret phải có ít nhất 8 ký tự.");
-      return;
-    }
-    try {
-      await setSecretMutation.mutateAsync(newSecret.trim());
-      ue.success("Đã cập nhật secret VPS.");
-      setNewSecret("");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể cập nhật secret.";
-      ue.error(message);
-    }
-  }
-  async function handleRevoke(e) {
-    e.preventDefault();
-    if (!revokeDeviceId.trim()) {
-      ue.error("Vui lòng nhập mã thiết bị.");
-      return;
-    }
-    try {
-      await revokeMutation.mutateAsync(revokeDeviceId.trim());
-      ue.success("Đã thu hồi thiết bị.");
-      setRevokeDeviceId("");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể thu hồi thiết bị.";
-      ue.error(message);
-    }
-  }
-  async function handleCleanup() {
-    try {
-      const count2 = await cleanupMutation.mutateAsync();
-      setCleanedCount(count2);
-      ue.success(`Đã dọn dẹp ${count2.toString()} mã hết hạn.`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể dọn dẹp mã hết hạn.";
-      ue.error(message);
-    }
-  }
-  async function copyCanisterId() {
-    const id = canisterIdQuery.data;
-    if (!id) return;
-    try {
-      await navigator.clipboard.writeText(id);
-      ue.success("Đã sao chép Canister ID.");
-    } catch {
-      ue.error("Không sao chép được. Vui lòng sao chép thủ công.");
-    }
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-5xl px-4 py-8 md:px-6 md:py-10",
-      "data-ocid": "admin.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "h1",
-            {
-              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
-              "data-ocid": "admin.title",
-              children: "Quản lý"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Cấu hình hệ thống, mã kích hoạt, thiết bị và canister." })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard,
-            {
-              icon: KeyRound,
-              title: "Canister ID",
-              description: "Định danh canister dùng để VPS xác thực HMAC.",
-              testId: "admin.canister_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-col gap-3", children: canisterIdQuery.isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "div",
-                {
-                  className: "flex items-center gap-2 text-sm text-muted-foreground",
-                  "data-ocid": "admin.canister.loading_state",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
-                    "Đang tải Canister ID…"
-                  ]
-                }
-              ) : canisterIdQuery.isError ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "p",
-                {
-                  className: "text-sm text-destructive",
-                  "data-ocid": "admin.canister.error_state",
-                  children: "Không tải được Canister ID."
-                }
-              ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "code",
-                  {
-                    className: "min-w-0 flex-1 truncate rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs text-foreground",
-                    title: canisterIdQuery.data ?? "",
-                    "data-ocid": "admin.canister.id_value",
-                    children: canisterIdQuery.data || "—"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  Button,
-                  {
-                    type: "button",
-                    variant: "outline",
-                    size: "icon",
-                    onClick: copyCanisterId,
-                    disabled: !canisterIdQuery.data,
-                    "data-ocid": "admin.canister.copy_button",
-                    "aria-label": "Sao chép Canister ID",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
-                  }
-                )
-              ] }) })
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard,
-            {
-              icon: ShieldOff,
-              title: "Cập nhật secret VPS",
-              description: "Đặt lại khóa bí mật dùng để ký HMAC giữa canister và VPS worker.",
-              testId: "admin.secret_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "form",
-                {
-                  onSubmit: handleSetSecret,
-                  className: "flex flex-col gap-3",
-                  "data-ocid": "admin.secret_form",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "vps-secret", className: "text-sm font-medium", children: "Secret mới" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        Input,
-                        {
-                          id: "vps-secret",
-                          type: "password",
-                          value: newSecret,
-                          onChange: (e) => setNewSecret(e.target.value),
-                          placeholder: "Ít nhất 8 ký tự",
-                          minLength: 8,
-                          autoComplete: "new-password",
-                          "data-ocid": "admin.secret_input"
-                        }
-                      )
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      Button,
-                      {
-                        type: "submit",
-                        disabled: setSecretMutation.isPending || !newSecret.trim(),
-                        "data-ocid": "admin.secret.submit_button",
-                        className: "w-full sm:w-auto",
-                        children: [
-                          setSecretMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-4 w-4", "aria-hidden": "true" }),
-                          "Cập nhật secret"
-                        ]
-                      }
-                    )
-                  ]
-                }
-              )
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard,
-            {
-              icon: KeyRound,
-              title: "Tạo mã kích hoạt",
-              description: "Tạo mã 6 ký tự hợp lệ 15 phút để kích hoạt thiết bị mới.",
-              testId: "admin.activation_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ActivationCodeForm, {})
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard,
-            {
-              icon: ShieldOff,
-              title: "Thu hồi thiết bị",
-              description: "Nhập mã thiết bị để thu hồi quyền truy cập ngay lập tức.",
-              testId: "admin.revoke_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "form",
-                {
-                  onSubmit: handleRevoke,
-                  className: "flex flex-col gap-3",
-                  "data-ocid": "admin.revoke_form",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "revoke-device", className: "text-sm font-medium", children: "Mã thiết bị" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        Input,
-                        {
-                          id: "revoke-device",
-                          value: revokeDeviceId,
-                          onChange: (e) => setRevokeDeviceId(e.target.value),
-                          placeholder: "VD: dev-abc123",
-                          "data-ocid": "admin.revoke_input"
-                        }
-                      )
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      Button,
-                      {
-                        type: "submit",
-                        variant: "destructive",
-                        disabled: revokeMutation.isPending || !revokeDeviceId.trim(),
-                        "data-ocid": "admin.revoke.submit_button",
-                        className: "w-full sm:w-auto",
-                        children: [
-                          revokeMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-4 w-4", "aria-hidden": "true" }),
-                          "Thu hồi"
-                        ]
-                      }
-                    )
-                  ]
-                }
-              )
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard,
-            {
-              icon: Trash2,
-              title: "Dọn dẹp mã hết hạn",
-              description: "Xóa các mã kích hoạt đã quá hạn để giải phóng bộ nhớ canister.",
-              testId: "admin.cleanup_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  Button,
-                  {
-                    type: "button",
-                    variant: "outline",
-                    onClick: handleCleanup,
-                    disabled: cleanupMutation.isPending,
-                    "data-ocid": "admin.cleanup.button",
-                    className: "w-full sm:w-auto",
-                    children: [
-                      cleanupMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "h-4 w-4", "aria-hidden": "true" }),
-                      "Dọn dẹp"
-                    ]
-                  }
-                ),
-                cleanedCount !== null && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "p",
-                  {
-                    className: "text-sm text-muted-foreground",
-                    "data-ocid": "admin.cleanup.result",
-                    children: [
-                      "Đã dọn dẹp",
-                      " ",
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-foreground", children: cleanedCount.toString() }),
-                      " ",
-                      "mã hết hạn."
-                    ]
-                  }
-                )
-              ] })
-            }
-          )
-        ] })
-      ]
-    }
-  );
-}
-function Table({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "table-container",
-      className: "relative w-full overflow-x-auto",
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "table",
-        {
-          "data-slot": "table",
-          className: cn("w-full caption-bottom text-sm", className),
-          ...props
-        }
-      )
-    }
-  );
-}
-function TableHeader({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "thead",
-    {
-      "data-slot": "table-header",
-      className: cn("[&_tr]:border-b", className),
-      ...props
-    }
-  );
-}
-function TableBody({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "tbody",
-    {
-      "data-slot": "table-body",
-      className: cn("[&_tr:last-child]:border-0", className),
-      ...props
-    }
-  );
-}
-function TableRow({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "tr",
-    {
-      "data-slot": "table-row",
-      className: cn(
-        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function TableHead({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "th",
-    {
-      "data-slot": "table-head",
-      className: cn(
-        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function TableCell({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "td",
-    {
-      "data-slot": "table-cell",
-      className: cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function formatVnd$8(n) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0
-  }).format(n);
-}
-function CustomersTable({ data, testId }) {
-  if (data.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        "data-ocid": testId ?? "customers_table.empty_state",
-        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
-        children: "Chưa có dữ liệu khách hàng."
-      }
-    );
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "data-ocid": testId ?? "customers_table", className: "w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "w-[40%]", children: "Khách hàng" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Số điện thoại" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Số đơn" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Tổng chi" })
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: data.map((row, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      TableRow,
-      {
-        "data-ocid": `customers_table.row.${i + 1}`,
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium text-foreground", children: row.cusName }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-sm text-muted-foreground", children: row.cusPhone || "—" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono", children: row.orderCount }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$8(row.totalSpent) })
-        ]
-      },
-      `${row.cusName}-${i}`
-    )) })
-  ] }) });
-}
-const STATUS_STYLES = {
-  paid: {
-    label: "Đã thanh toán",
-    barClass: "fill-success",
-    textClass: "text-success"
-  },
-  pending: {
-    label: "Đang chờ",
-    barClass: "fill-warning",
-    textClass: "text-warning-foreground"
-  },
-  shipping: {
-    label: "Đang giao",
-    barClass: "fill-info",
-    textClass: "text-info"
-  },
-  cancelled: {
-    label: "Đã hủy",
-    barClass: "fill-destructive",
-    textClass: "text-destructive"
-  }
-};
-function styleFor(status) {
-  return STATUS_STYLES[status] ?? {
-    label: status,
-    barClass: "fill-primary",
-    textClass: "text-primary"
-  };
-}
-function OrdersChart({ data, testId }) {
-  const { rows, maxCount } = reactExports.useMemo(() => {
-    const max2 = data.reduce((m2, d2) => Math.max(m2, d2.count), 0);
-    return { rows: data, maxCount: max2 };
-  }, [data]);
-  if (data.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        "data-ocid": testId ?? "orders_chart.empty_state",
-        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
-        children: "Chưa có dữ liệu đơn hàng theo trạng thái."
-      }
-    );
-  }
-  const total = data.reduce((s, d2) => s + d2.count, 0);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-ocid": testId ?? "orders_chart",
-      className: "flex flex-col gap-3",
-      role: "img",
-      "aria-label": "Biểu đồ đơn hàng theo trạng thái",
-      children: rows.map((row, i) => {
-        const style2 = styleFor(row.status);
-        const pct = maxCount <= 0 ? 0 : row.count / maxCount * 100;
-        const sharePct = total <= 0 ? 0 : row.count / total * 100;
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            "data-ocid": `orders_chart.row.${i + 1}`,
-            className: "flex flex-col gap-1.5",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2 text-sm", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: style2.label }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-mono text-xs text-muted-foreground", children: [
-                  row.count,
-                  " (",
-                  sharePct.toFixed(0),
-                  "%)"
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-3 w-full overflow-hidden rounded-full bg-secondary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "div",
-                {
-                  className: cn(
-                    "h-full rounded-full transition-smooth",
-                    style2.barClass.replace("fill-", "bg-")
-                  ),
-                  style: { width: `${pct}%` },
-                  "data-ocid": `orders_chart.bar.${i + 1}`
-                }
-              ) })
-            ]
-          },
-          row.status
-        );
-      })
-    }
-  );
-}
-function formatVndShort(n) {
-  if (n >= 1e9) return `${(n / 1e9).toFixed(1)} tỷ`;
-  if (n >= 1e6) return `${(n / 1e6).toFixed(1)} tr`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(0)}k`;
-  return `${n}`;
-}
-function formatVnd$7(n) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0
-  }).format(n);
-}
-function formatDayLabel(iso) {
-  const [y2, m2, d2] = iso.split("-");
-  if (!y2 || !m2 || !d2) return iso;
-  return `${d2}/${m2}`;
-}
-const VIEW_WIDTH = 640;
-const VIEW_HEIGHT = 240;
-const PAD_LEFT = 8;
-const PAD_RIGHT = 8;
-const PAD_TOP = 16;
-const PAD_BOTTOM = 28;
-const PLOT_WIDTH = VIEW_WIDTH - PAD_LEFT - PAD_RIGHT;
-const PLOT_HEIGHT = VIEW_HEIGHT - PAD_TOP - PAD_BOTTOM;
-function RevenueChart({ data, testId }) {
-  const { bars, yTicks } = reactExports.useMemo(() => {
-    const max2 = data.reduce((m2, d2) => Math.max(m2, d2.revenue), 0);
-    const niceMax = max2 <= 0 ? 1 : Math.ceil(max2 * 1.1);
-    const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => ({
-      ratio: t,
-      value: Math.round(niceMax * t)
-    }));
-    const n = data.length;
-    const slot = n > 0 ? PLOT_WIDTH / n : PLOT_WIDTH;
-    const barW = Math.min(slot * 0.62, 36);
-    const computed = data.map((d2, i) => {
-      const h2 = max2 <= 0 ? 0 : d2.revenue / niceMax * PLOT_HEIGHT;
-      const x3 = PAD_LEFT + i * slot + (slot - barW) / 2;
-      const y2 = PAD_TOP + (PLOT_HEIGHT - h2);
-      return { ...d2, x: x3, y: y2, w: barW, h: h2 };
-    });
-    return { bars: computed, yTicks: ticks };
-  }, [data]);
-  if (data.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        "data-ocid": testId ?? "revenue_chart.empty_state",
-        className: "flex h-[240px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
-        children: "Chưa có dữ liệu doanh thu trong khoảng đã chọn."
-      }
-    );
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-ocid": testId ?? "revenue_chart",
-      className: "w-full",
-      role: "img",
-      "aria-label": "Biểu đồ doanh thu theo thời gian",
-      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "svg",
-        {
-          viewBox: `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`,
-          className: "w-full",
-          preserveAspectRatio: "xMidYMid meet",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: "Biểu đồ doanh thu" }),
-            yTicks.map((t) => {
-              const y2 = PAD_TOP + PLOT_HEIGHT - t.ratio * PLOT_HEIGHT;
-              return /* @__PURE__ */ jsxRuntimeExports.jsxs("g", { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "line",
-                  {
-                    x1: PAD_LEFT,
-                    x2: VIEW_WIDTH - PAD_RIGHT,
-                    y1: y2,
-                    y2,
-                    stroke: "currentColor",
-                    strokeWidth: 1,
-                    className: "text-border",
-                    strokeDasharray: t.ratio === 0 ? "0" : "3 3"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "text",
-                  {
-                    x: PAD_LEFT + 2,
-                    y: y2 - 2,
-                    fontSize: 10,
-                    className: "fill-muted-foreground",
-                    children: formatVndShort(t.value)
-                  }
-                )
-              ] }, `y-${t.ratio}`);
-            }),
-            bars.map((b2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              "g",
-              {
-                "data-ocid": `revenue_chart.point.${i + 1}`,
-                className: "transition-smooth",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "rect",
-                    {
-                      x: b2.x,
-                      y: b2.y,
-                      width: b2.w,
-                      height: Math.max(b2.h, 0),
-                      rx: 3,
-                      className: "fill-primary transition-smooth hover:fill-primary/80",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: `${formatDayLabel(b2.date)}: ${formatVnd$7(b2.revenue)}` })
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "text",
-                    {
-                      x: b2.x + b2.w / 2,
-                      y: VIEW_HEIGHT - 10,
-                      fontSize: 10,
-                      textAnchor: "middle",
-                      className: "fill-muted-foreground",
-                      children: formatDayLabel(b2.date)
-                    }
-                  )
-                ]
-              },
-              b2.date
-            ))
-          ]
-        }
-      )
-    }
-  );
-}
-const TONE_STYLES = {
-  primary: {
-    iconWrap: "bg-primary/10 text-primary",
-    value: "text-primary"
-  },
-  success: {
-    iconWrap: "bg-success/15 text-success",
-    value: "text-success"
-  },
-  warning: {
-    iconWrap: "bg-warning/20 text-warning-foreground",
-    value: "text-warning-foreground"
-  },
-  info: {
-    iconWrap: "bg-info/15 text-info",
-    value: "text-info"
-  }
-};
-function StatCard({
-  label,
-  value,
-  icon: Icon2,
-  hint,
-  tone = "primary",
-  testId
-}) {
-  const styles = TONE_STYLES[tone];
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "div",
-    {
-      "data-ocid": testId ?? "stat.card",
-      className: "flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-smooth hover:shadow-md",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-muted-foreground", children: label }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "span",
-            {
-              className: cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                styles.iconWrap
-              ),
-              "aria-hidden": "true",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4" })
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "span",
-            {
-              className: cn(
-                "font-display text-2xl font-bold tracking-tight md:text-3xl",
-                styles.value
-              ),
-              children: value
-            }
-          ),
-          hint ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: hint }) : null
-        ] })
-      ]
-    }
-  );
-}
-function getVpsUrl() {
-  {
-    throw new Error(
-      "VITE_VPS_URL chưa được cấu hình. Vui lòng liên hệ quản trị viên để thiết lập địa chỉ VPS."
-    );
-  }
-}
-const ANALYTICS_API_KEY = "";
-const DEFAULT_TIMEOUT_MS = 15e3;
-class VpsHttpError extends Error {
-  constructor(status, body, message) {
-    super(message ?? `VPS request failed: ${status}`);
-    __publicField(this, "status");
-    __publicField(this, "body");
-    this.name = "VpsHttpError";
-    this.status = status;
-    this.body = body;
-  }
-}
-async function vpsFetch(options) {
-  const {
-    method,
-    path,
-    body,
-    headers = {},
-    timeoutMs = DEFAULT_TIMEOUT_MS,
-    isFormData = false
-  } = options;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  const finalHeaders = { ...headers };
-  if (!isFormData) {
-    finalHeaders["Content-Type"] = "application/json";
-  }
-  if (path.startsWith("/analytics") && ANALYTICS_API_KEY) ;
-  const init = {
-    method,
-    headers: finalHeaders,
-    signal: controller.signal
-  };
-  if (body !== void 0) {
-    init.body = isFormData ? body : JSON.stringify(body);
-  }
-  try {
-    const res = await fetch(`${getVpsUrl()}${path}`, init);
-    const text = await res.text();
-    const parsed = text ? safeParse(text) : null;
-    if (!res.ok) {
-      throw new VpsHttpError(res.status, parsed ?? text);
-    }
-    return parsed;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-function safeParse(text) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-async function quote(payload) {
-  return vpsFetch({
-    method: "POST",
-    path: "/quote",
-    body: payload
-  });
-}
-async function create(payload) {
-  return vpsFetch({
-    method: "POST",
-    path: "/order/create",
-    body: payload
-  });
-}
-async function uploadImage(formData) {
-  return vpsFetch({
-    method: "POST",
-    path: "/upload",
-    body: formData,
-    isFormData: true
-  });
-}
-async function getInvoice(orderId) {
-  return vpsFetch({
-    method: "GET",
-    path: `/invoice/${encodeURIComponent(orderId)}`
-  });
-}
-async function getAnalytics(range = "30d") {
-  return vpsFetch({
-    method: "GET",
-    path: `/analytics?range=${encodeURIComponent(range)}`
-  });
-}
 const RANGE_LABELS = {
   "7d": "7 ngày",
   "30d": "30 ngày",
   "90d": "90 ngày"
 };
-function formatVnd$6(n) {
+function formatVnd$7(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -50738,10 +51540,10 @@ function AnalyticsDashboard() {
               StatCard,
               {
                 label: "Tổng doanh thu",
-                value: formatVnd$6((a2 == null ? void 0 : a2.totalRevenue) ?? 0),
+                value: formatVnd$7((a2 == null ? void 0 : a2.totalRevenue) ?? 0),
                 icon: Banknote,
                 tone: "primary",
-                hint: `Trung bình ${formatVnd$6((a2 == null ? void 0 : a2.averageOrderValue) ?? 0)}/đơn`,
+                hint: `Trung bình ${formatVnd$7((a2 == null ? void 0 : a2.averageOrderValue) ?? 0)}/đơn`,
                 testId: "analytics.stat.total_revenue"
               }
             ),
@@ -50855,7 +51657,7 @@ function AnalyticsDashboard() {
 }
 const PHONE_RE = /^0\d{9,10}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-function validateCustomerForm(v2) {
+function validateCustomerForm(v2, options = {}) {
   const errors = {};
   if (!v2.cusName.trim()) errors.cusName = "Vui lòng nhập tên khách hàng.";
   else if (v2.cusName.trim().length < 2)
@@ -50863,17 +51665,21 @@ function validateCustomerForm(v2) {
   if (!v2.cusPhone.trim()) errors.cusPhone = "Vui lòng nhập số điện thoại.";
   else if (!PHONE_RE.test(v2.cusPhone.trim()))
     errors.cusPhone = "Số điện thoại không hợp lệ (10–11 số, bắt đầu bằng 0).";
-  if (!v2.cusAddress.trim())
-    errors.cusAddress = "Vui lòng nhập địa chỉ giao hàng.";
-  else if (v2.cusAddress.trim().length < 5)
-    errors.cusAddress = "Địa chỉ quá ngắn.";
-  if (v2.cusTaxCode.trim() && !/^\d{10}$|^\d{10}-\d{3}$|^\d{14}$/.test(v2.cusTaxCode.trim())) {
+  if (!options.hideAddress) {
+    if (!v2.cusAddress.trim())
+      errors.cusAddress = "Vui lòng nhập địa chỉ giao hàng.";
+    else if (v2.cusAddress.trim().length < 5)
+      errors.cusAddress = "Địa chỉ quá ngắn.";
+  }
+  if (!options.hideAddress && v2.cusTaxCode.trim() && !/^\d{10}$|^\d{10}-\d{3}$|^\d{14}$/.test(v2.cusTaxCode.trim())) {
     errors.cusTaxCode = "Mã số thuế không hợp lệ (10 hoặc 14 số).";
   }
-  if (!v2.receiverEmail.trim())
-    errors.receiverEmail = "Vui lòng nhập email nhận hoá đơn.";
-  else if (!EMAIL_RE.test(v2.receiverEmail.trim()))
-    errors.receiverEmail = "Email không hợp lệ.";
+  if (!options.hideAddress) {
+    if (!v2.receiverEmail.trim())
+      errors.receiverEmail = "Vui lòng nhập email nhận hoá đơn.";
+    else if (!EMAIL_RE.test(v2.receiverEmail.trim()))
+      errors.receiverEmail = "Email không hợp lệ.";
+  }
   return errors;
 }
 function Field({
@@ -50881,9 +51687,10 @@ function Field({
   label,
   hint,
   error,
+  className,
   children
 }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1.5", children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: cn("flex flex-col gap-1.5", className), children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: id, className: "text-sm font-medium", children: label }),
     children,
     error ? /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -50901,7 +51708,8 @@ function CustomerForm({
   values,
   errors,
   onChange,
-  disabled
+  disabled,
+  hideAddress
 }) {
   const inputClass = (hasError) => cn(
     "min-h-[44px] w-full",
@@ -50910,41 +51718,59 @@ function CustomerForm({
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "div",
     {
-      className: "grid grid-cols-1 gap-4 sm:grid-cols-2",
+      className: "grid grid-cols-5 gap-4 sm:grid-cols-2",
       "data-ocid": "customer_form.panel",
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Field, { id: "cus_name", label: "Tên khách hàng", error: errors.cusName, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Input,
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Field,
           {
             id: "cus_name",
-            type: "text",
-            autoComplete: "name",
-            value: values.cusName,
-            onChange: (e) => onChange("cusName", e.target.value),
-            placeholder: "Nguyễn Văn A",
-            disabled,
-            "aria-invalid": !!errors.cusName,
-            "data-ocid": "customer_form.cus_name_input",
-            className: inputClass(errors.cusName)
+            label: "Tên khách hàng",
+            error: errors.cusName,
+            className: "col-span-3 sm:col-span-1",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                id: "cus_name",
+                type: "text",
+                autoComplete: "name",
+                value: values.cusName,
+                onChange: (e) => onChange("cusName", e.target.value),
+                placeholder: "Nguyễn Văn A",
+                disabled,
+                "aria-invalid": !!errors.cusName,
+                "data-ocid": "customer_form.cus_name_input",
+                className: inputClass(errors.cusName)
+              }
+            )
           }
-        ) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Field, { id: "cus_phone", label: "Số điện thoại", error: errors.cusPhone, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Input,
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Field,
           {
             id: "cus_phone",
-            type: "tel",
-            autoComplete: "tel",
-            inputMode: "tel",
-            value: values.cusPhone,
-            onChange: (e) => onChange("cusPhone", e.target.value),
-            placeholder: "0912345678",
-            disabled,
-            "aria-invalid": !!errors.cusPhone,
-            "data-ocid": "customer_form.cus_phone_input",
-            className: inputClass(errors.cusPhone)
+            label: "Số điện thoại",
+            error: errors.cusPhone,
+            className: "col-span-2 sm:col-span-1",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                id: "cus_phone",
+                type: "tel",
+                autoComplete: "tel",
+                inputMode: "tel",
+                value: values.cusPhone,
+                onChange: (e) => onChange("cusPhone", e.target.value),
+                placeholder: "0912345678",
+                disabled,
+                "aria-invalid": !!errors.cusPhone,
+                "data-ocid": "customer_form.cus_phone_input",
+                className: inputClass(errors.cusPhone)
+              }
+            )
           }
-        ) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sm:col-span-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ),
+        !hideAddress && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-5 sm:col-span-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           Field,
           {
             id: "cus_address",
@@ -50968,13 +51794,14 @@ function CustomerForm({
             )
           }
         ) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
+        !hideAddress && /* @__PURE__ */ jsxRuntimeExports.jsx(
           Field,
           {
             id: "cus_tax_code",
             label: "Mã số thuế",
             hint: "Tuỳ chọn — để xuất hoá đơn VAT.",
             error: errors.cusTaxCode,
+            className: "col-span-2 sm:col-span-1",
             children: /* @__PURE__ */ jsxRuntimeExports.jsx(
               Input,
               {
@@ -50992,12 +51819,13 @@ function CustomerForm({
             )
           }
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
+        !hideAddress && /* @__PURE__ */ jsxRuntimeExports.jsx(
           Field,
           {
             id: "receiver_email",
             label: "Email nhận hoá đơn",
             error: errors.receiverEmail,
+            className: "col-span-3 sm:col-span-1",
             children: /* @__PURE__ */ jsxRuntimeExports.jsx(
               Input,
               {
@@ -51031,7 +51859,7 @@ function Skeleton({ className, ...props }) {
   );
 }
 const ALL_CATEGORY = "Tất cả";
-function formatVnd$5(value) {
+function formatVnd$6(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -51045,6 +51873,12 @@ function MenuCard({
   disabled,
   index: index2
 }) {
+  const imageUrl = reactExports.useMemo(() => imageBytesToDataUrl(item.image), [item.image]);
+  reactExports.useEffect(() => {
+    return () => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+    };
+  }, [imageUrl]);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "article",
     {
@@ -51054,10 +51888,10 @@ function MenuCard({
       ),
       "data-ocid": `menu_picker.item.${index2}`,
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted sm:h-24 sm:w-24", children: item.imageUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted sm:h-24 sm:w-24", children: imageUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
           "img",
           {
-            src: item.imageUrl,
+            src: imageUrl,
             alt: item.name,
             loading: "lazy",
             className: "h-full w-full object-cover",
@@ -51071,7 +51905,7 @@ function MenuCard({
             /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "line-clamp-2 text-sm font-semibold text-foreground", children: item.name }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 text-xs text-muted-foreground", children: item.unitName || "phần" })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-sm font-medium text-primary", children: formatVnd$5(item.price) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-sm font-medium text-primary", children: formatVnd$6(item.price) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-auto flex items-center justify-between gap-2 pt-1", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
               "VAT ",
@@ -51137,10 +51971,12 @@ function MenuPicker({
   isLoading,
   cart,
   onQuantityChange,
-  disabled
+  disabled,
+  fixedCategory
 }) {
   const [query, setQuery] = reactExports.useState("");
   const [category, setCategory] = reactExports.useState(ALL_CATEGORY);
+  const effectiveCategory = fixedCategory ?? category;
   const categories = reactExports.useMemo(() => {
     if (!(menu == null ? void 0 : menu.length)) return [ALL_CATEGORY];
     const set = /* @__PURE__ */ new Set();
@@ -51153,13 +51989,14 @@ function MenuPicker({
     if (!menu) return [];
     return menu.filter((m2) => {
       if (!m2.visible) return false;
-      if (category !== ALL_CATEGORY && m2.category !== category) return false;
+      if (effectiveCategory !== ALL_CATEGORY && m2.category !== effectiveCategory)
+        return false;
       if (query.trim()) {
         return m2.name.toLowerCase().includes(query.trim().toLowerCase());
       }
       return true;
     });
-  }, [menu, category, query]);
+  }, [menu, effectiveCategory, query]);
   if (isLoading) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
@@ -51205,7 +52042,7 @@ function MenuPicker({
         }
       )
     ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
+    !fixedCategory && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
         className: "flex flex-wrap gap-1.5",
@@ -51332,6 +52169,697 @@ function RestaurantSelect({
     ) : null
   ] });
 }
+function useStateMachine(initialState, machine) {
+  return reactExports.useReducer((state, event) => {
+    const nextState = machine[state][event];
+    return nextState ?? state;
+  }, initialState);
+}
+var Presence = (props) => {
+  const { present, children } = props;
+  const presence = usePresence(present);
+  const child = typeof children === "function" ? children({ present: presence.isPresent }) : reactExports.Children.only(children);
+  const ref = useComposedRefs(presence.ref, getElementRef(child));
+  const forceMount = typeof children === "function";
+  return forceMount || presence.isPresent ? reactExports.cloneElement(child, { ref }) : null;
+};
+Presence.displayName = "Presence";
+function usePresence(present) {
+  const [node, setNode] = reactExports.useState();
+  const stylesRef = reactExports.useRef(null);
+  const prevPresentRef = reactExports.useRef(present);
+  const prevAnimationNameRef = reactExports.useRef("none");
+  const initialState = present ? "mounted" : "unmounted";
+  const [state, send] = useStateMachine(initialState, {
+    mounted: {
+      UNMOUNT: "unmounted",
+      ANIMATION_OUT: "unmountSuspended"
+    },
+    unmountSuspended: {
+      MOUNT: "mounted",
+      ANIMATION_END: "unmounted"
+    },
+    unmounted: {
+      MOUNT: "mounted"
+    }
+  });
+  reactExports.useEffect(() => {
+    const currentAnimationName = getAnimationName(stylesRef.current);
+    prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
+  }, [state]);
+  useLayoutEffect2(() => {
+    const styles = stylesRef.current;
+    const wasPresent = prevPresentRef.current;
+    const hasPresentChanged = wasPresent !== present;
+    if (hasPresentChanged) {
+      const prevAnimationName = prevAnimationNameRef.current;
+      const currentAnimationName = getAnimationName(styles);
+      if (present) {
+        send("MOUNT");
+      } else if (currentAnimationName === "none" || (styles == null ? void 0 : styles.display) === "none") {
+        send("UNMOUNT");
+      } else {
+        const isAnimating = prevAnimationName !== currentAnimationName;
+        if (wasPresent && isAnimating) {
+          send("ANIMATION_OUT");
+        } else {
+          send("UNMOUNT");
+        }
+      }
+      prevPresentRef.current = present;
+    }
+  }, [present, send]);
+  useLayoutEffect2(() => {
+    if (node) {
+      let timeoutId;
+      const ownerWindow = node.ownerDocument.defaultView ?? window;
+      const handleAnimationEnd = (event) => {
+        const currentAnimationName = getAnimationName(stylesRef.current);
+        const isCurrentAnimation = currentAnimationName.includes(CSS.escape(event.animationName));
+        if (event.target === node && isCurrentAnimation) {
+          send("ANIMATION_END");
+          if (!prevPresentRef.current) {
+            const currentFillMode = node.style.animationFillMode;
+            node.style.animationFillMode = "forwards";
+            timeoutId = ownerWindow.setTimeout(() => {
+              if (node.style.animationFillMode === "forwards") {
+                node.style.animationFillMode = currentFillMode;
+              }
+            });
+          }
+        }
+      };
+      const handleAnimationStart = (event) => {
+        if (event.target === node) {
+          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
+        }
+      };
+      node.addEventListener("animationstart", handleAnimationStart);
+      node.addEventListener("animationcancel", handleAnimationEnd);
+      node.addEventListener("animationend", handleAnimationEnd);
+      return () => {
+        ownerWindow.clearTimeout(timeoutId);
+        node.removeEventListener("animationstart", handleAnimationStart);
+        node.removeEventListener("animationcancel", handleAnimationEnd);
+        node.removeEventListener("animationend", handleAnimationEnd);
+      };
+    } else {
+      send("ANIMATION_END");
+    }
+  }, [node, send]);
+  return {
+    isPresent: ["mounted", "unmountSuspended"].includes(state),
+    ref: reactExports.useCallback((node2) => {
+      stylesRef.current = node2 ? getComputedStyle(node2) : null;
+      setNode(node2);
+    }, [])
+  };
+}
+function getAnimationName(styles) {
+  return (styles == null ? void 0 : styles.animationName) || "none";
+}
+function getElementRef(element) {
+  var _a2, _b2;
+  let getter = (_a2 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a2.get;
+  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.ref;
+  }
+  getter = (_b2 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b2.get;
+  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.props.ref;
+  }
+  return element.props.ref || element.ref;
+}
+var DIALOG_NAME = "Dialog";
+var [createDialogContext, createDialogScope] = createContextScope(DIALOG_NAME);
+var [DialogProvider, useDialogContext] = createDialogContext(DIALOG_NAME);
+var Dialog$1 = (props) => {
+  const {
+    __scopeDialog,
+    children,
+    open: openProp,
+    defaultOpen,
+    onOpenChange,
+    modal = true
+  } = props;
+  const triggerRef = reactExports.useRef(null);
+  const contentRef = reactExports.useRef(null);
+  const [open, setOpen] = useControllableState({
+    prop: openProp,
+    defaultProp: defaultOpen ?? false,
+    onChange: onOpenChange,
+    caller: DIALOG_NAME
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    DialogProvider,
+    {
+      scope: __scopeDialog,
+      triggerRef,
+      contentRef,
+      contentId: useId(),
+      titleId: useId(),
+      descriptionId: useId(),
+      open,
+      onOpenChange: setOpen,
+      onOpenToggle: reactExports.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
+      modal,
+      children
+    }
+  );
+};
+Dialog$1.displayName = DIALOG_NAME;
+var TRIGGER_NAME$1 = "DialogTrigger";
+var DialogTrigger = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...triggerProps } = props;
+    const context = useDialogContext(TRIGGER_NAME$1, __scopeDialog);
+    const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Primitive.button,
+      {
+        type: "button",
+        "aria-haspopup": "dialog",
+        "aria-expanded": context.open,
+        "aria-controls": context.contentId,
+        "data-state": getState$1(context.open),
+        ...triggerProps,
+        ref: composedTriggerRef,
+        onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
+      }
+    );
+  }
+);
+DialogTrigger.displayName = TRIGGER_NAME$1;
+var PORTAL_NAME$1 = "DialogPortal";
+var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME$1, {
+  forceMount: void 0
+});
+var DialogPortal$1 = (props) => {
+  const { __scopeDialog, forceMount, children, container } = props;
+  const context = useDialogContext(PORTAL_NAME$1, __scopeDialog);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: reactExports.Children.map(children, (child) => /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$2, { asChild: true, container, children: child }) })) });
+};
+DialogPortal$1.displayName = PORTAL_NAME$1;
+var OVERLAY_NAME$1 = "DialogOverlay";
+var DialogOverlay$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const portalContext = usePortalContext(OVERLAY_NAME$1, props.__scopeDialog);
+    const { forceMount = portalContext.forceMount, ...overlayProps } = props;
+    const context = useDialogContext(OVERLAY_NAME$1, props.__scopeDialog);
+    return context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
+  }
+);
+DialogOverlay$1.displayName = OVERLAY_NAME$1;
+var Slot = /* @__PURE__ */ createSlot("DialogOverlay.RemoveScroll");
+var DialogOverlayImpl = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...overlayProps } = props;
+    const context = useDialogContext(OVERLAY_NAME$1, __scopeDialog);
+    return (
+      // Make sure `Content` is scrollable even when it doesn't live inside `RemoveScroll`
+      // ie. when `Overlay` and `Content` are siblings
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ReactRemoveScroll, { as: Slot, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Primitive.div,
+        {
+          "data-state": getState$1(context.open),
+          ...overlayProps,
+          ref: forwardedRef,
+          style: { pointerEvents: "auto", ...overlayProps.style }
+        }
+      ) })
+    );
+  }
+);
+var CONTENT_NAME$1 = "DialogContent";
+var DialogContent$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const portalContext = usePortalContext(CONTENT_NAME$1, props.__scopeDialog);
+    const { forceMount = portalContext.forceMount, ...contentProps } = props;
+    const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
+  }
+);
+DialogContent$1.displayName = CONTENT_NAME$1;
+var DialogContentModal = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
+    const contentRef = reactExports.useRef(null);
+    const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
+    reactExports.useEffect(() => {
+      const content = contentRef.current;
+      if (content) return hideOthers(content);
+    }, []);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DialogContentImpl,
+      {
+        ...props,
+        ref: composedRefs,
+        trapFocus: context.open,
+        disableOutsidePointerEvents: true,
+        onCloseAutoFocus: composeEventHandlers(props.onCloseAutoFocus, (event) => {
+          var _a2;
+          event.preventDefault();
+          (_a2 = context.triggerRef.current) == null ? void 0 : _a2.focus();
+        }),
+        onPointerDownOutside: composeEventHandlers(props.onPointerDownOutside, (event) => {
+          const originalEvent = event.detail.originalEvent;
+          const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
+          const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
+          if (isRightClick) event.preventDefault();
+        }),
+        onFocusOutside: composeEventHandlers(
+          props.onFocusOutside,
+          (event) => event.preventDefault()
+        )
+      }
+    );
+  }
+);
+var DialogContentNonModal = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
+    const hasInteractedOutsideRef = reactExports.useRef(false);
+    const hasPointerDownOutsideRef = reactExports.useRef(false);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DialogContentImpl,
+      {
+        ...props,
+        ref: forwardedRef,
+        trapFocus: false,
+        disableOutsidePointerEvents: false,
+        onCloseAutoFocus: (event) => {
+          var _a2, _b2;
+          (_a2 = props.onCloseAutoFocus) == null ? void 0 : _a2.call(props, event);
+          if (!event.defaultPrevented) {
+            if (!hasInteractedOutsideRef.current) (_b2 = context.triggerRef.current) == null ? void 0 : _b2.focus();
+            event.preventDefault();
+          }
+          hasInteractedOutsideRef.current = false;
+          hasPointerDownOutsideRef.current = false;
+        },
+        onInteractOutside: (event) => {
+          var _a2, _b2;
+          (_a2 = props.onInteractOutside) == null ? void 0 : _a2.call(props, event);
+          if (!event.defaultPrevented) {
+            hasInteractedOutsideRef.current = true;
+            if (event.detail.originalEvent.type === "pointerdown") {
+              hasPointerDownOutsideRef.current = true;
+            }
+          }
+          const target = event.target;
+          const targetIsTrigger = (_b2 = context.triggerRef.current) == null ? void 0 : _b2.contains(target);
+          if (targetIsTrigger) event.preventDefault();
+          if (event.detail.originalEvent.type === "focusin" && hasPointerDownOutsideRef.current) {
+            event.preventDefault();
+          }
+        }
+      }
+    );
+  }
+);
+var DialogContentImpl = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
+    const context = useDialogContext(CONTENT_NAME$1, __scopeDialog);
+    const contentRef = reactExports.useRef(null);
+    const composedRefs = useComposedRefs(forwardedRef, contentRef);
+    useFocusGuards();
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FocusScope,
+        {
+          asChild: true,
+          loop: true,
+          trapped: trapFocus,
+          onMountAutoFocus: onOpenAutoFocus,
+          onUnmountAutoFocus: onCloseAutoFocus,
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            DismissableLayer,
+            {
+              role: "dialog",
+              id: context.contentId,
+              "aria-describedby": context.descriptionId,
+              "aria-labelledby": context.titleId,
+              "data-state": getState$1(context.open),
+              ...contentProps,
+              ref: composedRefs,
+              onDismiss: () => context.onOpenChange(false)
+            }
+          )
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TitleWarning, { titleId: context.titleId }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DescriptionWarning$1, { contentRef, descriptionId: context.descriptionId })
+      ] })
+    ] });
+  }
+);
+var TITLE_NAME$1 = "DialogTitle";
+var DialogTitle$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...titleProps } = props;
+    const context = useDialogContext(TITLE_NAME$1, __scopeDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
+  }
+);
+DialogTitle$1.displayName = TITLE_NAME$1;
+var DESCRIPTION_NAME$1 = "DialogDescription";
+var DialogDescription$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...descriptionProps } = props;
+    const context = useDialogContext(DESCRIPTION_NAME$1, __scopeDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
+  }
+);
+DialogDescription$1.displayName = DESCRIPTION_NAME$1;
+var CLOSE_NAME = "DialogClose";
+var DialogClose = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...closeProps } = props;
+    const context = useDialogContext(CLOSE_NAME, __scopeDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Primitive.button,
+      {
+        type: "button",
+        ...closeProps,
+        ref: forwardedRef,
+        onClick: composeEventHandlers(props.onClick, () => context.onOpenChange(false))
+      }
+    );
+  }
+);
+DialogClose.displayName = CLOSE_NAME;
+function getState$1(open) {
+  return open ? "open" : "closed";
+}
+var TITLE_WARNING_NAME = "DialogTitleWarning";
+var [WarningProvider, useWarningContext] = createContext2(TITLE_WARNING_NAME, {
+  contentName: CONTENT_NAME$1,
+  titleName: TITLE_NAME$1,
+  docsSlug: "dialog"
+});
+var TitleWarning = ({ titleId }) => {
+  const titleWarningContext = useWarningContext(TITLE_WARNING_NAME);
+  const MESSAGE = `\`${titleWarningContext.contentName}\` requires a \`${titleWarningContext.titleName}\` for the component to be accessible for screen reader users.
+
+If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
+  reactExports.useEffect(() => {
+    if (titleId) {
+      const hasTitle = document.getElementById(titleId);
+      if (!hasTitle) console.error(MESSAGE);
+    }
+  }, [MESSAGE, titleId]);
+  return null;
+};
+var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
+var DescriptionWarning$1 = ({ contentRef, descriptionId }) => {
+  const descriptionWarningContext = useWarningContext(DESCRIPTION_WARNING_NAME);
+  const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${descriptionWarningContext.contentName}}.`;
+  reactExports.useEffect(() => {
+    var _a2;
+    const describedById = (_a2 = contentRef.current) == null ? void 0 : _a2.getAttribute("aria-describedby");
+    if (descriptionId && describedById) {
+      const hasDescription = document.getElementById(descriptionId);
+      if (!hasDescription) console.warn(MESSAGE);
+    }
+  }, [MESSAGE, contentRef, descriptionId]);
+  return null;
+};
+var Root$2 = Dialog$1;
+var Trigger = DialogTrigger;
+var Portal = DialogPortal$1;
+var Overlay = DialogOverlay$1;
+var Content = DialogContent$1;
+var Title = DialogTitle$1;
+var Description = DialogDescription$1;
+var Close = DialogClose;
+var ROOT_NAME = "AlertDialog";
+var [createAlertDialogContext] = createContextScope(ROOT_NAME, [
+  createDialogScope
+]);
+var useDialogScope = createDialogScope();
+var AlertDialog$1 = (props) => {
+  const { __scopeAlertDialog, ...alertDialogProps } = props;
+  const dialogScope = useDialogScope(__scopeAlertDialog);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$2, { ...dialogScope, ...alertDialogProps, modal: true });
+};
+AlertDialog$1.displayName = ROOT_NAME;
+var TRIGGER_NAME = "AlertDialogTrigger";
+var AlertDialogTrigger = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...triggerProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger, { ...dialogScope, ...triggerProps, ref: forwardedRef });
+  }
+);
+AlertDialogTrigger.displayName = TRIGGER_NAME;
+var PORTAL_NAME = "AlertDialogPortal";
+var AlertDialogPortal$1 = (props) => {
+  const { __scopeAlertDialog, ...portalProps } = props;
+  const dialogScope = useDialogScope(__scopeAlertDialog);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { ...dialogScope, ...portalProps });
+};
+AlertDialogPortal$1.displayName = PORTAL_NAME;
+var OVERLAY_NAME = "AlertDialogOverlay";
+var AlertDialogOverlay$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...overlayProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { ...dialogScope, ...overlayProps, ref: forwardedRef });
+  }
+);
+AlertDialogOverlay$1.displayName = OVERLAY_NAME;
+var CONTENT_NAME = "AlertDialogContent";
+var [AlertDialogContentProvider, useAlertDialogContentContext] = createAlertDialogContext(CONTENT_NAME);
+var Slottable = /* @__PURE__ */ createSlottable("AlertDialogContent");
+var AlertDialogContent$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, children, ...contentProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    const contentRef = reactExports.useRef(null);
+    const composedRefs = useComposedRefs(forwardedRef, contentRef);
+    const cancelRef = reactExports.useRef(null);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      WarningProvider,
+      {
+        contentName: CONTENT_NAME,
+        titleName: TITLE_NAME,
+        docsSlug: "alert-dialog",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogContentProvider, { scope: __scopeAlertDialog, cancelRef, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Content,
+          {
+            role: "alertdialog",
+            ...dialogScope,
+            ...contentProps,
+            ref: composedRefs,
+            onOpenAutoFocus: composeEventHandlers(contentProps.onOpenAutoFocus, (event) => {
+              var _a2;
+              event.preventDefault();
+              (_a2 = cancelRef.current) == null ? void 0 : _a2.focus({ preventScroll: true });
+            }),
+            onPointerDownOutside: (event) => event.preventDefault(),
+            onInteractOutside: (event) => event.preventDefault(),
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Slottable, { children }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(DescriptionWarning, { contentRef })
+            ]
+          }
+        ) })
+      }
+    );
+  }
+);
+AlertDialogContent$1.displayName = CONTENT_NAME;
+var TITLE_NAME = "AlertDialogTitle";
+var AlertDialogTitle$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...titleProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { ...dialogScope, ...titleProps, ref: forwardedRef });
+  }
+);
+AlertDialogTitle$1.displayName = TITLE_NAME;
+var DESCRIPTION_NAME = "AlertDialogDescription";
+var AlertDialogDescription$1 = reactExports.forwardRef((props, forwardedRef) => {
+  const { __scopeAlertDialog, ...descriptionProps } = props;
+  const dialogScope = useDialogScope(__scopeAlertDialog);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Description, { ...dialogScope, ...descriptionProps, ref: forwardedRef });
+});
+AlertDialogDescription$1.displayName = DESCRIPTION_NAME;
+var ACTION_NAME = "AlertDialogAction";
+var AlertDialogAction$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...actionProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { ...dialogScope, ...actionProps, ref: forwardedRef });
+  }
+);
+AlertDialogAction$1.displayName = ACTION_NAME;
+var CANCEL_NAME = "AlertDialogCancel";
+var AlertDialogCancel$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...cancelProps } = props;
+    const { cancelRef } = useAlertDialogContentContext(CANCEL_NAME, __scopeAlertDialog);
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    const ref = useComposedRefs(forwardedRef, cancelRef);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { ...dialogScope, ...cancelProps, ref });
+  }
+);
+AlertDialogCancel$1.displayName = CANCEL_NAME;
+var DescriptionWarning = ({ contentRef }) => {
+  const MESSAGE = `\`${CONTENT_NAME}\` requires a description for the component to be accessible for screen reader users.
+
+You can add a description to the \`${CONTENT_NAME}\` by passing a \`${DESCRIPTION_NAME}\` component as a child, which also benefits sighted users by adding visible context to the dialog.
+
+Alternatively, you can use your own component as a description by assigning it an \`id\` and passing the same value to the \`aria-describedby\` prop in \`${CONTENT_NAME}\`. If the description is confusing or duplicative for sighted users, you can use the \`@radix-ui/react-visually-hidden\` primitive as a wrapper around your description component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/alert-dialog`;
+  reactExports.useEffect(() => {
+    var _a2;
+    const hasDescription = document.getElementById(
+      (_a2 = contentRef.current) == null ? void 0 : _a2.getAttribute("aria-describedby")
+    );
+    if (!hasDescription) console.warn(MESSAGE);
+  }, [MESSAGE, contentRef]);
+  return null;
+};
+var Root2 = AlertDialog$1;
+var Portal2 = AlertDialogPortal$1;
+var Overlay2 = AlertDialogOverlay$1;
+var Content2 = AlertDialogContent$1;
+var Action = AlertDialogAction$1;
+var Cancel = AlertDialogCancel$1;
+var Title2 = AlertDialogTitle$1;
+var Description2 = AlertDialogDescription$1;
+function AlertDialog({
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2, { "data-slot": "alert-dialog", ...props });
+}
+function AlertDialogPortal({
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal2, { "data-slot": "alert-dialog-portal", ...props });
+}
+function AlertDialogOverlay({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Overlay2,
+    {
+      "data-slot": "alert-dialog-overlay",
+      className: cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function AlertDialogContent({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogPortal, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogOverlay, {}),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Content2,
+      {
+        "data-slot": "alert-dialog-content",
+        className: cn(
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          className
+        ),
+        ...props
+      }
+    )
+  ] });
+}
+function AlertDialogHeader({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "alert-dialog-header",
+      className: cn("flex flex-col gap-2 text-center sm:text-left", className),
+      ...props
+    }
+  );
+}
+function AlertDialogFooter({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "alert-dialog-footer",
+      className: cn(
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function AlertDialogTitle({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Title2,
+    {
+      "data-slot": "alert-dialog-title",
+      className: cn("text-lg font-semibold", className),
+      ...props
+    }
+  );
+}
+function AlertDialogDescription({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Description2,
+    {
+      "data-slot": "alert-dialog-description",
+      className: cn("text-muted-foreground text-sm", className),
+      ...props
+    }
+  );
+}
+function AlertDialogAction({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Action,
+    {
+      className: cn(buttonVariants(), className),
+      ...props
+    }
+  );
+}
+function AlertDialogCancel({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Cancel,
+    {
+      className: cn(buttonVariants({ variant: "outline" }), className),
+      ...props
+    }
+  );
+}
 var NAME = "Separator";
 var DEFAULT_ORIENTATION = "horizontal";
 var ORIENTATIONS = ["horizontal", "vertical"];
@@ -51354,7 +52882,7 @@ Separator$1.displayName = NAME;
 function isValidOrientation(orientation) {
   return ORIENTATIONS.includes(orientation);
 }
-var Root$2 = Separator$1;
+var Root$1 = Separator$1;
 function Separator({
   className,
   orientation = "horizontal",
@@ -51362,7 +52890,7 @@ function Separator({
   ...props
 }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Root$2,
+    Root$1,
     {
       "data-slot": "separator",
       decorative,
@@ -51375,1071 +52903,82 @@ function Separator({
     }
   );
 }
-function formatVnd$4(value) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0
-  }).format(value);
+function Sheet({ ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$2, { "data-slot": "sheet", ...props });
 }
-const EMPTY_CUSTOMER = {
-  cusName: "",
-  cusPhone: "",
-  cusAddress: "",
-  cusTaxCode: "",
-  receiverEmail: ""
-};
-function CreateOrder() {
-  const navigate = useNavigate();
-  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
-  const [restaurantId, setRestaurantId] = reactExports.useState("");
-  const { data: menu, isLoading: menuLoading } = useMenuForRestaurant(
-    restaurantId || void 0
-  );
-  const [cart, setCart] = reactExports.useState({});
-  const [customer, setCustomer] = reactExports.useState(EMPTY_CUSTOMER);
-  const [touched, setTouched] = reactExports.useState(false);
-  const [quote$1, setQuote] = reactExports.useState(null);
-  const [quoteLoading, setQuoteLoading] = reactExports.useState(false);
-  const [quoteError, setQuoteError] = reactExports.useState(null);
-  const [submitting, setSubmitting] = reactExports.useState(false);
-  const selectedRestaurant = restaurants == null ? void 0 : restaurants.find(
-    (r2) => r2.restaurantId === restaurantId
-  );
-  const cartLines = reactExports.useMemo(() => {
-    if (!menu) return [];
-    return menu.filter((m2) => (cart[m2.itemId] ?? 0) > 0).map((m2) => ({ item: m2, quantity: cart[m2.itemId] }));
-  }, [menu, cart]);
-  const itemsTotal = reactExports.useMemo(
-    () => cartLines.reduce((sum, l2) => sum + Number(l2.item.price) * l2.quantity, 0),
-    [cartLines]
-  );
-  const itemCount = reactExports.useMemo(
-    () => cartLines.reduce((sum, l2) => sum + l2.quantity, 0),
-    [cartLines]
-  );
-  const customerErrors = touched ? validateCustomerForm(customer) : {};
-  function handleQuantityChange(itemId, delta) {
-    setCart((prev) => {
-      const next = Math.max(0, (prev[itemId] ?? 0) + delta);
-      const copy = { ...prev };
-      if (next === 0) delete copy[itemId];
-      else copy[itemId] = next;
-      return copy;
-    });
-    setQuote(null);
-    setQuoteError(null);
-  }
-  function handleCustomerChange(field, value) {
-    setCustomer((prev) => ({ ...prev, [field]: value }));
-    if (field === "cusAddress") {
-      setQuote(null);
-      setQuoteError(null);
-    }
-  }
-  function handleRestaurantChange(id) {
-    setRestaurantId(id);
-    setCart({});
-    setQuote(null);
-    setQuoteError(null);
-  }
-  function canRequestQuote() {
-    return !!restaurantId && cartLines.length > 0 && !!customer.cusAddress.trim() && !!(selectedRestaurant == null ? void 0 : selectedRestaurant.address) && !quoteLoading;
-  }
-  async function handleQuote() {
-    if (!canRequestQuote()) return;
-    setTouched(true);
-    const errs = validateCustomerForm(customer);
-    if (errs.cusAddress) return;
-    setQuoteLoading(true);
-    setQuoteError(null);
-    try {
-      const payload = {
-        restaurantId,
-        pickupAddress: selectedRestaurant.address,
-        dropAddress: customer.cusAddress.trim(),
-        items: cartLines.map((l2) => ({
-          itemId: l2.item.itemId,
-          name: l2.item.name,
-          quantity: l2.quantity
-        }))
-      };
-      const res = await quote(payload);
-      setQuote(res);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Không lấy được phí ship.";
-      setQuoteError(msg);
-      ue.error("Lấy phí ship thất bại", { description: msg });
-    } finally {
-      setQuoteLoading(false);
-    }
-  }
-  async function handleSubmit() {
-    setTouched(true);
-    const errs = validateCustomerForm(customer);
-    if (Object.keys(errs).length > 0) {
-      ue.error("Vui lòng kiểm tra thông tin khách hàng.");
-      return;
-    }
-    if (!restaurantId || cartLines.length === 0) {
-      ue.error("Vui lòng chọn nhà hàng và ít nhất một món.");
-      return;
-    }
-    if (!quote$1) {
-      ue.error("Vui lòng lấy phí ship trước khi đặt đơn.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const payload = {
-        restaurantId,
-        cusName: customer.cusName.trim(),
-        cusPhone: customer.cusPhone.trim(),
-        cusAddress: customer.cusAddress.trim(),
-        cusTaxCode: customer.cusTaxCode.trim(),
-        receiverEmail: customer.receiverEmail.trim(),
-        items: cartLines.map((l2) => ({
-          itemId: l2.item.itemId,
-          name: l2.item.name,
-          quantity: l2.quantity,
-          price: Number(l2.item.price),
-          vatRate: Number(l2.item.vatRate),
-          unitName: l2.item.unitName
-        })),
-        shippingFee: quote$1.shippingFee,
-        ahamoveOrderId: quote$1.ahamoveOrderId
-      };
-      const res = await create(payload);
-      if (!res.ok) {
-        throw new Error(res.error ?? "VPS từ chối tạo đơn.");
-      }
-      ue.success("Đặt đơn thành công!", {
-        description: `Mã đơn: ${res.orderId}`
-      });
-      setCart({});
-      setCustomer(EMPTY_CUSTOMER);
-      setQuote(null);
-      setTouched(false);
-      navigate({ to: "/track/$orderId", params: { orderId: res.orderId } });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Đặt đơn thất bại.";
-      ue.error("Đặt đơn thất bại", { description: msg });
-    } finally {
-      setSubmitting(false);
-    }
-  }
-  const totalAmount = (quote$1 == null ? void 0 : quote$1.amount) ?? itemsTotal;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-10",
-      "data-ocid": "create_order.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-6 flex flex-col gap-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "h1",
-            {
-              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
-              "data-ocid": "create_order.title",
-              children: "Đặt hàng"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Chọn nhà hàng, chọn món, nhập thông tin khách và xem phí ship trước khi đặt đơn." })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 gap-6 lg:grid-cols-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-6 lg:col-span-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.restaurant_card", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 text-base", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground", children: "1" }),
-                "Chọn nhà hàng"
-              ] }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                RestaurantSelect,
-                {
-                  restaurants,
-                  isLoading: restaurantsLoading,
-                  value: restaurantId,
-                  onChange: handleRestaurantChange
-                }
-              ) })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.menu_card", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 text-base", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground", children: "2" }),
-                "Chọn món"
-              ] }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: !restaurantId ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "div",
-                {
-                  className: "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-8 text-center",
-                  "data-ocid": "create_order.menu_empty_state",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      Package,
-                      {
-                        className: "h-8 w-8 text-muted-foreground",
-                        "aria-hidden": "true"
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-medium text-foreground", children: "Chọn nhà hàng để xem menu" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Bước 1 ở trên để hiển thị danh sách món." })
-                  ]
-                }
-              ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                MenuPicker,
-                {
-                  menu,
-                  isLoading: menuLoading,
-                  cart,
-                  onQuantityChange: handleQuantityChange,
-                  disabled: submitting
-                }
-              ) })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.customer_card", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 text-base", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground", children: "3" }),
-                "Thông tin khách"
-              ] }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                CustomerForm,
-                {
-                  values: customer,
-                  errors: customerErrors,
-                  onChange: handleCustomerChange,
-                  disabled: submitting
-                }
-              ) })
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("aside", { className: "lg:col-span-1", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "lg:sticky lg:top-24", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.summary_card", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center justify-between text-base", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingCart, { className: "h-4 w-4", "aria-hidden": "true" }),
-                "Đơn hàng"
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "span",
-                {
-                  className: "rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground",
-                  "data-ocid": "create_order.summary_count",
-                  children: [
-                    itemCount,
-                    " món"
-                  ]
-                }
-              )
-            ] }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "flex flex-col gap-3", children: [
-              cartLines.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "p",
-                {
-                  className: "py-6 text-center text-sm text-muted-foreground",
-                  "data-ocid": "create_order.summary_empty_state",
-                  children: "Chưa có món nào được chọn."
-                }
-              ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "ul",
-                {
-                  className: "flex flex-col gap-2",
-                  "data-ocid": "create_order.summary_list",
-                  children: cartLines.map((l2, idx) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                    "li",
-                    {
-                      className: "flex items-start justify-between gap-2 text-sm",
-                      "data-ocid": `create_order.summary_item.${idx}`,
-                      children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 flex-1 flex-col", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "line-clamp-1 font-medium text-foreground", children: l2.item.name }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
-                            formatVnd$4(Number(l2.item.price)),
-                            " × ",
-                            l2.quantity
-                          ] })
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono text-sm font-medium", children: formatVnd$4(Number(l2.item.price) * l2.quantity) })
-                      ]
-                    },
-                    l2.item.itemId
-                  ))
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Separator, {}),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "div",
-                {
-                  className: "flex flex-col gap-2",
-                  "data-ocid": "create_order.quote_panel",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-sm", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Tạm tính (chưa VAT)" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$4(itemsTotal) })
-                    ] }),
-                    quote$1 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-sm", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 text-muted-foreground", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(Truck, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-                          "Phí ship"
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$4(quote$1.shippingFee) })
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-sm", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-muted-foreground", children: [
-                          "VAT (",
-                          quote$1.vatRate,
-                          "%)"
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$4(quote$1.taxTotal) })
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-sm", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Tiền hàng + VAT" }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$4(quote$1.goodsAmount + quote$1.taxTotal) })
-                      ] })
-                    ] }) : quoteError ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      "div",
-                      {
-                        className: "flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive",
-                        "data-ocid": "create_order.quote_error_state",
-                        role: "alert",
-                        children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            CircleAlert,
-                            {
-                              className: "mt-0.5 h-3.5 w-3.5 shrink-0",
-                              "aria-hidden": "true"
-                            }
-                          ),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "min-w-0 break-words", children: quoteError })
-                        ]
-                      }
-                    ) : quoteLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      "div",
-                      {
-                        className: "flex items-center gap-2 text-sm text-muted-foreground",
-                        "data-ocid": "create_order.quote_loading_state",
-                        children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            LoaderCircle,
-                            {
-                              className: "h-3.5 w-3.5 animate-spin",
-                              "aria-hidden": "true"
-                            }
-                          ),
-                          "Đang tính phí ship…"
-                        ]
-                      }
-                    ) : /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Nhấn “Lấy phí ship” để xem phí giao hàng và tổng tiền." }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      Button,
-                      {
-                        type: "button",
-                        variant: "outline",
-                        className: "min-h-[44px] w-full",
-                        onClick: handleQuote,
-                        disabled: !canRequestQuote(),
-                        "data-ocid": "create_order.quote_button",
-                        children: quoteLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            LoaderCircle,
-                            {
-                              className: "h-4 w-4 animate-spin",
-                              "aria-hidden": "true"
-                            }
-                          ),
-                          "Đang tính…"
-                        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(Truck, { className: "h-4 w-4", "aria-hidden": "true" }),
-                          "Lấy phí ship"
-                        ] })
-                      }
-                    )
-                  ]
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Separator, {}),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "div",
-                {
-                  className: "flex items-center justify-between",
-                  "data-ocid": "create_order.total_panel",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-sm font-semibold text-foreground", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4", "aria-hidden": "true" }),
-                      "Tổng tiền"
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      "span",
-                      {
-                        className: "font-mono text-lg font-bold text-primary",
-                        "data-ocid": "create_order.total_amount",
-                        children: formatVnd$4(totalAmount)
-                      }
-                    )
-                  ]
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Button,
-                {
-                  type: "button",
-                  className: "min-h-[44px] w-full bg-gradient-primary text-primary-foreground",
-                  onClick: handleSubmit,
-                  disabled: submitting || cartLines.length === 0 || !quote$1 || Object.keys(customerErrors).length > 0,
-                  "data-ocid": "create_order.submit_button",
-                  children: submitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      LoaderCircle,
-                      {
-                        className: "h-4 w-4 animate-spin",
-                        "aria-hidden": "true"
-                      }
-                    ),
-                    "Đang đặt đơn…"
-                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingCart, { className: "h-4 w-4", "aria-hidden": "true" }),
-                    "Đặt đơn"
-                  ] })
-                }
-              ),
-              !quote$1 && cartLines.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Cần lấy phí ship trước khi đặt đơn." })
-            ] })
-          ] }) }) })
-        ] })
-      ]
-    }
-  );
-}
-const ROLE_LABELS = {
-  [DeviceRole.admin]: "Quản trị",
-  [DeviceRole.cashier]: "Thu ngân",
-  [DeviceRole.driver]: "Tài xế"
-};
-function formatTimestamp(ns) {
-  if (!ns || ns <= 0n) return "—";
-  try {
-    const ms2 = Number(ns / 1000000n);
-    if (!Number.isFinite(ms2) || ms2 <= 0) return "—";
-    return new Date(ms2).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  } catch {
-    return "—";
-  }
-}
-function truncateId(id, max2 = 14) {
-  if (!id) return "—";
-  if (id.length <= max2) return id;
-  return `${id.slice(0, 6)}…${id.slice(-4)}`;
-}
-function DeviceTable({
-  devices,
-  isLoading = false,
-  onRevoke,
-  revokingDeviceId = null,
-  emptyMessage = "Chưa có thiết bị nào."
+function SheetPortal({
+  ...props
 }) {
-  if (isLoading) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      "div",
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { "data-slot": "sheet-portal", ...props });
+}
+function SheetOverlay({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Overlay,
+    {
+      "data-slot": "sheet-overlay",
+      className: cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function SheetContent({
+  className,
+  children,
+  side = "right",
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(SheetPortal, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(SheetOverlay, {}),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      Content,
       {
-        className: "flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground",
-        "data-ocid": "device.table.loading_state",
+        "data-slot": "sheet-content",
+        className: cn(
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+          side === "right" && "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
+          side === "left" && "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
+          side === "top" && "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b",
+          side === "bottom" && "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t",
+          className
+        ),
+        ...props,
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
-          "Đang tải danh sách thiết bị…"
+          children,
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Close, { className: "ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute right-4 top-[max(1rem,env(safe-area-inset-top))] rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "size-4" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sr-only", children: "Close" })
+          ] })
         ]
       }
-    );
-  }
-  if (!devices || devices.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        className: "flex flex-col items-center justify-center gap-2 py-10 text-center",
-        "data-ocid": "device.table.empty_state",
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: emptyMessage })
-      }
-    );
-  }
+    )
+  ] });
+}
+function SheetHeader({ className, ...props }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "div",
     {
-      className: "overflow-hidden rounded-lg border border-border",
-      "data-ocid": "device.table",
-      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { className: "bg-muted/40", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "pl-3", children: "Mã thiết bị" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Nhà hàng" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Vai trò" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Kích hoạt lúc" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-center", children: "Trạng thái" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "pr-3 text-right", children: "Thao tác" })
-        ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: devices.map((device, index2) => {
-          const isRevoking = revokingDeviceId === device.deviceId;
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            TableRow,
-            {
-              "data-ocid": `device.table.row.${index2}`,
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pl-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "span",
-                  {
-                    className: "font-mono text-xs text-foreground",
-                    title: device.deviceId,
-                    children: truncateId(device.deviceId)
-                  }
-                ) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-foreground", children: device.restaurantId || "—" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-foreground", children: ROLE_LABELS[device.role] ?? device.role }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-muted-foreground", children: formatTimestamp(device.activatedAt) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-center", children: device.active ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "span",
-                  {
-                    className: "badge-success inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                    "data-ocid": `device.table.status.${index2}`,
-                    children: "Kích hoạt"
-                  }
-                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "span",
-                  {
-                    className: "badge-destructive inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                    "data-ocid": `device.table.status.${index2}`,
-                    children: "Đã thu hồi"
-                  }
-                ) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pr-3 text-right", children: device.active && onRevoke ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  Button,
-                  {
-                    type: "button",
-                    variant: "destructive",
-                    size: "sm",
-                    onClick: () => onRevoke(device.deviceId),
-                    disabled: isRevoking,
-                    "data-ocid": `device.table.revoke_button.${index2}`,
-                    "aria-label": `Thu hồi thiết bị ${truncateId(device.deviceId)}`,
-                    children: [
-                      isRevoking ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        LoaderCircle,
-                        {
-                          className: "h-3.5 w-3.5 animate-spin",
-                          "aria-hidden": "true"
-                        }
-                      ) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-                      "Thu hồi"
-                    ]
-                  }
-                ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" }) })
-              ]
-            },
-            device.deviceId
-          );
-        }) })
-      ] })
+      "data-slot": "sheet-header",
+      className: cn("flex flex-col gap-1.5 p-4", className),
+      ...props
     }
   );
 }
-const ROLE_FILTER_OPTIONS = [
-  { value: "all", label: "Tất cả vai trò" },
-  { value: DeviceRole.admin, label: "Quản trị" },
-  { value: DeviceRole.cashier, label: "Thu ngân" },
-  { value: DeviceRole.driver, label: "Tài xế" }
-];
-function matchesRole(device, filter) {
-  if (filter === "all") return true;
-  return device.role === filter;
-}
-function DeviceManager() {
-  var _a2, _b2;
-  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
-  const [selectedRestaurant, setSelectedRestaurant] = reactExports.useState("");
-  const [roleFilter, setRoleFilter] = reactExports.useState("all");
-  const [revokingDeviceId, setRevokingDeviceId] = reactExports.useState(null);
-  const devicesQuery = useDevicesByRestaurant(selectedRestaurant || void 0);
-  const revokeMutation = useRevokeDevice();
-  const activeRestaurantId = selectedRestaurant || ((_a2 = restaurants == null ? void 0 : restaurants[0]) == null ? void 0 : _a2.restaurantId);
-  const devices = (devicesQuery.data ?? []).filter(
-    (d2) => matchesRole(d2, roleFilter)
-  );
-  async function handleRevoke(deviceId) {
-    setRevokingDeviceId(deviceId);
-    try {
-      await revokeMutation.mutateAsync(deviceId);
-      ue.success("Đã thu hồi thiết bị.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể thu hồi thiết bị.";
-      ue.error(message);
-    } finally {
-      setRevokingDeviceId(null);
-    }
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10",
-      "data-ocid": "device.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "h1",
-            {
-              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
-              "data-ocid": "device.title",
-              children: "Quản lý thiết bị"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Xem và thu hồi thiết bị đã kích hoạt theo nhà hàng và vai trò." })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "mt-6 flex flex-col gap-3 sm:flex-row sm:items-end",
-            "data-ocid": "device.filters",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "label",
-                  {
-                    htmlFor: "device-restaurant",
-                    className: "text-sm font-medium text-muted-foreground",
-                    children: "Theo nhà hàng"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  Select,
-                  {
-                    value: selectedRestaurant,
-                    onValueChange: setSelectedRestaurant,
-                    disabled: restaurantsLoading,
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        SelectTrigger,
-                        {
-                          id: "device-restaurant",
-                          className: "w-full sm:w-[260px]",
-                          "data-ocid": "device.restaurant_select",
-                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            SelectValue,
-                            {
-                              placeholder: restaurantsLoading ? "Đang tải…" : "Tất cả nhà hàng"
-                            }
-                          )
-                        }
-                      ),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "", "data-ocid": "device.restaurant_option.all", children: "Tất cả nhà hàng" }),
-                        restaurants == null ? void 0 : restaurants.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          SelectItem,
-                          {
-                            value: r2.restaurantId,
-                            "data-ocid": `device.restaurant_option.${r2.restaurantId}`,
-                            children: r2.name || r2.restaurantId
-                          },
-                          r2.restaurantId
-                        ))
-                      ] })
-                    ]
-                  }
-                )
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "label",
-                  {
-                    htmlFor: "device-role",
-                    className: "text-sm font-medium text-muted-foreground",
-                    children: "Theo vai trò"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  Select,
-                  {
-                    value: roleFilter,
-                    onValueChange: (v2) => setRoleFilter(v2),
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        SelectTrigger,
-                        {
-                          id: "device-role",
-                          className: "w-full sm:w-[200px]",
-                          "data-ocid": "device.role_select",
-                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {})
-                        }
-                      ),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: ROLE_FILTER_OPTIONS.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        SelectItem,
-                        {
-                          value: opt.value,
-                          "data-ocid": `device.role_option.${opt.value}`,
-                          children: opt.label
-                        },
-                        opt.value
-                      )) })
-                    ]
-                  }
-                )
-              ] })
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-6", "data-ocid": "device.content", children: restaurantsLoading && !restaurants ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground",
-            "data-ocid": "device.loading_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
-              "Đang tải danh sách nhà hàng…"
-            ]
-          }
-        ) : !activeRestaurantId ? /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { "data-ocid": "device.empty_restaurant_state", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              Smartphone,
-              {
-                className: "h-4 w-4 text-muted-foreground",
-                "aria-hidden": "true"
-              }
-            ),
-            "Chưa có nhà hàng"
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Thêm nhà hàng trước khi quản lý thiết bị." })
-        ] }) }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "device.table_card", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "font-display", children: [
-              "Thiết bị của",
-              " ",
-              ((_b2 = restaurants == null ? void 0 : restaurants.find((r2) => r2.restaurantId === activeRestaurantId)) == null ? void 0 : _b2.name) ?? activeRestaurantId
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
-              devices.length,
-              " thiết bị hiển thị sau khi lọc."
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            DeviceTable,
-            {
-              devices,
-              isLoading: devicesQuery.isLoading,
-              onRevoke: handleRevoke,
-              revokingDeviceId,
-              emptyMessage: "Chưa có thiết bị nào khớp với bộ lọc."
-            }
-          ) })
-        ] }) })
-      ]
-    }
-  );
-}
-function getDeviceId() {
-  const KEY = "bb65.deviceId";
-  try {
-    const existing = localStorage.getItem(KEY);
-    if (existing) return existing;
-    const id = `dev-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
-    localStorage.setItem(KEY, id);
-    return id;
-  } catch {
-    return `dev-session-${Date.now().toString(36)}`;
-  }
-}
-function ActivationForm({ onActivated }) {
-  const { actor } = useCanister();
-  const [code, setCode] = reactExports.useState("");
-  const [submitting, setSubmitting] = reactExports.useState(false);
-  const [error, setError] = reactExports.useState(null);
-  const normalized = code.trim().toUpperCase();
-  const isValid = normalized.length === 6;
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!actor || submitting || !isValid) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const deviceId = getDeviceId();
-      const device = await activateDevice(actor, normalized, deviceId);
-      if (device.role !== DeviceRole.driver) {
-        setError(
-          "Mã này không dành cho thiết bị tài xế. Vui lòng dùng mã vai trò 'driver'."
-        );
-        return;
-      }
-      if (!device.active) {
-        setError("Thiết bị chưa được kích hoạt. Vui lòng thử lại.");
-        return;
-      }
-      ue.success("Kích hoạt thiết bị thành công");
-      onActivated(device.restaurantId, device.deviceId);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (/expir|hết hạn|expired/i.test(msg)) {
-        setError("Mã kích hoạt đã hết hạn (15 phút). Vui lòng yêu cầu mã mới.");
-      } else if (/used|đã dùng/i.test(msg)) {
-        setError("Mã kích hoạt đã được sử dụng. Vui lòng yêu cầu mã mới.");
-      } else if (/not found|không tìm/i.test(msg)) {
-        setError("Mã kích hoạt không đúng. Vui lòng kiểm tra lại.");
-      } else {
-        setError(`Kích hoạt thất bại: ${msg}`);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8 md:px-6 md:py-12",
-      "data-ocid": "activation.section",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "flex flex-col items-center gap-3 text-center", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "div",
-            {
-              className: "flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary",
-              "aria-hidden": "true",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "h-8 w-8" })
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-bold tracking-tight md:text-3xl", children: "Kích hoạt thiết bị" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Nhập mã kích hoạt 6 ký tự do quản trị viên cấp. Mã có hiệu lực 15 phút." })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "form",
-          {
-            onSubmit: handleSubmit,
-            className: "flex flex-col gap-5",
-            "data-ocid": "activation.form",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "label",
-                  {
-                    htmlFor: "activation-code",
-                    className: "text-sm font-semibold text-foreground",
-                    children: "Mã kích hoạt"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "input",
-                  {
-                    id: "activation-code",
-                    type: "text",
-                    inputMode: "text",
-                    autoComplete: "one-time-code",
-                    autoCapitalize: "characters",
-                    autoCorrect: "off",
-                    spellCheck: false,
-                    value: code,
-                    onChange: (e) => {
-                      setCode(e.target.value.replace(/[^A-Za-z0-9]/g, "").slice(0, 6));
-                      setError(null);
-                    },
-                    disabled: submitting,
-                    placeholder: "ABC123",
-                    "aria-label": "Mã kích hoạt 6 ký tự",
-                    "aria-invalid": !!error,
-                    "aria-describedby": error ? "activation-error" : void 0,
-                    "data-ocid": "activation.input",
-                    className: "mx-auto w-full max-w-[16rem] rounded-lg border border-input bg-card px-3 py-4 text-center font-mono text-3xl font-bold tracking-[0.4em] uppercase text-foreground shadow-sm outline-none transition-smooth placeholder:text-2xl placeholder:tracking-[0.3em] placeholder:font-normal placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-center text-xs text-muted-foreground", children: [
-                  normalized.length,
-                  "/6 ký tự"
-                ] })
-              ] }),
-              error && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "p",
-                {
-                  id: "activation-error",
-                  role: "alert",
-                  "data-ocid": "activation.error_state",
-                  className: "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm font-medium text-destructive",
-                  children: error
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  type: "submit",
-                  disabled: submitting || !isValid,
-                  "data-ocid": "activation.submit_button",
-                  className: "inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-base font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                  children: submitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin", "aria-hidden": "true" }),
-                    "Đang kích hoạt…"
-                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                    "Kích hoạt",
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-5 w-5", "aria-hidden": "true" })
-                  ] })
-                }
-              )
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Không có mã? Liên hệ quản trị viên nhà hàng để được cấp mã kích hoạt mới." })
-      ]
-    }
-  );
-}
-function formatVnd$3(amount) {
-  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
-}
-function formatTime(ns) {
-  const ms2 = Number(ns) / 1e6;
-  return new Intl.DateTimeFormat("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(ms2));
-}
-function isPending(o) {
-  return o.paymentStatus === PaymentStatus.unpaid;
-}
-function PaymentQueue({
-  orders,
-  isLoading,
-  isError,
-  onPay,
-  payingOrderId
+function SheetTitle({
+  className,
+  ...props
 }) {
-  const pending = orders.filter(isPending);
-  const sorted = [...pending].sort((a2, b2) => Number(a2.createdAt - b2.createdAt));
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Title,
     {
-      className: "mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8",
-      "data-ocid": "queue.section",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center justify-between gap-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(ListOrdered, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-bold tracking-tight md:text-2xl", children: "Hàng đợi thanh toán" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "span",
-            {
-              className: "inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
-              "data-ocid": "queue.count",
-              children: [
-                sorted.length,
-                " đơn"
-              ]
-            }
-          )
-        ] }),
-        isError && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive",
-            "data-ocid": "queue.error_state",
-            children: "Không tải được danh sách đơn. Đang thử lại tự động mỗi 5 giây…"
-          }
-        ),
-        isLoading && sorted.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-4 py-10 text-center",
-            "data-ocid": "queue.loading_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-6 w-6 animate-spin text-muted-foreground" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang tải đơn chờ…" })
-            ]
-          }
-        ),
-        !isLoading && sorted.length === 0 && !isError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
-            "data-ocid": "queue.empty_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "div",
-                {
-                  className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
-                  "aria-hidden": "true",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingBag, { className: "h-7 w-7" })
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Không có đơn chờ thanh toán" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Hàng đợi trống. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
-            ]
-          }
-        ),
-        sorted.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "ul",
-          {
-            className: "flex flex-col gap-3",
-            "data-ocid": "queue.list",
-            "aria-label": "Danh sách đơn chờ thanh toán",
-            children: sorted.map((order, idx) => {
-              const isPaying = payingOrderId === order.orderId;
-              return /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "li",
-                {
-                  "data-ocid": `queue.item.${idx + 1}`,
-                  className: "rounded-xl border border-border bg-card p-4 shadow-sm transition-smooth hover:shadow-md",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary", children: [
-                          "#",
-                          idx + 1
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          "span",
-                          {
-                            className: "inline-flex items-center gap-1 text-xs text-muted-foreground",
-                            title: "Thời gian tạo đơn",
-                            children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
-                              formatTime(order.createdAt)
-                            ]
-                          }
-                        )
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-2 truncate font-display text-base font-semibold text-foreground", children: order.cusName || "Khách vãng lai" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 truncate font-mono text-xs text-muted-foreground", children: order.orderId }),
-                      order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-0.5 text-xs text-muted-foreground", children: [
-                        "SĐT: ",
-                        order.cusPhone
-                      ] })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-end gap-2", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$3(order.amount) }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "button",
-                        {
-                          type: "button",
-                          onClick: () => onPay(order),
-                          disabled: isPaying,
-                          "data-ocid": `queue.pay_button.${idx + 1}`,
-                          "aria-label": `Thanh toán đơn ${order.cusName || order.orderId}`,
-                          className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
-                          children: isPaying ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              LoaderCircle,
-                              {
-                                className: "h-4 w-4 animate-spin",
-                                "aria-hidden": "true"
-                              }
-                            ),
-                            "Đang mở…"
-                          ] }) : "Thanh toán"
-                        }
-                      )
-                    ] })
-                  ] })
-                },
-                order.orderId
-              );
-            })
-          }
-        )
-      ]
+      "data-slot": "sheet-title",
+      className: cn("text-foreground font-semibold", className),
+      ...props
     }
   );
 }
@@ -53547,6 +54086,2305 @@ var QRCodeSVG = React$4.forwardRef(
   }
 );
 QRCodeSVG.displayName = "QRCodeSVG";
+function formatVnd$5(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+function formatVndBigint(value) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(value))}đ`;
+}
+const EMPTY_CUSTOMER = {
+  cusName: "",
+  cusPhone: "",
+  cusAddress: "",
+  cusTaxCode: "",
+  receiverEmail: ""
+};
+const QUOTE_DEBOUNCE_MS = 900;
+const GRAB_EXPRESS_INSTRUCTIONS = `Bước tiếp theo: Đặt Grab Express để nhận hàng
+1. Mở app Grab trên điện thoại
+2. Chọn dịch vụ "GrabExpress"
+3. Điểm đón: dán địa chỉ nhà hàng (đã copy ở trên)
+4. Điểm đến: nhập địa chỉ nhận hàng của bạn
+5. Khi tài xế liên hệ, cung cấp tên + số điện thoại đặt hàng của bạn để nhà hàng đối chiếu và giao hàng
+Lưu ý: đây là bước bạn tự thực hiện trên app Grab của mình — Bunbohue65 không đặt tài xế hộ trong chế độ này.`;
+function CreateOrder() {
+  const navigate = useNavigate();
+  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
+  const { actor } = useCanister();
+  const { data: paymentModeRaw } = useGetPaymentMode();
+  const isCustomerMode = paymentModeRaw === "customer";
+  const { data: storeOpen } = useIsStoreOpen();
+  const storeClosed = storeOpen === false;
+  const [customerModeAccepted, setCustomerModeAccepted] = reactExports.useState(false);
+  const [restaurantId, setRestaurantId] = reactExports.useState("");
+  const { data: menu, isLoading: menuLoading } = useMenus();
+  const [cart, setCart] = reactExports.useState({});
+  const [customer, setCustomer] = reactExports.useState(EMPTY_CUSTOMER);
+  const [touched, setTouched] = reactExports.useState(false);
+  const [quote$1, setQuote] = reactExports.useState(null);
+  const [quoteLoading, setQuoteLoading] = reactExports.useState(false);
+  const [quoteError, setQuoteError] = reactExports.useState(null);
+  const [submitting, setSubmitting] = reactExports.useState(false);
+  const [cartOpen, setCartOpen] = reactExports.useState(false);
+  const [upsellItems, setUpsellItems] = reactExports.useState([]);
+  const quoteDebounceRef = reactExports.useRef(null);
+  const [paidOrder, setPaidOrder] = reactExports.useState(null);
+  const [qrPolling, setQrPolling] = reactExports.useState(true);
+  const [showPostPayment, setShowPostPayment] = reactExports.useState(false);
+  const qrCanvasRef = reactExports.useRef(null);
+  const [orderPlaced, setOrderPlaced] = reactExports.useState(false);
+  const [qrExpiresAt, setQrExpiresAt] = reactExports.useState(null);
+  const [, setQrExpired] = reactExports.useState(false);
+  const [qrTimeout, setQrTimeout] = reactExports.useState(false);
+  const [now2, setNow] = reactExports.useState(() => Date.now());
+  const qrTimeoutNotifiedRef = reactExports.useRef(false);
+  const selectedRestaurant = restaurants == null ? void 0 : restaurants.find(
+    (r2) => r2.restaurantId === restaurantId
+  );
+  const cartLines = reactExports.useMemo(() => {
+    if (!menu) return [];
+    return menu.filter((m2) => (cart[m2.itemId] ?? 0) > 0).map((m2) => ({ item: m2, quantity: cart[m2.itemId] }));
+  }, [menu, cart]);
+  const itemsTotal = reactExports.useMemo(
+    () => cartLines.reduce((sum, l2) => sum + Number(l2.item.price) * l2.quantity, 0),
+    [cartLines]
+  );
+  const itemCount = reactExports.useMemo(
+    () => cartLines.reduce((sum, l2) => sum + l2.quantity, 0),
+    [cartLines]
+  );
+  const customerErrors = touched ? validateCustomerForm(customer, { hideAddress: isCustomerMode }) : {};
+  function handleQuantityChange(itemId, delta) {
+    var _a2;
+    if (isCustomerMode && !customerModeAccepted) {
+      return;
+    }
+    if (delta > 0 && !restaurantId) {
+      ue.error("Vui lòng chọn nhà hàng trước khi thêm món.");
+      (_a2 = document.querySelector('[data-ocid="create_order.restaurant_card"]')) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    const prevQty = cart[itemId] ?? 0;
+    setCart((prev) => {
+      const next = Math.max(0, (prev[itemId] ?? 0) + delta);
+      const copy = { ...prev };
+      if (next === 0) delete copy[itemId];
+      else copy[itemId] = next;
+      return copy;
+    });
+    setQuote(null);
+    setQuoteError(null);
+    if (delta > 0 && prevQty === 0 && menu) {
+      const addedItem = menu.find((m2) => m2.itemId === itemId);
+      if ((addedItem == null ? void 0 : addedItem.category) === "Món chính") {
+        const suggestions = menu.filter(
+          (m2) => m2.visible && m2.category === "Món phụ" && (cart[m2.itemId] ?? 0) === 0
+        ).slice(0, 2);
+        if (suggestions.length > 0) {
+          setUpsellItems(suggestions);
+        }
+      }
+    }
+  }
+  function handleCustomerChange(field, value) {
+    setCustomer((prev) => ({ ...prev, [field]: value }));
+    if (field === "cusAddress") {
+      setQuote(null);
+      setQuoteError(null);
+    }
+  }
+  reactExports.useEffect(() => {
+    let cancelled = false;
+    const verified = getVerifiedEmail();
+    if (!verified) return;
+    setCustomer((prev) => ({
+      ...prev,
+      receiverEmail: verified.email
+    }));
+    getCustomer(verified.email).then((customer2) => {
+      if (cancelled || !customer2) return;
+      setCustomer((prev) => ({
+        ...prev,
+        cusName: customer2.name || prev.cusName,
+        cusPhone: customer2.phone || prev.cusPhone
+      }));
+    }).catch(() => {
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  function handleRestaurantChange(id) {
+    if (restaurantId && id !== restaurantId && itemCount > 0 && !window.confirm(
+      "Đổi nhà hàng sẽ xoá các món đã chọn trong giỏ hàng. Tiếp tục?"
+    )) {
+      return;
+    }
+    setRestaurantId(id);
+    setCart({});
+    setQuote(null);
+    setQuoteError(null);
+    setUpsellItems([]);
+  }
+  const canRequestQuote = reactExports.useCallback(() => {
+    return !!restaurantId && cartLines.length > 0 && !!customer.cusAddress.trim() && !!(selectedRestaurant == null ? void 0 : selectedRestaurant.address);
+  }, [
+    restaurantId,
+    cartLines.length,
+    customer.cusAddress,
+    selectedRestaurant == null ? void 0 : selectedRestaurant.address
+  ]);
+  const runQuote = reactExports.useCallback(async () => {
+    if (!canRequestQuote() || quoteLoading) return;
+    setQuoteLoading(true);
+    setQuoteError(null);
+    try {
+      const payload = {
+        restaurantId,
+        pickupAddress: selectedRestaurant.address,
+        dropAddress: customer.cusAddress.trim(),
+        items: cartLines.map((l2) => ({
+          itemId: l2.item.itemId,
+          name: l2.item.name,
+          quantity: l2.quantity
+        }))
+      };
+      const res = await quote(payload);
+      setQuote(res);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Không lấy được phí ship.";
+      setQuoteError(msg);
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, [
+    canRequestQuote,
+    quoteLoading,
+    restaurantId,
+    selectedRestaurant,
+    customer.cusAddress,
+    cartLines
+  ]);
+  reactExports.useEffect(() => {
+    if (isCustomerMode) return;
+    if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
+    if (!restaurantId || !customer.cusAddress.trim() || cartLines.length === 0 || !(selectedRestaurant == null ? void 0 : selectedRestaurant.address)) {
+      return;
+    }
+    quoteDebounceRef.current = setTimeout(() => {
+      runQuote();
+    }, QUOTE_DEBOUNCE_MS);
+    return () => {
+      if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
+    };
+  }, [
+    isCustomerMode,
+    customer.cusAddress,
+    restaurantId,
+    cartLines.length,
+    selectedRestaurant == null ? void 0 : selectedRestaurant.address,
+    runQuote
+  ]);
+  reactExports.useEffect(() => {
+    if (!actor || !paidOrder || !qrPolling) return;
+    let cancelled = false;
+    async function check() {
+      if (!actor || !paidOrder || cancelled) return;
+      try {
+        const s = await getOrderStatus(actor, paidOrder.orderId);
+        if (cancelled) return;
+        if (s.paymentStatus === PaymentStatus.paid) {
+          setQrPolling(false);
+          setTimeout(() => {
+            if (!cancelled) setShowPostPayment(true);
+          }, 1500);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const msg = err instanceof Error ? err.message : "Không kiểm tra được trạng thái thanh toán.";
+        ue.error("Lỗi kiểm tra thanh toán", { description: msg });
+      }
+    }
+    void check();
+    const id = setInterval(check, 5e3);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [actor, paidOrder, qrPolling]);
+  reactExports.useEffect(() => {
+    if (!paidOrder || showPostPayment) return;
+    const id = setInterval(() => setNow(Date.now()), 1e3);
+    return () => clearInterval(id);
+  }, [paidOrder, showPostPayment]);
+  reactExports.useEffect(() => {
+    if (!paidOrder || !qrExpiresAt || showPostPayment) return;
+    if (now2 >= qrExpiresAt) {
+      setQrExpired(true);
+      if (!qrTimeoutNotifiedRef.current) {
+        qrTimeoutNotifiedRef.current = true;
+        setQrPolling(false);
+        setQrTimeout(true);
+        ue.error("QR thanh toán đã hết hạn", {
+          description: "Đơn chưa được thanh toán trong 15 phút. Bạn có thể hủy đơn hoặc liên hệ nhà hàng để được hỗ trợ."
+        });
+      }
+    }
+  }, [now2, qrExpiresAt, paidOrder, showPostPayment]);
+  async function handleSubmit() {
+    setTouched(true);
+    const errs = validateCustomerForm(customer, {
+      hideAddress: isCustomerMode
+    });
+    if (Object.keys(errs).length > 0) {
+      ue.error("Vui lòng kiểm tra thông tin khách hàng.");
+      return;
+    }
+    if (!restaurantId || cartLines.length === 0) {
+      ue.error("Vui lòng chọn nhà hàng và ít nhất một món.");
+      return;
+    }
+    if (!isCustomerMode && !quote$1) {
+      ue.error("Đang chờ tính phí ship, vui lòng đợi trong giây lát.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = {
+        restaurantId,
+        pickupAddress: selectedRestaurant.address,
+        cusName: customer.cusName.trim(),
+        cusPhone: customer.cusPhone.trim(),
+        cusAddress: customer.cusAddress.trim(),
+        cusTaxCode: customer.cusTaxCode.trim(),
+        receiverEmail: customer.receiverEmail.trim(),
+        items: cartLines.map((l2) => ({
+          itemId: l2.item.itemId,
+          name: l2.item.name,
+          quantity: l2.quantity,
+          price: Number(l2.item.price),
+          vatRate: Number(l2.item.vatRate),
+          unitName: l2.item.unitName
+        })),
+        // Luồng customer: không có phí ship (VPS sẽ branch trên paymentMode).
+        shippingFee: isCustomerMode ? 0 : quote$1.shippingFee,
+        ahamoveOrderId: isCustomerMode ? "" : quote$1.ahamoveOrderId
+      };
+      const res = await create(payload);
+      if (!res.ok) {
+        throw new Error(res.error ?? "VPS từ chối tạo đơn.");
+      }
+      try {
+        const raw = localStorage.getItem("bbh_my_orders");
+        const arr = raw ? JSON.parse(raw) : [];
+        const list = Array.isArray(arr) ? arr : [];
+        list.push(res.orderId);
+        localStorage.setItem("bbh_my_orders", JSON.stringify(list));
+      } catch {
+      }
+      if (isCustomerMode) {
+        setOrderPlaced(true);
+        setCart({});
+        if (!actor) {
+          ue.error("Không kết nối được canister để tải QR thanh toán.");
+          return;
+        }
+        try {
+          let order = null;
+          if (res.pendingSync) {
+            ue.info("Đang đồng bộ đơn hàng…", {
+              description: "Hệ thống đang đồng bộ đơn với máy chủ. Vui lòng đợi trong giây lát."
+            });
+            const syncDeadline = Date.now() + 3e4;
+            while (Date.now() < syncDeadline) {
+              try {
+                order = await getOrder(actor, res.orderId);
+                break;
+              } catch {
+                await new Promise((r2) => setTimeout(r2, 2e3));
+              }
+            }
+            if (!order) {
+              throw new Error(
+                "Đơn chưa đồng bộ xong với máy chủ. Vui lòng thử lại sau."
+              );
+            }
+          } else {
+            order = await getOrder(actor, res.orderId);
+          }
+          setPaidOrder(order);
+          setQrPolling(true);
+          setShowPostPayment(false);
+          setQrExpiresAt(Number(order.createdAt) / 1e6 + 15 * 60 * 1e3);
+          setQrExpired(false);
+          setQrTimeout(false);
+          qrTimeoutNotifiedRef.current = false;
+          setNow(Date.now());
+          ue.success("Đặt đơn thành công!", {
+            description: "Vui lòng quét QR để thanh toán."
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Không tải được QR thanh toán.";
+          ue.error("Không tải được QR thanh toán", { description: msg });
+        }
+      } else {
+        ue.success("Đặt đơn thành công!", {
+          description: `Mã đơn: ${res.orderId}`
+        });
+        setCart({});
+        setCustomer(EMPTY_CUSTOMER);
+        setQuote(null);
+        setTouched(false);
+        setCartOpen(false);
+        navigate({ to: "/track/$orderId", params: { orderId: res.orderId } });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Đặt đơn thất bại.";
+      ue.error("Đặt đơn thất bại", { description: msg });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+  async function handleCopyQrPng() {
+    const canvas = qrCanvasRef.current;
+    if (!canvas) {
+      ue.error("QR chưa sẵn sàng để copy.");
+      return;
+    }
+    try {
+      const blob = await new Promise(
+        (resolve) => canvas.toBlob((b2) => resolve(b2), "image/png")
+      );
+      if (!blob) {
+        throw new Error("Không tạo được ảnh PNG từ QR.");
+      }
+      if (typeof navigator !== "undefined" && navigator.clipboard && typeof ClipboardItem !== "undefined") {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob })
+        ]);
+        ue.success("Đã copy ảnh QR vào clipboard.");
+        return;
+      }
+      const url = canvas.toDataURL("image/png");
+      const a2 = document.createElement("a");
+      a2.href = url;
+      a2.download = "qr-thanh-toan.png";
+      document.body.appendChild(a2);
+      a2.click();
+      document.body.removeChild(a2);
+      ue.success(
+        "Trình duyệt không hỗ trợ copy ảnh — đã tải file qr-thanh-toan.png."
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Không copy được ảnh QR.";
+      ue.error("Copy ảnh QR thất bại", { description: msg });
+    }
+  }
+  async function handleCopyRestaurantAddress() {
+    const addr = (selectedRestaurant == null ? void 0 : selectedRestaurant.address) ?? (paidOrder == null ? void 0 : paidOrder.cusAddress) ?? "";
+    if (!addr) {
+      ue.error("Không có địa chỉ nhà hàng để copy.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(addr);
+      ue.success("Đã copy địa chỉ nhà hàng.");
+    } catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = addr;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        ue.success("Đã copy địa chỉ nhà hàng.");
+      } catch {
+        ue.error("Không copy được địa chỉ.");
+      }
+    }
+  }
+  const totalAmount = (quote$1 == null ? void 0 : quote$1.amount) ?? itemsTotal;
+  const qrPayAmount = paidOrder ? paidOrder.amount - paidOrder.shippingFee : 0n;
+  const restaurantAddressForPost = (selectedRestaurant == null ? void 0 : selectedRestaurant.address) ?? (paidOrder == null ? void 0 : paidOrder.cusAddress) ?? "";
+  const remainingMs = qrExpiresAt ? Math.max(0, qrExpiresAt - now2) : 0;
+  const remainingSec = Math.floor(remainingMs / 1e3);
+  const countdownText = `${String(Math.floor(remainingSec / 60)).padStart(
+    2,
+    "0"
+  )}:${String(remainingSec % 60).padStart(2, "0")}`;
+  function handleQrTimeoutDismiss() {
+    setQrTimeout(false);
+    setQrExpired(false);
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bbh-order-theme bg-background text-foreground", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-2xl px-4 py-6 pb-28 md:px-6 md:py-10",
+      "data-ocid": "create_order.page",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-6 flex flex-col gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "h1",
+            {
+              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+              "data-ocid": "create_order.title",
+              children: "Đặt món"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: isCustomerMode ? "Chọn nhà hàng, chọn món, nhập tên + SĐT — thanh toán QR rồi tự đặt Grab Express nhận hàng." : "Chọn nhà hàng, chọn món, nhập thông tin khách — phí ship sẽ tự động tính khi bạn điền địa chỉ." })
+        ] }),
+        storeClosed ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-4 rounded-2xl border border-border bg-primary/5 px-6 py-12 text-center",
+            "data-ocid": "create_order.closed_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-7 w-7", "aria-hidden": "true" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-xl font-bold text-foreground", children: "Cửa hàng đang đóng" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "max-w-sm text-sm text-muted-foreground", children: "Hiện tại ngoài giờ mở cửa nên bạn chưa thể đặt món. Vui lòng quay lại trong giờ hoạt động của cửa hàng để đặt hàng." })
+            ]
+          }
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-6", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.restaurant_card", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 text-base", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground", children: "1" }),
+                "Chọn nhà hàng"
+              ] }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                RestaurantSelect,
+                {
+                  restaurants,
+                  isLoading: restaurantsLoading,
+                  value: restaurantId,
+                  onChange: handleRestaurantChange
+                }
+              ) })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.menu_card", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 text-base", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground", children: "2" }),
+                "Chọn món"
+              ] }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { children: [
+                !restaurantId && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "mb-3 flex items-center gap-2 rounded-lg border border-dashed border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground",
+                    "data-ocid": "create_order.menu_hint",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Package,
+                        {
+                          className: "h-4 w-4 shrink-0",
+                          "aria-hidden": "true"
+                        }
+                      ),
+                      "Xem menu thoải mái — chỉ cần chọn nhà hàng ở bước 1 trước khi thêm món vào giỏ."
+                    ]
+                  }
+                ),
+                isCustomerMode && !customerModeAccepted ? (
+                  // Cổng chấp nhận: thay menu bằng cảnh báo bắt buộc. Khách phải
+                  // bấm "Tôi hiểu và đồng ý" mỗi lần vào trang trước khi chọn món.
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    AlertDialog,
+                    {
+                      open: isCustomerMode && !customerModeAccepted,
+                      onOpenChange: () => {
+                      },
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogContent, { "data-ocid": "create_order.customer_accept_dialog", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogHeader, { children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogTitle, { children: "Xác nhận chế độ tự thanh toán" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogDescription, { children: "Bạn đang ở chế độ tự thanh toán: quý khách tự quét QR thanh toán và tự đặt Grab Express nhận hàng. Phí ship do quý khách tự chịu." })
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogFooter, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          AlertDialogAction,
+                          {
+                            onClick: () => setCustomerModeAccepted(true),
+                            "data-ocid": "create_order.customer_accept_button",
+                            children: "Tôi hiểu và đồng ý"
+                          }
+                        ) })
+                      ] })
+                    }
+                  )
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  MenuPicker,
+                  {
+                    menu,
+                    isLoading: menuLoading,
+                    cart,
+                    onQuantityChange: handleQuantityChange,
+                    disabled: submitting,
+                    fixedCategory: "Món chính"
+                  }
+                )
+              ] })
+            ] })
+          ] }),
+          upsellItems.length > 0 && (!isCustomerMode || customerModeAccepted) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "fixed inset-x-4 bottom-24 z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise",
+              "data-ocid": "create_order.upsell_strip",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-2 flex items-center justify-between", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-xs font-semibold text-[oklch(var(--bbh-gold))]", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+                    "Gọi thêm cho tròn vị?"
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "button",
+                    {
+                      type: "button",
+                      "aria-label": "Đóng gợi ý",
+                      onClick: () => setUpsellItems([]),
+                      className: "text-muted-foreground hover:text-foreground",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "h-4 w-4", "aria-hidden": "true" })
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2", children: upsellItems.map((m2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "flex flex-1 items-center justify-between gap-2 rounded-lg bg-secondary p-2",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-1 text-xs font-semibold", children: m2.name }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: formatVnd$5(Number(m2.price)) })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          type: "button",
+                          "aria-label": `Thêm ${m2.name}`,
+                          onClick: () => {
+                            handleQuantityChange(m2.itemId, 1);
+                            setUpsellItems(
+                              (prev) => prev.filter((x3) => x3.itemId !== m2.itemId)
+                            );
+                          },
+                          className: "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground",
+                          children: "+"
+                        }
+                      )
+                    ]
+                  },
+                  m2.itemId
+                )) })
+              ]
+            }
+          ),
+          itemCount > 0 && !paidOrder && (!isCustomerMode || customerModeAccepted) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              type: "button",
+              onClick: () => setCartOpen(true),
+              className: "fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-gradient-primary px-5 py-4 text-primary-foreground shadow-elevated",
+              "data-ocid": "create_order.open_cart_button",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex flex-col items-start", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs opacity-90", children: [
+                    itemCount,
+                    " món"
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold", children: formatVnd$5(totalAmount) })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingCart, { className: "h-4 w-4", "aria-hidden": "true" }),
+                  "Xem giỏ hàng"
+                ] })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Sheet, { open: cartOpen, onOpenChange: setCartOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            SheetContent,
+            {
+              side: "bottom",
+              className: "bbh-order-theme flex max-h-[92vh] flex-col overflow-y-auto rounded-t-2xl bg-background text-foreground",
+              "data-ocid": "create_order.cart_sheet",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(SheetHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SheetTitle, { className: "font-display", children: "Giỏ hàng của bạn" }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4 pb-4", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "ul",
+                    {
+                      className: "flex flex-col gap-2",
+                      "data-ocid": "create_order.cart_lines",
+                      children: cartLines.map((l2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        "li",
+                        {
+                          className: "flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm",
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-1 font-medium", children: l2.item.name }),
+                              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground", children: [
+                                formatVnd$5(Number(l2.item.price)),
+                                " × ",
+                                l2.quantity
+                              ] })
+                            ] }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                Button,
+                                {
+                                  type: "button",
+                                  variant: "outline",
+                                  size: "icon",
+                                  className: "h-11 w-11",
+                                  onClick: () => handleQuantityChange(l2.item.itemId, -1),
+                                  children: "−"
+                                }
+                              ),
+                              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "w-6 text-center font-mono", children: l2.quantity }),
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                Button,
+                                {
+                                  type: "button",
+                                  variant: "outline",
+                                  size: "icon",
+                                  className: "h-11 w-11",
+                                  onClick: () => handleQuantityChange(l2.item.itemId, 1),
+                                  children: "+"
+                                }
+                              )
+                            ] })
+                          ]
+                        },
+                        l2.item.itemId
+                      ))
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mb-2 text-sm font-semibold", children: "Thông tin khách hàng" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      CustomerForm,
+                      {
+                        values: customer,
+                        errors: customerErrors,
+                        onChange: handleCustomerChange,
+                        disabled: submitting,
+                        hideAddress: isCustomerMode
+                      }
+                    )
+                  ] }),
+                  !isCustomerMode && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "div",
+                    {
+                      className: "rounded-lg border border-dashed border-border bg-card p-3",
+                      "data-ocid": "create_order.quote_panel",
+                      children: quoteLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-muted-foreground", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          LoaderCircle,
+                          {
+                            className: "h-3.5 w-3.5 animate-spin",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        "Đang tính phí ship…"
+                      ] }) : quoteError ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-destructive", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          CircleAlert,
+                          {
+                            className: "h-3.5 w-3.5 shrink-0",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "min-w-0 flex-1", children: quoteError }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "button",
+                          {
+                            type: "button",
+                            className: "shrink-0 underline",
+                            onClick: () => runQuote(),
+                            children: "Thử lại"
+                          }
+                        )
+                      ] }) : quote$1 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1.5 text-sm", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Tạm tính (đã gồm VAT)" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$5(itemsTotal) })
+                        ] }),
+                        quote$1.packagingQty > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 text-muted-foreground", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              Package,
+                              {
+                                className: "h-3.5 w-3.5",
+                                "aria-hidden": "true"
+                              }
+                            ),
+                            quote$1.packagingItemName || "Dụng cụ đựng đồ ăn",
+                            " ",
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", children: "Bắt buộc" })
+                          ] }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$5(quote$1.packagingFee) })
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 text-muted-foreground", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              Truck,
+                              {
+                                className: "h-3.5 w-3.5",
+                                "aria-hidden": "true"
+                              }
+                            ),
+                            "Phí ship"
+                          ] }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$5(quote$1.shippingFee) })
+                        ] })
+                      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Nhập địa chỉ giao hàng ở trên — phí ship sẽ tự động hiện ở đây." })
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Separator, {}),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-sm font-semibold", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4", "aria-hidden": "true" }),
+                      "Tổng tiền"
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]", children: formatVnd$5(totalAmount) })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sticky bottom-0 -mx-6 border-t border-border bg-background px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "button",
+                      className: "min-h-[48px] w-full bg-gradient-primary text-primary-foreground",
+                      onClick: handleSubmit,
+                      disabled: submitting || orderPlaced || cartLines.length === 0 || !isCustomerMode && !quote$1 || Object.keys(customerErrors).length > 0,
+                      "data-ocid": "create_order.submit_button",
+                      children: submitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          LoaderCircle,
+                          {
+                            className: "h-4 w-4 animate-spin",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        "Đang đặt đơn…"
+                      ] }) : isCustomerMode ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          ShoppingCart,
+                          {
+                            className: "h-4 w-4",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        "Đặt đơn và Thanh toán · ",
+                        formatVnd$5(totalAmount)
+                      ] }) : !quote$1 ? "Đang chờ tính phí ship…" : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          ShoppingCart,
+                          {
+                            className: "h-4 w-4",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        "Đặt đơn · ",
+                        formatVnd$5(totalAmount)
+                      ] })
+                    }
+                  ) })
+                ] })
+              ]
+            }
+          ) }),
+          paidOrder && !showPostPayment && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "mt-6 flex flex-col items-center gap-5 rounded-2xl border border-border bg-card p-6 shadow-elevated",
+              "data-ocid": "create_order.qr_card",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "h2",
+                    {
+                      className: "font-display text-xl font-bold text-foreground",
+                      "data-ocid": "create_order.qr_title",
+                      children: "Quét QR để thanh toán"
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-muted-foreground", children: "Số tiền thanh toán" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "p",
+                    {
+                      className: "font-display text-3xl font-bold tracking-tight text-[oklch(var(--bbh-gold))]",
+                      "data-ocid": "create_order.qr_amount",
+                      children: formatVndBigint(qrPayAmount)
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Tiền hàng — phí ship = 0 ở chế độ khách tự thanh toán" })
+                ] }),
+                !qrTimeout && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 py-1.5 text-xs font-medium text-muted-foreground",
+                    "data-ocid": "create_order.qr_countdown",
+                    role: "timer",
+                    "aria-live": "polite",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+                      "QR hết hạn sau ",
+                      countdownText
+                    ]
+                  }
+                ),
+                qrTimeout && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "flex w-full max-w-sm flex-col gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4",
+                    "data-ocid": "create_order.qr_timeout_warning",
+                    role: "alert",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          CircleAlert,
+                          {
+                            className: "mt-0.5 h-5 w-5 shrink-0 text-destructive",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-destructive", children: "QR thanh toán đã hết hạn" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Đơn chưa được thanh toán trong 15 phút nên mã QR không còn hiệu lực. Bạn có thể hủy đơn hoặc liên hệ nhà hàng để được hỗ trợ." })
+                        ] })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Button,
+                        {
+                          type: "button",
+                          variant: "outline",
+                          className: "min-h-[44px] w-full",
+                          onClick: handleQrTimeoutDismiss,
+                          "data-ocid": "create_order.qr_timeout_dismiss_button",
+                          children: "Đã hiểu"
+                        }
+                      )
+                    ]
+                  }
+                ),
+                paidOrder.tingeeQrCode ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "div",
+                  {
+                    className: "rounded-xl bg-foreground p-4 md:p-6",
+                    "data-ocid": "create_order.qr_canvas",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      QRCodeCanvas,
+                      {
+                        ref: (node) => {
+                          qrCanvasRef.current = node;
+                        },
+                        value: paidOrder.tingeeQrCode,
+                        size: 256,
+                        level: "M",
+                        includeMargin: false,
+                        bgColor: "#000000",
+                        fgColor: "#ffffff",
+                        "aria-label": "Mã QR thanh toán Tingee"
+                      }
+                    )
+                  }
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "flex w-full max-w-sm flex-col items-center gap-3 rounded-xl bg-secondary p-4 text-center",
+                    "data-ocid": "create_order.qr_not_ready",
+                    role: "alert",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        LoaderCircle,
+                        {
+                          className: "h-6 w-6 animate-spin text-muted-foreground",
+                          "aria-hidden": "true"
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Mã QR đang được tạo. Vui lòng đợi trong giây lát…" })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full max-w-sm flex-col gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    Button,
+                    {
+                      type: "button",
+                      variant: "outline",
+                      className: "min-h-[44px] w-full",
+                      onClick: handleCopyQrPng,
+                      disabled: !paidOrder.tingeeQrCode,
+                      "data-ocid": "create_order.copy_qr_png_button",
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" }),
+                        "Copy ảnh QR"
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Đang kiểm tra trạng thái mỗi 5 giây. QR sẽ tự đóng khi nhận được xác nhận thanh toán." })
+                ] })
+              ]
+            }
+          ),
+          showPostPayment && paidOrder && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "mt-6 flex flex-col gap-4",
+              "data-ocid": "create_order.post_payment",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "flex items-center gap-2 rounded-xl border border-success/40 bg-success/15 px-4 py-3 text-success",
+                    "data-ocid": "create_order.paid_banner",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-5 w-5", "aria-hidden": "true" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-bold", children: "Đơn đã thanh toán" })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "rounded-xl border border-border bg-card p-4",
+                    "data-ocid": "create_order.restaurant_address_card",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(MapPin, { className: "h-4 w-4", "aria-hidden": "true" }),
+                        "Địa chỉ nhà hàng"
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mb-3 text-sm text-muted-foreground", children: restaurantAddressForPost || "Không có địa chỉ nhà hàng." }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        Button,
+                        {
+                          type: "button",
+                          variant: "outline",
+                          className: "min-h-[44px] w-full",
+                          onClick: handleCopyRestaurantAddress,
+                          disabled: !restaurantAddressForPost,
+                          "data-ocid": "create_order.copy_address_button",
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" }),
+                            "Sao chép"
+                          ]
+                        }
+                      )
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "rounded-xl border border-border bg-secondary/40 p-4",
+                    "data-ocid": "create_order.grab_instructions",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(Truck, { className: "h-4 w-4", "aria-hidden": "true" }),
+                        "Hướng dẫn đặt Grab Express"
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "pre",
+                        {
+                          className: "whitespace-pre-wrap font-body text-sm leading-relaxed text-foreground",
+                          "data-ocid": "create_order.grab_instructions_text",
+                          children: GRAB_EXPRESS_INSTRUCTIONS
+                        }
+                      )
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: 'Đơn hàng đã lưu vào "Theo dõi đơn" — bạn có thể xem lại ở menu.' })
+              ]
+            }
+          )
+        ] })
+      ]
+    }
+  ) });
+}
+const ROLE_OPTIONS = [
+  { value: DeviceRole.cashier, label: "Thu ngân" },
+  { value: DeviceRole.driver, label: "Tài xế" },
+  { value: DeviceRole.admin, label: "Quản trị" }
+];
+function formatExpiry(ns) {
+  if (!ns || ns <= 0n) return "—";
+  try {
+    const ms2 = Number(ns / 1000000n);
+    if (!Number.isFinite(ms2) || ms2 <= 0) return "—";
+    return new Date(ms2).toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "—";
+  }
+}
+function ActivationCodeForm() {
+  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
+  const generateMutation = useGenerateActivationCode();
+  const [restaurantId, setRestaurantId] = reactExports.useState("");
+  const [role, setRole] = reactExports.useState(DeviceRole.cashier);
+  const [result, setResult] = reactExports.useState(null);
+  const canSubmit = !!restaurantId && !!role && !generateMutation.isPending;
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!restaurantId || !role) {
+      ue.error("Vui lòng chọn nhà hàng và vai trò.");
+      return;
+    }
+    try {
+      const pending = await generateMutation.mutateAsync({
+        restaurantId,
+        role
+      });
+      setResult({
+        code: pending.code,
+        expiresAt: pending.expiresAt,
+        restaurantId,
+        role
+      });
+      ue.success("Đã tạo mã kích hoạt thành công.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể tạo mã kích hoạt.";
+      ue.error(message);
+    }
+  }
+  async function copyCode() {
+    if (!(result == null ? void 0 : result.code)) return;
+    try {
+      await navigator.clipboard.writeText(result.code);
+      ue.success("Đã sao chép mã kích hoạt.");
+    } catch {
+      ue.error("Không sao chép được mã. Vui lòng sao chép thủ công.");
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "form",
+    {
+      onSubmit: handleSubmit,
+      className: "flex flex-col gap-4",
+      "data-ocid": "activation.form",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "activation-restaurant", className: "text-sm font-medium", children: "Nhà hàng" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: restaurantId,
+              onValueChange: (v2) => {
+                setRestaurantId(v2);
+                setResult(null);
+              },
+              disabled: restaurantsLoading,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  SelectTrigger,
+                  {
+                    id: "activation-restaurant",
+                    className: "w-full",
+                    "data-ocid": "activation.restaurant_select",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      SelectValue,
+                      {
+                        placeholder: restaurantsLoading ? "Đang tải…" : "Chọn nhà hàng"
+                      }
+                    )
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: restaurants && restaurants.length > 0 ? restaurants.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  SelectItem,
+                  {
+                    value: r2.restaurantId,
+                    "data-ocid": `activation.restaurant_option.${r2.restaurantId}`,
+                    children: r2.name || r2.restaurantId
+                  },
+                  r2.restaurantId
+                )) : /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "__none", disabled: true, children: "Chưa có nhà hàng" }) })
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "activation-role", className: "text-sm font-medium", children: "Vai trò" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: role,
+              onValueChange: (v2) => {
+                setRole(v2);
+                setResult(null);
+              },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  SelectTrigger,
+                  {
+                    id: "activation-role",
+                    className: "w-full",
+                    "data-ocid": "activation.role_select",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: "Chọn vai trò" })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: ROLE_OPTIONS.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  SelectItem,
+                  {
+                    value: opt.value,
+                    "data-ocid": `activation.role_option.${opt.value}`,
+                    children: opt.label
+                  },
+                  opt.value
+                )) })
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Button,
+          {
+            type: "submit",
+            disabled: !canSubmit,
+            "data-ocid": "activation.submit_button",
+            className: "w-full sm:w-auto",
+            children: [
+              generateMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(KeyRound, { className: "h-4 w-4", "aria-hidden": "true" }),
+              "Tạo mã kích hoạt"
+            ]
+          }
+        ),
+        result && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col gap-3 rounded-lg border border-success/40 bg-success/10 p-4",
+            "data-ocid": "activation.result",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-medium uppercase tracking-wide text-success", children: "Mã kích hoạt" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Input,
+                    {
+                      readOnly: true,
+                      value: result.code,
+                      className: "font-mono text-lg font-semibold tracking-widest",
+                      "data-ocid": "activation.code_input",
+                      "aria-label": "Mã kích hoạt 6 ký tự"
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "button",
+                      variant: "outline",
+                      size: "icon",
+                      onClick: copyCode,
+                      "data-ocid": "activation.copy_button",
+                      "aria-label": "Sao chép mã kích hoạt",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
+                    }
+                  )
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1 text-sm", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Hết hạn lúc:" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: formatExpiry(result.expiresAt) })
+              ] })
+            ]
+          }
+        )
+      ]
+    }
+  );
+}
+const ROLE_LABELS = {
+  [DeviceRole.admin]: "Quản trị",
+  [DeviceRole.cashier]: "Thu ngân",
+  [DeviceRole.driver]: "Tài xế"
+};
+function formatTimestamp(ns) {
+  if (!ns || ns <= 0n) return "—";
+  try {
+    const ms2 = Number(ns / 1000000n);
+    if (!Number.isFinite(ms2) || ms2 <= 0) return "—";
+    return new Date(ms2).toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "—";
+  }
+}
+function truncateId(id, max2 = 14) {
+  if (!id) return "—";
+  if (id.length <= max2) return id;
+  return `${id.slice(0, 6)}…${id.slice(-4)}`;
+}
+function DeviceTable({
+  devices,
+  isLoading = false,
+  onRevoke,
+  revokingDeviceId = null,
+  emptyMessage = "Chưa có thiết bị nào."
+}) {
+  if (isLoading) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground",
+        "data-ocid": "device.table.loading_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+          "Đang tải danh sách thiết bị…"
+        ]
+      }
+    );
+  }
+  if (!devices || devices.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "flex flex-col items-center justify-center gap-2 py-10 text-center",
+        "data-ocid": "device.table.empty_state",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: emptyMessage })
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      className: "overflow-hidden rounded-lg border border-border",
+      "data-ocid": "device.table",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { className: "bg-muted/40", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "pl-3", children: "Mã thiết bị" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Nhà hàng" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Vai trò" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Kích hoạt lúc" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-center", children: "Trạng thái" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "pr-3 text-right", children: "Thao tác" })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: devices.map((device, index2) => {
+          const isRevoking = revokingDeviceId === device.deviceId;
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            TableRow,
+            {
+              "data-ocid": `device.table.row.${index2}`,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pl-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "span",
+                  {
+                    className: "font-mono text-xs text-foreground",
+                    title: device.deviceId,
+                    children: truncateId(device.deviceId)
+                  }
+                ) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-foreground", children: device.restaurantId || "—" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-foreground", children: ROLE_LABELS[device.role] ?? device.role }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-muted-foreground", children: formatTimestamp(device.activatedAt) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-center", children: device.active ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "span",
+                  {
+                    className: "badge-success inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                    "data-ocid": `device.table.status.${index2}`,
+                    children: "Kích hoạt"
+                  }
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "span",
+                  {
+                    className: "badge-destructive inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                    "data-ocid": `device.table.status.${index2}`,
+                    children: "Đã thu hồi"
+                  }
+                ) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pr-3 text-right", children: device.active && onRevoke ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "destructive",
+                    size: "sm",
+                    onClick: () => onRevoke(device.deviceId),
+                    disabled: isRevoking,
+                    "data-ocid": `device.table.revoke_button.${index2}`,
+                    "aria-label": `Thu hồi thiết bị ${truncateId(device.deviceId)}`,
+                    children: [
+                      isRevoking ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        LoaderCircle,
+                        {
+                          className: "h-3.5 w-3.5 animate-spin",
+                          "aria-hidden": "true"
+                        }
+                      ) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+                      "Thu hồi"
+                    ]
+                  }
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" }) })
+              ]
+            },
+            device.deviceId
+          );
+        }) })
+      ] })
+    }
+  );
+}
+function SectionCard({
+  icon: Icon2,
+  title,
+  description,
+  children,
+  testId
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": testId, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+        title
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: description })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children })
+  ] });
+}
+const ROLE_FILTER_OPTIONS = [
+  { value: "all", label: "Tất cả vai trò" },
+  { value: DeviceRole.admin, label: "Quản trị" },
+  { value: DeviceRole.cashier, label: "Thu ngân" },
+  { value: DeviceRole.driver, label: "Tài xế" }
+];
+function matchesRole(device, filter) {
+  if (filter === "all") return true;
+  return device.role === filter;
+}
+function DeviceManager() {
+  var _a2, _b2;
+  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
+  const [selectedRestaurant, setSelectedRestaurant] = reactExports.useState("");
+  const [roleFilter, setRoleFilter] = reactExports.useState("all");
+  const [revokingDeviceId, setRevokingDeviceId] = reactExports.useState(null);
+  const [revokeDeviceId, setRevokeDeviceId] = reactExports.useState("");
+  const [cleanedCount, setCleanedCount] = reactExports.useState(null);
+  const devicesQuery = useDevicesByRestaurant(selectedRestaurant || void 0);
+  const revokeMutation = useRevokeDevice();
+  const revokeByIdMutation = useRevokeDevice();
+  const cleanupMutation = useCleanupExpiredActivations();
+  const activeRestaurantId = selectedRestaurant || ((_a2 = restaurants == null ? void 0 : restaurants[0]) == null ? void 0 : _a2.restaurantId);
+  const devices = (devicesQuery.data ?? []).filter(
+    (d2) => matchesRole(d2, roleFilter)
+  );
+  async function handleRevoke(deviceId) {
+    setRevokingDeviceId(deviceId);
+    try {
+      await revokeMutation.mutateAsync(deviceId);
+      ue.success("Đã thu hồi thiết bị.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể thu hồi thiết bị.";
+      ue.error(message);
+    } finally {
+      setRevokingDeviceId(null);
+    }
+  }
+  async function handleRevokeById(e) {
+    e.preventDefault();
+    if (!revokeDeviceId.trim()) {
+      ue.error("Vui lòng nhập mã thiết bị.");
+      return;
+    }
+    try {
+      await revokeByIdMutation.mutateAsync(revokeDeviceId.trim());
+      ue.success("Đã thu hồi thiết bị.");
+      setRevokeDeviceId("");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể thu hồi thiết bị.";
+      ue.error(message);
+    }
+  }
+  async function handleCleanup() {
+    try {
+      const count2 = await cleanupMutation.mutateAsync();
+      setCleanedCount(count2);
+      ue.success(`Đã dọn dẹp ${count2.toString()} mã hết hạn.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể dọn dẹp mã hết hạn.";
+      ue.error(message);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10",
+      "data-ocid": "device.page",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "h1",
+            {
+              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+              "data-ocid": "device.title",
+              children: "Quản lý thiết bị"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Xem và thu hồi thiết bị đã kích hoạt theo nhà hàng và vai trò." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "mt-6 flex flex-col gap-3 sm:flex-row sm:items-end",
+            "data-ocid": "device.filters",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "label",
+                  {
+                    htmlFor: "device-restaurant",
+                    className: "text-sm font-medium text-muted-foreground",
+                    children: "Theo nhà hàng"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Select,
+                  {
+                    value: selectedRestaurant || "all",
+                    onValueChange: (v2) => setSelectedRestaurant(v2 === "all" ? "" : v2),
+                    disabled: restaurantsLoading,
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        SelectTrigger,
+                        {
+                          id: "device-restaurant",
+                          className: "w-full sm:w-[260px]",
+                          "data-ocid": "device.restaurant_select",
+                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            SelectValue,
+                            {
+                              placeholder: restaurantsLoading ? "Đang tải…" : "Tất cả nhà hàng"
+                            }
+                          )
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "all", "data-ocid": "device.restaurant_option.all", children: "Tất cả nhà hàng" }),
+                        restaurants == null ? void 0 : restaurants.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          SelectItem,
+                          {
+                            value: r2.restaurantId,
+                            "data-ocid": `device.restaurant_option.${r2.restaurantId}`,
+                            children: r2.name || r2.restaurantId
+                          },
+                          r2.restaurantId
+                        ))
+                      ] })
+                    ]
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "label",
+                  {
+                    htmlFor: "device-role",
+                    className: "text-sm font-medium text-muted-foreground",
+                    children: "Theo vai trò"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Select,
+                  {
+                    value: roleFilter,
+                    onValueChange: (v2) => setRoleFilter(v2),
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        SelectTrigger,
+                        {
+                          id: "device-role",
+                          className: "w-full sm:w-[200px]",
+                          "data-ocid": "device.role_select",
+                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {})
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: ROLE_FILTER_OPTIONS.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        SelectItem,
+                        {
+                          value: opt.value,
+                          "data-ocid": `device.role_option.${opt.value}`,
+                          children: opt.label
+                        },
+                        opt.value
+                      )) })
+                    ]
+                  }
+                )
+              ] })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-6", "data-ocid": "device.content", children: restaurantsLoading && !restaurants ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground",
+            "data-ocid": "device.loading_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+              "Đang tải danh sách nhà hàng…"
+            ]
+          }
+        ) : !activeRestaurantId ? /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { "data-ocid": "device.empty_restaurant_state", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Smartphone,
+              {
+                className: "h-4 w-4 text-muted-foreground",
+                "aria-hidden": "true"
+              }
+            ),
+            "Chưa có nhà hàng"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Thêm nhà hàng trước khi quản lý thiết bị." })
+        ] }) }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "device.table_card", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "font-display", children: [
+              "Thiết bị của",
+              " ",
+              ((_b2 = restaurants == null ? void 0 : restaurants.find((r2) => r2.restaurantId === activeRestaurantId)) == null ? void 0 : _b2.name) ?? activeRestaurantId
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
+              devices.length,
+              " thiết bị hiển thị sau khi lọc."
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            DeviceTable,
+            {
+              devices,
+              isLoading: devicesQuery.isLoading,
+              onRevoke: handleRevoke,
+              revokingDeviceId,
+              emptyMessage: "Chưa có thiết bị nào khớp với bộ lọc."
+            }
+          ) })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard,
+            {
+              icon: KeyRound,
+              title: "Tạo mã kích hoạt",
+              description: "Tạo mã 6 ký tự hợp lệ 15 phút để kích hoạt thiết bị mới.",
+              testId: "device.activation_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ActivationCodeForm, {})
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard,
+            {
+              icon: ShieldOff,
+              title: "Thu hồi thiết bị",
+              description: "Nhập mã thiết bị để thu hồi quyền truy cập ngay lập tức.",
+              testId: "device.revoke_by_id_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleRevokeById,
+                  className: "flex flex-col gap-3",
+                  "data-ocid": "device.revoke_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "revoke-device", className: "text-sm font-medium", children: "Mã thiết bị" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Input,
+                        {
+                          id: "revoke-device",
+                          value: revokeDeviceId,
+                          onChange: (e) => setRevokeDeviceId(e.target.value),
+                          placeholder: "VD: dev-abc123",
+                          "data-ocid": "device.revoke_input"
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        variant: "destructive",
+                        disabled: revokeByIdMutation.isPending || !revokeDeviceId.trim(),
+                        "data-ocid": "device.revoke.submit_button",
+                        className: "w-full sm:w-auto",
+                        children: [
+                          revokeByIdMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Thu hồi"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              )
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard,
+            {
+              icon: Sparkles,
+              title: "Dọn dẹp mã hết hạn",
+              description: "Xóa các mã kích hoạt đã quá hạn để giải phóng bộ nhớ canister.",
+              testId: "device.cleanup_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "outline",
+                    onClick: handleCleanup,
+                    disabled: cleanupMutation.isPending,
+                    "data-ocid": "device.cleanup.button",
+                    className: "w-full sm:w-auto",
+                    children: [
+                      cleanupMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "h-4 w-4", "aria-hidden": "true" }),
+                      "Dọn dẹp"
+                    ]
+                  }
+                ),
+                cleanedCount !== null && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "p",
+                  {
+                    className: "text-sm text-muted-foreground",
+                    "data-ocid": "device.cleanup.result",
+                    children: [
+                      "Đã dọn dẹp",
+                      " ",
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-foreground", children: cleanedCount.toString() }),
+                      " ",
+                      "mã hết hạn."
+                    ]
+                  }
+                )
+              ] })
+            }
+          )
+        ] })
+      ]
+    }
+  );
+}
+function getDeviceId() {
+  const KEY = "bb65.deviceId";
+  try {
+    const existing = localStorage.getItem(KEY);
+    if (existing) return existing;
+    const id = `dev-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+    localStorage.setItem(KEY, id);
+    return id;
+  } catch {
+    return `dev-session-${Date.now().toString(36)}`;
+  }
+}
+function ActivationForm({ onActivated }) {
+  const { actor } = useCanister();
+  const [code, setCode] = reactExports.useState("");
+  const [submitting, setSubmitting] = reactExports.useState(false);
+  const [error, setError] = reactExports.useState(null);
+  const normalized = code.trim().toUpperCase();
+  const isValid = normalized.length === 6;
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!actor || submitting || !isValid) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const deviceId = getDeviceId();
+      const device = await activateDevice(actor, normalized, deviceId);
+      if (device.role !== DeviceRole.driver) {
+        setError(
+          "Mã này không dành cho thiết bị tài xế. Vui lòng dùng mã vai trò 'driver'."
+        );
+        return;
+      }
+      if (!device.active) {
+        setError("Thiết bị chưa được kích hoạt. Vui lòng thử lại.");
+        return;
+      }
+      ue.success("Kích hoạt thiết bị thành công");
+      onActivated(device.restaurantId, device.deviceId);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/expir|hết hạn|expired/i.test(msg)) {
+        setError("Mã kích hoạt đã hết hạn (15 phút). Vui lòng yêu cầu mã mới.");
+      } else if (/used|đã dùng/i.test(msg)) {
+        setError("Mã kích hoạt đã được sử dụng. Vui lòng yêu cầu mã mới.");
+      } else if (/not found|không tìm/i.test(msg)) {
+        setError("Mã kích hoạt không đúng. Vui lòng kiểm tra lại.");
+      } else {
+        setError(`Kích hoạt thất bại: ${msg}`);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8 md:px-6 md:py-12",
+      "data-ocid": "activation.section",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "flex flex-col items-center gap-3 text-center", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary",
+              "aria-hidden": "true",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "h-8 w-8" })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-bold tracking-tight md:text-3xl", children: "Kích hoạt thiết bị" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Nhập mã kích hoạt 6 ký tự do quản trị viên cấp. Mã có hiệu lực 15 phút." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "form",
+          {
+            onSubmit: handleSubmit,
+            className: "flex flex-col gap-5",
+            "data-ocid": "activation.form",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "label",
+                  {
+                    htmlFor: "activation-code",
+                    className: "text-sm font-semibold text-foreground",
+                    children: "Mã kích hoạt"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    id: "activation-code",
+                    type: "text",
+                    inputMode: "text",
+                    autoComplete: "one-time-code",
+                    autoCapitalize: "characters",
+                    autoCorrect: "off",
+                    spellCheck: false,
+                    value: code,
+                    onChange: (e) => {
+                      setCode(e.target.value.replace(/[^A-Za-z0-9]/g, "").slice(0, 6));
+                      setError(null);
+                    },
+                    disabled: submitting,
+                    placeholder: "ABC123",
+                    "aria-label": "Mã kích hoạt 6 ký tự",
+                    "aria-invalid": !!error,
+                    "aria-describedby": error ? "activation-error" : void 0,
+                    "data-ocid": "activation.input",
+                    className: "mx-auto w-full max-w-[16rem] rounded-lg border border-input bg-card px-3 py-4 text-center font-mono text-3xl font-bold tracking-[0.4em] uppercase text-foreground shadow-sm outline-none transition-smooth placeholder:text-2xl placeholder:tracking-[0.3em] placeholder:font-normal placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-center text-xs text-muted-foreground", children: [
+                  normalized.length,
+                  "/6 ký tự"
+                ] })
+              ] }),
+              error && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "p",
+                {
+                  id: "activation-error",
+                  role: "alert",
+                  "data-ocid": "activation.error_state",
+                  className: "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm font-medium text-destructive",
+                  children: error
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "submit",
+                  disabled: submitting || !isValid,
+                  "data-ocid": "activation.submit_button",
+                  className: "inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-base font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  children: submitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin", "aria-hidden": "true" }),
+                    "Đang kích hoạt…"
+                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                    "Kích hoạt",
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-5 w-5", "aria-hidden": "true" })
+                  ] })
+                }
+              )
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Không có mã? Liên hệ quản trị viên nhà hàng để được cấp mã kích hoạt mới." })
+      ]
+    }
+  );
+}
+function formatVnd$4(amount) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+function formatTime$1(ns) {
+  const ms2 = Number(ns) / 1e6;
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(ms2));
+}
+function isPending(o) {
+  return o.paymentStatus === PaymentStatus.unpaid;
+}
+function isToday$1(ns) {
+  const ms2 = Number(ns) / 1e6;
+  const d2 = new Date(ms2);
+  const now2 = /* @__PURE__ */ new Date();
+  return d2.getFullYear() === now2.getFullYear() && d2.getMonth() === now2.getMonth() && d2.getDate() === now2.getDate();
+}
+const OVERDUE_MINUTES = 60;
+function elapsedMinutes(createdAt) {
+  const ms2 = Number(createdAt) / 1e6;
+  return (Date.now() - ms2) / 6e4;
+}
+function isOverdue(createdAt) {
+  return elapsedMinutes(createdAt) > OVERDUE_MINUTES;
+}
+function PaymentQueue({
+  orders,
+  isLoading,
+  isError,
+  onPay,
+  payingOrderId
+}) {
+  const pending = orders.filter((o) => isPending(o) && isToday$1(o.createdAt));
+  const sorted = [...pending].sort((a2, b2) => {
+    const aOverdue = isOverdue(a2.createdAt) ? 0 : 1;
+    const bOverdue = isOverdue(b2.createdAt) ? 0 : 1;
+    if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+    return Number(a2.createdAt - b2.createdAt);
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8",
+      "data-ocid": "queue.section",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center justify-between gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(ListOrdered, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-bold tracking-tight md:text-2xl", children: "Hàng đợi thanh toán" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "span",
+            {
+              className: "inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
+              "data-ocid": "queue.count",
+              children: [
+                sorted.length,
+                " đơn"
+              ]
+            }
+          )
+        ] }),
+        isError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive",
+            "data-ocid": "queue.error_state",
+            children: "Không tải được danh sách đơn. Đang thử lại tự động mỗi 5 giây…"
+          }
+        ),
+        isLoading && sorted.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-4 py-10 text-center",
+            "data-ocid": "queue.loading_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-6 w-6 animate-spin text-muted-foreground" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang tải đơn chờ…" })
+            ]
+          }
+        ),
+        !isLoading && sorted.length === 0 && !isError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
+            "data-ocid": "queue.empty_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
+                  "aria-hidden": "true",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingBag, { className: "h-7 w-7" })
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Không có đơn chờ thanh toán" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Hàng đợi trống. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
+            ]
+          }
+        ),
+        sorted.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "ul",
+          {
+            className: "flex flex-col gap-3",
+            "data-ocid": "queue.list",
+            "aria-label": "Danh sách đơn chờ thanh toán",
+            children: sorted.map((order, idx) => {
+              const isPaying = payingOrderId === order.orderId;
+              const overdue = isOverdue(order.createdAt);
+              const lateMinutes = Math.floor(
+                elapsedMinutes(order.createdAt) - OVERDUE_MINUTES
+              );
+              return /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "li",
+                {
+                  "data-ocid": `queue.item.${idx + 1}`,
+                  className: `rounded-xl border p-4 shadow-sm transition-smooth hover:shadow-md ${overdue ? "border-destructive bg-destructive/10 ring-1 ring-destructive/40" : "border-border bg-card"}`,
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary", children: [
+                          "#",
+                          idx + 1
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "span",
+                          {
+                            className: "inline-flex items-center gap-1 text-xs text-muted-foreground",
+                            title: "Thời gian tạo đơn",
+                            children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
+                              formatTime$1(order.createdAt)
+                            ]
+                          }
+                        ),
+                        overdue && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "span",
+                          {
+                            className: "inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground",
+                            "data-ocid": `queue.overdue_badge.${idx + 1}`,
+                            children: [
+                              "Trễ ",
+                              lateMinutes,
+                              " phút"
+                            ]
+                          }
+                        )
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-2 truncate font-display text-base font-semibold text-foreground", children: order.cusName || "Khách vãng lai" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 truncate font-mono text-xs text-muted-foreground", children: order.orderId }),
+                      order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-0.5 text-xs text-muted-foreground", children: [
+                        "SĐT: ",
+                        order.cusPhone
+                      ] }),
+                      order.items && order.items.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "ul",
+                        {
+                          className: "mt-2 flex flex-col gap-0.5 border-t border-border/60 pt-2",
+                          "data-ocid": `queue.item_list.${idx + 1}`,
+                          children: order.items.map((it2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "li",
+                            {
+                              className: "flex items-baseline justify-between gap-2 text-xs text-muted-foreground",
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "truncate", children: [
+                                  it2.name,
+                                  " × ",
+                                  Number(it2.quantity)
+                                ] }),
+                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$4(
+                                  BigInt(Number(it2.price) * Number(it2.quantity))
+                                ) })
+                              ]
+                            },
+                            it2.itemId
+                          ))
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-end gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$4(order.amount - order.shippingFee) }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: () => onPay(order),
+                          disabled: isPaying,
+                          "data-ocid": `queue.pay_button.${idx + 1}`,
+                          "aria-label": `Thanh toán đơn ${order.cusName || order.orderId}`,
+                          className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+                          children: isPaying ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              LoaderCircle,
+                              {
+                                className: "h-4 w-4 animate-spin",
+                                "aria-hidden": "true"
+                              }
+                            ),
+                            "Đang mở…"
+                          ] }) : "Thanh toán"
+                        }
+                      )
+                    ] })
+                  ] })
+                },
+                order.orderId
+              );
+            })
+          }
+        )
+      ]
+    }
+  );
+}
+function formatVnd$3(amount) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+function formatTime(ns) {
+  const ms2 = Number(ns) / 1e6;
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(ms2));
+}
+function isToday(ns) {
+  const ms2 = Number(ns) / 1e6;
+  const d2 = new Date(ms2);
+  const now2 = /* @__PURE__ */ new Date();
+  return d2.getFullYear() === now2.getFullYear() && d2.getMonth() === now2.getMonth() && d2.getDate() === now2.getDate();
+}
+function PickupQueue({ orders, isLoading, isError }) {
+  const today = orders.filter((o) => isToday(o.createdAt));
+  const sorted = [...today].sort((a2, b2) => Number(a2.createdAt - b2.createdAt));
+  const markPickedUp2 = useMarkPickedUp();
+  function handlePickedUp(order) {
+    markPickedUp2.mutate(order.orderId, {
+      onSuccess: (updated) => {
+        ue.success(
+          `Đã xác nhận nhận hàng: ${updated.cusName || updated.orderId}`
+        );
+      },
+      onError: (err) => {
+        ue.error(
+          `Không xác nhận được đơn ${order.cusName || order.orderId}: ${err.message}`
+        );
+      }
+    });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8",
+      "data-ocid": "pickup.section",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center justify-between gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(PackageCheck, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-bold tracking-tight md:text-2xl", children: "Hàng đợi tài xế nhận hàng" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "span",
+            {
+              className: "inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
+              "data-ocid": "pickup.count",
+              children: [
+                sorted.length,
+                " đơn"
+              ]
+            }
+          )
+        ] }),
+        isError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive",
+            "data-ocid": "pickup.error_state",
+            children: "Không tải được danh sách đơn. Đang thử lại tự động mỗi 5 giây…"
+          }
+        ),
+        isLoading && sorted.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-4 py-10 text-center",
+            "data-ocid": "pickup.loading_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-6 w-6 animate-spin text-muted-foreground" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang tải đơn chờ nhận…" })
+            ]
+          }
+        ),
+        !isLoading && sorted.length === 0 && !isError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
+            "data-ocid": "pickup.empty_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
+                  "aria-hidden": "true",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(PackageCheck, { className: "h-7 w-7" })
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Không có đơn chờ nhận hàng" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Chưa có đơn nào đã thanh toán chờ nhận. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
+            ]
+          }
+        ),
+        sorted.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "ul",
+          {
+            className: "flex flex-col gap-3",
+            "data-ocid": "pickup.list",
+            "aria-label": "Danh sách đơn chờ nhận hàng",
+            children: sorted.map((order, idx) => {
+              const isMarking = markPickedUp2.isPending;
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "li",
+                {
+                  "data-ocid": `pickup.item.${idx + 1}`,
+                  className: "rounded-xl border border-border bg-card p-4 shadow-sm transition-smooth hover:shadow-md",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "div",
+                      {
+                        className: "flex items-center justify-between gap-3 rounded-lg bg-primary/5 p-3",
+                        "data-ocid": `pickup.customer.${idx + 1}`,
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground", children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(User, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+                              "Khách hàng"
+                            ] }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-1 truncate font-display text-lg font-bold text-foreground", children: order.cusName || "Khách vãng lai" }),
+                            order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-foreground", children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                Phone,
+                                {
+                                  className: "h-3.5 w-3.5 text-primary",
+                                  "aria-hidden": "true"
+                                }
+                              ),
+                              order.cusPhone
+                            ] })
+                          ] }),
+                          order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "a",
+                            {
+                              href: `tel:${order.cusPhone}`,
+                              "data-ocid": `pickup.call_button.${idx + 1}`,
+                              "aria-label": `Gọi điện cho ${order.cusName || "khách hàng"}: ${order.cusPhone}`,
+                              className: "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Phone, { className: "h-5 w-5", "aria-hidden": "true" })
+                            }
+                          )
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-start justify-between gap-3", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary", children: [
+                            "#",
+                            idx + 1
+                          ] }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "span",
+                            {
+                              className: "inline-flex items-center gap-1 text-xs text-muted-foreground",
+                              title: "Thời gian tạo đơn",
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
+                                formatTime(order.createdAt)
+                              ]
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "span",
+                            {
+                              className: "inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success",
+                              "data-ocid": `pickup.paid_badge.${idx + 1}`,
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-3 w-3", "aria-hidden": "true" }),
+                                "Đã thanh toán"
+                              ]
+                            }
+                          )
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1.5 truncate font-mono text-xs text-muted-foreground", children: order.orderId }),
+                        order.items && order.items.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "ul",
+                          {
+                            className: "mt-2 flex flex-col gap-0.5 border-t border-border/60 pt-2",
+                            "data-ocid": `pickup.item_list.${idx + 1}`,
+                            children: order.items.map((it2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                              "li",
+                              {
+                                className: "flex items-baseline justify-between gap-2 text-xs text-muted-foreground",
+                                children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "truncate", children: [
+                                    it2.name,
+                                    " × ",
+                                    Number(it2.quantity)
+                                  ] }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$3(
+                                    BigInt(Number(it2.price) * Number(it2.quantity))
+                                  ) })
+                                ]
+                              },
+                              it2.itemId
+                            ))
+                          }
+                        )
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-end gap-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$3(order.amount - order.shippingFee) }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "button",
+                          {
+                            type: "button",
+                            onClick: () => handlePickedUp(order),
+                            disabled: isMarking,
+                            "data-ocid": `pickup.picked_up_button.${idx + 1}`,
+                            "aria-label": `Xác nhận đã nhận hàng: đơn ${order.cusName || order.orderId}`,
+                            className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-success px-4 py-2 text-sm font-semibold text-success-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+                            children: isMarking ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                LoaderCircle,
+                                {
+                                  className: "h-4 w-4 animate-spin",
+                                  "aria-hidden": "true"
+                                }
+                              ),
+                              "Đang ghi…"
+                            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                CircleCheck,
+                                {
+                                  className: "h-4 w-4",
+                                  "aria-hidden": "true"
+                                }
+                              ),
+                              "Tài xế đã nhận hàng"
+                            ] })
+                          }
+                        )
+                      ] })
+                    ] })
+                  ]
+                },
+                order.orderId
+              );
+            })
+          }
+        )
+      ]
+    }
+  );
+}
 function formatVnd$2(amount) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
 }
@@ -53555,8 +56393,8 @@ function QRDisplay({ order, onClose, onPaid }) {
   const [status, setStatus] = reactExports.useState(order.paymentStatus);
   const [polling, setPolling] = reactExports.useState(true);
   const [retryTick, setRetryTick] = reactExports.useState(0);
-  const qrReady = !!order.tingeeQrId;
-  const qrValue = order.tingeeQrId ?? "";
+  const qrReady = !!order.tingeeQrCode;
+  const qrValue = order.tingeeQrCode ?? "";
   reactExports.useEffect(() => {
     if (!actor || !polling) return;
     let cancelled = false;
@@ -53622,9 +56460,10 @@ function QRDisplay({ order, onClose, onPaid }) {
                     {
                       className: "font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl",
                       "data-ocid": "qr.amount",
-                      children: formatVnd$2(order.amount)
+                      children: formatVnd$2(order.amount - order.shippingFee)
                     }
-                  )
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Tiền hàng (không gồm phí ship — phí ship thuộc về Ahamove)" })
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "div",
@@ -53739,14 +56578,53 @@ function usePendingOrders(restaurantId) {
     refetchOnWindowFocus: true
   });
 }
+function usePaidOrdersForPickup(enabled) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["orders", "paid-for-pickup"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return listPaidOrdersForPickup(actor);
+    },
+    enabled: !!actor && !isFetching && enabled,
+    refetchInterval: 5e3,
+    refetchOnWindowFocus: true
+  });
+}
+const DRIVER_STORAGE_KEY = "bbh_driver_activation";
+function loadStoredActivation() {
+  try {
+    const raw = localStorage.getItem(DRIVER_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if ((parsed == null ? void 0 : parsed.restaurantId) && (parsed == null ? void 0 : parsed.deviceId)) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
 function DriverPaymentScreen() {
-  const [restaurantId, setRestaurantId] = reactExports.useState(null);
-  const [deviceId, setDeviceId] = reactExports.useState(null);
+  const stored = loadStoredActivation();
+  const [restaurantId, setRestaurantId] = reactExports.useState(
+    (stored == null ? void 0 : stored.restaurantId) ?? null
+  );
+  const [deviceId, setDeviceId] = reactExports.useState(
+    (stored == null ? void 0 : stored.deviceId) ?? null
+  );
   const [activeOrder, setActiveOrder] = reactExports.useState(null);
+  const [activeTab, setActiveTab] = reactExports.useState("payment");
   const ordersQuery = usePendingOrders(restaurantId ?? void 0);
+  const pickupQuery = usePaidOrdersForPickup(activeTab === "pickup");
   function handleActivated(restId, devId) {
     setRestaurantId(restId);
     setDeviceId(devId);
+    try {
+      localStorage.setItem(
+        DRIVER_STORAGE_KEY,
+        JSON.stringify({ restaurantId: restId, deviceId: devId })
+      );
+    } catch {
+    }
     ue.success("Thiết bị đã sẵn sàng nhận đơn thanh toán");
   }
   function handlePay(order) {
@@ -53759,12 +56637,6 @@ function DriverPaymentScreen() {
     setActiveOrder(null);
     ue.success(`Đã thanh toán đơn ${order.cusName || order.orderId}`);
     void ordersQuery.refetch();
-  }
-  function handleLogout() {
-    setRestaurantId(null);
-    setDeviceId(null);
-    setActiveOrder(null);
-    ue.info("Đã đăng xuất thiết bị");
   }
   if (!restaurantId || !deviceId) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(ActivationForm, { onActivated: handleActivated });
@@ -53780,39 +56652,55 @@ function DriverPaymentScreen() {
           {
             className: "border-b border-border bg-card px-4 py-3 md:px-6",
             "data-ocid": "driver.status_bar",
-            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mx-auto flex w-full max-w-2xl items-center justify-between gap-3", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 items-center gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "div",
-                  {
-                    className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/15 text-success",
-                    "aria-hidden": "true",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Smartphone, { className: "h-5 w-5" })
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate text-sm font-semibold text-foreground", children: "Thiết bị đã kích hoạt" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate font-mono text-xs text-muted-foreground", children: deviceId })
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mx-auto flex w-full max-w-2xl items-center gap-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 items-center gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/15 text-success",
+                  "aria-hidden": "true",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(Smartphone, { className: "h-5 w-5" })
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate text-sm font-semibold text-foreground", children: "Thiết bị đã kích hoạt" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate font-mono text-xs text-muted-foreground", children: deviceId })
+              ] })
+            ] }) })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "nav",
+          {
+            className: "border-b border-border bg-card",
+            "data-ocid": "driver.tabs",
+            "aria-label": "Chức năng tài xế",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mx-auto flex w-full max-w-2xl", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "button",
                 {
                   type: "button",
-                  onClick: handleLogout,
-                  "data-ocid": "driver.logout_button",
-                  className: "inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-smooth hover:bg-secondary",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(LogOut, { className: "h-4 w-4", "aria-hidden": "true" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Đăng xuất thiết bị" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "Thoát" })
-                  ]
+                  onClick: () => setActiveTab("payment"),
+                  "data-ocid": "driver.tab.payment",
+                  "aria-selected": activeTab === "payment",
+                  className: `flex-1 px-4 py-3 text-sm font-semibold transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${activeTab === "payment" ? "border-b-2 border-primary text-primary" : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"}`,
+                  children: "Thanh toán"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => setActiveTab("pickup"),
+                  "data-ocid": "driver.tab.pickup",
+                  "aria-selected": activeTab === "pickup",
+                  className: `flex-1 px-4 py-3 text-sm font-semibold transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${activeTab === "pickup" ? "border-b-2 border-primary text-primary" : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"}`,
+                  children: "Hàng đợi tài xế nhận hàng"
                 }
               )
             ] })
           }
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1", children: activeTab === "payment" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
           PaymentQueue,
           {
             orders: ordersQuery.data ?? [],
@@ -53821,7 +56709,14 @@ function DriverPaymentScreen() {
             onPay: handlePay,
             payingOrderId: (activeOrder == null ? void 0 : activeOrder.orderId) ?? null
           }
-        ),
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+          PickupQueue,
+          {
+            orders: pickupQuery.data ?? [],
+            isLoading: pickupQuery.isLoading,
+            isError: pickupQuery.isError
+          }
+        ) }),
         activeOrder && /* @__PURE__ */ jsxRuntimeExports.jsx(
           QRDisplay,
           {
@@ -53834,8 +56729,68 @@ function DriverPaymentScreen() {
     }
   );
 }
-const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_DIMENSION = 800;
+const JPEG_QUALITY = 0.85;
+const MAX_BYTES = 2 * 1024 * 1024;
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Không đọc được ảnh."));
+    };
+    img.src = url;
+  });
+}
+function drawScaled(img) {
+  const scale = Math.min(
+    1,
+    MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight)
+  );
+  const width = Math.max(1, Math.round(img.naturalWidth * scale));
+  const height = Math.max(1, Math.round(img.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Trình duyệt không hỗ trợ xử lý ảnh.");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas;
+}
+async function encodeJpeg(canvas) {
+  let quality = JPEG_QUALITY;
+  while (quality >= 0.4) {
+    const blob = await new Promise(
+      (resolve) => canvas.toBlob(resolve, "image/jpeg", quality)
+    );
+    if (blob && blob.size <= MAX_BYTES) {
+      return new Uint8Array(await blob.arrayBuffer());
+    }
+    quality -= 0.1;
+  }
+  throw new Error("Không thể nén ảnh xuống dưới 2 MB.");
+}
+async function processFile(file) {
+  const img = await loadImage(file);
+  const canvas = drawScaled(img);
+  const bytes = await encodeJpeg(canvas);
+  const blob = new Blob([bytes], { type: "image/jpeg" });
+  const dataUrl = URL.createObjectURL(blob);
+  return { bytes, dataUrl, sizeBytes: bytes.length };
+}
+function formatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
 function ImageUpload({
   value,
   onChange,
@@ -53844,11 +56799,10 @@ function ImageUpload({
 }) {
   const inputId = reactExports.useId();
   const inputRef = reactExports.useRef(null);
-  const [isUploading, setIsUploading] = reactExports.useState(false);
-  const [localPreview, setLocalPreview] = reactExports.useState(null);
+  const [isProcessing, setIsProcessing] = reactExports.useState(false);
   const [dragOver, setDragOver] = reactExports.useState(false);
-  const previewSrc = localPreview ?? (value || "");
-  const hasImage = previewSrc.length > 0;
+  const previewSrc = (value == null ? void 0 : value.dataUrl) ?? null;
+  const hasImage = !!previewSrc;
   async function handleFile(file) {
     if (!file) return;
     if (!ACCEPTED.includes(file.type)) {
@@ -53857,30 +56811,18 @@ function ImageUpload({
       });
       return;
     }
-    if (file.size > MAX_BYTES) {
-      ue.error("Ảnh quá lớn", {
-        description: "Kích thước tối đa 5 MB."
-      });
-      return;
-    }
-    const objectUrl = URL.createObjectURL(file);
-    setLocalPreview(objectUrl);
-    setIsUploading(true);
+    setIsProcessing(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file, file.name);
-      const res = await uploadImage(formData);
-      if (!res.ok || !res.imageUrl) {
-        throw new Error(res.error || "VPS không trả về imageUrl");
-      }
-      onChange(res.imageUrl);
-      ue.success("Tải ảnh thành công");
+      const processed = await processFile(file);
+      onChange(processed);
+      ue.success("Ảnh đã xử lý", {
+        description: `${formatBytes(processed.sizeBytes)} · JPEG 800×800 tối đa.`
+      });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Tải ảnh thất bại. Vui lòng thử lại.";
-      ue.error("Tải ảnh thất bại", { description: message });
-      setLocalPreview(null);
+      const message = err instanceof Error ? err.message : "Xử lý ảnh thất bại. Vui lòng thử lại.";
+      ue.error("Xử lý ảnh thất bại", { description: message });
     } finally {
-      setIsUploading(false);
+      setIsProcessing(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -53893,14 +56835,13 @@ function ImageUpload({
     var _a2;
     e.preventDefault();
     setDragOver(false);
-    if (disabled || isUploading) return;
+    if (disabled || isProcessing) return;
     const file = (_a2 = e.dataTransfer.files) == null ? void 0 : _a2[0];
     if (file) void handleFile(file);
   }
   function handleClear() {
-    if (localPreview) URL.revokeObjectURL(localPreview);
-    setLocalPreview(null);
-    onChange("");
+    if (value == null ? void 0 : value.dataUrl) URL.revokeObjectURL(value.dataUrl);
+    onChange(null);
     if (inputRef.current) inputRef.current.value = "";
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", "data-ocid": "image_upload", children: [
@@ -53912,7 +56853,7 @@ function ImageUpload({
           "data-ocid": "image_upload.dropzone",
           onDragOver: (e) => {
             e.preventDefault();
-            if (!disabled && !isUploading) setDragOver(true);
+            if (!disabled && !isProcessing) setDragOver(true);
           },
           onDragLeave: () => setDragOver(false),
           onDrop: handleDrop,
@@ -53931,10 +56872,10 @@ function ImageUpload({
                 "data-ocid": "image_upload.preview"
               }
             ),
-            isUploading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 flex items-center justify-center bg-background/70", children: /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin text-primary" }) })
+            isProcessing && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 flex items-center justify-center bg-background/70", children: /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin text-primary" }) })
           ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-1 px-2 text-center text-muted-foreground", children: [
-            isUploading ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ImagePlus, { className: "h-6 w-6" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] leading-tight", children: isUploading ? "Đang tải…" : "Chưa có ảnh" })
+            isProcessing ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ImagePlus, { className: "h-6 w-6" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] leading-tight", children: isProcessing ? "Đang xử lý…" : "Chưa có ảnh" })
           ] })
         }
       ),
@@ -53946,7 +56887,7 @@ function ImageUpload({
             id: inputId,
             type: "file",
             accept: ACCEPTED.join(","),
-            disabled: disabled || isUploading,
+            disabled: disabled || isProcessing,
             onChange: handleInputChange,
             className: "sr-only",
             "data-ocid": "image_upload.input"
@@ -53958,16 +56899,16 @@ function ImageUpload({
             htmlFor: inputId,
             className: cn(
               "inline-flex h-9 w-fit cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-smooth hover:bg-accent hover:text-accent-foreground",
-              (disabled || isUploading) && "pointer-events-none opacity-50"
+              (disabled || isProcessing) && "pointer-events-none opacity-50"
             ),
             "data-ocid": "image_upload.upload_button",
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(CloudUpload, { className: "h-4 w-4" }),
-              hasImage ? "Đổi ảnh" : "Tải ảnh lên"
+              hasImage ? "Đổi ảnh" : "Chọn ảnh"
             ]
           }
         ),
-        hasImage && !isUploading && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        hasImage && !isProcessing && /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "button",
           {
             type: "button",
@@ -53981,16 +56922,15 @@ function ImageUpload({
             ]
           }
         ),
-        value && !localPreview && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        value && /* @__PURE__ */ jsxRuntimeExports.jsx(
           "p",
           {
-            className: "break-all font-mono text-[11px] text-muted-foreground",
-            "data-ocid": "image_upload.url",
-            title: value,
-            children: value
+            className: "font-mono text-[11px] text-muted-foreground",
+            "data-ocid": "image_upload.size",
+            children: formatBytes(value.sizeBytes)
           }
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: "Kéo thả hoặc chọn ảnh. JPG/PNG/WebP, tối đa 5 MB." })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: "Kéo thả hoặc chọn ảnh. Tự động nén về JPEG tối đa 800×800, dưới 2 MB." })
       ] })
     ] })
   ] });
@@ -54030,7 +56970,7 @@ var Switch$1 = reactExports.forwardRef(
           role: "switch",
           "aria-checked": checked,
           "aria-required": required,
-          "data-state": getState$1(checked),
+          "data-state": getState(checked),
           "data-disabled": disabled ? "" : void 0,
           disabled,
           value,
@@ -54071,7 +57011,7 @@ var SwitchThumb = reactExports.forwardRef(
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       Primitive.span,
       {
-        "data-state": getState$1(context.checked),
+        "data-state": getState(context.checked),
         "data-disabled": context.disabled ? "" : void 0,
         ...thumbProps,
         ref: forwardedRef
@@ -54130,17 +57070,17 @@ var SwitchBubbleInput = reactExports.forwardRef(
   }
 );
 SwitchBubbleInput.displayName = BUBBLE_INPUT_NAME;
-function getState$1(checked) {
+function getState(checked) {
   return checked ? "checked" : "unchecked";
 }
-var Root$1 = Switch$1;
+var Root = Switch$1;
 var Thumb = SwitchThumb;
 function Switch({
   className,
   ...props
 }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Root$1,
+    Root,
     {
       "data-slot": "switch",
       className: cn(
@@ -54205,7 +57145,13 @@ function MenuItemForm({ item, onSaved, onCancel }) {
   const [category, setCategory] = reactExports.useState(
     (item == null ? void 0 : item.category) ?? CATEGORY_OPTIONS[0]
   );
-  const [imageUrl, setImageUrl] = reactExports.useState((item == null ? void 0 : item.imageUrl) ?? "");
+  const [image, setImage] = reactExports.useState(
+    () => (item == null ? void 0 : item.image) && item.image.length > 0 ? {
+      bytes: item.image,
+      dataUrl: imageBytesToDataUrl(item.image) ?? "",
+      sizeBytes: item.image.length
+    } : null
+  );
   const [visible, setVisible] = reactExports.useState((item == null ? void 0 : item.visible) ?? true);
   const canSubmit = name.trim().length > 0 && price.trim().length > 0 && unitName.trim().length > 0 && vatRate.trim().length > 0 && category.trim().length > 0 && !isPending2;
   async function handleSubmit(e) {
@@ -54233,7 +57179,7 @@ function MenuItemForm({ item, onSaved, onCancel }) {
           unitName: unitName.trim(),
           vatRate: vatBig,
           category: category.trim(),
-          imageUrl: imageUrl.trim(),
+          image: (image == null ? void 0 : image.bytes) ?? new Uint8Array(),
           visible
         });
         ue.success("Đã cập nhật món.");
@@ -54246,7 +57192,7 @@ function MenuItemForm({ item, onSaved, onCancel }) {
           unitName: unitName.trim(),
           vatRate: vatBig,
           category: category.trim(),
-          imageUrl: imageUrl.trim()
+          image: (image == null ? void 0 : image.bytes) ?? new Uint8Array()
         });
         ue.success("Đã thêm món mới.");
       }
@@ -54377,8 +57323,8 @@ function MenuItemForm({ item, onSaved, onCancel }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           ImageUpload,
           {
-            value: imageUrl,
-            onChange: setImageUrl,
+            value: image,
+            onChange: setImage,
             disabled: isPending2,
             label: "Ảnh món"
           }
@@ -54428,697 +57374,6 @@ function MenuItemForm({ item, onSaved, onCancel }) {
     }
   );
 }
-function useStateMachine(initialState, machine) {
-  return reactExports.useReducer((state, event) => {
-    const nextState = machine[state][event];
-    return nextState ?? state;
-  }, initialState);
-}
-var Presence = (props) => {
-  const { present, children } = props;
-  const presence = usePresence(present);
-  const child = typeof children === "function" ? children({ present: presence.isPresent }) : reactExports.Children.only(children);
-  const ref = useComposedRefs(presence.ref, getElementRef(child));
-  const forceMount = typeof children === "function";
-  return forceMount || presence.isPresent ? reactExports.cloneElement(child, { ref }) : null;
-};
-Presence.displayName = "Presence";
-function usePresence(present) {
-  const [node, setNode] = reactExports.useState();
-  const stylesRef = reactExports.useRef(null);
-  const prevPresentRef = reactExports.useRef(present);
-  const prevAnimationNameRef = reactExports.useRef("none");
-  const initialState = present ? "mounted" : "unmounted";
-  const [state, send] = useStateMachine(initialState, {
-    mounted: {
-      UNMOUNT: "unmounted",
-      ANIMATION_OUT: "unmountSuspended"
-    },
-    unmountSuspended: {
-      MOUNT: "mounted",
-      ANIMATION_END: "unmounted"
-    },
-    unmounted: {
-      MOUNT: "mounted"
-    }
-  });
-  reactExports.useEffect(() => {
-    const currentAnimationName = getAnimationName(stylesRef.current);
-    prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
-  }, [state]);
-  useLayoutEffect2(() => {
-    const styles = stylesRef.current;
-    const wasPresent = prevPresentRef.current;
-    const hasPresentChanged = wasPresent !== present;
-    if (hasPresentChanged) {
-      const prevAnimationName = prevAnimationNameRef.current;
-      const currentAnimationName = getAnimationName(styles);
-      if (present) {
-        send("MOUNT");
-      } else if (currentAnimationName === "none" || (styles == null ? void 0 : styles.display) === "none") {
-        send("UNMOUNT");
-      } else {
-        const isAnimating = prevAnimationName !== currentAnimationName;
-        if (wasPresent && isAnimating) {
-          send("ANIMATION_OUT");
-        } else {
-          send("UNMOUNT");
-        }
-      }
-      prevPresentRef.current = present;
-    }
-  }, [present, send]);
-  useLayoutEffect2(() => {
-    if (node) {
-      let timeoutId;
-      const ownerWindow = node.ownerDocument.defaultView ?? window;
-      const handleAnimationEnd = (event) => {
-        const currentAnimationName = getAnimationName(stylesRef.current);
-        const isCurrentAnimation = currentAnimationName.includes(CSS.escape(event.animationName));
-        if (event.target === node && isCurrentAnimation) {
-          send("ANIMATION_END");
-          if (!prevPresentRef.current) {
-            const currentFillMode = node.style.animationFillMode;
-            node.style.animationFillMode = "forwards";
-            timeoutId = ownerWindow.setTimeout(() => {
-              if (node.style.animationFillMode === "forwards") {
-                node.style.animationFillMode = currentFillMode;
-              }
-            });
-          }
-        }
-      };
-      const handleAnimationStart = (event) => {
-        if (event.target === node) {
-          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
-        }
-      };
-      node.addEventListener("animationstart", handleAnimationStart);
-      node.addEventListener("animationcancel", handleAnimationEnd);
-      node.addEventListener("animationend", handleAnimationEnd);
-      return () => {
-        ownerWindow.clearTimeout(timeoutId);
-        node.removeEventListener("animationstart", handleAnimationStart);
-        node.removeEventListener("animationcancel", handleAnimationEnd);
-        node.removeEventListener("animationend", handleAnimationEnd);
-      };
-    } else {
-      send("ANIMATION_END");
-    }
-  }, [node, send]);
-  return {
-    isPresent: ["mounted", "unmountSuspended"].includes(state),
-    ref: reactExports.useCallback((node2) => {
-      stylesRef.current = node2 ? getComputedStyle(node2) : null;
-      setNode(node2);
-    }, [])
-  };
-}
-function getAnimationName(styles) {
-  return (styles == null ? void 0 : styles.animationName) || "none";
-}
-function getElementRef(element) {
-  var _a2, _b2;
-  let getter = (_a2 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a2.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b2 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b2.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-var DIALOG_NAME = "Dialog";
-var [createDialogContext, createDialogScope] = createContextScope(DIALOG_NAME);
-var [DialogProvider, useDialogContext] = createDialogContext(DIALOG_NAME);
-var Dialog$1 = (props) => {
-  const {
-    __scopeDialog,
-    children,
-    open: openProp,
-    defaultOpen,
-    onOpenChange,
-    modal = true
-  } = props;
-  const triggerRef = reactExports.useRef(null);
-  const contentRef = reactExports.useRef(null);
-  const [open, setOpen] = useControllableState({
-    prop: openProp,
-    defaultProp: defaultOpen ?? false,
-    onChange: onOpenChange,
-    caller: DIALOG_NAME
-  });
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    DialogProvider,
-    {
-      scope: __scopeDialog,
-      triggerRef,
-      contentRef,
-      contentId: useId(),
-      titleId: useId(),
-      descriptionId: useId(),
-      open,
-      onOpenChange: setOpen,
-      onOpenToggle: reactExports.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
-      modal,
-      children
-    }
-  );
-};
-Dialog$1.displayName = DIALOG_NAME;
-var TRIGGER_NAME$1 = "DialogTrigger";
-var DialogTrigger = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...triggerProps } = props;
-    const context = useDialogContext(TRIGGER_NAME$1, __scopeDialog);
-    const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        "aria-haspopup": "dialog",
-        "aria-expanded": context.open,
-        "aria-controls": context.contentId,
-        "data-state": getState(context.open),
-        ...triggerProps,
-        ref: composedTriggerRef,
-        onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
-      }
-    );
-  }
-);
-DialogTrigger.displayName = TRIGGER_NAME$1;
-var PORTAL_NAME$1 = "DialogPortal";
-var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME$1, {
-  forceMount: void 0
-});
-var DialogPortal$1 = (props) => {
-  const { __scopeDialog, forceMount, children, container } = props;
-  const context = useDialogContext(PORTAL_NAME$1, __scopeDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: reactExports.Children.map(children, (child) => /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$2, { asChild: true, container, children: child }) })) });
-};
-DialogPortal$1.displayName = PORTAL_NAME$1;
-var OVERLAY_NAME$1 = "DialogOverlay";
-var DialogOverlay$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const portalContext = usePortalContext(OVERLAY_NAME$1, props.__scopeDialog);
-    const { forceMount = portalContext.forceMount, ...overlayProps } = props;
-    const context = useDialogContext(OVERLAY_NAME$1, props.__scopeDialog);
-    return context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
-  }
-);
-DialogOverlay$1.displayName = OVERLAY_NAME$1;
-var Slot = /* @__PURE__ */ createSlot("DialogOverlay.RemoveScroll");
-var DialogOverlayImpl = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...overlayProps } = props;
-    const context = useDialogContext(OVERLAY_NAME$1, __scopeDialog);
-    return (
-      // Make sure `Content` is scrollable even when it doesn't live inside `RemoveScroll`
-      // ie. when `Overlay` and `Content` are siblings
-      /* @__PURE__ */ jsxRuntimeExports.jsx(ReactRemoveScroll, { as: Slot, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Primitive.div,
-        {
-          "data-state": getState(context.open),
-          ...overlayProps,
-          ref: forwardedRef,
-          style: { pointerEvents: "auto", ...overlayProps.style }
-        }
-      ) })
-    );
-  }
-);
-var CONTENT_NAME$1 = "DialogContent";
-var DialogContent$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const portalContext = usePortalContext(CONTENT_NAME$1, props.__scopeDialog);
-    const { forceMount = portalContext.forceMount, ...contentProps } = props;
-    const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
-  }
-);
-DialogContent$1.displayName = CONTENT_NAME$1;
-var DialogContentModal = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
-    const contentRef = reactExports.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
-    reactExports.useEffect(() => {
-      const content = contentRef.current;
-      if (content) return hideOthers(content);
-    }, []);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      DialogContentImpl,
-      {
-        ...props,
-        ref: composedRefs,
-        trapFocus: context.open,
-        disableOutsidePointerEvents: true,
-        onCloseAutoFocus: composeEventHandlers(props.onCloseAutoFocus, (event) => {
-          var _a2;
-          event.preventDefault();
-          (_a2 = context.triggerRef.current) == null ? void 0 : _a2.focus();
-        }),
-        onPointerDownOutside: composeEventHandlers(props.onPointerDownOutside, (event) => {
-          const originalEvent = event.detail.originalEvent;
-          const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
-          const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
-          if (isRightClick) event.preventDefault();
-        }),
-        onFocusOutside: composeEventHandlers(
-          props.onFocusOutside,
-          (event) => event.preventDefault()
-        )
-      }
-    );
-  }
-);
-var DialogContentNonModal = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
-    const hasInteractedOutsideRef = reactExports.useRef(false);
-    const hasPointerDownOutsideRef = reactExports.useRef(false);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      DialogContentImpl,
-      {
-        ...props,
-        ref: forwardedRef,
-        trapFocus: false,
-        disableOutsidePointerEvents: false,
-        onCloseAutoFocus: (event) => {
-          var _a2, _b2;
-          (_a2 = props.onCloseAutoFocus) == null ? void 0 : _a2.call(props, event);
-          if (!event.defaultPrevented) {
-            if (!hasInteractedOutsideRef.current) (_b2 = context.triggerRef.current) == null ? void 0 : _b2.focus();
-            event.preventDefault();
-          }
-          hasInteractedOutsideRef.current = false;
-          hasPointerDownOutsideRef.current = false;
-        },
-        onInteractOutside: (event) => {
-          var _a2, _b2;
-          (_a2 = props.onInteractOutside) == null ? void 0 : _a2.call(props, event);
-          if (!event.defaultPrevented) {
-            hasInteractedOutsideRef.current = true;
-            if (event.detail.originalEvent.type === "pointerdown") {
-              hasPointerDownOutsideRef.current = true;
-            }
-          }
-          const target = event.target;
-          const targetIsTrigger = (_b2 = context.triggerRef.current) == null ? void 0 : _b2.contains(target);
-          if (targetIsTrigger) event.preventDefault();
-          if (event.detail.originalEvent.type === "focusin" && hasPointerDownOutsideRef.current) {
-            event.preventDefault();
-          }
-        }
-      }
-    );
-  }
-);
-var DialogContentImpl = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
-    const context = useDialogContext(CONTENT_NAME$1, __scopeDialog);
-    const contentRef = reactExports.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, contentRef);
-    useFocusGuards();
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        FocusScope,
-        {
-          asChild: true,
-          loop: true,
-          trapped: trapFocus,
-          onMountAutoFocus: onOpenAutoFocus,
-          onUnmountAutoFocus: onCloseAutoFocus,
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            DismissableLayer,
-            {
-              role: "dialog",
-              id: context.contentId,
-              "aria-describedby": context.descriptionId,
-              "aria-labelledby": context.titleId,
-              "data-state": getState(context.open),
-              ...contentProps,
-              ref: composedRefs,
-              onDismiss: () => context.onOpenChange(false)
-            }
-          )
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(TitleWarning, { titleId: context.titleId }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(DescriptionWarning$1, { contentRef, descriptionId: context.descriptionId })
-      ] })
-    ] });
-  }
-);
-var TITLE_NAME$1 = "DialogTitle";
-var DialogTitle$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...titleProps } = props;
-    const context = useDialogContext(TITLE_NAME$1, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
-  }
-);
-DialogTitle$1.displayName = TITLE_NAME$1;
-var DESCRIPTION_NAME$1 = "DialogDescription";
-var DialogDescription$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...descriptionProps } = props;
-    const context = useDialogContext(DESCRIPTION_NAME$1, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
-  }
-);
-DialogDescription$1.displayName = DESCRIPTION_NAME$1;
-var CLOSE_NAME = "DialogClose";
-var DialogClose = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...closeProps } = props;
-    const context = useDialogContext(CLOSE_NAME, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        ...closeProps,
-        ref: forwardedRef,
-        onClick: composeEventHandlers(props.onClick, () => context.onOpenChange(false))
-      }
-    );
-  }
-);
-DialogClose.displayName = CLOSE_NAME;
-function getState(open) {
-  return open ? "open" : "closed";
-}
-var TITLE_WARNING_NAME = "DialogTitleWarning";
-var [WarningProvider, useWarningContext] = createContext2(TITLE_WARNING_NAME, {
-  contentName: CONTENT_NAME$1,
-  titleName: TITLE_NAME$1,
-  docsSlug: "dialog"
-});
-var TitleWarning = ({ titleId }) => {
-  const titleWarningContext = useWarningContext(TITLE_WARNING_NAME);
-  const MESSAGE = `\`${titleWarningContext.contentName}\` requires a \`${titleWarningContext.titleName}\` for the component to be accessible for screen reader users.
-
-If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
-
-For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
-  reactExports.useEffect(() => {
-    if (titleId) {
-      const hasTitle = document.getElementById(titleId);
-      if (!hasTitle) console.error(MESSAGE);
-    }
-  }, [MESSAGE, titleId]);
-  return null;
-};
-var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
-var DescriptionWarning$1 = ({ contentRef, descriptionId }) => {
-  const descriptionWarningContext = useWarningContext(DESCRIPTION_WARNING_NAME);
-  const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${descriptionWarningContext.contentName}}.`;
-  reactExports.useEffect(() => {
-    var _a2;
-    const describedById = (_a2 = contentRef.current) == null ? void 0 : _a2.getAttribute("aria-describedby");
-    if (descriptionId && describedById) {
-      const hasDescription = document.getElementById(descriptionId);
-      if (!hasDescription) console.warn(MESSAGE);
-    }
-  }, [MESSAGE, contentRef, descriptionId]);
-  return null;
-};
-var Root = Dialog$1;
-var Trigger = DialogTrigger;
-var Portal = DialogPortal$1;
-var Overlay = DialogOverlay$1;
-var Content = DialogContent$1;
-var Title = DialogTitle$1;
-var Description = DialogDescription$1;
-var Close = DialogClose;
-var ROOT_NAME = "AlertDialog";
-var [createAlertDialogContext] = createContextScope(ROOT_NAME, [
-  createDialogScope
-]);
-var useDialogScope = createDialogScope();
-var AlertDialog$1 = (props) => {
-  const { __scopeAlertDialog, ...alertDialogProps } = props;
-  const dialogScope = useDialogScope(__scopeAlertDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root, { ...dialogScope, ...alertDialogProps, modal: true });
-};
-AlertDialog$1.displayName = ROOT_NAME;
-var TRIGGER_NAME = "AlertDialogTrigger";
-var AlertDialogTrigger = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...triggerProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger, { ...dialogScope, ...triggerProps, ref: forwardedRef });
-  }
-);
-AlertDialogTrigger.displayName = TRIGGER_NAME;
-var PORTAL_NAME = "AlertDialogPortal";
-var AlertDialogPortal$1 = (props) => {
-  const { __scopeAlertDialog, ...portalProps } = props;
-  const dialogScope = useDialogScope(__scopeAlertDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { ...dialogScope, ...portalProps });
-};
-AlertDialogPortal$1.displayName = PORTAL_NAME;
-var OVERLAY_NAME = "AlertDialogOverlay";
-var AlertDialogOverlay$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...overlayProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { ...dialogScope, ...overlayProps, ref: forwardedRef });
-  }
-);
-AlertDialogOverlay$1.displayName = OVERLAY_NAME;
-var CONTENT_NAME = "AlertDialogContent";
-var [AlertDialogContentProvider, useAlertDialogContentContext] = createAlertDialogContext(CONTENT_NAME);
-var Slottable = /* @__PURE__ */ createSlottable("AlertDialogContent");
-var AlertDialogContent$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, children, ...contentProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    const contentRef = reactExports.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, contentRef);
-    const cancelRef = reactExports.useRef(null);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      WarningProvider,
-      {
-        contentName: CONTENT_NAME,
-        titleName: TITLE_NAME,
-        docsSlug: "alert-dialog",
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogContentProvider, { scope: __scopeAlertDialog, cancelRef, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          Content,
-          {
-            role: "alertdialog",
-            ...dialogScope,
-            ...contentProps,
-            ref: composedRefs,
-            onOpenAutoFocus: composeEventHandlers(contentProps.onOpenAutoFocus, (event) => {
-              var _a2;
-              event.preventDefault();
-              (_a2 = cancelRef.current) == null ? void 0 : _a2.focus({ preventScroll: true });
-            }),
-            onPointerDownOutside: (event) => event.preventDefault(),
-            onInteractOutside: (event) => event.preventDefault(),
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Slottable, { children }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(DescriptionWarning, { contentRef })
-            ]
-          }
-        ) })
-      }
-    );
-  }
-);
-AlertDialogContent$1.displayName = CONTENT_NAME;
-var TITLE_NAME = "AlertDialogTitle";
-var AlertDialogTitle$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...titleProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { ...dialogScope, ...titleProps, ref: forwardedRef });
-  }
-);
-AlertDialogTitle$1.displayName = TITLE_NAME;
-var DESCRIPTION_NAME = "AlertDialogDescription";
-var AlertDialogDescription$1 = reactExports.forwardRef((props, forwardedRef) => {
-  const { __scopeAlertDialog, ...descriptionProps } = props;
-  const dialogScope = useDialogScope(__scopeAlertDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Description, { ...dialogScope, ...descriptionProps, ref: forwardedRef });
-});
-AlertDialogDescription$1.displayName = DESCRIPTION_NAME;
-var ACTION_NAME = "AlertDialogAction";
-var AlertDialogAction$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...actionProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { ...dialogScope, ...actionProps, ref: forwardedRef });
-  }
-);
-AlertDialogAction$1.displayName = ACTION_NAME;
-var CANCEL_NAME = "AlertDialogCancel";
-var AlertDialogCancel$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...cancelProps } = props;
-    const { cancelRef } = useAlertDialogContentContext(CANCEL_NAME, __scopeAlertDialog);
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    const ref = useComposedRefs(forwardedRef, cancelRef);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { ...dialogScope, ...cancelProps, ref });
-  }
-);
-AlertDialogCancel$1.displayName = CANCEL_NAME;
-var DescriptionWarning = ({ contentRef }) => {
-  const MESSAGE = `\`${CONTENT_NAME}\` requires a description for the component to be accessible for screen reader users.
-
-You can add a description to the \`${CONTENT_NAME}\` by passing a \`${DESCRIPTION_NAME}\` component as a child, which also benefits sighted users by adding visible context to the dialog.
-
-Alternatively, you can use your own component as a description by assigning it an \`id\` and passing the same value to the \`aria-describedby\` prop in \`${CONTENT_NAME}\`. If the description is confusing or duplicative for sighted users, you can use the \`@radix-ui/react-visually-hidden\` primitive as a wrapper around your description component.
-
-For more information, see https://radix-ui.com/primitives/docs/components/alert-dialog`;
-  reactExports.useEffect(() => {
-    var _a2;
-    const hasDescription = document.getElementById(
-      (_a2 = contentRef.current) == null ? void 0 : _a2.getAttribute("aria-describedby")
-    );
-    if (!hasDescription) console.warn(MESSAGE);
-  }, [MESSAGE, contentRef]);
-  return null;
-};
-var Root2 = AlertDialog$1;
-var Portal2 = AlertDialogPortal$1;
-var Overlay2 = AlertDialogOverlay$1;
-var Content2 = AlertDialogContent$1;
-var Action = AlertDialogAction$1;
-var Cancel = AlertDialogCancel$1;
-var Title2 = AlertDialogTitle$1;
-var Description2 = AlertDialogDescription$1;
-function AlertDialog({
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2, { "data-slot": "alert-dialog", ...props });
-}
-function AlertDialogPortal({
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal2, { "data-slot": "alert-dialog-portal", ...props });
-}
-function AlertDialogOverlay({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Overlay2,
-    {
-      "data-slot": "alert-dialog-overlay",
-      className: cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function AlertDialogContent({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogPortal, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogOverlay, {}),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Content2,
-      {
-        "data-slot": "alert-dialog-content",
-        className: cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
-          className
-        ),
-        ...props
-      }
-    )
-  ] });
-}
-function AlertDialogHeader({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "alert-dialog-header",
-      className: cn("flex flex-col gap-2 text-center sm:text-left", className),
-      ...props
-    }
-  );
-}
-function AlertDialogFooter({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "alert-dialog-footer",
-      className: cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function AlertDialogTitle({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Title2,
-    {
-      "data-slot": "alert-dialog-title",
-      className: cn("text-lg font-semibold", className),
-      ...props
-    }
-  );
-}
-function AlertDialogDescription({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Description2,
-    {
-      "data-slot": "alert-dialog-description",
-      className: cn("text-muted-foreground text-sm", className),
-      ...props
-    }
-  );
-}
-function AlertDialogAction({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Action,
-    {
-      className: cn(buttonVariants(), className),
-      ...props
-    }
-  );
-}
-function AlertDialogCancel({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Cancel,
-    {
-      className: cn(buttonVariants({ variant: "outline" }), className),
-      ...props
-    }
-  );
-}
 function formatVnd$1(n) {
   try {
     return new Intl.NumberFormat("vi-VN", {
@@ -55140,6 +57395,20 @@ function MenuItemTable({
   const updateMutation = useUpdateItem();
   const deleteMutation = useDeleteItem();
   const [pendingDelete, setPendingDelete] = reactExports.useState(null);
+  const imageUrls = reactExports.useMemo(() => {
+    const map = /* @__PURE__ */ new Map();
+    for (const item of items) {
+      map.set(item.itemId, imageBytesToDataUrl(item.image));
+    }
+    return map;
+  }, [items]);
+  reactExports.useEffect(() => {
+    return () => {
+      for (const url of imageUrls.values()) {
+        if (url) URL.revokeObjectURL(url);
+      }
+    };
+  }, [imageUrls]);
   async function handleToggleVisible(item, next) {
     try {
       await updateMutation.mutateAsync({
@@ -55149,7 +57418,7 @@ function MenuItemTable({
         unitName: item.unitName,
         vatRate: item.vatRate,
         category: item.category,
-        imageUrl: item.imageUrl,
+        image: item.image,
         visible: next
       });
       ue.success(next ? "Đã hiển thị món." : "Đã ẩn món.");
@@ -55228,10 +57497,10 @@ function MenuItemTable({
               {
                 "data-ocid": `menu.table.row.${index2}`,
                 children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pl-3", children: item.imageUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pl-3", children: imageUrls.get(item.itemId) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
                     "img",
                     {
-                      src: item.imageUrl,
+                      src: imageUrls.get(item.itemId) ?? void 0,
                       alt: item.name,
                       loading: "lazy",
                       className: "h-10 w-10 rounded-md border border-border object-cover",
@@ -55339,7 +57608,7 @@ function MenuItemTable({
 function Dialog({
   ...props
 }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root, { "data-slot": "dialog", ...props });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$2, { "data-slot": "dialog", ...props });
 }
 function DialogPortal({
   ...props
@@ -55581,6 +57850,10 @@ const BOOKING_MAP = {
   [BookingStatus.pending]: { variant: "warning", label: "Chờ xác nhận" },
   [BookingStatus.confirmed]: { variant: "info", label: "Đã xác nhận" },
   [BookingStatus.shipping]: { variant: "info", label: "Đang giao" },
+  [BookingStatus.pickedUp]: {
+    variant: "success",
+    label: "Tài xế đã nhận hàng"
+  },
   [BookingStatus.completed]: { variant: "success", label: "Hoàn thành" },
   [BookingStatus.cancelled]: { variant: "destructive", label: "Đã huỷ" }
 };
@@ -55654,6 +57927,10 @@ function formatVnd(amount) {
     maximumFractionDigits: 0
   }).format(Number(amount));
 }
+function formatUnitPrice(price, unitName) {
+  const base = formatVnd(price);
+  return unitName ? `${base}/${unitName}` : base;
+}
 function shortOrderId(orderId) {
   if (orderId.length <= 16) return orderId;
   return `${orderId.slice(0, 8)}…${orderId.slice(-4)}`;
@@ -55698,6 +57975,24 @@ function OrderCard({ order, index: index2 }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.bookingStatus }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.paymentStatus })
         ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "mt-3 divide-y divide-border border-t border-border", children: order.items.map((item, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "li",
+          {
+            "data-ocid": `order.card.${index2}.item.${i + 1}`,
+            className: "flex items-baseline justify-between gap-3 py-2 text-sm",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "min-w-0 flex-1 truncate text-foreground", children: [
+                item.name,
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-1.5 text-muted-foreground", children: [
+                  "× ",
+                  Number(item.quantity)
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono text-xs text-muted-foreground", children: formatUnitPrice(item.price, item.unitName) })
+            ]
+          },
+          item.itemId || i
+        )) }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-center justify-between border-t border-border pt-3", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
             order.items.length,
@@ -55712,9 +58007,21 @@ function OrderCard({ order, index: index2 }) {
     }
   );
 }
+const MY_ORDERS_KEY = "bbh_my_orders";
+function loadMyOrderIds() {
+  try {
+    const raw = localStorage.getItem(MY_ORDERS_KEY);
+    if (!raw) return /* @__PURE__ */ new Set();
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? new Set(arr) : /* @__PURE__ */ new Set();
+  } catch {
+    return /* @__PURE__ */ new Set();
+  }
+}
 function OrderList() {
   const { data, isLoading, isError, error, refetch, isFetching } = useOrders();
-  const orders = data ?? [];
+  const myOrderIds = loadMyOrderIds();
+  const orders = (data ?? []).filter((o) => myOrderIds.has(o.orderId));
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "section",
     {
@@ -57428,7 +59735,7 @@ const rootRoute = createRootRouteWithContext()({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(CreateOrder, {})
+  component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(EmailVerificationGate, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(CreateOrder, {}) })
 });
 const trackRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -57492,69 +59799,6 @@ function App() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorBoundary, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(RouterProvider, { router }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Toaster, { richColors: true, position: "top-center" })
   ] });
-}
-const REQUIRED_KEYS = [
-  "backend_host",
-  "backend_canister_id",
-  "project_id",
-  "ii_derivation_origin",
-  "storage_gateway_url"
-];
-function isInvalidValue(value) {
-  return typeof value !== "string" || value.trim() === "" || value.trim() === "undefined";
-}
-function findInvalidKeys(raw) {
-  if (typeof raw !== "object" || raw === null) {
-    return [...REQUIRED_KEYS];
-  }
-  const record = raw;
-  const invalid = [];
-  for (const key of REQUIRED_KEYS) {
-    if (!(key in record) || isInvalidValue(record[key])) {
-      invalid.push(key);
-    }
-  }
-  return invalid;
-}
-let cachedConfig = null;
-async function loadEnv() {
-  if (cachedConfig) return cachedConfig;
-  let response;
-  try {
-    response = await fetch("/env.json", { cache: "no-store" });
-  } catch {
-    throw new Error(
-      "Không thể tải cấu hình môi trường (env.json). Vui lòng kiểm tra kết nối mạng và tải lại trang."
-    );
-  }
-  if (!response.ok) {
-    throw new Error(
-      `Không tìm thấy tệp cấu hình env.json (HTTP ${response.status}). Vui lòng liên hệ quản trị viên.`
-    );
-  }
-  let raw;
-  try {
-    raw = await response.json();
-  } catch {
-    throw new Error(
-      "Tệp env.json không hợp lệ (lỗi định dạng JSON). Vui lòng liên hệ quản trị viên."
-    );
-  }
-  const invalid = findInvalidKeys(raw);
-  if (invalid.length > 0) {
-    throw new Error(
-      `Cấu hình môi trường chưa được thiết lập đầy đủ. Các khoá còn thiếu hoặc không hợp lệ: ${invalid.join(", ")}. Vui lòng liên hệ quản trị viên để cấu hình trước khi sử dụng ứng dụng.`
-    );
-  }
-  const record = raw;
-  cachedConfig = {
-    backend_host: record.backend_host.trim(),
-    backend_canister_id: record.backend_canister_id.trim(),
-    project_id: record.project_id.trim(),
-    ii_derivation_origin: record.ii_derivation_origin.trim(),
-    storage_gateway_url: record.storage_gateway_url.trim()
-  };
-  return cachedConfig;
 }
 BigInt.prototype.toJSON = function() {
   return this.toString();

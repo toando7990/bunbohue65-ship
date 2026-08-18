@@ -141,4 +141,52 @@ function startReconciliation(db) {
   return task;
 }
 
-module.exports = { startRetryQueue, startReconciliation, sendAlert, MAX_RETRIES };
+// Cron 1 phút: auto-cancel đơn unpaid hết hạn (khớp expiry QR 15 phút).
+// Canister không có timer → VPS worker chạy cron này.
+// Với mỗi restaurant, query listPendingPaymentOrders từ canister, lọc các đơn
+// có createdAt (nanoseconds) quá 15 phút, gọi cancelOrder và cập nhật local.
+const UNPAID_EXPIRY_MS = 15 * 60 * 1000;
+
+function startUnpaidExpiry(db) {
+  const task = cron.schedule('*/1 * * * *', async () => {
+    if (shutdown.shuttingDown) return;
+    try {
+      const restaurants = db.prepare(
+        `SELECT DISTINCT restaurant_id FROM orders WHERE booking_status != 'cancelled'`,
+      ).all();
+      for (const { restaurant_id } of restaurants) {
+        let pending;
+        try {
+          const result = await canister.listPendingPaymentOrders(restaurant_id);
+          pending = Array.isArray(result) ? result : (result?.ok || []);
+        } catch (e) {
+          console.error('[sync] listPendingPaymentOrders error:', restaurant_id, e.message);
+          continue;
+        }
+        for (const order of pending) {
+          const createdAtNs = Number(order.createdAt);
+          if (!createdAtNs) continue;
+          const ageMs = Date.now() - createdAtNs / 1e6;
+          if (ageMs <= UNPAID_EXPIRY_MS) continue;
+          try {
+            const cancelResult = await canister.cancelOrder(order.orderId);
+            if (cancelResult?.ok) {
+              db.prepare(`UPDATE orders SET booking_status = 'cancelled', updated_at = ? WHERE order_id = ?`)
+                .run(Date.now(), order.orderId);
+              console.log('[sync] auto-cancelled expired unpaid order:', order.orderId);
+            } else {
+              console.warn('[sync] cancelOrder failed:', order.orderId, cancelResult?.err);
+            }
+          } catch (e) {
+            console.error('[sync] cancelOrder error:', order.orderId, e.message);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[sync] unpaid expiry error:', e.message, e.stack);
+    }
+  });
+  return task;
+}
+
+module.exports = { startRetryQueue, startReconciliation, startUnpaidExpiry, sendAlert, MAX_RETRIES };

@@ -22,6 +22,7 @@ export type {
   MenuItem,
   Restaurant,
   RestaurantId,
+  StoreHours,
   BookingStatus as BookingStatusType,
   PaymentStatus as PaymentStatusType,
   InvoiceStatus as InvoiceStatusType,
@@ -51,11 +52,14 @@ export interface QuoteResponse {
   vatRate: number;
   ahamoveOrderId: string;
   estimatedDeliveryMinutes: number;
+  packagingFee: number;
+  packagingItemName: string;
+  packagingQty: number;
 }
-
 // VPS create-order payload — sent to VPS worker /order/create (HMAC signed server-side).
 export interface CreateOrderPayload {
   restaurantId: string;
+  pickupAddress: string;
   cusName: string;
   cusPhone: string;
   cusAddress: string;
@@ -74,10 +78,14 @@ export interface CreateOrderPayload {
 }
 
 // VPS create-order response — canister orderId + signed payload confirmation.
+// `pendingSync` is true when the canister push failed and the order went to the
+// VPS retry queue — the frontend should wait for the retry to sync before
+// trying to load the order/QR from the canister.
 export interface CreateOrderResponse {
   orderId: string;
   ok: boolean;
   error?: string;
+  pendingSync?: boolean;
 }
 
 // VPS invoice response — Bkav e-invoice PDF/HTML link.
@@ -111,9 +119,23 @@ export interface AnalyticsResponse {
   }>;
 }
 
-// VPS image upload response — object-storage URL for menu item image.
-export interface UploadImageResponse {
-  imageUrl: string;
-  ok: boolean;
-  error?: string;
+// Processed dish image — client-side canvas output stored directly on the
+// canister as raw JPEG bytes. `dataUrl` is used for local preview only.
+export interface ProcessedImage {
+  bytes: Uint8Array;
+  dataUrl: string;
+  sizeBytes: number;
 }
+
+// VPS customer record — returned by GET /customers/:email for a verified
+// customer. Used to auto-fill the cart's customer form on subsequent orders.
+export interface Customer {
+  email: string;
+  name: string;
+  phone: string;
+}
+
+// Payment mode — who pays the order amount on the driver screen.
+// 'driver' (default): the driver pays the order, then settles with the house.
+// 'customer': the customer pays the driver directly at pickup.
+export type PaymentMode = "driver" | "customer";

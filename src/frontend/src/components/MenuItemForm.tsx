@@ -1,6 +1,7 @@
 // MenuItemForm — form thêm/sửa món. Fields: name, price (BigInt VND),
-// unitName, vatRate (BigInt %), category, imageUrl (ImageUpload), visible (toggle, update only).
-// Nút Lưu gọi useAddItem (create) hoặc useUpdateItem (edit). UI tiếng Việt.
+// unitName, vatRate (BigInt %), category, image (ProcessedImage via ImageUpload),
+// visible (toggle, update only). Nút Lưu gọi useAddItem (create) hoặc
+// useUpdateItem (edit). UI tiếng Việt.
 
 import type { MenuItem } from "@/backend";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -16,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAddItem, useUpdateItem } from "@/hooks/useQueries";
+import { imageBytesToDataUrl } from "@/lib/utils";
+import type { ProcessedImage } from "@/types";
 import { Loader2, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -87,7 +90,15 @@ export function MenuItemForm({ item, onSaved, onCancel }: MenuItemFormProps) {
   const [category, setCategory] = useState<string>(
     item?.category ?? CATEGORY_OPTIONS[0],
   );
-  const [imageUrl, setImageUrl] = useState<string>(item?.imageUrl ?? "");
+  const [image, setImage] = useState<ProcessedImage | null>(() =>
+    item?.image && item.image.length > 0
+      ? {
+          bytes: item.image,
+          dataUrl: imageBytesToDataUrl(item.image) ?? "",
+          sizeBytes: item.image.length,
+        }
+      : null,
+  );
   const [visible, setVisible] = useState<boolean>(item?.visible ?? true);
 
   const canSubmit =
@@ -125,7 +136,7 @@ export function MenuItemForm({ item, onSaved, onCancel }: MenuItemFormProps) {
           unitName: unitName.trim(),
           vatRate: vatBig,
           category: category.trim(),
-          imageUrl: imageUrl.trim(),
+          image: image?.bytes ?? new Uint8Array(),
           visible,
         });
         toast.success("Đã cập nhật món.");
@@ -138,7 +149,7 @@ export function MenuItemForm({ item, onSaved, onCancel }: MenuItemFormProps) {
           unitName: unitName.trim(),
           vatRate: vatBig,
           category: category.trim(),
-          imageUrl: imageUrl.trim(),
+          image: image?.bytes ?? new Uint8Array(),
         });
         toast.success("Đã thêm món mới.");
       }
@@ -261,8 +272,8 @@ export function MenuItemForm({ item, onSaved, onCancel }: MenuItemFormProps) {
       </div>
 
       <ImageUpload
-        value={imageUrl}
-        onChange={setImageUrl}
+        value={image}
+        onChange={setImage}
         disabled={isPending}
         label="Ảnh món"
       />

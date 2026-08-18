@@ -7,10 +7,28 @@ import { useOrders } from "@/hooks/useQueries";
 import { Link } from "@tanstack/react-router";
 import { PackageSearch } from "lucide-react";
 
+// Khoá localStorage lưu danh sách orderId đã đặt từ chính trình duyệt này.
+// Ghi vào key này ngay sau khi đặt đơn thành công — xem CreateOrder.tsx.
+// LƯU Ý: đây chỉ là lọc phía hiển thị — listOrders() vẫn trả về toàn bộ đơn
+// của mọi khách qua mạng, chỉ là không hiển thị ra. Lọc thật ở tầng backend
+// (canister) cần thêm field riêng, chưa làm ở bản này.
+const MY_ORDERS_KEY = "bbh_my_orders";
+
+function loadMyOrderIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(MY_ORDERS_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? new Set(arr) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
 export default function OrderList() {
   const { data, isLoading, isError, error, refetch, isFetching } = useOrders();
-  const orders = data ?? [];
-
+  const myOrderIds = loadMyOrderIds();
+  const orders = (data ?? []).filter((o) => myOrderIds.has(o.orderId));
   return (
     <section
       className="mx-auto w-full max-w-7xl px-4 py-8 md:px-6"

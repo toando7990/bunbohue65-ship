@@ -1,7 +1,7 @@
 // ============================================================
 // db.js — SQLite schema + WAL + backup
 // ============================================================
-// Tables: orders, order_items, ahamove_logs, tingee_logs, bkav_logs
+// Tables: orders, order_items, customers, ahamove_logs, tingee_logs, bkav_logs
 // Indexes trên order_id, restaurant_id, status, created_at
 // WAL mode + busy_timeout. Backup function (gzip daily).
 // ============================================================
@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS orders (
   tingee_bill_id      TEXT NOT NULL DEFAULT '',   -- billId từ generate-dynamic-qr response
   shared_link         TEXT NOT NULL DEFAULT '',
   invoice_id          TEXT NOT NULL DEFAULT '',
+  pdf_url             TEXT NOT NULL DEFAULT '',        -- link PDF hóa đơn từ Bkav (CmdType 816)
   booking_status      TEXT NOT NULL DEFAULT 'confirmed',  -- pending|confirmed|shipping|completed|cancelled
   payment_status      TEXT NOT NULL DEFAULT 'unpaid',     -- unpaid|paid|refunded
   invoice_status      TEXT NOT NULL DEFAULT 'none',      -- none|invoiced|failed
@@ -69,6 +70,14 @@ CREATE TABLE IF NOT EXISTS order_items (
   unit_name   TEXT NOT NULL DEFAULT '',
   vat_rate    INTEGER NOT NULL DEFAULT 8,
   FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+  email       TEXT PRIMARY KEY,
+  name        TEXT NOT NULL DEFAULT '',
+  phone       TEXT NOT NULL DEFAULT '',
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS ahamove_logs (
@@ -135,6 +144,9 @@ function initSchema(db) {
   }
   if (!colNames.has('tingee_bill_id')) {
     db.exec("ALTER TABLE orders ADD COLUMN tingee_bill_id TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has('pdf_url')) {
+    db.exec("ALTER TABLE orders ADD COLUMN pdf_url TEXT NOT NULL DEFAULT ''");
   }
 }
 

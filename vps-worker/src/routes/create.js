@@ -2,7 +2,7 @@
 // routes/create.js — POST /order/create (rate-limited)
 // ============================================================
 // Frontend (vps-client.ts) calls POST /order/create with CreateOrderPayload:
-//   { restaurantId, cusName, cusPhone, cusAddress, cusTaxCode, receiverEmail,
+//   { restaurantId, pickupAddress, cusName, cusPhone, cusAddress, cusTaxCode, receiverEmail,
 //     items:[{itemId,name,quantity,price,vatRate,unitName}],
 //     shippingFee, ahamoveOrderId }
 // Returns CreateOrderResponse (camelCase):
@@ -33,23 +33,42 @@ router.post('/order/create', async (req, res, next) => {
     const db = req.app.locals.db;
     const body = req.body || {};
     const {
-      restaurantId, cusName, cusPhone, cusAddress, cusTaxCode, receiverEmail,
+      restaurantId, pickupAddress, cusName, cusPhone, cusAddress, cusTaxCode, receiverEmail,
       items, shippingFee: frontendShippingFee, ahamoveOrderId: frontendAhamoveOrderId,
     } = body;
-    if (!restaurantId || !cusName || !cusPhone || !cusAddress || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ ok: false, error: 'Missing required fields' });
-    }
-
     const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const now = Date.now();
+
+    // 0. Fetch paymentMode từ canister. 'customer' → bỏ qua Ahamove, customer
+    //    tự đến lấy hàng; 'driver' (default) → flow Ahamove như cũ.
+    //    Phải fetch TRƯỚC khi validate: customer mode ẩn trường cusAddress
+    //    trên UI nên cusAddress luôn rỗng → không require trong customer mode.
+    let paymentMode = 'driver';
+    try {
+      const mode = await canister.getPaymentMode();
+      if (mode === 'customer' || mode === 'driver') {
+        paymentMode = mode;
+      }
+    } catch (e) {
+      console.warn('[create] canister getPaymentMode failed, defaulting to driver:', e.message);
+    }
+
+    // Validate required fields. cusAddress chỉ required khi paymentMode='driver'
+    // (customer mode: khách nhập địa chỉ trong Grab Express, không trong app).
+    if (!restaurantId || !cusName || !cusPhone || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ ok: false, error: 'Missing required fields' });
+    }
+    if (paymentMode === 'driver' && !cusAddress) {
+      return res.status(400).json({ ok: false, error: 'Missing required fields' });
+    }
 
     // Tính tiền (frontend gửi price + vatRate trong items)
     const goodsAmount = items.reduce((s, it) => s + Number(it.price) * Number(it.quantity), 0);
     const taxTotal = Math.round(goodsAmount * VAT_RATE);
     const itemsTotal = goodsAmount + taxTotal;
 
-    // 1. Ahamove create order (v3) — nếu frontend đã gửi ahamoveOrderId thì dùng lại,
-    //    không tạo mới (frontend đã quote + create Ahamove order trước).
+    // 1. Ahamove create order (v3) — chỉ khi paymentMode='driver'.
+    //    Nếu frontend đã gửi ahamoveOrderId thì dùng lại, không tạo mới.
     //    v3 body: service_id (string), path[pickup+drop], items[], payment_method,
     //    order_time (0 = immediate), requests (top-level array if any).
     //    Response: { order_id, status, shared_link, order: { total_fee, ... } }.
@@ -57,25 +76,30 @@ router.post('/order/create', async (req, res, next) => {
     let shippingFee = Number(frontendShippingFee) || 0;
     let sharedLinkFromAhamove = '';
     let bookingStatus = 'confirmed';
-    if (!ahamoveOrderId) {
+    if (paymentMode === 'customer') {
+      // Customer pickup: không gọi Ahamove. Đơn xác nhận ngay, phí ship = 0.
+      ahamoveOrderId = '';
+      shippingFee = 0;
+      sharedLinkFromAhamove = '';
+      bookingStatus = 'confirmed';
+    } else if (!ahamoveOrderId) {
       try {
         const ahBody = {
-          service_id: 'SGN-BIKE',
+          service_id: process.env.AHAMOVE_SERVICE_ID || 'HAN-BIKE',
           order_time: 0,
           payment_method: 'CASH',
           path: [
             {
               name: restaurantId || 'Restaurant',
               mobile: cusPhone,
-              address: cusAddress,
+              address: pickupAddress || '',
               lat: 0,
               lng: 0,
             },
             {
               mobile: cusPhone,
+              name: cusName || 'Khách hàng',
               address: cusAddress,
-              cod: itemsTotal,
-              item_value: itemsTotal,
               lat: 0,
               lng: 0,
             },
@@ -97,11 +121,13 @@ router.post('/order/create', async (req, res, next) => {
           return res.status(502).json({ ok: false, error: 'Ahamove create failed: missing order_id' });
         }
       } catch (e) {
-        console.error('[create] Ahamove createOrder failed:', e.message);
-        return res.status(502).json({ ok: false, error: `Ahamove create failed: ${e.message}` });
+        const ahDetail = e.response&&e.response.data ? JSON.stringify(e.response.data) : e.message; console.error('[create] Ahamove createOrder failed:', ahDetail);
+        return res.status(502).json({ ok: false, error: `Ahamove create failed: ${ahDetail}` });
       }
     }
 
+    // paymentMode='customer': QR chỉ chứa tiền hàng (shippingFee=0).
+    // paymentMode='driver': QR chứa itemsTotal + shippingFee.
     const amount = itemsTotal + shippingFee;
 
     // 2. Tingee generate dynamic QR (spec mới: VA account + bank bin + dynamic-one-time-payment)
@@ -155,6 +181,24 @@ router.post('/order/create', async (req, res, next) => {
       });
     }
 
+    // 3b. Upsert khách hàng vào bảng customers (email là khóa chính).
+    //     Chỉ lưu khi có email; cập nhật tên/SĐT nếu khách đã tồn tại.
+    if (receiverEmail) {
+      db.prepare(`
+        INSERT INTO customers (email, name, phone, created_at, updated_at)
+        VALUES (@email, @name, @phone, @now, @now)
+        ON CONFLICT(email) DO UPDATE SET
+          name = excluded.name,
+          phone = excluded.phone,
+          updated_at = excluded.updated_at
+      `).run({
+        email: receiverEmail,
+        name: cusName || '',
+        phone: cusPhone || '',
+        now,
+      });
+    }
+
     // 4. Push canister createOrder (HMAC). Nếu fail → retry queue xử lý.
     let canisterOk = true;
     let canisterError = undefined;
@@ -184,6 +228,7 @@ router.post('/order/create', async (req, res, next) => {
     res.status(201).json({
       orderId,
       ok: true,
+      pendingSync: !canisterOk,
       error: canisterOk ? undefined : `canister sync pending: ${canisterError}`,
     });
   } catch (e) {

@@ -3,6 +3,7 @@
 // nút Thu hồi. UI tiếng Việt: Quản lý thiết bị, Theo nhà hàng, Theo vai trò.
 
 import { type Device, DeviceRole } from "@/backend";
+import { ActivationCodeForm } from "@/components/ActivationCodeForm";
 import { DeviceTable } from "@/components/DeviceTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -20,14 +23,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  useCleanupExpiredActivations,
   useDevicesByRestaurant,
   useRestaurants,
   useRevokeDevice,
 } from "@/hooks/useQueries";
-import { Loader2, Smartphone } from "lucide-react";
+import {
+  KeyRound,
+  Loader2,
+  ShieldOff,
+  Smartphone,
+  Sparkles,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+function SectionCard({
+  icon: Icon,
+  title,
+  description,
+  children,
+  testId,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  testId: string;
+}) {
+  return (
+    <Card data-ocid={testId}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-display">
+          <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
 type RoleFilter = "all" | DeviceRole;
 
 const ROLE_FILTER_OPTIONS: Array<{ value: RoleFilter; label: string }> = [
@@ -47,10 +83,13 @@ export function DeviceManager() {
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [revokingDeviceId, setRevokingDeviceId] = useState<string | null>(null);
+  const [revokeDeviceId, setRevokeDeviceId] = useState<string>("");
+  const [cleanedCount, setCleanedCount] = useState<bigint | null>(null);
 
   const devicesQuery = useDevicesByRestaurant(selectedRestaurant || undefined);
   const revokeMutation = useRevokeDevice();
-
+  const revokeByIdMutation = useRevokeDevice();
+  const cleanupMutation = useCleanupExpiredActivations();
   const activeRestaurantId =
     selectedRestaurant || restaurants?.[0]?.restaurantId;
   const devices = (devicesQuery.data ?? []).filter((d) =>
@@ -68,6 +107,35 @@ export function DeviceManager() {
       toast.error(message);
     } finally {
       setRevokingDeviceId(null);
+    }
+  }
+
+  async function handleRevokeById(e: React.FormEvent) {
+    e.preventDefault();
+    if (!revokeDeviceId.trim()) {
+      toast.error("Vui lòng nhập mã thiết bị.");
+      return;
+    }
+    try {
+      await revokeByIdMutation.mutateAsync(revokeDeviceId.trim());
+      toast.success("Đã thu hồi thiết bị.");
+      setRevokeDeviceId("");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Không thể thu hồi thiết bị.";
+      toast.error(message);
+    }
+  }
+
+  async function handleCleanup() {
+    try {
+      const count = await cleanupMutation.mutateAsync();
+      setCleanedCount(count);
+      toast.success(`Đã dọn dẹp ${count.toString()} mã hết hạn.`);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Không thể dọn dẹp mã hết hạn.";
+      toast.error(message);
     }
   }
 
@@ -101,8 +169,8 @@ export function DeviceManager() {
             Theo nhà hàng
           </label>
           <Select
-            value={selectedRestaurant}
-            onValueChange={setSelectedRestaurant}
+            value={selectedRestaurant || "all"}
+            onValueChange={(v) => setSelectedRestaurant(v === "all" ? "" : v)}
             disabled={restaurantsLoading}
           >
             <SelectTrigger
@@ -117,7 +185,7 @@ export function DeviceManager() {
               />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="" data-ocid="device.restaurant_option.all">
+              <SelectItem value="all" data-ocid="device.restaurant_option.all">
                 Tất cả nhà hàng
               </SelectItem>
               {restaurants?.map((r) => (
@@ -214,6 +282,95 @@ export function DeviceManager() {
             </CardContent>
           </Card>
         )}
+      </div>
+
+      {/* Tạo mã kích hoạt + Thu hồi + Dọn dẹp mã hết hạn (chuyển từ /admin sang đây) */}
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <SectionCard
+          icon={KeyRound}
+          title="Tạo mã kích hoạt"
+          description="Tạo mã 6 ký tự hợp lệ 15 phút để kích hoạt thiết bị mới."
+          testId="device.activation_card"
+        >
+          <ActivationCodeForm />
+        </SectionCard>
+
+        <SectionCard
+          icon={ShieldOff}
+          title="Thu hồi thiết bị"
+          description="Nhập mã thiết bị để thu hồi quyền truy cập ngay lập tức."
+          testId="device.revoke_by_id_card"
+        >
+          <form
+            onSubmit={handleRevokeById}
+            className="flex flex-col gap-3"
+            data-ocid="device.revoke_form"
+          >
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="revoke-device" className="text-sm font-medium">
+                Mã thiết bị
+              </Label>
+              <Input
+                id="revoke-device"
+                value={revokeDeviceId}
+                onChange={(e) => setRevokeDeviceId(e.target.value)}
+                placeholder="VD: dev-abc123"
+                data-ocid="device.revoke_input"
+              />
+            </div>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={revokeByIdMutation.isPending || !revokeDeviceId.trim()}
+              data-ocid="device.revoke.submit_button"
+              className="w-full sm:w-auto"
+            >
+              {revokeByIdMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <ShieldOff className="h-4 w-4" aria-hidden="true" />
+              )}
+              Thu hồi
+            </Button>
+          </form>
+        </SectionCard>
+
+        <SectionCard
+          icon={Sparkles}
+          title="Dọn dẹp mã hết hạn"
+          description="Xóa các mã kích hoạt đã quá hạn để giải phóng bộ nhớ canister."
+          testId="device.cleanup_card"
+        >
+          <div className="flex flex-col gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCleanup}
+              disabled={cleanupMutation.isPending}
+              data-ocid="device.cleanup.button"
+              className="w-full sm:w-auto"
+            >
+              {cleanupMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+              )}
+              Dọn dẹp
+            </Button>
+            {cleanedCount !== null && (
+              <p
+                className="text-sm text-muted-foreground"
+                data-ocid="device.cleanup.result"
+              >
+                Đã dọn dẹp{" "}
+                <span className="font-semibold text-foreground">
+                  {cleanedCount.toString()}
+                </span>{" "}
+                mã hết hạn.
+              </p>
+            )}
+          </div>
+        </SectionCard>
       </div>
     </section>
   );

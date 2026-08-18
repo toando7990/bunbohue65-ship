@@ -1,16 +1,47 @@
 {
   "version": 3,
-  "mopsTomlDepsHash": "fcdcb5adb3d2395ad66a86185d325da1e11470ff9d796dfb4af167e099dba3e0",
+  "mopsTomlDepsHash": "e3aed16138ba659b8b4effd42d56a1713323b01392735fb1466fab24178a282c",
   "deps": {
     "core": "2.6.1",
-    "caffeineai-authorization": "1.0.0",
+    "caffeineai-authorization": "1.0.1",
     "identity-attributes": "0.4.0",
     "caffeineai-lints": "0.1.0",
     "caffeineai-oql": "0.4.0",
     "json": "1.4.0",
     "xtended-numbers": "0.3.1",
     "base": "0.11.1",
-    "sha2": "0.2.5"
+    "sha2": "0.2.5",
+    "caffeineai-email": "0.1.2"
+  },
+  "graph": {
+    "core@2.6.1": {},
+    "caffeineai-authorization@1.0.1": {
+      "core": "2.5.0",
+      "identity-attributes": "0.4.0"
+    },
+    "core@2.5.0": {},
+    "identity-attributes@0.4.0": {
+      "core": "2.5.0"
+    },
+    "caffeineai-lints@0.1.0": {},
+    "caffeineai-oql@0.4.0": {
+      "core": "2.2.0",
+      "json": "1.4.0"
+    },
+    "core@2.2.0": {},
+    "json@1.4.0": {
+      "xtended-numbers": "0.3.1"
+    },
+    "xtended-numbers@0.3.1": {
+      "base": "0.11.1"
+    },
+    "base@0.11.1": {},
+    "sha2@0.2.5": {
+      "core": "2.5.0"
+    },
+    "caffeineai-email@0.1.2": {
+      "core": "2.2.0"
+    }
   },
   "hashes": {
     "core@2.6.1": {
@@ -72,17 +103,17 @@
       "core@2.6.1/src/pure/RealTimeQueue.mo": "60e1f118e1fd728c64ac769396b2441a3e9be5208051139b3dd652125a81a0cb",
       "core@2.6.1/src/pure/Set.mo": "c8f6f193a4b42b2df65ce8c05d610ccbcdc8befddc72acd44445e7290224373e"
     },
-    "caffeineai-authorization@1.0.0": {
-      "caffeineai-authorization@1.0.0/rules/no-redeclare-assign-caller-user-role.toml": "e8669dfe4931aaa4268682877388255342ce2cb2cdafd21a121ddf22ef42b500",
-      "caffeineai-authorization@1.0.0/README.md": "7df09c051d9943be6cab58bfc0a208425b1d48512ae7f73b898dfed86ec6fd85",
-      "caffeineai-authorization@1.0.0/rules/no-redeclare-is-caller-admin.toml": "10a57bed38437b1db5624f3b7261ee5f5922311b0bd30e01e2007a7edb274946",
-      "caffeineai-authorization@1.0.0/mops.toml": "e55e7d96cf18b684d00309b9fbdd3103ade47795ac06af5dac2bac3da0281a67",
-      "caffeineai-authorization@1.0.0/rules/no-redeclare-internet-identity-sign-in-finish.toml": "c53868c9559c32d72db95f9152b3258e90f8c2f793987d2f6ae2087f317cf433",
-      "caffeineai-authorization@1.0.0/rules/no-redeclare-get-caller-user-role.toml": "934befe7ed91e8b7b8d7e9ec583730cbd2965b5f77354cea2770b709c1558093",
-      "caffeineai-authorization@1.0.0/rules/no-redeclare-internet-identity-sign-in-start.toml": "dda2e25e1baad0b90e897ae3db6206f9f3b66c2feeda4391bfd0bd4d82764036",
-      "caffeineai-authorization@1.0.0/rules/mixin-authorization-included.toml": "57fa6a81594ea8c12e0a3315c36dec4adf718444b8ef70a11cda1aaa1b11624a",
-      "caffeineai-authorization@1.0.0/src/MixinAuthorization.mo": "2fb1834b4f239c9f7eba746cdc3af3359903cb2002caa3e3969683ddf4c2a309",
-      "caffeineai-authorization@1.0.0/src/access-control.mo": "e517d2a028b510d804a633631a15981160def610ea9410dd5a122f92af3c04d8"
+    "caffeineai-authorization@1.0.1": {
+      "caffeineai-authorization@1.0.1/rules/no-redeclare-internet-identity-sign-in-start.toml": "dda2e25e1baad0b90e897ae3db6206f9f3b66c2feeda4391bfd0bd4d82764036",
+      "caffeineai-authorization@1.0.1/mops.toml": "9e1e2de1fb345243a097681d3fe37d1981b958889ca2934eaebab642105591fe",
+      "caffeineai-authorization@1.0.1/rules/mixin-authorization-included.toml": "57fa6a81594ea8c12e0a3315c36dec4adf718444b8ef70a11cda1aaa1b11624a",
+      "caffeineai-authorization@1.0.1/README.md": "7df09c051d9943be6cab58bfc0a208425b1d48512ae7f73b898dfed86ec6fd85",
+      "caffeineai-authorization@1.0.1/rules/no-redeclare-assign-caller-user-role.toml": "e8669dfe4931aaa4268682877388255342ce2cb2cdafd21a121ddf22ef42b500",
+      "caffeineai-authorization@1.0.1/rules/no-redeclare-get-caller-user-role.toml": "934befe7ed91e8b7b8d7e9ec583730cbd2965b5f77354cea2770b709c1558093",
+      "caffeineai-authorization@1.0.1/rules/no-redeclare-is-caller-admin.toml": "10a57bed38437b1db5624f3b7261ee5f5922311b0bd30e01e2007a7edb274946",
+      "caffeineai-authorization@1.0.1/rules/no-redeclare-internet-identity-sign-in-finish.toml": "c53868c9559c32d72db95f9152b3258e90f8c2f793987d2f6ae2087f317cf433",
+      "caffeineai-authorization@1.0.1/src/access-control.mo": "fc5e3a6d16aedd165b16241f6302c8358a997cb3b58635e46533ba8c738f4f40",
+      "caffeineai-authorization@1.0.1/src/MixinAuthorization.mo": "2fb1834b4f239c9f7eba746cdc3af3359903cb2002caa3e3969683ddf4c2a309"
     },
     "identity-attributes@0.4.0": {
       "identity-attributes@0.4.0/src/lib.mo": "dcdf2d82818c4793daed63db051cc99b08a75cef14f696675ef92b0b559ce6b7",
@@ -253,6 +284,12 @@
       "sha2@0.2.5/src/sha256/state/process/blocks/varArray.mo": "c2671d9f101f2bfea564703f89cc6f0f2e74b897805f53952aa850d271d7fc83",
       "sha2@0.2.5/src/sha256/state/process/blocks/leaf.mo": "3625e9ab03e474d711c429493c7808c0627570cf01b9344eae1158e0e3d1f127",
       "sha2@0.2.5/src/sha256/state/process/blocks/merge.mo": "3a665665a830e36ad2a894b847e70d0a24ef9d69dbd4beb776e35b7676618198"
+    },
+    "caffeineai-email@0.1.2": {
+      "caffeineai-email@0.1.2/mops.toml": "0ba3e6424662d5784daaeaf29ab942b3093d6e244633968e018d9673533f548f",
+      "caffeineai-email@0.1.2/src/emailClient.mo": "d2bbc4d88f84564961e7b7cfec1e3d11c8e0e04a6bfffc4c763d642755ce2d4d",
+      "caffeineai-email@0.1.2/README.md": "7bc10bb86dc7b577268d48cdcc2f877ea8cbc15ee9af57199232121ad242159b",
+      "caffeineai-email@0.1.2/src/emailService.mo": "789ff9fe602991267ff872bea66531cce0c7b430c18162e2e2225f5ff9dfdfc5"
     }
   }
 }

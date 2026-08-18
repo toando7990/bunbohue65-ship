@@ -17,6 +17,10 @@ const crypto = require('crypto');
 const shutdown = require('./shutdown');
 
 const ENDPOINT = process.env.BKAV_ENDPOINT || 'https://ws.ehoadon.vn/WSPublicEhoadon.asmx/ExecCommand';
+// Base URL host phục vụ file PDF eHoadon (KHÔNG phải SOAP ExecCommand endpoint).
+// MessLog từ response 816 là path tương đối (vd: /Invoice_View_Demo/C2/3T/...pdf),
+// cần ghép với PDF host này để có URL download đầy đủ.
+const PDF_BASE_URL = process.env.BKAV_PDF_BASE_URL || 'https://stg-ehoadon.vn';
 const PARTNER_GUID = process.env.BKAV_PARTNER_GUID;
 const PARTNER_TOKEN = process.env.BKAV_PARTNER_TOKEN;
 
@@ -525,11 +529,12 @@ async function getInvoicePdf816(orderId) {
     return null;
   }
 
-  // Ghép MessLog với ENDPOINT base URL, xử lý slash khi nối:
-  //   - ENDPOINT có thể kết thúc bằng / hoặc không → strip / ở cuối.
+  // Ghép MessLog với PDF host (KHÔNG phải SOAP ExecCommand endpoint),
+  // xử lý slash khi nối:
+  //   - PDF_BASE_URL có thể kết thúc bằng / hoặc không → strip / ở cuối.
   //   - MessLog có thể bắt đầu bằng / hoặc không → strip / ở đầu.
   // Kết quả luôn có đúng 1 slash giữa base và path.
-  const base = ENDPOINT.replace(/\/$/, '');
+  const base = PDF_BASE_URL.replace(/\/$/, '');
   const path = String(messLog).replace(/^\//, '');
   const pdfUrl = `${base}/${path}`;
 

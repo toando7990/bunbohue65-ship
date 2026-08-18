@@ -47,9 +47,9 @@ export const Result_4 = IDL.Variant({ 'ok' : Device, 'err' : IDL.Text });
 export const MenuItem = IDL.Record({
   'itemId' : IDL.Text,
   'name' : IDL.Text,
-  'imageUrl' : IDL.Text,
   'visible' : IDL.Bool,
   'category' : IDL.Text,
+  'image' : IDL.Vec(IDL.Nat8),
   'price' : IDL.Nat,
   'vatRate' : IDL.Nat,
   'unitName' : IDL.Text,
@@ -78,6 +78,7 @@ export const BookingStatus = IDL.Variant({
   'pending' : IDL.Null,
   'completed' : IDL.Null,
   'shipping' : IDL.Null,
+  'pickedUp' : IDL.Null,
   'confirmed' : IDL.Null,
 });
 export const OrderItem = IDL.Record({
@@ -100,6 +101,7 @@ export const Order = IDL.Record({
   'createdAt' : IDL.Int,
   'taxTotal' : IDL.Nat,
   'ahamoveOrderId' : IDL.Text,
+  'tingeeQrCode' : IDL.Text,
   'shippingFee' : IDL.Nat,
   'invoiceId' : IDL.Text,
   'sharedLink' : IDL.Text,
@@ -147,6 +149,7 @@ export const Result_6 = IDL.Variant({
 });
 export const OrderStatus = IDL.Record({
   'paymentStatus' : PaymentStatus,
+  'tingeeQrCode' : IDL.Text,
   'invoiceId' : IDL.Text,
   'sharedLink' : IDL.Text,
   'bookingStatus' : BookingStatus,
@@ -155,6 +158,12 @@ export const OrderStatus = IDL.Record({
   'invoiceStatus' : InvoiceStatus,
 });
 export const Result_5 = IDL.Variant({ 'ok' : OrderStatus, 'err' : IDL.Text });
+export const StoreHours = IDL.Record({
+  'closeMinute' : IDL.Nat,
+  'closeHour' : IDL.Nat,
+  'openMinute' : IDL.Nat,
+  'openHour' : IDL.Nat,
+});
 export const MenuEntry = IDL.Record({ 'itemId' : IDL.Text, 'menu' : MenuItem });
 export const OrderId = IDL.Text;
 export const OrderEntry = IDL.Record({ 'order' : Order, 'orderId' : OrderId });
@@ -182,7 +191,13 @@ export const UpgradeState = IDL.Record({
   'devices' : IDL.Vec(DeviceEntry),
   'pendingActivations' : IDL.Vec(PendingActivationEntry),
 });
+export const Email = IDL.Text;
+export const SendCodeResult = IDL.Variant({
+  'ok' : IDL.Null,
+  'err' : IDL.Text,
+});
 export const Hmac = IDL.Text;
+export const VerifyResult = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
 
 export const idlService = IDL.Service({
   '_initialize_access_control' : IDL.Func([], [], []),
@@ -190,7 +205,15 @@ export const idlService = IDL.Service({
   '_internet_identity_sign_in_start' : IDL.Func([], [IDL.Vec(IDL.Nat8)], []),
   'activateDevice' : IDL.Func([IDL.Text, DeviceId], [Result_4], []),
   'addItem' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Nat, IDL.Text, IDL.Text],
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Nat,
+        IDL.Text,
+        IDL.Nat,
+        IDL.Text,
+        IDL.Vec(IDL.Nat8),
+      ],
       [Result_2],
       [],
     ),
@@ -220,6 +243,7 @@ export const idlService = IDL.Service({
         IDL.Text,
         IDL.Text,
         IDL.Text,
+        IDL.Text,
       ],
       [Result],
       [],
@@ -238,9 +262,13 @@ export const idlService = IDL.Service({
   'getMenuForRestaurant' : IDL.Func([IDL.Text], [IDL.Vec(MenuItem)], ['query']),
   'getOrder' : IDL.Func([IDL.Text], [Result], []),
   'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
+  'getPaymentMode' : IDL.Func([], [IDL.Text], ['query']),
   'getRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
+  'getStoreHours' : IDL.Func([], [StoreHours], ['query']),
   'getUpgradeState' : IDL.Func([], [UpgradeState], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isEmailVerified' : IDL.Func([Email], [IDL.Bool], ['query']),
+  'isStoreOpen' : IDL.Func([], [IDL.Bool], ['query']),
   'listDevicesByRestaurant' : IDL.Func(
       [RestaurantId],
       [IDL.Vec(Device)],
@@ -249,16 +277,21 @@ export const idlService = IDL.Service({
   'listDevicesByRole' : IDL.Func([DeviceRole], [IDL.Vec(Device)], ['query']),
   'listMenus' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
   'listOrders' : IDL.Func([], [IDL.Vec(Order)], []),
+  'listPaidOrdersForPickup' : IDL.Func([], [IDL.Vec(Order)], []),
   'listPendingPaymentOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
   'listRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
+  'markPickedUp' : IDL.Func([IDL.Text], [Result], []),
   'restoreUpgradeState' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
   'revokeDevice' : IDL.Func([DeviceId], [Result_4], []),
   'schema' : IDL.Func([], [IDL.Text], ['query']),
+  'sendVerificationCode' : IDL.Func([Email], [SendCodeResult], []),
+  'setPaymentMode' : IDL.Func([IDL.Text], [Result_3], []),
   'setRestaurantPriceOverride' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat],
       [Result_3],
       [],
     ),
+  'setStoreHours' : IDL.Func([StoreHours], [Result_3], []),
   'setVpsSecret' : IDL.Func(
       [IDL.Text],
       [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
@@ -278,7 +311,7 @@ export const idlService = IDL.Service({
         IDL.Text,
         IDL.Nat,
         IDL.Text,
-        IDL.Text,
+        IDL.Vec(IDL.Nat8),
         IDL.Bool,
       ],
       [Result_2],
@@ -295,6 +328,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'updateStatus' : IDL.Func([OrderId, BookingStatus, Hmac], [Result], []),
+  'verifyEmailCode' : IDL.Func([Email, IDL.Text], [VerifyResult], []),
 });
 
 export const idlInitArgs = [];
@@ -339,9 +373,9 @@ export const idlFactory = ({ IDL }) => {
   const MenuItem = IDL.Record({
     'itemId' : IDL.Text,
     'name' : IDL.Text,
-    'imageUrl' : IDL.Text,
     'visible' : IDL.Bool,
     'category' : IDL.Text,
+    'image' : IDL.Vec(IDL.Nat8),
     'price' : IDL.Nat,
     'vatRate' : IDL.Nat,
     'unitName' : IDL.Text,
@@ -370,6 +404,7 @@ export const idlFactory = ({ IDL }) => {
     'pending' : IDL.Null,
     'completed' : IDL.Null,
     'shipping' : IDL.Null,
+    'pickedUp' : IDL.Null,
     'confirmed' : IDL.Null,
   });
   const OrderItem = IDL.Record({
@@ -392,6 +427,7 @@ export const idlFactory = ({ IDL }) => {
     'createdAt' : IDL.Int,
     'taxTotal' : IDL.Nat,
     'ahamoveOrderId' : IDL.Text,
+    'tingeeQrCode' : IDL.Text,
     'shippingFee' : IDL.Nat,
     'invoiceId' : IDL.Text,
     'sharedLink' : IDL.Text,
@@ -436,6 +472,7 @@ export const idlFactory = ({ IDL }) => {
   const Result_6 = IDL.Variant({ 'ok' : PendingActivation, 'err' : IDL.Text });
   const OrderStatus = IDL.Record({
     'paymentStatus' : PaymentStatus,
+    'tingeeQrCode' : IDL.Text,
     'invoiceId' : IDL.Text,
     'sharedLink' : IDL.Text,
     'bookingStatus' : BookingStatus,
@@ -444,6 +481,12 @@ export const idlFactory = ({ IDL }) => {
     'invoiceStatus' : InvoiceStatus,
   });
   const Result_5 = IDL.Variant({ 'ok' : OrderStatus, 'err' : IDL.Text });
+  const StoreHours = IDL.Record({
+    'closeMinute' : IDL.Nat,
+    'closeHour' : IDL.Nat,
+    'openMinute' : IDL.Nat,
+    'openHour' : IDL.Nat,
+  });
   const MenuEntry = IDL.Record({ 'itemId' : IDL.Text, 'menu' : MenuItem });
   const OrderId = IDL.Text;
   const OrderEntry = IDL.Record({ 'order' : Order, 'orderId' : OrderId });
@@ -468,7 +511,10 @@ export const idlFactory = ({ IDL }) => {
     'devices' : IDL.Vec(DeviceEntry),
     'pendingActivations' : IDL.Vec(PendingActivationEntry),
   });
+  const Email = IDL.Text;
+  const SendCodeResult = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
   const Hmac = IDL.Text;
+  const VerifyResult = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
   
   return IDL.Service({
     '_initialize_access_control' : IDL.Func([], [], []),
@@ -476,7 +522,15 @@ export const idlFactory = ({ IDL }) => {
     '_internet_identity_sign_in_start' : IDL.Func([], [IDL.Vec(IDL.Nat8)], []),
     'activateDevice' : IDL.Func([IDL.Text, DeviceId], [Result_4], []),
     'addItem' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Nat, IDL.Text, IDL.Text],
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Nat,
+          IDL.Text,
+          IDL.Nat,
+          IDL.Text,
+          IDL.Vec(IDL.Nat8),
+        ],
         [Result_2],
         [],
       ),
@@ -506,6 +560,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Text,
           IDL.Text,
+          IDL.Text,
         ],
         [Result],
         [],
@@ -528,9 +583,13 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getOrder' : IDL.Func([IDL.Text], [Result], []),
     'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
+    'getPaymentMode' : IDL.Func([], [IDL.Text], ['query']),
     'getRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
+    'getStoreHours' : IDL.Func([], [StoreHours], ['query']),
     'getUpgradeState' : IDL.Func([], [UpgradeState], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isEmailVerified' : IDL.Func([Email], [IDL.Bool], ['query']),
+    'isStoreOpen' : IDL.Func([], [IDL.Bool], ['query']),
     'listDevicesByRestaurant' : IDL.Func(
         [RestaurantId],
         [IDL.Vec(Device)],
@@ -539,16 +598,21 @@ export const idlFactory = ({ IDL }) => {
     'listDevicesByRole' : IDL.Func([DeviceRole], [IDL.Vec(Device)], ['query']),
     'listMenus' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
     'listOrders' : IDL.Func([], [IDL.Vec(Order)], []),
+    'listPaidOrdersForPickup' : IDL.Func([], [IDL.Vec(Order)], []),
     'listPendingPaymentOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
     'listRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
+    'markPickedUp' : IDL.Func([IDL.Text], [Result], []),
     'restoreUpgradeState' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
     'revokeDevice' : IDL.Func([DeviceId], [Result_4], []),
     'schema' : IDL.Func([], [IDL.Text], ['query']),
+    'sendVerificationCode' : IDL.Func([Email], [SendCodeResult], []),
+    'setPaymentMode' : IDL.Func([IDL.Text], [Result_3], []),
     'setRestaurantPriceOverride' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Nat],
         [Result_3],
         [],
       ),
+    'setStoreHours' : IDL.Func([StoreHours], [Result_3], []),
     'setVpsSecret' : IDL.Func(
         [IDL.Text],
         [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
@@ -568,7 +632,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Nat,
           IDL.Text,
-          IDL.Text,
+          IDL.Vec(IDL.Nat8),
           IDL.Bool,
         ],
         [Result_2],
@@ -585,6 +649,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateStatus' : IDL.Func([OrderId, BookingStatus, Hmac], [Result], []),
+    'verifyEmailCode' : IDL.Func([Email, IDL.Text], [VerifyResult], []),
   });
 };
 

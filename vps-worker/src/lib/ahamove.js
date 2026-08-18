@@ -258,7 +258,9 @@ async function getOrderTrackingLink(orderId) {
 // completed, cancelled. Mapping:
 //   IDLE → pending, ASSIGNING → pending, ACCEPTED → confirmed,
 //   IN PROCESS → shipping, COMPLETED → completed,
-//   CANCELLED → cancelled. Unknown statuses returned unchanged.
+//   CANCELLED → cancelled. Unknown statuses → null (caller skip canister
+//   updateStatus thay vì truyền uppercase/variant không hợp lệ → canister
+//   decode fail hoặc HMAC mismatch).
 // ============================================================
 function mapAhamoveStatus(status) {
   const s = String(status || '').toUpperCase();
@@ -276,7 +278,7 @@ function mapAhamoveStatus(status) {
     case 'CANCELLED':
       return 'cancelled';
     default:
-      return status;
+      return null;
   }
 }
 

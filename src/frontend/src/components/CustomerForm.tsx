@@ -25,6 +25,10 @@ interface CustomerFormProps {
     value: string,
   ) => void;
   disabled?: boolean;
+  // Khi true: ẩn trường địa chỉ giao hàng và bỏ qua validate địa chỉ.
+  // Dùng cho luồng "khách tự thanh toán" (paymentMode='customer') — khách
+  // không cần nhập địa chỉ vì tự đặt Grab Express để nhận hàng.
+  hideAddress?: boolean;
 }
 
 // Vietnamese phone: 10 digits starting 0 (mobile), or 11 for some landlines.
@@ -34,6 +38,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateCustomerForm(
   v: CustomerFormValues,
+  options: { hideAddress?: boolean } = {},
 ): CustomerFormErrors {
   const errors: CustomerFormErrors = {};
   if (!v.cusName.trim()) errors.cusName = "Vui lòng nhập tên khách hàng.";
@@ -44,23 +49,30 @@ export function validateCustomerForm(
   else if (!PHONE_RE.test(v.cusPhone.trim()))
     errors.cusPhone = "Số điện thoại không hợp lệ (10–11 số, bắt đầu bằng 0).";
 
-  if (!v.cusAddress.trim())
-    errors.cusAddress = "Vui lòng nhập địa chỉ giao hàng.";
-  else if (v.cusAddress.trim().length < 5)
-    errors.cusAddress = "Địa chỉ quá ngắn.";
+  if (!options.hideAddress) {
+    if (!v.cusAddress.trim())
+      errors.cusAddress = "Vui lòng nhập địa chỉ giao hàng.";
+    else if (v.cusAddress.trim().length < 5)
+      errors.cusAddress = "Địa chỉ quá ngắn.";
+  }
 
   // Tax code optional but if provided, validate length (VN MST: 10 or 14 digits).
+  // Skip when hideAddress (customer mode) — field is hidden and will be empty.
   if (
+    !options.hideAddress &&
     v.cusTaxCode.trim() &&
     !/^\d{10}$|^\d{10}-\d{3}$|^\d{14}$/.test(v.cusTaxCode.trim())
   ) {
     errors.cusTaxCode = "Mã số thuế không hợp lệ (10 hoặc 14 số).";
   }
 
-  if (!v.receiverEmail.trim())
-    errors.receiverEmail = "Vui lòng nhập email nhận hoá đơn.";
-  else if (!EMAIL_RE.test(v.receiverEmail.trim()))
-    errors.receiverEmail = "Email không hợp lệ.";
+  // Skip email validation when hideAddress (customer mode) — field is hidden.
+  if (!options.hideAddress) {
+    if (!v.receiverEmail.trim())
+      errors.receiverEmail = "Vui lòng nhập email nhận hoá đơn.";
+    else if (!EMAIL_RE.test(v.receiverEmail.trim()))
+      errors.receiverEmail = "Email không hợp lệ.";
+  }
 
   return errors;
 }
@@ -70,16 +82,18 @@ function Field({
   label,
   hint,
   error,
+  className,
   children,
 }: {
   id: string;
   label: string;
   hint?: string;
   error?: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={cn("flex flex-col gap-1.5", className)}>
       <Label htmlFor={id} className="text-sm font-medium">
         {label}
       </Label>
@@ -104,6 +118,7 @@ export function CustomerForm({
   errors,
   onChange,
   disabled,
+  hideAddress,
 }: CustomerFormProps) {
   const inputClass = (hasError?: string) =>
     cn(
@@ -113,10 +128,15 @@ export function CustomerForm({
 
   return (
     <div
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+      className="grid grid-cols-5 gap-4 sm:grid-cols-2"
       data-ocid="customer_form.panel"
     >
-      <Field id="cus_name" label="Tên khách hàng" error={errors.cusName}>
+      <Field
+        id="cus_name"
+        label="Tên khách hàng"
+        error={errors.cusName}
+        className="col-span-3 sm:col-span-1"
+      >
         <Input
           id="cus_name"
           type="text"
@@ -131,7 +151,12 @@ export function CustomerForm({
         />
       </Field>
 
-      <Field id="cus_phone" label="Số điện thoại" error={errors.cusPhone}>
+      <Field
+        id="cus_phone"
+        label="Số điện thoại"
+        error={errors.cusPhone}
+        className="col-span-2 sm:col-span-1"
+      >
         <Input
           id="cus_phone"
           type="tel"
@@ -147,67 +172,75 @@ export function CustomerForm({
         />
       </Field>
 
-      <div className="sm:col-span-2">
+      {!hideAddress && (
+        <div className="col-span-5 sm:col-span-2">
+          <Field
+            id="cus_address"
+            label="Địa chỉ giao hàng"
+            error={errors.cusAddress}
+            hint="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành."
+          >
+            <Input
+              id="cus_address"
+              type="text"
+              autoComplete="street-address"
+              value={values.cusAddress}
+              onChange={(e) => onChange("cusAddress", e.target.value)}
+              placeholder="123 Lê Lợi, phường Bến Nghé, Q1, TP. HCM"
+              disabled={disabled}
+              aria-invalid={!!errors.cusAddress}
+              data-ocid="customer_form.cus_address_input"
+              className={inputClass(errors.cusAddress)}
+            />
+          </Field>
+        </div>
+      )}
+
+      {!hideAddress && (
         <Field
-          id="cus_address"
-          label="Địa chỉ giao hàng"
-          error={errors.cusAddress}
-          hint="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành."
+          id="cus_tax_code"
+          label="Mã số thuế"
+          hint="Tuỳ chọn — để xuất hoá đơn VAT."
+          error={errors.cusTaxCode}
+          className="col-span-2 sm:col-span-1"
         >
           <Input
-            id="cus_address"
+            id="cus_tax_code"
             type="text"
-            autoComplete="street-address"
-            value={values.cusAddress}
-            onChange={(e) => onChange("cusAddress", e.target.value)}
-            placeholder="123 Lê Lợi, phường Bến Nghé, Q1, TP. HCM"
+            inputMode="numeric"
+            value={values.cusTaxCode}
+            onChange={(e) => onChange("cusTaxCode", e.target.value)}
+            placeholder="0123456789"
             disabled={disabled}
-            aria-invalid={!!errors.cusAddress}
-            data-ocid="customer_form.cus_address_input"
-            className={inputClass(errors.cusAddress)}
+            aria-invalid={!!errors.cusTaxCode}
+            data-ocid="customer_form.cus_tax_code_input"
+            className={inputClass(errors.cusTaxCode)}
           />
         </Field>
-      </div>
+      )}
 
-      <Field
-        id="cus_tax_code"
-        label="Mã số thuế"
-        hint="Tuỳ chọn — để xuất hoá đơn VAT."
-        error={errors.cusTaxCode}
-      >
-        <Input
-          id="cus_tax_code"
-          type="text"
-          inputMode="numeric"
-          value={values.cusTaxCode}
-          onChange={(e) => onChange("cusTaxCode", e.target.value)}
-          placeholder="0123456789"
-          disabled={disabled}
-          aria-invalid={!!errors.cusTaxCode}
-          data-ocid="customer_form.cus_tax_code_input"
-          className={inputClass(errors.cusTaxCode)}
-        />
-      </Field>
-
-      <Field
-        id="receiver_email"
-        label="Email nhận hoá đơn"
-        error={errors.receiverEmail}
-      >
-        <Input
+      {!hideAddress && (
+        <Field
           id="receiver_email"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          value={values.receiverEmail}
-          onChange={(e) => onChange("receiverEmail", e.target.value)}
-          placeholder="khach@example.com"
-          disabled={disabled}
-          aria-invalid={!!errors.receiverEmail}
-          data-ocid="customer_form.receiver_email_input"
-          className={inputClass(errors.receiverEmail)}
-        />
-      </Field>
+          label="Email nhận hoá đơn"
+          error={errors.receiverEmail}
+          className="col-span-3 sm:col-span-1"
+        >
+          <Input
+            id="receiver_email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={values.receiverEmail}
+            onChange={(e) => onChange("receiverEmail", e.target.value)}
+            placeholder="khach@example.com"
+            disabled={disabled}
+            aria-invalid={!!errors.receiverEmail}
+            data-ocid="customer_form.receiver_email_input"
+            className={inputClass(errors.receiverEmail)}
+          />
+        </Field>
+      )}
     </div>
   );
 }

@@ -196,3 +196,84 @@
     @apply bg-destructive/15 text-destructive border-destructive/30;
   }
 }
+
+/* --- Bún Bò Huế 65: theme sơn mài đỏ / vàng hoàng cung cho trang Đặt hàng --- */
+.bbh-order-theme {
+  --background: 0.15 0.02 35;
+  --foreground: 0.94 0.015 70;
+  --card: 0.22 0.03 38;
+  --card-foreground: 0.94 0.015 70;
+  --popover: 0.22 0.03 38;
+  --popover-foreground: 0.94 0.015 70;
+  --primary: 0.55 0.19 25;
+  --primary-foreground: 0.97 0.01 70;
+  --secondary: 0.26 0.03 38;
+  --secondary-foreground: 0.9 0.015 70;
+  --muted: 0.26 0.025 38;
+  --muted-foreground: 0.72 0.02 65;
+  --accent: 0.55 0.19 25;
+  --accent-foreground: 0.97 0.01 70;
+  --destructive: 0.58 0.2 25;
+  --destructive-foreground: 0.97 0.01 25;
+  --border: 0.32 0.03 45;
+  --input: 0.32 0.03 45;
+  --ring: 0.72 0.1 75;
+  --bbh-gold: 0.78 0.11 80;
+}
+
+/* --- Bún Bò Huế 65: theme sáng thân thiện cho màn hình xác nhận email / OTP --- */
+.bbh-verify-theme {
+  --background: 0.975 0.014 75;
+  --foreground: 0.24 0.025 50;
+  --card: 0.99 0.008 75;
+  --card-foreground: 0.24 0.025 50;
+  --popover: 0.99 0.008 75;
+  --popover-foreground: 0.24 0.025 50;
+  --primary: 0.55 0.22 28;
+  --primary-foreground: 0.98 0.008 75;
+  --secondary: 0.94 0.018 75;
+  --secondary-foreground: 0.3 0.025 50;
+  --muted: 0.94 0.015 75;
+  --muted-foreground: 0.5 0.02 50;
+  --accent: 0.55 0.22 28;
+  --accent-foreground: 0.98 0.008 75;
+  --destructive: 0.5 0.22 25;
+  --destructive-foreground: 0.98 0.008 25;
+  --success: 0.55 0.16 150;
+  --success-foreground: 0.98 0.01 150;
+  --warning: 0.72 0.16 70;
+  --warning-foreground: 0.2 0.04 70;
+  --info: 0.5 0.16 245;
+  --info-foreground: 0.98 0.01 245;
+  --border: 0.9 0.016 75;
+  --input: 0.9 0.016 75;
+  --ring: 0.55 0.22 28;
+  --bbh-gold: 0.78 0.11 80;
+  --gradient-primary: linear-gradient(
+    135deg,
+    oklch(0.55 0.22 28),
+    oklch(0.6 0.2 45)
+  );
+  --gradient-subtle: linear-gradient(
+    180deg,
+    oklch(0.99 0.008 75),
+    oklch(0.96 0.015 75)
+  );
+}
+
+@layer utilities {
+  /* OTP 6-ô nhập mã — hộp vuông riêng cho từng ký tự */
+  .otp-input {
+    @apply h-14 w-12 rounded-xl border bg-card text-center font-mono text-2xl font-semibold text-foreground transition-smooth focus:border-primary focus:ring-2 focus:ring-ring/40 outline-none;
+  }
+  .otp-input-filled {
+    @apply border-primary bg-primary/5;
+  }
+  .otp-input-error {
+    @apply border-destructive bg-destructive/5 animate-otp-shake;
+  }
+  /* Trạng thái đã xác nhận thành công */
+  .verify-success-mark {
+    @apply inline-flex h-12 w-12 items-center justify-center rounded-full bg-success/15 text-success;
+  }
+}

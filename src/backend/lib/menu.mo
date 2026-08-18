@@ -14,6 +14,8 @@ module {
   public type Overrides = Map.Map<Text, Map.Map<Text, Nat>>;
 
   // Create a new MenuItem with visible=true and store it in menus.
+  // `image` carries the dish image bytes (Blob) directly into canister state,
+  // replacing the previous VPS-hosted imageUrl string.
   public func addItem(
     menus : Menus,
     itemId : Text,
@@ -22,7 +24,7 @@ module {
     unitName : Text,
     vatRate : Nat,
     category : Text,
-    imageUrl : Text,
+    image : Blob,
   ) : Result.Result<Types.MenuItem, Text> {
     let item : Types.MenuItem = {
       itemId;
@@ -31,7 +33,7 @@ module {
       unitName;
       vatRate;
       category;
-      imageUrl;
+      image;
       visible = true;
     };
     menus.add(itemId, item);
@@ -39,6 +41,8 @@ module {
   };
 
   // Update an existing MenuItem in menus (including visibility).
+  // `image` carries the dish image bytes (Blob) directly into canister state,
+  // replacing the previous VPS-hosted imageUrl string.
   public func updateItem(
     menus : Menus,
     itemId : Text,
@@ -47,7 +51,7 @@ module {
     unitName : Text,
     vatRate : Nat,
     category : Text,
-    imageUrl : Text,
+    image : Blob,
     visible : Bool,
   ) : Result.Result<Types.MenuItem, Text> {
     switch (menus.get(itemId)) {
@@ -60,7 +64,7 @@ module {
           unitName;
           vatRate;
           category;
-          imageUrl;
+          image;
           visible;
         };
         menus.add(itemId, item);

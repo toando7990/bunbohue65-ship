@@ -116,6 +116,7 @@ module {
       case (#pending) "pending";
       case (#confirmed) "confirmed";
       case (#shipping) "shipping";
+      case (#pickedUp) "pickedUp";
       case (#completed) "completed";
       case (#cancelled) "cancelled";
     };

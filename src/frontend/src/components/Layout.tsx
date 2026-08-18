@@ -20,11 +20,9 @@ interface NavItem {
 }
 
 const PRIMARY_NAV: NavItem[] = [
-  { to: "/", label: "Đặt hàng", icon: UtensilsCrossed },
+  { to: "/", label: "Đặt món", icon: UtensilsCrossed },
   { to: "/track", label: "Theo dõi đơn", icon: Truck },
-  { to: "/driver", label: "Thanh toán", icon: ShieldCheck },
 ];
-
 const ADMIN_NAV: NavItem[] = [
   { to: "/admin", label: "Quản lý", icon: ShieldCheck, adminOnly: true },
   {
@@ -50,9 +48,12 @@ const ADMIN_NAV: NavItem[] = [
 
 function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
   const router = useRouterState();
+  // "/" và "/admin" phải khớp CHÍNH XÁC — nếu không, "/admin" sẽ luôn sáng cùng
+  // với mọi route con của nó (/admin/devices, /admin/menu...) vì "/admin/devices"
+  // cũng bắt đầu bằng "/admin".
   const isActive =
-    item.to === "/"
-      ? router.location.pathname === "/"
+    item.to === "/" || item.to === "/admin"
+      ? router.location.pathname === item.to
       : router.location.pathname.startsWith(item.to);
   const Icon = item.icon;
   return (
@@ -71,33 +72,6 @@ function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
       <span className="truncate">{item.label}</span>
     </Link>
-  );
-}
-
-function AdminLoginButton() {
-  const { isAuthenticated, login, clear } = useAuth();
-  if (isAuthenticated) {
-    return (
-      <button
-        type="button"
-        onClick={clear}
-        data-ocid="nav.admin.logout_button"
-        className="flex min-h-[44px] items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-smooth hover:bg-secondary md:min-h-0"
-      >
-        Đăng xuất
-      </button>
-    );
-  }
-  return (
-    <button
-      type="button"
-      onClick={login}
-      data-ocid="nav.admin.login_button"
-      className="flex min-h-[44px] items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-smooth hover:bg-secondary md:min-h-0"
-    >
-      <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-      Đăng nhập II
-    </button>
   );
 }
 
@@ -141,9 +115,7 @@ export function Layout({ children }: { children: ReactNode }) {
               visibleAdminNav.map((item) => (
                 <NavLink key={item.to} item={item} />
               ))}
-            <AdminLoginButton />
           </nav>
-
           <button
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
@@ -177,7 +149,6 @@ export function Layout({ children }: { children: ReactNode }) {
                   onClick={() => setMobileOpen(false)}
                 />
               ))}
-            <AdminLoginButton />
           </nav>
         )}
       </header>

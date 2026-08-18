@@ -1,25 +1,100 @@
-// ImageUpload — multipart upload to VPS /upload, preview + imageUrl display.
-// Used by MenuItemForm. Calls vps-client.uploadImage(formData) → { imageUrl }.
+// ImageUpload — client-side dish image processing with canvas.
+// Resizes to max 800x800 keeping aspect ratio, converts to JPEG quality 85,
+// and steps quality down until the result is under 2 MB. Emits a ProcessedImage
+// (raw JPEG bytes + dataUrl preview) via onChange. No VPS /upload call.
+// Used by MenuItemForm.
 
 import { cn } from "@/lib/utils";
-import { uploadImage } from "@/lib/vps-client";
+import type { ProcessedImage } from "@/types";
 import { ImagePlus, Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface ImageUploadProps {
-  /** Current imageUrl (controlled). Empty string = no image. */
-  value: string;
-  /** Callback with the new imageUrl returned by VPS, or "" when cleared. */
-  onChange: (imageUrl: string) => void;
+  /** Current processed image (controlled). null = no image. */
+  value: ProcessedImage | null;
+  /** Callback with the newly processed image, or null when cleared. */
+  onChange: (image: ProcessedImage | null) => void;
   /** Optional disabled state (e.g. while parent form is submitting). */
   disabled?: boolean;
   /** Optional aria label override. */
   label?: string;
 }
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_DIMENSION = 800; // max width/height, keeping aspect ratio
+const JPEG_QUALITY = 0.85; // initial JPEG quality
+const MAX_BYTES = 2 * 1024 * 1024; // 2 MB hard cap
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+
+// Load a File into an HTMLImageElement via object URL.
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Không đọc được ảnh."));
+    };
+    img.src = url;
+  });
+}
+
+// Draw the image onto a canvas resized to at most MAX_DIMENSION on the longest
+// side, keeping aspect ratio. Returns the canvas.
+function drawScaled(img: HTMLImageElement): HTMLCanvasElement {
+  const scale = Math.min(
+    1,
+    MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight),
+  );
+  const width = Math.max(1, Math.round(img.naturalWidth * scale));
+  const height = Math.max(1, Math.round(img.naturalHeight * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Trình duyệt không hỗ trợ xử lý ảnh.");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas;
+}
+
+// Encode the canvas to JPEG bytes, stepping quality down until under MAX_BYTES.
+async function encodeJpeg(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+  let quality = JPEG_QUALITY;
+  // Try progressively lower quality; bail out at a floor to avoid an infinite loop.
+  while (quality >= 0.4) {
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", quality),
+    );
+    if (blob && blob.size <= MAX_BYTES) {
+      return new Uint8Array(await blob.arrayBuffer());
+    }
+    quality -= 0.1;
+  }
+  throw new Error("Không thể nén ảnh xuống dưới 2 MB.");
+}
+
+// Process a selected File into a ProcessedImage (bytes + dataUrl preview).
+async function processFile(file: File): Promise<ProcessedImage> {
+  const img = await loadImage(file);
+  const canvas = drawScaled(img);
+  const bytes = await encodeJpeg(canvas);
+  const blob = new Blob([bytes as BlobPart], { type: "image/jpeg" });
+  const dataUrl = URL.createObjectURL(blob);
+  return { bytes, dataUrl, sizeBytes: bytes.length };
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
 
 export function ImageUpload({
   value,
@@ -29,12 +104,11 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  const previewSrc = localPreview ?? (value || "");
-  const hasImage = previewSrc.length > 0;
+  const previewSrc = value?.dataUrl ?? null;
+  const hasImage = !!previewSrc;
 
   async function handleFile(file: File) {
     if (!file) return;
@@ -44,36 +118,22 @@ export function ImageUpload({
       });
       return;
     }
-    if (file.size > MAX_BYTES) {
-      toast.error("Ảnh quá lớn", {
-        description: "Kích thước tối đa 5 MB.",
-      });
-      return;
-    }
 
-    // Local preview via object URL (revoked on replace/clear/unmount).
-    const objectUrl = URL.createObjectURL(file);
-    setLocalPreview(objectUrl);
-    setIsUploading(true);
+    setIsProcessing(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file, file.name);
-      const res = await uploadImage(formData);
-      if (!res.ok || !res.imageUrl) {
-        throw new Error(res.error || "VPS không trả về imageUrl");
-      }
-      onChange(res.imageUrl);
-      toast.success("Tải ảnh thành công");
+      const processed = await processFile(file);
+      onChange(processed);
+      toast.success("Ảnh đã xử lý", {
+        description: `${formatBytes(processed.sizeBytes)} · JPEG 800×800 tối đa.`,
+      });
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
-          : "Tải ảnh thất bại. Vui lòng thử lại.";
-      toast.error("Tải ảnh thất bại", { description: message });
-      // Revert local preview on failure.
-      setLocalPreview(null);
+          : "Xử lý ảnh thất bại. Vui lòng thử lại.";
+      toast.error("Xử lý ảnh thất bại", { description: message });
     } finally {
-      setIsUploading(false);
+      setIsProcessing(false);
       // Reset input so the same file can be re-selected.
       if (inputRef.current) inputRef.current.value = "";
     }
@@ -87,15 +147,14 @@ export function ImageUpload({
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragOver(false);
-    if (disabled || isUploading) return;
+    if (disabled || isProcessing) return;
     const file = e.dataTransfer.files?.[0];
     if (file) void handleFile(file);
   }
 
   function handleClear() {
-    if (localPreview) URL.revokeObjectURL(localPreview);
-    setLocalPreview(null);
-    onChange("");
+    if (value?.dataUrl) URL.revokeObjectURL(value.dataUrl);
+    onChange(null);
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -111,7 +170,7 @@ export function ImageUpload({
           data-ocid="image_upload.dropzone"
           onDragOver={(e) => {
             e.preventDefault();
-            if (!disabled && !isUploading) setDragOver(true);
+            if (!disabled && !isProcessing) setDragOver(true);
           }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
@@ -130,7 +189,7 @@ export function ImageUpload({
                 className="h-full w-full object-cover"
                 data-ocid="image_upload.preview"
               />
-              {isUploading && (
+              {isProcessing && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/70">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 </div>
@@ -138,13 +197,13 @@ export function ImageUpload({
             </>
           ) : (
             <div className="flex flex-col items-center gap-1 px-2 text-center text-muted-foreground">
-              {isUploading ? (
+              {isProcessing ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <ImagePlus className="h-6 w-6" />
               )}
               <span className="text-[11px] leading-tight">
-                {isUploading ? "Đang tải…" : "Chưa có ảnh"}
+                {isProcessing ? "Đang xử lý…" : "Chưa có ảnh"}
               </span>
             </div>
           )}
@@ -157,7 +216,7 @@ export function ImageUpload({
             id={inputId}
             type="file"
             accept={ACCEPTED.join(",")}
-            disabled={disabled || isUploading}
+            disabled={disabled || isProcessing}
             onChange={handleInputChange}
             className="sr-only"
             data-ocid="image_upload.input"
@@ -166,15 +225,15 @@ export function ImageUpload({
             htmlFor={inputId}
             className={cn(
               "inline-flex h-9 w-fit cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-smooth hover:bg-accent hover:text-accent-foreground",
-              (disabled || isUploading) && "pointer-events-none opacity-50",
+              (disabled || isProcessing) && "pointer-events-none opacity-50",
             )}
             data-ocid="image_upload.upload_button"
           >
             <UploadCloud className="h-4 w-4" />
-            {hasImage ? "Đổi ảnh" : "Tải ảnh lên"}
+            {hasImage ? "Đổi ảnh" : "Chọn ảnh"}
           </label>
 
-          {hasImage && !isUploading && (
+          {hasImage && !isProcessing && (
             <button
               type="button"
               onClick={handleClear}
@@ -187,17 +246,17 @@ export function ImageUpload({
             </button>
           )}
 
-          {value && !localPreview && (
+          {value && (
             <p
-              className="break-all font-mono text-[11px] text-muted-foreground"
-              data-ocid="image_upload.url"
-              title={value}
+              className="font-mono text-[11px] text-muted-foreground"
+              data-ocid="image_upload.size"
             >
-              {value}
+              {formatBytes(value.sizeBytes)}
             </p>
           )}
           <p className="text-[11px] text-muted-foreground">
-            Kéo thả hoặc chọn ảnh. JPG/PNG/WebP, tối đa 5 MB.
+            Kéo thả hoặc chọn ảnh. Tự động nén về JPEG tối đa 800×800, dưới 2
+            MB.
           </p>
         </div>
       </div>

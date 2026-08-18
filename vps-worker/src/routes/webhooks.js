@@ -325,6 +325,7 @@ function startTingeePoll(db) {
       console.error('[poll/tingee] fatal:', e.message);
     }
   });
+  return task;
 }
 
 module.exports = router;

@@ -1,0 +1,83 @@
+// Mock backend for frontend-only iteration (VITE_USE_MOCK=true).
+// Satisfies the full backendInterface. The email-verification gate accepts any
+// 6-digit OTP so the flow can be exercised end-to-end without a live canister.
+
+import type { backendInterface } from "../backend";
+import { UserRole } from "../backend";
+
+export const mockBackend: backendInterface = {
+  _initialize_access_control: async () => {},
+  _internet_identity_sign_in_finish: async () => ({ __kind__: "ok", ok: null }),
+  _internet_identity_sign_in_start: async () => new Uint8Array(),
+  activateDevice: async () => ({
+    __kind__: "err",
+    err: "Mock: không hỗ trợ kích hoạt thiết bị",
+  }),
+  addItem: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  addRestaurant: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  assignCallerUserRole: async () => {},
+  cancelOrder: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  cleanupExpiredActivations: async () => BigInt(0),
+  createOrder: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  deleteItem: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  deleteRestaurant: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  execute: async () => ({ hasMore: false, rows: [] }),
+  generateActivationCode: async () => ({
+    __kind__: "err",
+    err: "Mock: không hỗ trợ",
+  }),
+  getCallerUserRole: async () => UserRole.user,
+  getCanisterIdText: async () => "mock-canister",
+  getMenu: async () => [],
+  getMenuForRestaurant: async () => [],
+  getOrder: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  getOrderStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  getPaymentMode: async () => "driver",
+  getRestaurants: async () => [],
+  getStoreHours: async () => ({
+    openHour: BigInt(8),
+    openMinute: BigInt(0),
+    closeHour: BigInt(22),
+    closeMinute: BigInt(0),
+  }),
+  getUpgradeState: async () => ({
+    menus: [],
+    orders: [],
+    restaurants: [],
+    restaurantMenuOverrides: [],
+    devices: [],
+    pendingActivations: [],
+  }),
+  isCallerAdmin: async () => false,
+  isEmailVerified: async () => false,
+  isStoreOpen: async () => true,
+  listDevicesByRestaurant: async () => [],
+  listDevicesByRole: async () => [],
+  listMenus: async () => [],
+  listOrders: async () => [],
+  listPendingPaymentOrders: async () => [],
+  listPaidOrdersForPickup: async () => [],
+  listRestaurants: async () => [],
+  markPickedUp: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  restoreUpgradeState: async () => false,
+  revokeDevice: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  schema: async () => "{}",
+  sendVerificationCode: async () => ({ __kind__: "ok", ok: null }),
+  setPaymentMode: async () => ({ __kind__: "ok", ok: null }),
+  setRestaurantPriceOverride: async () => ({
+    __kind__: "err",
+    err: "Mock: không hỗ trợ",
+  }),
+  setStoreHours: async () => ({ __kind__: "ok", ok: null }),
+  setVpsSecret: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  snapshotUpgradeState: async () => new Uint8Array(),
+  updateInvoiceStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  updateItem: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  updatePaymentStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  updateRestaurant: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  updateStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  verifyEmailCode: async (_email, code) =>
+    /^\d{6}$/.test(code)
+      ? { __kind__: "ok", ok: null }
+      : { __kind__: "err", err: "Mã xác nhận không đúng hoặc đã hết hạn." },
+};

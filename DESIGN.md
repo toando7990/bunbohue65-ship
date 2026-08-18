@@ -62,6 +62,17 @@ Mobile-first: 16px base padding, 24px section gaps; admin tables compact 12px ro
 - Forms: labels `text-sm font-medium`, inputs `bg-input rounded-md`, focus ring `ring-primary`
 - QR: centered `bg-card rounded-2xl p-6 shadow-elevated`, code fills 70% viewport on mobile
 
+## Email Verification Gate
+
+Warm-cream light gate (`.bbh-verify-theme`) shown before the menu — blocks ordering until email is confirmed. Centered `bg-card` panel on cream `bg-background`; vermillion primary CTA; brand wordmark + short Vietnamese reassurance copy.
+
+## OTP Component Pattern
+
+- Email field + "Gửi mã xác nhận" primary button; app emails a 6-digit OTP (transactional); resend countdown + "Gửi lại mã" secondary link
+- 6 mono boxes (`.otp-input`): `h-14 w-12 rounded-xl border bg-card text-center font-mono text-2xl`, auto-advance on entry, backspace to previous; filled = `border-primary bg-primary/5`
+- Wrong/expired: `border-destructive bg-destructive/5` + `animate-otp-shake` (`.otp-input-error`), inline error below
+- Success: green `verify-success-mark` (rounded-full `bg-success/15 text-success`) + "Xác nhận thành công", auto-enter menu
+
 ## Motion
 
 - Entrance: fade + 4px rise, 200ms ease-out, staggered for list items

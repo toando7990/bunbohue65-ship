@@ -25,10 +25,11 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
   const [polling, setPolling] = useState(true);
   const [retryTick, setRetryTick] = useState(0);
 
-  // QR chỉ render khi có tingeeQrId thật từ Tingee. Không bao giờ sinh QR giả.
-  const qrReady = !!order.tingeeQrId;
-  const qrValue = order.tingeeQrId ?? "";
-
+  // QR chỉ render khi có tingeeQrCode (chuỗi VietQR EMV thật) từ Tingee.
+  // Không dùng tingeeQrId — đó chỉ là mã định danh nội bộ (qrAccount), không
+  // phải chuỗi QR hợp lệ để app ngân hàng quét thanh toán.
+  const qrReady = !!order.tingeeQrCode;
+  const qrValue = order.tingeeQrCode ?? "";
   // Poll getOrderStatus 5s; tự ẩn khi #paid. Polling vẫn chạy kể cả khi QR chưa
   // sẵn sàng — nếu Tingee generate QR sau (retry), tingeeQrId sẽ có giá trị ở
   // order mới từ parent → qrReady=true → QR thật tự render.
@@ -110,10 +111,12 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
                 className="font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl"
                 data-ocid="qr.amount"
               >
-                {formatVnd(order.amount)}
+                {formatVnd(order.amount - order.shippingFee)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Tiền hàng (không gồm phí ship — phí ship thuộc về Ahamove)
               </p>
             </div>
-
             {/* QR container — dark, high contrast per design preview */}
             <div
               className="rounded-xl bg-foreground p-4 md:p-6"

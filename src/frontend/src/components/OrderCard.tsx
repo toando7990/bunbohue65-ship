@@ -15,6 +15,12 @@ function formatVnd(amount: bigint): string {
   }).format(Number(amount));
 }
 
+// Định dạng đơn giá mỗi món (đồng / đơn vị).
+function formatUnitPrice(price: bigint, unitName: string): string {
+  const base = formatVnd(price);
+  return unitName ? `${base}/${unitName}` : base;
+}
+
 // Rút gọn orderId để hiển thị (giữ 8 ký tự đầu + 4 cuối).
 function shortOrderId(orderId: string): string {
   if (orderId.length <= 16) return orderId;
@@ -70,6 +76,26 @@ export function OrderCard({ order, index }: OrderCardProps) {
         <StatusBadge status={order.bookingStatus as BookingStatus} />
         <StatusBadge status={order.paymentStatus as PaymentStatus} />
       </div>
+
+      <ul className="mt-3 divide-y divide-border border-t border-border">
+        {order.items.map((item, i) => (
+          <li
+            key={item.itemId || i}
+            data-ocid={`order.card.${index}.item.${i + 1}`}
+            className="flex items-baseline justify-between gap-3 py-2 text-sm"
+          >
+            <span className="min-w-0 flex-1 truncate text-foreground">
+              {item.name}
+              <span className="ml-1.5 text-muted-foreground">
+                × {Number(item.quantity)}
+              </span>
+            </span>
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">
+              {formatUnitPrice(item.price, item.unitName)}
+            </span>
+          </li>
+        ))}
+      </ul>
 
       <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
         <span className="text-xs text-muted-foreground">

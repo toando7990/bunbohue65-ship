@@ -1,0 +1,56 @@
+// Domain types for the global store open/close hours configuration.
+//
+// storeHours is a global config controlling when the store accepts orders:
+//   - openHour / openMinute — the time the store opens (24h clock)
+//   - closeHour / closeMinute — the time the store closes (24h clock)
+//
+// The config applies to ALL stores (global only — per-store hours are out of
+// scope). When the current time is outside [open, close), both the driver and
+// customer flows block order placement and show a waiting screen instead of
+// allowing item selection.
+//
+// Persisted across upgrades via a stable `var` + transient wrapper + admin-only
+// setter, mirroring the paymentMode config pattern (see
+// types/payment-mode-config.mo, lib/payment-mode-config.mo and
+// mixins/payment-mode-config-api.mo). The stable `var` is shuttled through
+// preupgrade / postupgrade hooks in main.mo (added by the develop phase) so the
+// transient wrapper's mutations survive upgrades.
+module {
+  /// The global store open/close hours. All fields are on a 24h clock
+  /// (0..23 for hours, 0..59 for minutes).
+  public type StoreHours = {
+    openHour : Nat;
+    openMinute : Nat;
+    closeHour : Nat;
+    closeMinute : Nat;
+  };
+
+  /// Mutable-by-reference state record shared between main.mo and the
+  /// store-hours-config mixin. Wraps the stable `var storeHours` by reference
+  /// so mixin mutations propagate to actor state — same shape as
+  /// PaymentModeConfigTypes.PaymentModeState.
+  public type StoreHoursState = {
+    var storeHours : StoreHours;
+  };
+
+  /// Mutable record that mirrors the stable `var storeHours` in main.mo. The
+  /// preupgrade / postupgrade hooks build a fresh instance from the current
+  /// stable value, hand it to the sync helpers for the copy, then write the
+  /// (possibly mutated) field back to the stable `var`. Motoko passes primitive
+  /// `var` actor fields by value, so the helper cannot mutate the stable var
+  /// directly — this ref record is the by-reference shuttle, same pattern as
+  /// PaymentModeConfigTypes.StablePaymentModeRef.
+  public type StableStoreHoursRef = {
+    var storeHours : StoreHours;
+  };
+
+  /// Default store hours: 00:00–23:59, i.e. effectively always open. Used as
+  /// the migration's initial value so existing order flows are NOT blocked until
+  /// an admin configures real hours on /admin.
+  public let defaultStoreHours : StoreHours = {
+    openHour = 0;
+    openMinute = 0;
+    closeHour = 23;
+    closeMinute = 59;
+  };
+};

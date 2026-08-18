@@ -32,6 +32,30 @@ function isPending(o: Order): boolean {
   return o.paymentStatus === PaymentStatus.unpaid;
 }
 
+// Chỉ hiện đơn tạo trong ngày hôm nay (giờ địa phương của thiết bị).
+function isToday(ns: bigint): boolean {
+  const ms = Number(ns) / 1_000_000;
+  const d = new Date(ms);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+// Mốc tính thời gian chờ: createdAt (thời điểm đặt đơn) — dùng làm mốc gần đúng
+// cho "tài xế nhận đơn", vì Ahamove thường tìm tài xế gần như ngay lập tức.
+const OVERDUE_MINUTES = 60;
+
+function elapsedMinutes(createdAt: bigint): number {
+  const ms = Number(createdAt) / 1_000_000;
+  return (Date.now() - ms) / 60000;
+}
+
+function isOverdue(createdAt: bigint): boolean {
+  return elapsedMinutes(createdAt) > OVERDUE_MINUTES;
+}
 export function PaymentQueue({
   orders,
   isLoading,
@@ -39,10 +63,15 @@ export function PaymentQueue({
   onPay,
   payingOrderId,
 }: PaymentQueueProps) {
-  const pending = orders.filter(isPending);
-  // FIFO: createdAt ascending (cũ nhất trước).
-  const sorted = [...pending].sort((a, b) => Number(a.createdAt - b.createdAt));
-
+  const pending = orders.filter((o) => isPending(o) && isToday(o.createdAt));
+  // Đơn quá hạn (>60 phút) nổi lên đầu; trong cùng nhóm (quá hạn hoặc chưa),
+  // vẫn giữ FIFO — createdAt ascending (cũ nhất trước).
+  const sorted = [...pending].sort((a, b) => {
+    const aOverdue = isOverdue(a.createdAt) ? 0 : 1;
+    const bOverdue = isOverdue(b.createdAt) ? 0 : 1;
+    if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+    return Number(a.createdAt - b.createdAt);
+  });
   return (
     <section
       className="mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8"
@@ -110,15 +139,23 @@ export function PaymentQueue({
         >
           {sorted.map((order, idx) => {
             const isPaying = payingOrderId === order.orderId;
+            const overdue = isOverdue(order.createdAt);
+            const lateMinutes = Math.floor(
+              elapsedMinutes(order.createdAt) - OVERDUE_MINUTES,
+            );
             return (
               <li
                 key={order.orderId}
                 data-ocid={`queue.item.${idx + 1}`}
-                className="rounded-xl border border-border bg-card p-4 shadow-sm transition-smooth hover:shadow-md"
+                className={`rounded-xl border p-4 shadow-sm transition-smooth hover:shadow-md ${
+                  overdue
+                    ? "border-destructive bg-destructive/10 ring-1 ring-destructive/40"
+                    : "border-border bg-card"
+                }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary">
                         #{idx + 1}
                       </span>
@@ -129,6 +166,14 @@ export function PaymentQueue({
                         <Clock className="h-3 w-3" aria-hidden="true" />
                         {formatTime(order.createdAt)}
                       </span>
+                      {overdue && (
+                        <span
+                          className="inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground"
+                          data-ocid={`queue.overdue_badge.${idx + 1}`}
+                        >
+                          Trễ {lateMinutes} phút
+                        </span>
+                      )}
                     </div>
                     <h3 className="mt-2 truncate font-display text-base font-semibold text-foreground">
                       {order.cusName || "Khách vãng lai"}
@@ -141,10 +186,34 @@ export function PaymentQueue({
                         SĐT: {order.cusPhone}
                       </p>
                     )}
+                    {order.items && order.items.length > 0 && (
+                      <ul
+                        className="mt-2 flex flex-col gap-0.5 border-t border-border/60 pt-2"
+                        data-ocid={`queue.item_list.${idx + 1}`}
+                      >
+                        {order.items.map((it) => (
+                          <li
+                            key={it.itemId}
+                            className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground"
+                          >
+                            <span className="truncate">
+                              {it.name} × {Number(it.quantity)}
+                            </span>
+                            <span className="shrink-0 font-mono">
+                              {formatVnd(
+                                BigInt(Number(it.price) * Number(it.quantity)),
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-2">
+                    {/* Chỉ hiện tiền hàng — không gồm phí ship (thuộc về Ahamove,
+                        không phải khoản quán nhận từ tài xế). Khớp với số trên màn QR. */}
                     <span className="font-display text-xl font-bold text-primary">
-                      {formatVnd(order.amount)}
+                      {formatVnd(order.amount - order.shippingFee)}
                     </span>
                     <button
                       type="button"

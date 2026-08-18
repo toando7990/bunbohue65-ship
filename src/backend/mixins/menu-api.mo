@@ -16,6 +16,8 @@ mixin (
   overrides : Map.Map<Text, Map.Map<Text, Nat>>,
 ) {
   // Admin only. Create a new MenuItem with visible=true. Returns the created item.
+  // `image` carries the dish image bytes (Blob) directly into canister state,
+  // replacing the previous VPS-hosted imageUrl string.
   public shared ({ caller }) func addItem(
     itemId : Text,
     name : Text,
@@ -23,15 +25,17 @@ mixin (
     unitName : Text,
     vatRate : Nat,
     category : Text,
-    imageUrl : Text,
+    image : Blob,
   ) : async Result.Result<CoreTypes.MenuItem, Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
     };
-    MenuLib.addItem(menus, itemId, name, price, unitName, vatRate, category, imageUrl);
+    MenuLib.addItem(menus, itemId, name, price, unitName, vatRate, category, image);
   };
 
   // Admin only. Update an existing MenuItem (including visibility). Returns the updated item.
+  // `image` carries the dish image bytes (Blob) directly into canister state,
+  // replacing the previous VPS-hosted imageUrl string.
   public shared ({ caller }) func updateItem(
     itemId : Text,
     name : Text,
@@ -39,13 +43,13 @@ mixin (
     unitName : Text,
     vatRate : Nat,
     category : Text,
-    imageUrl : Text,
+    image : Blob,
     visible : Bool,
   ) : async Result.Result<CoreTypes.MenuItem, Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
     };
-    MenuLib.updateItem(menus, itemId, name, price, unitName, vatRate, category, imageUrl, visible);
+    MenuLib.updateItem(menus, itemId, name, price, unitName, vatRate, category, image, visible);
   };
 
   // Admin only. Delete a MenuItem. Returns success.

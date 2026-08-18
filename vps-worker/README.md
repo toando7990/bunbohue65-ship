@@ -13,7 +13,7 @@ Frontend (React/Caffeine)
    ▼
 VPS Worker (Node.js, project này)
    ├── Express REST API (port 3000)
-   ├── SQLite (orders, order_items, *_logs)
+    ├── SQLite (orders, order_items, customers, *_logs)
    ├── Ahamove API (shipping)
    ├── Tingee API (QR payment)
    ├── Bkav SOAP (eHoadon)
@@ -28,7 +28,7 @@ IC Canister (Motoko, Caffeine)
 ```
 vps-worker/
 ├── package.json
-├── .env.example
+├── .env.example        # KHÔNG commit trong repo — tạo thủ công (xem bước 3)
 ├── .gitignore
 ├── README.md
 └── src/
@@ -44,6 +44,7 @@ vps-worker/
     ├── routes/
     │   ├── quote.js          # POST /order/quote
     │   ├── create.js         # POST /order/create (rate-limit)
+    │   ├── customers.js      # GET /customers/:email + POST /customers (upsert)
     │   ├── webhooks.js       # /webhook/ahamove + /webhook/tingee + poll
     │   ├── invoice.js        # Bkav CreateInvoice + GetInvoicePDF + email
     │   ├── analytics.js      # REST JSON + X-API-Key + HMAC
@@ -74,7 +75,8 @@ npm install --omit=dev
 ### 3. Cấu hình env
 
 ```bash
-cp .env.example .env
+# Lưu ý: file .env.example KHÔNG được commit trong repo.
+# Tạo thủ công file .env dựa trên danh sách env var trong README này:
 nano .env
 # Điền VPS_SECRET (khớp với canister), CANISTER_ID, IC_HOST,
 # AHAMOVE_API_KEY, AHAMOVE_PHONE, AHAMOVE_BASE_URL (optional),
@@ -149,6 +151,8 @@ crontab -e
 | GET | `/health` | Health check | none |
 | POST | `/order/quote` | Quote phí VC + VAT | none |
 | POST | `/order/create` | Tạo đơn (Ahamove + Tingee + canister) | rate-limit |
+| GET | `/customers/:email` | Lấy khách hàng theo email (autofill tên/SĐT) | none |
+| POST | `/customers` | Upsert khách hàng theo email (chỉ tạo, không ghi đè tên/SĐT đã có) | none |
 | POST | `/webhook/ahamove` | Webhook Ahamove | rate-limit + HMAC-SHA256 sig verify |
 | POST | `/webhook/tingee` | Webhook Tingee | rate-limit + HMAC-SHA512 sig verify |
 | GET | `/order/:id/invoice` | Link PDF hóa đơn | none |
@@ -161,6 +165,31 @@ crontab -e
 | GET | `/orders/:id` | Chi tiết đơn | X-API-Key + HMAC |
 | GET | `/orders/:id/status` | Trạng thái đơn | X-API-Key + HMAC |
 | POST | `/menu/upload-image` | Upload ảnh menu (1MB, resize 800x800) | none |
+
+## Luồng tạo đơn (paymentMode)
+
+`POST /order/create` fetch `paymentMode` từ canister (`canister.getPaymentMode()`) trước khi validate. Luồng xử lý khác nhau theo mode:
+
+| Mode | Ahamove | shippingFee | bookingStatus | QR amount |
+|------|---------|-------------|---------------|-----------|
+| `customer` | Bỏ qua (không gọi Ahamove) | `0` | `confirmed` | Chỉ `itemsTotal` |
+| `driver` | Gọi Ahamove createOrder | phí VC | theo Ahamove | `itemsTotal + shippingFee` |
+
+- **`customer` mode**: ẩn yêu cầu `cusAddress`, set `ahamoveOrderId=''`, `shippingFee=0`, `bookingStatus='confirmed'`, QR amount = `itemsTotal` chỉ.
+- **`driver` mode**: giữ nguyên luồng Ahamove hiện có, QR amount = `itemsTotal + shippingFee`.
+- Khi có `receiverEmail`, upsert khách hàng vào bảng `customers` theo email — ghi đè tên/SĐT đã có (ON CONFLICT(email) DO UPDATE SET name=excluded.name, phone=excluded.phone). Chỉ riêng `POST /customers` là create-only (không ghi đè tên/SĐT đã có).
+
+## Bảng customers (SQLite)
+
+| Cột | Kiểu | Mô tả |
+|-----|------|-------|
+| `email` | TEXT PRIMARY KEY | Email khách hàng |
+| `name` | TEXT DEFAULT `''` | Tên khách hàng |
+| `phone` | TEXT DEFAULT `''` | Số điện thoại |
+| `created_at` | INTEGER | Thời điểm tạo (Unix ms) |
+| `updated_at` | INTEGER | Thời điểm cập nhật (Unix ms) |
+
+Dùng cho autofill tên/SĐT khi khách nhập email (`GET /customers/:email`) và upsert create-only (`POST /customers`).
 
 ## HMAC Payloads (phải khớp canister)
 
@@ -183,6 +212,7 @@ Digest = lowercase hex SHA-256 (64 chars).
 | Poll Ahamove | 10s | Backup cho webhook Ahamove |
 | Poll Tingee | 5s | Backup cho webhook Tingee |
 | Invoice | 1 phút | Tạo Bkav invoice cho completed + paid |
+| Unpaid auto-cancel | 1 phút | Tự hủy đơn chưa thanh toán quá 15 phút (canister `listPendingPaymentOrders` + `cancelOrder`) |
 
 ## Tingee API (Dynamic QR Payment)
 
@@ -443,8 +473,9 @@ x-signature = HMAC_SHA512(x-request-timestamp + ":" + requestBody, secret)
 | `AHAMOVE_PHONE` | ✓ | Số điện thoại (body `mobile` khi lấy token) |
 | `AHAMOVE_BASE_URL` | optional | Base URL, default `https://partner-api.ahamove.com`. Staging: `https://partner-apistg.ahamove.com` |
 | `AHAMOVE_WEBHOOK_SECRET` | optional | Secret riêng cho webhook HMAC-SHA256 verification. Nếu không set, fallback sang `AHAMOVE_API_KEY`. Production KHÔNG được bỏ trống. |
+| `AHAMOVE_SERVICE_ID` | optional | Service ID mặc định cho Ahamove create-order, default `HAN-BIKE` |
 
-> **Lưu ý `.env.example`:** ✅ `AHAMOVE_PHONE` đã có trong `.env.example` line 40.
+> **Lưu ý `.env`:** `AHAMOVE_PHONE` là biến môi trường bắt buộc, phải được set thủ công trong file `.env` (file `.env.example` không được commit trong repo).
 
 ## TODO (cần tra cứu docs)
 

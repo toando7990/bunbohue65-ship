@@ -5,6 +5,8 @@ version = "0.1.0"
 [build]
 outputDir = "src/backend/dist"
 args = [ "--release" ]
+check-wasm = true
+check-deploy = true
 
 [canisters.backend]
 main = "src/backend/main.mo"
@@ -28,7 +30,8 @@ args = [ "-E=M0254", "-W=M0235,M0223,M0236,M0237", "-A=M0241", "--default-persis
 
 [dependencies]
 core = "2.6.1"
-caffeineai-authorization = "1.0.0"
+caffeineai-authorization = "1.0.1"
 caffeineai-lints = "0.1.0"
 caffeineai-oql = "0.4.0"
 sha2 = "0.2.5"
+caffeineai-email = "0.1.2"
