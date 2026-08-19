@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "af327fce44737cf1166fb600ddba74f583a9ed57a708ee759bdece32cd3f6400"
     },
+    "connector-slack": {
+      "source": "caffeinelabs/skills",
+      "sourceType": "github",
+      "computedHash": "319aacf657c15355af70cf5b59a324cadb136e081b7cc13172b32e54038648e7"
+    },
     "extension-authorization": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",

@@ -290,6 +290,16 @@ x-signature = HMAC_SHA512(x-request-timestamp + ":" + requestBody, secret)
 | `TINGEE_VA_ACCOUNT_NUMBER` | Tài khoản ảo (`vaAccountNumber`) |
 | `TINGEE_BANK_BIN` | Mã BIN ngân hàng (`bankBin`) |
 | `TINGEE_BASE_URL` | Base URL, optional, default `https://open-api.tingee.vn` |
+| `TINGEE_CLOCK_OFFSET_MS` | Bù clock skew thủ công (ms), default `0`. Dương = VPS chậm hơn Tingee, âm = VPS nhanh hơn Tingee. Áp dụng trước khi chuyển UTC+7. **Giá trị dương bị clamp về `0`** trong `getTingeeTimestamp()` (`Math.min(CLOCK_OFFSET_MS, 0)`) nên không bao giờ đẩy timestamp vào tương lai. |
+| `TINGEE_CLOCK_SAFETY_MS` | Safety margin (ms), default `3000`. Trừ khỏi epoch để timestamp luôn nằm trong QUÁ KHỨ so với server Tingee. Luôn được áp dụng và **chiếm ưu thế tuyệt đối** so với `CLOCK_OFFSET_MS` dương — toàn bộ margin luôn được trừ, nên net offset luôn `<= 0`. |
+
+### Root cause & fix: code 91 'Request expired'
+
+Tingee trả `code=91 'Request expired'` khi `x-request-timestamp` nằm **trong tương lai** so với server Tingee, hoặc **quá cũ** (> 10 phút). VPS clock được NTP-sync và đúng, nên nguyên nhân bền vững nhất của code 91 là **server Tingee chậm hơn vài giây so với thời gian thực** — khi đó timestamp vừa tạo (dựa trên clock VPS đúng) rơi vào tương lai so với server Tingee.
+
+**Fix:** `getTingeeTimestamp()` trừ đi `TINGEE_CLOCK_SAFETY_MS` (default `3000` ms) khỏi epoch trước khi cộng `+7h`, nên timestamp luôn nằm trong quá khứ vài giây (vẫn trong cửa sổ 10 phút). Safety margin **luôn được áp dụng** và **chiếm ưu thế tuyệt đối** so với `CLOCK_OFFSET_MS` dương: `CLOCK_OFFSET_MS` dương bị clamp về `0` (`Math.min(CLOCK_OFFSET_MS, 0)`), còn toàn bộ safety margin luôn được trừ đi, nên net offset luôn `<= 0` và không thể đẩy timestamp vào tương lai gây lỗi. `CLOCK_OFFSET_MS` âm vẫn được áp dụng thêm trên nền margin để tinh chỉnh thủ công nếu cần.
+
+**Chẩn đoán:** khi request thất bại (`code != '00'`), worker log `timestampSent`, `nowUtcIso`, `vnTimeIso`, và `effectiveOffsetMs` (`Math.min(CLOCK_OFFSET_MS, 0) - CLOCK_SAFETY_MS`, luôn `<= 0`) để đo độ lệch thực tế. Không log secret.
 
 ## Ahamove API (VC Shipping)
 
