@@ -38082,7 +38082,7 @@ async function loadEnv() {
 function getEnv() {
   return cachedConfig;
 }
-const PROD_FALLBACK_URL = "http://103.149.170.47:3000";
+const PROD_FALLBACK_URL = "https://proxy.bunbohue65.com";
 function getVpsUrl() {
   const env = getEnv();
   if ((env == null ? void 0 : env.vps_url) && env.vps_url.trim() !== "") {

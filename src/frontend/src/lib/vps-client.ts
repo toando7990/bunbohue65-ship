@@ -30,8 +30,8 @@ import type {
 // In production, when the platform overwrites env.json and drops the custom
 // `vps_url` key (Caffeine's loadConfig() only knows the 5 platform keys), we
 // fall back to the known production proxy URL so the app still boots.
-const DEV_FALLBACK_URL = "http://103.149.170.47:3000";
-const PROD_FALLBACK_URL = "http://103.149.170.47:3000";
+const DEV_FALLBACK_URL = "https://proxy.bunbohue65.com";
+const PROD_FALLBACK_URL = "https://proxy.bunbohue65.com";
 
 // Resolve the VPS base URL at call-time. Throws a catchable Error only when
 // the URL is unavailable in every form (runtime config not yet loaded AND no
