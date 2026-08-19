@@ -138,7 +138,7 @@ router.post('/order/create', async (req, res, next) => {
         qrCodeType: 'dynamic-one-time-payment',
         bankBin: process.env.TINGEE_BANK_BIN,
         amount,
-        purpose: `Bunbohue65 order ${orderId}`,
+        purpose: `Thanh toan DH ${orderId.split('-').pop()}`.replace(/[^a-zA-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(),
         expireInMinute: 15,
       });
       // Response mới: { qrCode, qrAccount, billId, raw }
