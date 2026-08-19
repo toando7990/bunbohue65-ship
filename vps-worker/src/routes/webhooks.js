@@ -282,7 +282,13 @@ function startAhamovePoll(db) {
 
 // Poll Tingee 5s: các order unpaid có tingee_qr_account + tingee_bill_id (spec mới).
 // Fallback: order có tingee_qr_id nhưng thiếu qrAccount/billId → skip + warn.
-function startTingeePoll(db) {
+  function startTingeePoll(db) {
+  // QR Tingee hết hạn sau 15 phút (expireInMinute khi tạo) — sau mốc đó, bill
+  // không còn tồn tại ở phía Tingee nữa (code 1003 "Bill không tồn tại"), nên
+  // polling tiếp chỉ tốn request vô ích và có thể khiến Tingee chặn tốc độ
+  // (code 1001) — ảnh hưởng lây sang cả các request tạo QR mới thật sự cần.
+  // Chỉ polling đơn tạo trong 20 phút gần nhất (15 phút hết hạn + 5 phút dư).
+  const TINGEE_POLL_WINDOW_MS = 20 * 60 * 1000;
   const task = cron.schedule('*/5 * * * * *', async () => {
     if (shutdown.shuttingDown) return;
     try {
@@ -290,11 +296,12 @@ function startTingeePoll(db) {
         `SELECT order_id, amount, tingee_qr_id, tingee_qr_account, tingee_bill_id
          FROM orders
          WHERE payment_status = 'unpaid'
+           AND created_at > ?
            AND (
              (tingee_qr_account != '' AND tingee_bill_id != '')
              OR tingee_qr_id != ''
            )`,
-      ).all();
+      ).all(Date.now() - TINGEE_POLL_WINDOW_MS);
       for (const row of rows) {
         try {
           // Ưu tiên spec mới: cần qrAccount + billId.
