@@ -158,17 +158,17 @@ router.post('/order/create', async (req, res, next) => {
     const insertOrder = db.prepare(`
       INSERT INTO orders (order_id, restaurant_id, cus_name, cus_phone, cus_address, cus_tax_code,
         receiver_email, amount, goods_amount, shipping_fee, tax_total,
-        ahamove_order_id, tingee_qr_id, tingee_qr_account, tingee_bill_id, shared_link,
+        ahamove_order_id, tingee_qr_id, tingee_qr_account, tingee_bill_id, tingee_qr_code, shared_link,
         booking_status, payment_status, invoice_status, canister_synced, created_at, updated_at)
       VALUES (@orderId, @restaurantId, @cusName, @cusPhone, @cusAddress, @cusTaxCode,
         @receiverEmail, @amount, @goodsAmount, @shippingFee, @taxTotal,
-        @ahamoveOrderId, @tingeeQrId, @tingeeQrAccount, @tingeeBillId, @sharedLink,
+        @ahamoveOrderId, @tingeeQrId, @tingeeQrAccount, @tingeeBillId, @tingeeQrCode, @sharedLink,
         @bookingStatus, 'unpaid', 'none', 0, @now, @now)
     `);
     insertOrder.run({
       orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
       receiverEmail: receiverEmail || '', amount, goodsAmount, shippingFee, taxTotal,
-      ahamoveOrderId, tingeeQrId, tingeeQrAccount, tingeeBillId, sharedLink, bookingStatus, now,
+      ahamoveOrderId, tingeeQrId, tingeeQrAccount, tingeeBillId, tingeeQrCode: qr.qrCode, sharedLink, bookingStatus, now,
     });
     const insertItem = db.prepare(`
       INSERT INTO order_items (order_id, item_id, name, price, quantity, unit_name, vat_rate)
@@ -206,7 +206,7 @@ router.post('/order/create', async (req, res, next) => {
       const result = await canister.createOrder({
         orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
         receiverEmail: receiverEmail || '', items, amount, goodsAmount, shippingFee, taxTotal,
-        ahamoveOrderId, tingeeQrId, sharedLink,
+        ahamoveOrderId, tingeeQrId, sharedLink, tingeeQrCode: qr.qrCode,
       });
       if (result?.ok) {
         db.prepare(`UPDATE orders SET canister_synced = 1, updated_at = ? WHERE order_id = ?`)

@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS orders (
   tingee_qr_id        TEXT NOT NULL DEFAULT '',
   tingee_qr_account   TEXT NOT NULL DEFAULT '',   -- account từ generate-dynamic-qr response
   tingee_bill_id      TEXT NOT NULL DEFAULT '',   -- billId từ generate-dynamic-qr response
+  tingee_qr_code      TEXT NOT NULL DEFAULT '',   -- raw VietQR EMV string từ generate-dynamic-qr response
   shared_link         TEXT NOT NULL DEFAULT '',
   invoice_id          TEXT NOT NULL DEFAULT '',
   pdf_url             TEXT NOT NULL DEFAULT '',        -- link PDF hóa đơn từ Bkav (CmdType 816)
@@ -144,6 +145,9 @@ function initSchema(db) {
   }
   if (!colNames.has('tingee_bill_id')) {
     db.exec("ALTER TABLE orders ADD COLUMN tingee_bill_id TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has('tingee_qr_code')) {
+    db.exec("ALTER TABLE orders ADD COLUMN tingee_qr_code TEXT NOT NULL DEFAULT ''");
   }
   if (!colNames.has('pdf_url')) {
     db.exec("ALTER TABLE orders ADD COLUMN pdf_url TEXT NOT NULL DEFAULT ''");

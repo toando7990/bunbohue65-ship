@@ -86,7 +86,7 @@ const IDL_FACTORY = ({ IDL }) => {
     createOrder: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text,
        IDL.Vec(OrderItem), IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat,
-       IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+       IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [ResultOrder], [],
     ),
     updateStatus: IDL.Func(
@@ -143,7 +143,7 @@ async function createOrder(order) {
     })),
     BigInt(amountInt), BigInt(goodsAmountInt),
     BigInt(shippingFeeInt), BigInt(taxTotalInt),
-    order.ahamoveOrderId, order.tingeeQrId, order.sharedLink, hmacSig,
+    order.ahamoveOrderId, order.tingeeQrId, order.sharedLink, order.tingeeQrCode, hmacSig,
   );
   return result; // { ok } | { err }
 }
