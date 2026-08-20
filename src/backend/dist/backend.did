@@ -156,12 +156,14 @@ type Order =
  record {
    ahamoveOrderId: text;
    amount: nat;
+   billId: opt text;
    bookingStatus: BookingStatus;
    createdAt: int;
    cusAddress: text;
    cusName: text;
    cusPhone: text;
    cusTaxCode: text;
+   expireAt: opt nat64;
    goodsAmount: nat;
    invoiceId: text;
    invoiceStatus: InvoiceStatus;
@@ -169,6 +171,7 @@ type Order =
    orderId: text;
    paymentStatus: PaymentStatus;
    pdfUrl: text;
+   qrCode: opt text;
    receiverEmail: text;
    restaurantId: text;
    sharedLink: text;
@@ -308,6 +311,7 @@ service : {
   restoreUpgradeState: ("blob": blob) -> (bool);
   revokeDevice: (deviceId: DeviceId) -> (Result_4);
   schema: () -> (text) query;
+  seedMenuItems: () -> (bool);
   sendVerificationCode: (email: Email) -> (SendCodeResult);
   setPaymentMode: (mode: text) -> (Result_3);
   setRestaurantPriceOverride: (restaurantId: text, itemId: text, price:
@@ -322,6 +326,8 @@ service : {
    invoiceId: text, pdfUrl: text, hmac: Hmac) -> (Result);
   updateItem: (itemId: text, name: text, price: nat, unitName: text, vatRate:
    nat, category: text, image: blob, visible: bool) -> (Result_2);
+  updateOrderQr: (orderId: text, qrCode: opt text, billId: opt text,
+   expireAt: opt nat64, hmac: text) -> (Result);
   updatePaymentStatus: (orderId: OrderId, paymentStatus: PaymentStatus, hmac:
    Hmac) -> (Result);
   updateRestaurant: (restaurantId: text, name: text, address: text, phone:

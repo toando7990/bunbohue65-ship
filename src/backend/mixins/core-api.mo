@@ -81,6 +81,9 @@ mixin (
       tingeeQrCode;
       invoiceId = "";
       pdfUrl = "";
+      billId = null;
+      qrCode = null;
+      expireAt = null;
       createdAt = now;
       updatedAt = now;
     };
@@ -173,6 +176,29 @@ mixin (
       cusAddress = "";
       cusTaxCode = "";
       receiverEmail = "";
+    };
+  };
+
+  // Update an existing order's QR fields (billId, qrCode, expireAt). Invoked by
+  // the VPS worker (POST /order/:id/qr). Idempotent-friendly: it just writes
+  // the given values. Returns #err when the order does not exist. Like the
+  // other VPS mutation endpoints (createOrder, cancelOrder), it verifies an
+  // HMAC over the canonical QR payload so only the VPS worker (which holds the
+  // API key) can write QR state.
+  public shared func updateOrderQr(
+    orderId : Text,
+    qrCode : ?Text,
+    billId : ?Text,
+    expireAt : ?Nat64,
+    hmac : Text,
+  ) : async Result.Result<CoreTypes.Order, Text> {
+    let payload : HmacTypes.Payload = HmacLib.qrPayload(orderId, qrCode, billId, expireAt);
+    if (not HmacLib.verifyHmac(state.secretState.vpsSecret, state.secretState.vpsSecretPrevious, payload, hmac)) {
+      return #err("Invalid HMAC");
+    };
+    switch (CoreLib.updateOrderQr(state, orderId, qrCode, billId, expireAt)) {
+      case null { #err("Order not found") };
+      case (?o) { #ok(o) };
     };
   };
 };

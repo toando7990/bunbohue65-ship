@@ -111,6 +111,7 @@ export const Order = IDL.Record({
   'updatedAt' : IDL.Int,
   'bookingStatus' : BookingStatus,
   'receiverEmail' : IDL.Text,
+  'expireAt' : IDL.Opt(IDL.Nat64),
   'pdfUrl' : IDL.Text,
   'tingeeQrId' : IDL.Text,
   'goodsAmount' : IDL.Nat,
@@ -118,6 +119,8 @@ export const Order = IDL.Record({
   'amount' : IDL.Nat,
   'cusAddress' : IDL.Text,
   'invoiceStatus' : InvoiceStatus,
+  'billId' : IDL.Opt(IDL.Text),
+  'qrCode' : IDL.Opt(IDL.Text),
 });
 export const Result = IDL.Variant({ 'ok' : Order, 'err' : IDL.Text });
 export const Result_3 = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
@@ -284,6 +287,7 @@ export const idlService = IDL.Service({
   'restoreUpgradeState' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
   'revokeDevice' : IDL.Func([DeviceId], [Result_4], []),
   'schema' : IDL.Func([], [IDL.Text], ['query']),
+  'seedMenuItems' : IDL.Func([], [IDL.Bool], []),
   'sendVerificationCode' : IDL.Func([Email], [SendCodeResult], []),
   'setPaymentMode' : IDL.Func([IDL.Text], [Result_3], []),
   'setRestaurantPriceOverride' : IDL.Func(
@@ -315,6 +319,17 @@ export const idlService = IDL.Service({
         IDL.Bool,
       ],
       [Result_2],
+      [],
+    ),
+  'updateOrderQr' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Opt(IDL.Text),
+        IDL.Opt(IDL.Text),
+        IDL.Opt(IDL.Nat64),
+        IDL.Text,
+      ],
+      [Result],
       [],
     ),
   'updatePaymentStatus' : IDL.Func(
@@ -437,6 +452,7 @@ export const idlFactory = ({ IDL }) => {
     'updatedAt' : IDL.Int,
     'bookingStatus' : BookingStatus,
     'receiverEmail' : IDL.Text,
+    'expireAt' : IDL.Opt(IDL.Nat64),
     'pdfUrl' : IDL.Text,
     'tingeeQrId' : IDL.Text,
     'goodsAmount' : IDL.Nat,
@@ -444,6 +460,8 @@ export const idlFactory = ({ IDL }) => {
     'amount' : IDL.Nat,
     'cusAddress' : IDL.Text,
     'invoiceStatus' : InvoiceStatus,
+    'billId' : IDL.Opt(IDL.Text),
+    'qrCode' : IDL.Opt(IDL.Text),
   });
   const Result = IDL.Variant({ 'ok' : Order, 'err' : IDL.Text });
   const Result_3 = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
@@ -605,6 +623,7 @@ export const idlFactory = ({ IDL }) => {
     'restoreUpgradeState' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
     'revokeDevice' : IDL.Func([DeviceId], [Result_4], []),
     'schema' : IDL.Func([], [IDL.Text], ['query']),
+    'seedMenuItems' : IDL.Func([], [IDL.Bool], []),
     'sendVerificationCode' : IDL.Func([Email], [SendCodeResult], []),
     'setPaymentMode' : IDL.Func([IDL.Text], [Result_3], []),
     'setRestaurantPriceOverride' : IDL.Func(
@@ -636,6 +655,17 @@ export const idlFactory = ({ IDL }) => {
           IDL.Bool,
         ],
         [Result_2],
+        [],
+      ),
+    'updateOrderQr' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Opt(IDL.Text),
+          IDL.Opt(IDL.Text),
+          IDL.Opt(IDL.Nat64),
+          IDL.Text,
+        ],
+        [Result],
         [],
       ),
     'updatePaymentStatus' : IDL.Func(

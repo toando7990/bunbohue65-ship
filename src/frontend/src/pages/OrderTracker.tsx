@@ -2,11 +2,13 @@
 // Nút "Theo dõi hành trình" mở Ahamove shared_link. Nút "Tải hoá đơn" tải Bkav
 // PDF qua VPS /order/:id/invoice (vps-client.getInvoice). UI tiếng Việt.
 
+import { QrPayment } from "@/components/QrPayment";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
+import { useGetOrder } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
 import { getInvoice } from "@/lib/vps-client";
-import type { OrderStatus } from "@/types";
+import type { Order, OrderStatus } from "@/types";
 import { BookingStatus, InvoiceStatus, type PaymentStatus } from "@/types";
 import { Link, useParams } from "@tanstack/react-router";
 import {
@@ -88,6 +90,9 @@ export default function OrderTracker() {
     isFetching,
     dataUpdatedAt,
   } = useOrderStatus(orderId);
+  // Full Order (createdAt/amount/billId/qrCode/expireAt) — OrderStatus doesn't
+  // carry these, but QrPayment needs them to render the "Thanh toán" button.
+  const { data: order } = useGetOrder(orderId);
   const [invoiceState, setInvoiceState] = useState<InvoiceState>({
     kind: "idle",
   });
@@ -257,6 +262,7 @@ export default function OrderTracker() {
       {!isLoading && !isError && data && (
         <OrderStatusView
           status={data}
+          order={order}
           lastUpdated={lastUpdated}
           isFetching={isFetching}
           invoiceState={invoiceState}
@@ -269,6 +275,7 @@ export default function OrderTracker() {
 
 interface OrderStatusViewProps {
   status: OrderStatus;
+  order: Order | null | undefined;
   lastUpdated: string;
   isFetching: boolean;
   invoiceState: InvoiceState;
@@ -277,6 +284,7 @@ interface OrderStatusViewProps {
 
 function OrderStatusView({
   status,
+  order,
   lastUpdated,
   isFetching,
   invoiceState,
@@ -330,6 +338,16 @@ function OrderStatusView({
           </div>
         </div>
       </div>
+
+      {/* Thanh toán — hiển thị QR khi đơn chưa thanh toán trong ngày */}
+      {order && (
+        <div
+          className="rounded-lg border border-border bg-card p-5 shadow-sm"
+          data-ocid="order_tracker.payment_panel"
+        >
+          <QrPayment order={order} />
+        </div>
+      )}
 
       {/* Hành trình giao hàng */}
       <div

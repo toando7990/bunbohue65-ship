@@ -1,6 +1,8 @@
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Iter "mo:core/Iter";
+import Nat64 "mo:core/Nat64";
+import Option "mo:core/Option";
 
 import AccessControl "mo:caffeineai-authorization/access-control";
 import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
@@ -14,6 +16,7 @@ import DevicesApi "mixins/devices-api";
 import UpgradeApi "mixins/upgrade-api";
 import SecretApi "mixins/secret-api";
 import MenuApi "mixins/menu-api";
+import MenuSeedApi "mixins/menu-seed-api";
 import EmailVerificationApi "mixins/email-verification-api";
 import PaymentModeConfigApi "mixins/payment-mode-config-api";
 import StoreHoursConfigApi "mixins/store-hours-config-api";
@@ -22,6 +25,7 @@ import CoreLib "lib/core";
 import CoreTypes "types/core";
 import DevicesLib "lib/devices";
 import MenuLib "lib/menu";
+import MenuSeedLib "lib/menu-seed";
 import SecretLib "lib/secret";
 import SecretTypes "types/secret";
 import AccessControlLib "lib/access-control";
@@ -216,6 +220,11 @@ actor Main {
       var storeHours = storeHours;
     };
     StoreHoursConfigLib.syncFromStable(storeHoursState, storeHoursRef);
+
+    // Idempotent menu seed: ensure the 'Dụng cụ đựng đồ ăn' item exists in the
+    // 'Khác' category so the VPS can fetch its unit price when computing quotes.
+    // Runs on every install/upgrade; no-ops when the item already exists.
+    ignore MenuSeedLib.seedMenuItems(menus);
   };
 
   // Core domain state record shared with the core-api mixin. `secretState` is
@@ -243,6 +252,7 @@ actor Main {
   include UpgradeApi(accessControlState, orders, devices, pendingActivations, menus, restaurants, restaurantMenuOverrides);
   include SecretApi(secretState, accessControlState);
   include MenuApi(accessControlState, menus, restaurants, restaurantMenuOverrides);
+  include MenuSeedApi(accessControlState, menus);
   include EmailVerificationApi(otpRecords);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
@@ -345,6 +355,9 @@ actor Main {
           sharedLink = "";
           invoiceId = "";
           pdfUrl = "";
+          billId = null;
+          qrCode = null;
+          expireAt = null;
           createdAt = 0;
           updatedAt = 0;
         },
@@ -371,6 +384,12 @@ actor Main {
         // pdfUrl: URL file PDF hoá đơn điện tử (do VPS lấy qua mã lệnh 818 và
         // đẩy ngược qua updateInvoiceStatus). Rỗng khi chưa có PDF.
         .payload("pdfUrl", func(o : CoreTypes.Order) : Text = o.pdfUrl)
+        // billId / qrCode / expireAt: optional QR fields (order-payment). OQL
+        // manual payloads need a flat value, so options collapse to a sentinel
+        // ("" / 0) when null.
+        .payload("billId", func(o : CoreTypes.Order) : Text = o.billId.get(""))
+        .payload("qrCode", func(o : CoreTypes.Order) : Text = o.qrCode.get(""))
+        .payload("expireAt", func(o : CoreTypes.Order) : Nat = o.expireAt.get(0 : Nat64).toNat())
         .payload("createdAt", func(o : CoreTypes.Order) : Int = o.createdAt)
         .payload("updatedAt", func(o : CoreTypes.Order) : Int = o.updatedAt)
         .controllerOnly()

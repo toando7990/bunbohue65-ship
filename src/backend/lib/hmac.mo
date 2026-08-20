@@ -13,6 +13,7 @@ import Sha256 "mo:sha2/Sha256";
 import Array "mo:core/Array";
 import Map "mo:core/Map";
 import Result "mo:core/Result";
+import Nat64 "mo:core/Nat64";
 import CoreTypes "../types/core";
 import HmacTypes "../types/hmac";
 
@@ -150,6 +151,22 @@ module {
       case (#failed) "failed";
     };
     orderId # "|" # statusText # "|" # invoiceId # "|" # pdfUrl;
+  };
+
+  // Canonical payload for an order QR update (POST /order/:id/qr):
+  //   orderId | qrCode | billId | expireAt
+  // Optional values are encoded as the empty string when null so the payload
+  // is deterministic regardless of which QR fields the VPS worker sends.
+  public func qrPayload(
+    orderId : CoreTypes.OrderId,
+    qrCode : ?Text,
+    billId : ?Text,
+    expireAt : ?Nat64,
+  ) : HmacTypes.Payload {
+    let qr = switch (qrCode) { case (?v) v; case null "" };
+    let bill = switch (billId) { case (?v) v; case null "" };
+    let exp = switch (expireAt) { case (?v) v.toText(); case null "" };
+    orderId # "|" # qr # "|" # bill # "|" # exp;
   };
 
   // Apply a booking-status update to an order in the store. Returns the

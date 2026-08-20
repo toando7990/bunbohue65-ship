@@ -11,6 +11,7 @@ import type {
   InvoiceResponse,
   QuoteRequest,
   QuoteResponse,
+  RequestQrResponse,
 } from "@/types";
 
 // VPS base URL resolution.
@@ -172,6 +173,19 @@ export async function getInvoice(orderId: string): Promise<InvoiceResponse> {
   return vpsFetch<InvoiceResponse>({
     method: "GET",
     path: `/invoice/${encodeURIComponent(orderId)}`,
+  });
+}
+
+// Request a Tingee dynamic QR for an order — VPS POST /order/:id/qr (idempotent).
+// VPS calls tingee.generateDynamicQr, persists qrCode + billId + expireAt via
+// updateOrderQr, and returns the QR. If the existing QR is still valid
+// (now < expireAt) the VPS returns it unchanged (reused=true) without creating
+// a new Tingee bill. The frontend never polls getDynamicQrStatus — it only
+// polls the canister getOrderStatus for payment state.
+export async function requestQr(orderId: string): Promise<RequestQrResponse> {
+  return vpsFetch<RequestQrResponse>({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/qr`,
   });
 }
 

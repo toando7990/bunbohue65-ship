@@ -205,6 +205,7 @@ export interface Order {
     updatedAt: bigint;
     bookingStatus: BookingStatus;
     receiverEmail: string;
+    expireAt?: bigint;
     pdfUrl: string;
     tingeeQrId: string;
     goodsAmount: bigint;
@@ -212,6 +213,8 @@ export interface Order {
     amount: bigint;
     cusAddress: string;
     invoiceStatus: InvoiceStatus;
+    billId?: string;
+    qrCode?: string;
 }
 export interface Device {
     active: boolean;
@@ -336,6 +339,7 @@ export interface backendInterface {
     restoreUpgradeState(blob: Uint8Array): Promise<boolean>;
     revokeDevice(deviceId: DeviceId): Promise<Result_4>;
     schema(): Promise<string>;
+    seedMenuItems(): Promise<boolean>;
     sendVerificationCode(email: Email): Promise<SendCodeResult>;
     setPaymentMode(mode: string): Promise<Result_3>;
     setRestaurantPriceOverride(restaurantId: string, itemId: string, price: bigint): Promise<Result_3>;
@@ -350,6 +354,7 @@ export interface backendInterface {
     snapshotUpgradeState(): Promise<Uint8Array>;
     updateInvoiceStatus(orderId: OrderId, invoiceStatus: InvoiceStatus, invoiceId: string, pdfUrl: string, hmac: Hmac): Promise<Result>;
     updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array, visible: boolean): Promise<Result_2>;
+    updateOrderQr(orderId: string, qrCode: string | null, billId: string | null, expireAt: bigint | null, hmac: string): Promise<Result>;
     updatePaymentStatus(orderId: OrderId, paymentStatus: PaymentStatus, hmac: Hmac): Promise<Result>;
     updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_1>;
     updateStatus(orderId: OrderId, bookingStatus: BookingStatus, hmac: Hmac): Promise<Result>;

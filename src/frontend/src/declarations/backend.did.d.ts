@@ -77,6 +77,7 @@ export interface Order {
   'updatedAt' : bigint,
   'bookingStatus' : BookingStatus,
   'receiverEmail' : string,
+  'expireAt' : [] | [bigint],
   'pdfUrl' : string,
   'tingeeQrId' : string,
   'goodsAmount' : bigint,
@@ -84,6 +85,8 @@ export interface Order {
   'amount' : bigint,
   'cusAddress' : string,
   'invoiceStatus' : InvoiceStatus,
+  'billId' : [] | [string],
+  'qrCode' : [] | [string],
 }
 export interface OrderEntry { 'order' : Order, 'orderId' : OrderId }
 export type OrderId = string;
@@ -249,6 +252,7 @@ export interface _SERVICE {
   'restoreUpgradeState' : ActorMethod<[Uint8Array], boolean>,
   'revokeDevice' : ActorMethod<[DeviceId], Result_4>,
   'schema' : ActorMethod<[], string>,
+  'seedMenuItems' : ActorMethod<[], boolean>,
   'sendVerificationCode' : ActorMethod<[Email], SendCodeResult>,
   'setPaymentMode' : ActorMethod<[string], Result_3>,
   'setRestaurantPriceOverride' : ActorMethod<
@@ -265,6 +269,10 @@ export interface _SERVICE {
   'updateItem' : ActorMethod<
     [string, string, bigint, string, bigint, string, Uint8Array, boolean],
     Result_2
+  >,
+  'updateOrderQr' : ActorMethod<
+    [string, [] | [string], [] | [string], [] | [bigint], string],
+    Result
   >,
   'updatePaymentStatus' : ActorMethod<[OrderId, PaymentStatus, Hmac], Result>,
   'updateRestaurant' : ActorMethod<

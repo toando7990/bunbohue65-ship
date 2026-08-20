@@ -13,6 +13,7 @@ import {
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
   getMenuForRestaurant as getMenuForRestaurantFn,
+  getOrder as getOrderFn,
   getPaymentMode as getPaymentModeFn,
   getStoreHours as getStoreHoursFn,
   isCallerAdmin as isCallerAdminFn,
@@ -45,6 +46,23 @@ export function useOrders() {
     queryKey: ["orders"],
     queryFn: () => (actor ? listOrdersFn(actor) : Promise.resolve([])),
     enabled: !!actor && !isFetching,
+  });
+}
+
+// Fetch a single full Order (includes createdAt/amount/billId/qrCode/expireAt
+// that OrderStatus does not carry). Used by OrderTracker to render QrPayment.
+export function useGetOrder(orderId: string | undefined) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () =>
+      actor && orderId ? getOrderFn(actor, orderId) : Promise.resolve(null),
+    enabled: !!actor && !isFetching && !!orderId,
+    // Poll every 5s so order.paymentStatus (which drives the QrPayment
+    // 'Thanh toán' button) refreshes live after a customer pays while on the
+    // page, matching the useOrderStatus poll. Without this, the button stays
+    // visible until a manual refetch.
+    refetchInterval: 5000,
   });
 }
 

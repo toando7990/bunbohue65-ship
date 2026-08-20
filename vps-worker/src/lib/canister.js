@@ -68,6 +68,9 @@ const IDL_FACTORY = ({ IDL }) => {
     sharedLink: IDL.Text,
     invoiceId: IDL.Text,
     pdfUrl: IDL.Text,
+    billId: IDL.Opt(IDL.Text),
+    qrCode: IDL.Opt(IDL.Text),
+    expireAt: IDL.Opt(IDL.Nat64),
     createdAt: IDL.Int,
     updatedAt: IDL.Int,
   });
@@ -97,6 +100,9 @@ const IDL_FACTORY = ({ IDL }) => {
     ),
     updateInvoiceStatus: IDL.Func(
       [IDL.Text, Order.invoiceStatus, IDL.Text, IDL.Text, IDL.Text], [ResultOrder], [],
+    ),
+    updateOrderQr: IDL.Func(
+      [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text), IDL.Opt(IDL.Nat64), IDL.Text], [ResultOrder], [],
     ),
     listPendingPaymentOrders: IDL.Func([IDL.Text], [IDL.Vec(Order)], ['query']),
     cancelOrder: IDL.Func([IDL.Text, IDL.Text], [ResultOrder], []),
@@ -171,6 +177,19 @@ async function updateInvoiceStatus(orderId, invoiceStatus, invoiceId, pdfUrl) {
   return await actor.updateInvoiceStatus(orderId, { [invoiceStatus]: null }, invoiceId, safePdfUrl, hmacSig);
 }
 
+// updateOrderQr — lưu QR Tingee (qrCode + billId + expireAt) vào đơn.
+// qrCode/billId/expireAt là optional: null → không thay đổi field đó.
+// expireAt là Unix timestamp (giây). HMAC payload: orderId|qrCode|billId|expireAt
+// (null → chuỗi rỗng, expireAt → decimal string), khớp canister HmacLib.qrPayload.
+async function updateOrderQr(orderId, qrCode, billId, expireAt) {
+  const actor = getActor();
+  const hmacSig = hmac.signUpdateOrderQr(VPS_SECRET, orderId, qrCode, billId, expireAt);
+  const qrCodeOpt = qrCode === null || qrCode === undefined ? [] : [qrCode];
+  const billIdOpt = billId === null || billId === undefined ? [] : [billId];
+  const expireAtOpt = expireAt === null || expireAt === undefined ? [] : [BigInt(expireAt)];
+  return await actor.updateOrderQr(orderId, qrCodeOpt, billIdOpt, expireAtOpt, hmacSig);
+}
+
 // getOrderStatus — query (frontend poll 5s có thể gọi trực tiếp canister,
 // nhưng VPS cũng dùng cho reconciliation).
 async function getOrderStatus(orderId) {
@@ -210,6 +229,6 @@ async function getPaymentMode() {
 
 module.exports = {
   getActor, createOrder, updateStatus, updatePaymentStatus,
-  updateInvoiceStatus, getOrderStatus, listPendingPaymentOrders, cancelOrder,
+  updateInvoiceStatus, updateOrderQr, getOrderStatus, listPendingPaymentOrders, cancelOrder,
   getMenuForRestaurant, getPaymentMode,
 };

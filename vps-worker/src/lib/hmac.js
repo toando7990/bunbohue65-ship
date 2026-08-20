@@ -37,10 +37,21 @@ function signUpdateInvoiceStatus(secret, orderId, invoiceStatus, invoiceId, pdfU
   return sign(secret, `${orderId}|${invoiceStatus}|${invoiceId}|${pdfUrl}`);
 }
 
+// updateOrderQr: orderId|qrCode|billId|expireAt
+// qrCode/billId null → chuỗi rỗng; expireAt null → chuỗi rỗng, ngược lại là
+// decimal string (giây). Khớp canister HmacLib.qrPayload.
+function signUpdateOrderQr(secret, orderId, qrCode, billId, expireAt) {
+  const qr = qrCode === null || qrCode === undefined ? '' : String(qrCode);
+  const bill = billId === null || billId === undefined ? '' : String(billId);
+  const exp = expireAt === null || expireAt === undefined ? '' : String(expireAt);
+  return sign(secret, `${orderId}|${qr}|${bill}|${exp}`);
+}
+
 module.exports = {
   sign,
   signCreateOrder,
   signUpdateStatus,
   signUpdatePaymentStatus,
   signUpdateInvoiceStatus,
+  signUpdateOrderQr,
 };

@@ -152,6 +152,12 @@ function initSchema(db) {
   if (!colNames.has('pdf_url')) {
     db.exec("ALTER TABLE orders ADD COLUMN pdf_url TEXT NOT NULL DEFAULT ''");
   }
+  // expire_at: Unix timestamp (giây) khi QR Tingee hết hạn. Dùng cho idempotency
+  // của POST /order/:id/qr — nếu now < expire_at thì trả QR hiện có, không tạo
+  // bill Tingee mới (tránh code=1001 rate limit).
+  if (!colNames.has('expire_at')) {
+    db.exec("ALTER TABLE orders ADD COLUMN expire_at INTEGER");
+  }
 }
 
 // Backup daily: copy DB file (WAL checkpoint) → gzip vào BACKUP_DIR.

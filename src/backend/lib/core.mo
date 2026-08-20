@@ -163,4 +163,26 @@ module {
       };
     };
   };
+
+  // Update an existing order's QR fields (billId, qrCode, expireAt). Called by
+  // the VPS worker via POST /order/:id/qr. Idempotent-friendly: it just writes
+  // the given values (null clears a field). Returns null when the order does
+  // not exist.
+  public func updateOrderQr(state : State, orderId : Text, qrCode : ?Text, billId : ?Text, expireAt : ?Nat64) : ?Order {
+    pruneOldOrders(state);
+    switch (state.orders.get(orderId)) {
+      case null { null };
+      case (?o) {
+        let updated : Order = {
+          o with
+          billId;
+          qrCode;
+          expireAt;
+          updatedAt = Time.now();
+        };
+        state.orders.add(orderId, updated);
+        ?updated;
+      };
+    };
+  };
 };

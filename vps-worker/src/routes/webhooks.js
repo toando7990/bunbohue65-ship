@@ -289,6 +289,14 @@ function startAhamovePoll(db) {
   // (code 1001) — ảnh hưởng lây sang cả các request tạo QR mới thật sự cần.
   // Chỉ polling đơn tạo trong 20 phút gần nhất (15 phút hết hạn + 5 phút dư).
   const TINGEE_POLL_WINDOW_MS = 20 * 60 * 1000;
+  // Backoff khi gặp code 1001 (thao tác quá nhanh / rate limit): tạm ngừng poll
+  // đơn đó trong 60s để không làm Tingee chặn tốc độ lây sang request tạo QR mới.
+  const RATE_LIMIT_BACKOFF_MS = 60 * 1000;
+  // In-memory trạng thái poll: orderId → skipUntilMs (backoff 1001) hoặc
+  // orderId → stopped (1003, bill không tồn tại — ngừng poll vĩnh viễn trong
+  // phiên này). Reset khi worker khởi động lại là chấp nhận được.
+  const backoffUntil = new Map(); // orderId -> ms
+  const stopped = new Set();      // orderId (1003)
   const task = cron.schedule('*/5 * * * * *', async () => {
     if (shutdown.shuttingDown) return;
     try {
@@ -302,17 +310,25 @@ function startAhamovePoll(db) {
              OR tingee_qr_id != ''
            )`,
       ).all(Date.now() - TINGEE_POLL_WINDOW_MS);
+      const now = Date.now();
       for (const row of rows) {
+        // Chỉ poll khi đơn có billId thật (tránh code=1003 'Bill không tồn tại').
+        if (!row.tingee_bill_id) {
+          console.warn('[poll/tingee] skip (missing billId):', row.order_id);
+          continue;
+        }
+        // Đã ngừng poll (1003) hoặc đang backoff (1001) → bỏ qua đơn này.
+        if (stopped.has(row.order_id)) continue;
+        const until = backoffUntil.get(row.order_id);
+        if (until !== undefined && now < until) continue;
         try {
-          // Ưu tiên spec mới: cần qrAccount + billId.
-          if (!row.tingee_qr_account || !row.tingee_bill_id) {
-            console.warn('[poll/tingee] skip (missing qrAccount/billId):', row.order_id);
-            continue;
-          }
           const data = await tingee.getDynamicQrStatus({
             qrAccount: row.tingee_qr_account,
             billId: row.tingee_bill_id,
           });
+          // Thành công → xoá backoff/stopped nếu có.
+          backoffUntil.delete(row.order_id);
+          stopped.delete(row.order_id);
           const billInfo = (data && data.billInfo) || {};
           const statusOk = String(billInfo.status || '').toLowerCase() === 'fully-paid';
           const amountOk = Number(billInfo.totalAmountPaid || 0) >= Number(row.amount || 0);
@@ -325,7 +341,20 @@ function startAhamovePoll(db) {
             } catch (e) { console.warn('[poll/tingee] deleteDynamicQr failed:', e.message); }
           }
         } catch (e) {
-          console.error('[poll/tingee] error:', row.order_id, e.message);
+          const code = e && e.code;
+          if (code === '1001') {
+            // Rate limit → backoff đơn này, không retry ngay trong chu kỳ này.
+            backoffUntil.set(row.order_id, Date.now() + RATE_LIMIT_BACKOFF_MS);
+            console.warn('[poll/tingee] rate limit (1001), backoff:', row.order_id);
+          } else if (code === '1003') {
+            // Bill không tồn tại (hết hạn/bị xoá) → ngừng poll đơn này thay vì
+            // retry cùng billId. Khách bấm 'Thanh toán' lại sẽ tạo QR mới qua
+            // POST /order/:id/qr (idempotent).
+            stopped.add(row.order_id);
+            console.warn('[poll/tingee] bill not found (1003), stop polling:', row.order_id);
+          } else {
+            console.error('[poll/tingee] error:', row.order_id, code, e.message);
+          }
         }
       }
     } catch (e) {

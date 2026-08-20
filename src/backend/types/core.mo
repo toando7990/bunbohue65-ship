@@ -82,6 +82,15 @@ module {
     // Đây là field riêng, KHÔNG phải variant InvoiceStatus mới — giữ #invoiced
     // làm trạng thái đã xuất hoá đơn, pdfUrl chỉ bổ sung URL file PDF.
     pdfUrl : Text;
+    // billId: mã bill Tingee (cần để VPS worker poll getDynamicQrStatus).
+    // Optional — null khi chưa tạo bill QR.
+    billId : ?Text;
+    // qrCode: mã QR thanh toán (VietQR EMV) do VPS worker tạo và đẩy về qua
+    // updateOrderQr. Optional — null khi chưa có QR.
+    qrCode : ?Text;
+    // expireAt: thời điểm hết hạn QR (Unix timestamp, giây). Optional — null
+    // khi chưa có QR.
+    expireAt : ?Nat64;
     createdAt : Int;
     updatedAt : Int;
   };

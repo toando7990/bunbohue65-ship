@@ -88,6 +88,19 @@ export interface CreateOrderResponse {
   pendingSync?: boolean;
 }
 
+// VPS request-QR response — POST /order/:id/qr (idempotent).
+// ok:true → QR hiện có (reused=true) hoặc QR mới vừa tạo (reused=false).
+// ok:false → lỗi tạm thời (retryable=true) hoặc lỗi vĩnh viễn (retryable=false).
+export type RequestQrResponse =
+  | {
+      ok: true;
+      qrCode: string;
+      billId: string;
+      expireAt: number;
+      reused: boolean;
+    }
+  | { ok: false; retryable: boolean; message: string };
+
 // VPS invoice response — Bkav e-invoice PDF/HTML link.
 export interface InvoiceResponse {
   invoiceId: string;

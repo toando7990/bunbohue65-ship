@@ -17,7 +17,6 @@
 const express = require('express');
 const crypto = require('crypto');
 const ahamove = require('../lib/ahamove');
-const tingee = require('../lib/tingee');
 const canister = require('../lib/canister');
 const { rateLimit } = require('../middleware/rate-limit');
 
@@ -130,29 +129,11 @@ router.post('/order/create', async (req, res, next) => {
     // paymentMode='driver': QR chứa itemsTotal + shippingFee.
     const amount = itemsTotal + shippingFee;
 
-    // 2. Tingee generate dynamic QR (spec mới: VA account + bank bin + dynamic-one-time-payment)
-    let tingeeQrId = '', tingeeQrAccount = '', tingeeBillId = '', sharedLink = sharedLinkFromAhamove, qrImage = '';
-    try {
-      const qr = await tingee.generateDynamicQr({
-        vaAccountNumber: process.env.TINGEE_VA_ACCOUNT_NUMBER,
-        qrCodeType: 'dynamic-one-time-payment',
-        bankBin: process.env.TINGEE_BANK_BIN,
-        amount,
-        purpose: `Thanh toan DH ${orderId.split('-').pop()}`.replace(/[^a-zA-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(),
-        expireInMinute: 15,
-      });
-      // Response mới: { qrCode, qrAccount, billId, raw }
-      tingeeQrAccount = qr.qrAccount || '';
-      tingeeBillId = qr.billId || '';
-      // Tương thích ngược: tingee_qr_id = qrAccount (ID mới)
-      tingeeQrId = tingeeQrAccount;
-      // shared_link: ưu tiên raw.shared_link (giữ fallback cũ), fallback qrCode
-      sharedLink = (qr.raw && qr.raw.shared_link) || qr.qrCode || '';
-      qrImage = (qr.raw && qr.raw.qr_image) || qr.qrCode || '';
-    } catch (e) {
-      console.error('[create] Tingee generateQr failed:', e.message);
-      return res.status(201).json({ orderId, ok: false, error: `Tingee QR generation failed: ${e.message}` });
-    }
+    // KHÔNG tạo QR Tingee ở đây nữa. QR động chỉ được tạo khi khách bấm
+    // 'Thanh toán' trên thẻ đơn trong 'Theo dõi đơn' (POST /order/:id/qr).
+    // Các field tingee để trống cho tới khi QR được tạo theo yêu cầu.
+    const tingeeQrId = '', tingeeQrAccount = '', tingeeBillId = '', tingeeQrCode = '';
+    const sharedLink = sharedLinkFromAhamove;
 
     // 3. Lưu SQLite
     const insertOrder = db.prepare(`
@@ -168,7 +149,7 @@ router.post('/order/create', async (req, res, next) => {
     insertOrder.run({
       orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
       receiverEmail: receiverEmail || '', amount, goodsAmount, shippingFee, taxTotal,
-      ahamoveOrderId, tingeeQrId, tingeeQrAccount, tingeeBillId, tingeeQrCode: qr.qrCode, sharedLink, bookingStatus, now,
+      ahamoveOrderId, tingeeQrId, tingeeQrAccount, tingeeBillId, tingeeQrCode, sharedLink, bookingStatus, now,
     });
     const insertItem = db.prepare(`
       INSERT INTO order_items (order_id, item_id, name, price, quantity, unit_name, vat_rate)
@@ -206,7 +187,7 @@ router.post('/order/create', async (req, res, next) => {
       const result = await canister.createOrder({
         orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
         receiverEmail: receiverEmail || '', items, amount, goodsAmount, shippingFee, taxTotal,
-        ahamoveOrderId, tingeeQrId, sharedLink, tingeeQrCode: qr.qrCode,
+        ahamoveOrderId, tingeeQrId, sharedLink, tingeeQrCode,
       });
       if (result?.ok) {
         db.prepare(`UPDATE orders SET canister_synced = 1, updated_at = ? WHERE order_id = ?`)

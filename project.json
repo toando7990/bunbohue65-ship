@@ -1,17 +1,16 @@
 {
-  "overview": "Bunbohue65 Ship is a food-delivery ordering app with driver and customer payment flows, QR payment via Tingee, and a driver pickup queue.",
+  "overview": "Ứng dụng đặt món ăn Bunbohue65 Ship với menu, giỏ hàng và thanh toán QR.",
   "features": [
-    "Order food with driver or customer payment modes",
-    "Pay via Tingee QR code",
-    "Driver pickup queue for paid orders",
-    "Admin panel for store configuration",
-    "Store open/close hours control"
+    "Đặt món ăn từ menu",
+    "Tự động thêm món dụng cụ đựng đồ ăn vào giỏ theo số lượng món chính",
+    "Thanh toán qua mã QR",
+    "Quản lý menu qua trang admin"
   ],
-  "category": "food-delivery",
+  "category": "food-ordering",
   "tags": [
-    "food-delivery",
+    "food",
     "ordering",
-    "payments"
+    "vietnamese"
   ],
-  "last_updated": "2026-08-18T04:47:42.097Z"
+  "last_updated": "2026-08-20T05:11:29.310Z"
 }

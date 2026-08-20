@@ -29,6 +29,38 @@ const BANK_BIN = process.env.TINGEE_BANK_BIN || '';
 const client = axios.create({ baseURL: BASE_URL, timeout: 15000 });
 
 // ------------------------------------------------------------
+// TingeeError — lỗi Tingee có cấu trúc, mang mã lỗi riêng (.code).
+// Trước đây mã lỗi bị nhúng trong chuỗi message ("code=91 ..."), khiến caller
+// phải parse chuỗi để biết loại lỗi. Giờ .code là field riêng, dễ phân loại:
+//   91   Request expired (timestamp quá cũ / trong tương lai)
+//   400  Time Request is invalid
+//   1001 Thao tác quá nhanh (rate limit) — cần backoff
+//   1003 Bill không tồn tại (bill đã hết hạn / bị xoá)
+//   'network' / 'timeout' — lỗi vận chuyển (không phải response Tingee)
+// ------------------------------------------------------------
+class TingeeError extends Error {
+  constructor(code, message, extra = {}) {
+    super(message);
+    this.name = 'TingeeError';
+    this.code = code;
+    this.extra = extra;
+  }
+}
+
+// Phân loại lỗi vận chuyển (axios) thành mã lỗi chuẩn để caller xử lý thống nhất.
+function classifyTransportError(err) {
+  if (err && err.code === 'ECONNABORTED') {
+    return new TingeeError('timeout', 'Tingee request timed out', { cause: err });
+  }
+  if (err && err.response && err.response.data) {
+    const data = err.response.data;
+    const code = data.code !== undefined ? String(data.code) : 'http';
+    return new TingeeError(code, data.message || `Tingee HTTP ${err.response.status}`, { cause: err });
+  }
+  return new TingeeError('network', err && err.message ? err.message : 'Tingee network error', { cause: err });
+}
+
+// ------------------------------------------------------------
 // Clock-offset compensation (ms) cho Tingee.
 // Nếu VPS clock đúng (NTP) và timestamp UTC+7 đúng format mà Tingee vẫn trả
 // code=91 'Request expired', nguyên nhân là clock skew giữa server Tingee và
@@ -124,7 +156,7 @@ async function postSigned(endpoint, payload, action) {
     res = await client.post(endpoint, body, { headers });
   } catch (err) {
     console.error(`[tingee] ${action} ERROR:`, err.message);
-    throw err;
+    throw classifyTransportError(err);
   }
 
   const data = res.data || {};
@@ -177,9 +209,7 @@ async function generateDynamicQr(params = {}) {
   const data = await postSigned('/v1/generate-dynamic-qr', payload, 'generateDynamicQr');
 
   if (data.code !== '00') {
-    throw new Error(
-      `generateDynamicQr failed: code=${data.code} message=${data.message}`
-    );
+    throw new TingeeError(data.code, data.message || 'generateDynamicQr failed');
   }
 
   const inner = data.data || {};
@@ -204,9 +234,7 @@ async function deleteDynamicQr({ qrAccount, billId, merchantId } = {}) {
   const data = await postSigned('/v1/delete-dynamic-qr', payload, 'deleteDynamicQr');
 
   if (data.code !== '00') {
-    throw new Error(
-      `deleteDynamicQr failed: code=${data.code} message=${data.message}`
-    );
+    throw new TingeeError(data.code, data.message || 'deleteDynamicQr failed');
   }
 
   return {
@@ -230,9 +258,7 @@ async function getDynamicQrStatus({ qrAccount, billId, merchantId } = {}) {
   const data = await postSigned('/v1/get-status-dynamic-qr', payload, 'getDynamicQrStatus');
 
   if (data.code !== '00') {
-    throw new Error(
-      `getDynamicQrStatus failed: code=${data.code} message=${data.message}`
-    );
+    throw new TingeeError(data.code, data.message || 'getDynamicQrStatus failed');
   }
 
   const inner = data.data || {};

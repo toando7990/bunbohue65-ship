@@ -23,6 +23,7 @@ const shutdown = require('./lib/shutdown');
 
 const quoteRoutes = require('./routes/quote');
 const createRoutes = require('./routes/create');
+const qrRoutes = require('./routes/qr');
 const webhooksRoutes = require('./routes/webhooks');
 const invoiceRoutes = require('./routes/invoice');
 const analyticsRoutes = require('./routes/analytics');
@@ -61,6 +62,7 @@ app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 // Mount routes
 app.use('/', quoteRoutes);
 app.use('/', createRoutes);
+app.use('/', qrRoutes);
 app.use('/', webhooksRoutes);
 app.use('/', invoiceRoutes);
 app.use('/', uploadRoutes);

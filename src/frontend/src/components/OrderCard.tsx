@@ -1,6 +1,9 @@
 // OrderCard — card tóm tắt đơn hàng: orderId, cusName, amount, status badges.
-// Mobile-first, dùng trong OrderList. Link đến /track/:orderId để xem chi tiết.
+// Mobile-first, dùng trong OrderList. Phần nội dung bấm được nằm trong <Link>
+// đến /track/:orderId; footer chứa <QrPayment> (nút "Thanh toán" / QR / badge).
+// Card là <div> bọc ngoài để tránh thẻ tương tác lồng nhau (Link chứa button).
 
+import { QrPayment } from "@/components/QrPayment";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { BookingStatus, Order, PaymentStatus } from "@/types";
 import { Link } from "@tanstack/react-router";
@@ -35,77 +38,85 @@ export interface OrderCardProps {
 
 export function OrderCard({ order, index }: OrderCardProps) {
   return (
-    <Link
-      to="/track/$orderId"
-      params={{ orderId: order.orderId }}
+    <div
       data-ocid={`order.card.${index}`}
-      className="group block rounded-lg border border-border bg-card p-4 shadow-sm transition-smooth hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-smooth hover:border-primary/40 hover:shadow-md"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <Receipt
-              className="h-4 w-4 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span
-              className="truncate font-mono text-xs text-muted-foreground"
-              title={order.orderId}
-            >
-              {shortOrderId(order.orderId)}
-            </span>
-          </div>
-          <h3 className="mt-1 truncate font-display text-base font-semibold text-foreground">
-            {order.cusName || "Khách vãng lai"}
-          </h3>
-          {order.cusPhone && (
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">
-              {order.cusPhone}
-            </p>
-          )}
-        </div>
-        <div className="text-right">
-          <p className="font-display text-base font-semibold text-foreground">
-            {formatVnd(order.amount)}
-          </p>
-          <p className="text-xs text-muted-foreground">Tổng cộng</p>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        <StatusBadge status={order.bookingStatus as BookingStatus} />
-        <StatusBadge status={order.paymentStatus as PaymentStatus} />
-      </div>
-
-      <ul className="mt-3 divide-y divide-border border-t border-border">
-        {order.items.map((item, i) => (
-          <li
-            key={item.itemId || i}
-            data-ocid={`order.card.${index}.item.${i + 1}`}
-            className="flex items-baseline justify-between gap-3 py-2 text-sm"
-          >
-            <span className="min-w-0 flex-1 truncate text-foreground">
-              {item.name}
-              <span className="ml-1.5 text-muted-foreground">
-                × {Number(item.quantity)}
+      <Link
+        to="/track/$orderId"
+        params={{ orderId: order.orderId }}
+        className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Receipt
+                className="h-4 w-4 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span
+                className="truncate font-mono text-xs text-muted-foreground"
+                title={order.orderId}
+              >
+                {shortOrderId(order.orderId)}
               </span>
-            </span>
-            <span className="shrink-0 font-mono text-xs text-muted-foreground">
-              {formatUnitPrice(item.price, item.unitName)}
-            </span>
-          </li>
-        ))}
-      </ul>
+            </div>
+            <h3 className="mt-1 truncate font-display text-base font-semibold text-foreground">
+              {order.cusName || "Khách vãng lai"}
+            </h3>
+            {order.cusPhone && (
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                {order.cusPhone}
+              </p>
+            )}
+          </div>
+          <div className="text-right">
+            <p className="font-display text-base font-semibold text-foreground">
+              {formatVnd(order.amount)}
+            </p>
+            <p className="text-xs text-muted-foreground">Tổng cộng</p>
+          </div>
+        </div>
 
-      <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-        <span className="text-xs text-muted-foreground">
-          {order.items.length} mặt hàng
-        </span>
-        <span className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-smooth group-hover:gap-2">
-          Xem chi tiết
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </span>
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <StatusBadge status={order.bookingStatus as BookingStatus} />
+          <StatusBadge status={order.paymentStatus as PaymentStatus} />
+        </div>
+
+        <ul className="mt-3 divide-y divide-border border-t border-border">
+          {order.items.map((item, i) => (
+            <li
+              key={item.itemId || i}
+              data-ocid={`order.card.${index}.item.${i + 1}`}
+              className="flex items-baseline justify-between gap-3 py-2 text-sm"
+            >
+              <span className="min-w-0 flex-1 truncate text-foreground">
+                {item.name}
+                <span className="ml-1.5 text-muted-foreground">
+                  × {Number(item.quantity)}
+                </span>
+              </span>
+              <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                {formatUnitPrice(item.price, item.unitName)}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+          <span className="text-xs text-muted-foreground">
+            {order.items.length} mặt hàng
+          </span>
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-smooth group-hover:gap-2">
+            Xem chi tiết
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </span>
+        </div>
+      </Link>
+
+      <div className="mt-3 border-t border-border pt-3">
+        <QrPayment order={order} />
       </div>
-    </Link>
+    </div>
   );
 }

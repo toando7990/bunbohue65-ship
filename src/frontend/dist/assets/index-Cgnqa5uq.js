@@ -36153,13 +36153,16 @@ const Order = Record({
   "updatedAt": Int,
   "bookingStatus": BookingStatus$1,
   "receiverEmail": Text,
+  "expireAt": Opt(Nat64),
   "pdfUrl": Text,
   "tingeeQrId": Text,
   "goodsAmount": Nat,
   "items": Vec(OrderItem),
   "amount": Nat,
   "cusAddress": Text,
-  "invoiceStatus": InvoiceStatus$1
+  "invoiceStatus": InvoiceStatus$1,
+  "billId": Opt(Text),
+  "qrCode": Opt(Text)
 });
 const Result = Variant({ "ok": Order, "err": Text });
 const Result_3 = Variant({ "ok": Null, "err": Text });
@@ -36325,6 +36328,7 @@ Service({
   "restoreUpgradeState": Func([Vec(Nat8)], [Bool], []),
   "revokeDevice": Func([DeviceId], [Result_4], []),
   "schema": Func([], [Text], ["query"]),
+  "seedMenuItems": Func([], [Bool], []),
   "sendVerificationCode": Func([Email], [SendCodeResult], []),
   "setPaymentMode": Func([Text], [Result_3], []),
   "setRestaurantPriceOverride": Func(
@@ -36356,6 +36360,17 @@ Service({
       Bool
     ],
     [Result_2],
+    []
+  ),
+  "updateOrderQr": Func(
+    [
+      Text,
+      Opt(Text),
+      Opt(Text),
+      Opt(Nat64),
+      Text
+    ],
+    [Result],
     []
   ),
   "updatePaymentStatus": Func(
@@ -36475,13 +36490,16 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "updatedAt": IDL2.Int,
     "bookingStatus": BookingStatus2,
     "receiverEmail": IDL2.Text,
+    "expireAt": IDL2.Opt(IDL2.Nat64),
     "pdfUrl": IDL2.Text,
     "tingeeQrId": IDL2.Text,
     "goodsAmount": IDL2.Nat,
     "items": IDL2.Vec(OrderItem2),
     "amount": IDL2.Nat,
     "cusAddress": IDL2.Text,
-    "invoiceStatus": InvoiceStatus2
+    "invoiceStatus": InvoiceStatus2,
+    "billId": IDL2.Opt(IDL2.Text),
+    "qrCode": IDL2.Opt(IDL2.Text)
   });
   const Result2 = IDL2.Variant({ "ok": Order2, "err": IDL2.Text });
   const Result_32 = IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text });
@@ -36642,6 +36660,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "restoreUpgradeState": IDL2.Func([IDL2.Vec(IDL2.Nat8)], [IDL2.Bool], []),
     "revokeDevice": IDL2.Func([DeviceId2], [Result_42], []),
     "schema": IDL2.Func([], [IDL2.Text], ["query"]),
+    "seedMenuItems": IDL2.Func([], [IDL2.Bool], []),
     "sendVerificationCode": IDL2.Func([Email2], [SendCodeResult2], []),
     "setPaymentMode": IDL2.Func([IDL2.Text], [Result_32], []),
     "setRestaurantPriceOverride": IDL2.Func(
@@ -36675,6 +36694,17 @@ const idlFactory = ({ IDL: IDL2 }) => {
       [Result_22],
       []
     ),
+    "updateOrderQr": IDL2.Func(
+      [
+        IDL2.Text,
+        IDL2.Opt(IDL2.Text),
+        IDL2.Opt(IDL2.Text),
+        IDL2.Opt(IDL2.Nat64),
+        IDL2.Text
+      ],
+      [Result2],
+      []
+    ),
     "updatePaymentStatus": IDL2.Func(
       [OrderId2, PaymentStatus2, Hmac2],
       [Result2],
@@ -36689,6 +36719,17 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "verifyEmailCode": IDL2.Func([Email2, IDL2.Text], [VerifyResult2], [])
   });
 };
+function candid_some(value) {
+  return [
+    value
+  ];
+}
+function candid_none() {
+  return [];
+}
+function record_opt_to_undefined(arg) {
+  return arg == null ? void 0 : arg;
+}
 var BookingStatus = /* @__PURE__ */ ((BookingStatus2) => {
   BookingStatus2["cancelled"] = "cancelled";
   BookingStatus2["pending"] = "pending";
@@ -36867,70 +36908,70 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.deleteItem(arg0);
-        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.deleteItem(arg0);
-      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
     }
   }
   async deleteRestaurant(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.deleteRestaurant(arg0);
-        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.deleteRestaurant(arg0);
-      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
     }
   }
   async execute(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.execute(arg0);
-        return from_candid_Result__1_n29(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result__1_n31(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.execute(arg0);
-      return from_candid_Result__1_n29(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result__1_n31(this._uploadFile, this._downloadFile, result);
     }
   }
   async generateActivationCode(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg1));
-        return from_candid_Result_6_n39(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n39(this._uploadFile, this._downloadFile, arg1));
+        return from_candid_Result_6_n41(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg1));
-      return from_candid_Result_6_n39(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n39(this._uploadFile, this._downloadFile, arg1));
+      return from_candid_Result_6_n41(this._uploadFile, this._downloadFile, result);
     }
   }
   async getCallerUserRole() {
     if (this.processError) {
       try {
         const result = await this.actor.getCallerUserRole();
-        return from_candid_UserRole_n43(this._uploadFile, this._downloadFile, result);
+        return from_candid_UserRole_n45(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getCallerUserRole();
-      return from_candid_UserRole_n43(this._uploadFile, this._downloadFile, result);
+      return from_candid_UserRole_n45(this._uploadFile, this._downloadFile, result);
     }
   }
   async getCanisterIdText() {
@@ -36993,14 +37034,14 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.getOrderStatus(arg0);
-        return from_candid_Result_5_n45(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_5_n47(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getOrderStatus(arg0);
-      return from_candid_Result_5_n45(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_5_n47(this._uploadFile, this._downloadFile, result);
     }
   }
   async getPaymentMode() {
@@ -37049,14 +37090,14 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.getUpgradeState();
-        return from_candid_UpgradeState_n49(this._uploadFile, this._downloadFile, result);
+        return from_candid_UpgradeState_n51(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getUpgradeState();
-      return from_candid_UpgradeState_n49(this._uploadFile, this._downloadFile, result);
+      return from_candid_UpgradeState_n51(this._uploadFile, this._downloadFile, result);
     }
   }
   async isCallerAdmin() {
@@ -37105,28 +37146,28 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.listDevicesByRestaurant(arg0);
-        return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n62(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listDevicesByRestaurant(arg0);
-      return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n62(this._uploadFile, this._downloadFile, result);
     }
   }
   async listDevicesByRole(arg0) {
     if (this.processError) {
       try {
-        const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg0));
-        return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n39(this._uploadFile, this._downloadFile, arg0));
+        return from_candid_vec_n62(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n37(this._uploadFile, this._downloadFile, arg0));
-      return from_candid_vec_n60(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n39(this._uploadFile, this._downloadFile, arg0));
+      return from_candid_vec_n62(this._uploadFile, this._downloadFile, result);
     }
   }
   async listMenus() {
@@ -37147,42 +37188,42 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.listOrders();
-        return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n63(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listOrders();
-      return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n63(this._uploadFile, this._downloadFile, result);
     }
   }
   async listPaidOrdersForPickup() {
     if (this.processError) {
       try {
         const result = await this.actor.listPaidOrdersForPickup();
-        return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n63(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listPaidOrdersForPickup();
-      return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n63(this._uploadFile, this._downloadFile, result);
     }
   }
   async listPendingPaymentOrders(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.listPendingPaymentOrders(arg0);
-        return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n63(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listPendingPaymentOrders(arg0);
-      return from_candid_vec_n61(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n63(this._uploadFile, this._downloadFile, result);
     }
   }
   async listRestaurants() {
@@ -37255,74 +37296,88 @@ class Backend {
       return result;
     }
   }
+  async seedMenuItems() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.seedMenuItems();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.seedMenuItems();
+      return result;
+    }
+  }
   async sendVerificationCode(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.sendVerificationCode(arg0);
-        return from_candid_SendCodeResult_n62(this._uploadFile, this._downloadFile, result);
+        return from_candid_SendCodeResult_n64(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.sendVerificationCode(arg0);
-      return from_candid_SendCodeResult_n62(this._uploadFile, this._downloadFile, result);
+      return from_candid_SendCodeResult_n64(this._uploadFile, this._downloadFile, result);
     }
   }
   async setPaymentMode(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.setPaymentMode(arg0);
-        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.setPaymentMode(arg0);
-      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
     }
   }
   async setRestaurantPriceOverride(arg0, arg1, arg2) {
     if (this.processError) {
       try {
         const result = await this.actor.setRestaurantPriceOverride(arg0, arg1, arg2);
-        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.setRestaurantPriceOverride(arg0, arg1, arg2);
-      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
     }
   }
   async setStoreHours(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.setStoreHours(arg0);
-        return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.setStoreHours(arg0);
-      return from_candid_Result_3_n27(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
     }
   }
   async setVpsSecret(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.setVpsSecret(arg0);
-        return from_candid_variant_n28(this._uploadFile, this._downloadFile, result);
+        return from_candid_variant_n30(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.setVpsSecret(arg0);
-      return from_candid_variant_n28(this._uploadFile, this._downloadFile, result);
+      return from_candid_variant_n30(this._uploadFile, this._downloadFile, result);
     }
   }
   async snapshotUpgradeState() {
@@ -37342,14 +37397,14 @@ class Backend {
   async updateInvoiceStatus(arg0, arg1, arg2, arg3, arg4) {
     if (this.processError) {
       try {
-        const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n63(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
+        const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n65(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
         return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n63(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
+      const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n65(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
       return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
     }
   }
@@ -37367,17 +37422,31 @@ class Backend {
       return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
     }
   }
-  async updatePaymentStatus(arg0, arg1, arg2) {
+  async updateOrderQr(arg0, arg1, arg2, arg3, arg4) {
     if (this.processError) {
       try {
-        const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n65(this._uploadFile, this._downloadFile, arg1), arg2);
+        const result = await this.actor.updateOrderQr(arg0, to_candid_opt_n67(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n67(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n68(this._uploadFile, this._downloadFile, arg3), arg4);
         return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n65(this._uploadFile, this._downloadFile, arg1), arg2);
+      const result = await this.actor.updateOrderQr(arg0, to_candid_opt_n67(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n67(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n68(this._uploadFile, this._downloadFile, arg3), arg4);
+      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async updatePaymentStatus(arg0, arg1, arg2) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n69(this._uploadFile, this._downloadFile, arg1), arg2);
+        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n69(this._uploadFile, this._downloadFile, arg1), arg2);
       return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
     }
   }
@@ -37398,14 +37467,14 @@ class Backend {
   async updateStatus(arg0, arg1, arg2) {
     if (this.processError) {
       try {
-        const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n67(this._uploadFile, this._downloadFile, arg1), arg2);
+        const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n71(this._uploadFile, this._downloadFile, arg1), arg2);
         return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n67(this._uploadFile, this._downloadFile, arg1), arg2);
+      const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n71(this._uploadFile, this._downloadFile, arg1), arg2);
       return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
     }
   }
@@ -37413,25 +37482,25 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.verifyEmailCode(arg0, arg1);
-        return from_candid_VerifyResult_n69(this._uploadFile, this._downloadFile, result);
+        return from_candid_VerifyResult_n73(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.verifyEmailCode(arg0, arg1);
-      return from_candid_VerifyResult_n69(this._uploadFile, this._downloadFile, result);
+      return from_candid_VerifyResult_n73(this._uploadFile, this._downloadFile, result);
     }
   }
 }
 function from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n24(_uploadFile, _downloadFile, value);
 }
-function from_candid_Cell_n33(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n34(_uploadFile, _downloadFile, value);
+function from_candid_Cell_n35(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n36(_uploadFile, _downloadFile, value);
 }
-function from_candid_DeviceEntry_n55(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n56(_uploadFile, _downloadFile, value);
+function from_candid_DeviceEntry_n57(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n58(_uploadFile, _downloadFile, value);
 }
 function from_candid_DeviceRole_n9(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n10(_uploadFile, _downloadFile, value);
@@ -37442,14 +37511,14 @@ function from_candid_Device_n7(_uploadFile, _downloadFile, value) {
 function from_candid_Error_n3(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n4(_uploadFile, _downloadFile, value);
 }
-function from_candid_InvoiceStatus_n25(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n26(_uploadFile, _downloadFile, value);
+function from_candid_InvoiceStatus_n26(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n27(_uploadFile, _downloadFile, value);
 }
-function from_candid_OrderEntry_n52(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n53(_uploadFile, _downloadFile, value);
+function from_candid_OrderEntry_n54(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n55(_uploadFile, _downloadFile, value);
 }
-function from_candid_OrderStatus_n47(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n48(_uploadFile, _downloadFile, value);
+function from_candid_OrderStatus_n49(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n50(_uploadFile, _downloadFile, value);
 }
 function from_candid_Order_n19(_uploadFile, _downloadFile, value) {
   return from_candid_record_n20(_uploadFile, _downloadFile, value);
@@ -37457,11 +37526,11 @@ function from_candid_Order_n19(_uploadFile, _downloadFile, value) {
 function from_candid_PaymentStatus_n21(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n22(_uploadFile, _downloadFile, value);
 }
-function from_candid_PendingActivationEntry_n58(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n59(_uploadFile, _downloadFile, value);
+function from_candid_PendingActivationEntry_n60(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n61(_uploadFile, _downloadFile, value);
 }
-function from_candid_PendingActivation_n41(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n42(_uploadFile, _downloadFile, value);
+function from_candid_PendingActivation_n43(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n44(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result_1_n13(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n14(_uploadFile, _downloadFile, value);
@@ -37469,41 +37538,47 @@ function from_candid_Result_1_n13(_uploadFile, _downloadFile, value) {
 function from_candid_Result_2_n11(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n12(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_3_n27(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n28(_uploadFile, _downloadFile, value);
+function from_candid_Result_3_n29(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n30(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result_4_n5(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n6(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_5_n45(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n46(_uploadFile, _downloadFile, value);
+function from_candid_Result_5_n47(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n48(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_6_n39(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n40(_uploadFile, _downloadFile, value);
+function from_candid_Result_6_n41(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n42(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result_7_n1(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n2(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result__1_n29(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n30(_uploadFile, _downloadFile, value);
+function from_candid_Result__1_n31(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n32(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result_n17(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n18(_uploadFile, _downloadFile, value);
 }
-function from_candid_SendCodeResult_n62(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n28(_uploadFile, _downloadFile, value);
+function from_candid_SendCodeResult_n64(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n30(_uploadFile, _downloadFile, value);
 }
-function from_candid_UpgradeState_n49(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n50(_uploadFile, _downloadFile, value);
+function from_candid_UpgradeState_n51(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n52(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n43(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n44(_uploadFile, _downloadFile, value);
+function from_candid_UserRole_n45(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n46(_uploadFile, _downloadFile, value);
 }
-function from_candid_Value_n35(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n36(_uploadFile, _downloadFile, value);
+function from_candid_Value_n37(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n38(_uploadFile, _downloadFile, value);
 }
-function from_candid_VerifyResult_n69(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n28(_uploadFile, _downloadFile, value);
+function from_candid_VerifyResult_n73(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n30(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n25(_uploadFile, _downloadFile, value) {
+  return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n28(_uploadFile, _downloadFile, value) {
+  return value.length === 0 ? null : value[0];
 }
 function from_candid_record_n20(_uploadFile, _downloadFile, value) {
   return {
@@ -37523,28 +37598,31 @@ function from_candid_record_n20(_uploadFile, _downloadFile, value) {
     updatedAt: value.updatedAt,
     bookingStatus: from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value.bookingStatus),
     receiverEmail: value.receiverEmail,
+    expireAt: record_opt_to_undefined(from_candid_opt_n25(_uploadFile, _downloadFile, value.expireAt)),
     pdfUrl: value.pdfUrl,
     tingeeQrId: value.tingeeQrId,
     goodsAmount: value.goodsAmount,
     items: value.items,
     amount: value.amount,
     cusAddress: value.cusAddress,
-    invoiceStatus: from_candid_InvoiceStatus_n25(_uploadFile, _downloadFile, value.invoiceStatus)
+    invoiceStatus: from_candid_InvoiceStatus_n26(_uploadFile, _downloadFile, value.invoiceStatus),
+    billId: record_opt_to_undefined(from_candid_opt_n28(_uploadFile, _downloadFile, value.billId)),
+    qrCode: record_opt_to_undefined(from_candid_opt_n28(_uploadFile, _downloadFile, value.qrCode))
   };
 }
-function from_candid_record_n30(_uploadFile, _downloadFile, value) {
+function from_candid_record_n32(_uploadFile, _downloadFile, value) {
   return {
     hasMore: value.hasMore,
-    rows: from_candid_vec_n31(_uploadFile, _downloadFile, value.rows)
+    rows: from_candid_vec_n33(_uploadFile, _downloadFile, value.rows)
   };
 }
-function from_candid_record_n34(_uploadFile, _downloadFile, value) {
+function from_candid_record_n36(_uploadFile, _downloadFile, value) {
   return {
-    value: from_candid_Value_n35(_uploadFile, _downloadFile, value.value),
+    value: from_candid_Value_n37(_uploadFile, _downloadFile, value.value),
     name: value.name
   };
 }
-function from_candid_record_n42(_uploadFile, _downloadFile, value) {
+function from_candid_record_n44(_uploadFile, _downloadFile, value) {
   return {
     expiresAt: value.expiresAt,
     code: value.code,
@@ -37554,7 +37632,7 @@ function from_candid_record_n42(_uploadFile, _downloadFile, value) {
     restaurantId: value.restaurantId
   };
 }
-function from_candid_record_n48(_uploadFile, _downloadFile, value) {
+function from_candid_record_n50(_uploadFile, _downloadFile, value) {
   return {
     paymentStatus: from_candid_PaymentStatus_n21(_uploadFile, _downloadFile, value.paymentStatus),
     tingeeQrCode: value.tingeeQrCode,
@@ -37563,35 +37641,35 @@ function from_candid_record_n48(_uploadFile, _downloadFile, value) {
     bookingStatus: from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value.bookingStatus),
     pdfUrl: value.pdfUrl,
     tingeeQrId: value.tingeeQrId,
-    invoiceStatus: from_candid_InvoiceStatus_n25(_uploadFile, _downloadFile, value.invoiceStatus)
+    invoiceStatus: from_candid_InvoiceStatus_n26(_uploadFile, _downloadFile, value.invoiceStatus)
   };
 }
-function from_candid_record_n50(_uploadFile, _downloadFile, value) {
+function from_candid_record_n52(_uploadFile, _downloadFile, value) {
   return {
     menus: value.menus,
-    orders: from_candid_vec_n51(_uploadFile, _downloadFile, value.orders),
+    orders: from_candid_vec_n53(_uploadFile, _downloadFile, value.orders),
     restaurants: value.restaurants,
     restaurantMenuOverrides: value.restaurantMenuOverrides,
-    devices: from_candid_vec_n54(_uploadFile, _downloadFile, value.devices),
-    pendingActivations: from_candid_vec_n57(_uploadFile, _downloadFile, value.pendingActivations)
+    devices: from_candid_vec_n56(_uploadFile, _downloadFile, value.devices),
+    pendingActivations: from_candid_vec_n59(_uploadFile, _downloadFile, value.pendingActivations)
   };
 }
-function from_candid_record_n53(_uploadFile, _downloadFile, value) {
+function from_candid_record_n55(_uploadFile, _downloadFile, value) {
   return {
     order: from_candid_Order_n19(_uploadFile, _downloadFile, value.order),
     orderId: value.orderId
   };
 }
-function from_candid_record_n56(_uploadFile, _downloadFile, value) {
+function from_candid_record_n58(_uploadFile, _downloadFile, value) {
   return {
     device: from_candid_Device_n7(_uploadFile, _downloadFile, value.device),
     deviceId: value.deviceId
   };
 }
-function from_candid_record_n59(_uploadFile, _downloadFile, value) {
+function from_candid_record_n61(_uploadFile, _downloadFile, value) {
   return {
     code: value.code,
-    activation: from_candid_PendingActivation_n41(_uploadFile, _downloadFile, value.activation)
+    activation: from_candid_PendingActivation_n43(_uploadFile, _downloadFile, value.activation)
   };
 }
 function from_candid_record_n8(_uploadFile, _downloadFile, value) {
@@ -37648,10 +37726,10 @@ function from_candid_variant_n22(_uploadFile, _downloadFile, value) {
 function from_candid_variant_n24(_uploadFile, _downloadFile, value) {
   return "cancelled" in value ? "cancelled" : "pending" in value ? "pending" : "completed" in value ? "completed" : "shipping" in value ? "shipping" : "pickedUp" in value ? "pickedUp" : "confirmed" in value ? "confirmed" : value;
 }
-function from_candid_variant_n26(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n27(_uploadFile, _downloadFile, value) {
   return "none" in value ? "none" : "invoiced" in value ? "invoiced" : "failed" in value ? "failed" : value;
 }
-function from_candid_variant_n28(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n30(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
     __kind__: "ok",
     ok: value.ok
@@ -37660,7 +37738,7 @@ function from_candid_variant_n28(_uploadFile, _downloadFile, value) {
     err: value.err
   } : value;
 }
-function from_candid_variant_n36(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n38(_uploadFile, _downloadFile, value) {
   return "int" in value ? {
     __kind__: "int",
     int: value.int
@@ -37714,22 +37792,22 @@ function from_candid_variant_n4(_uploadFile, _downloadFile, value) {
     FrontendOriginMismatch: value.FrontendOriginMismatch
   } : value;
 }
-function from_candid_variant_n40(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n42(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
     __kind__: "ok",
-    ok: from_candid_PendingActivation_n41(_uploadFile, _downloadFile, value.ok)
+    ok: from_candid_PendingActivation_n43(_uploadFile, _downloadFile, value.ok)
   } : "err" in value ? {
     __kind__: "err",
     err: value.err
   } : value;
 }
-function from_candid_variant_n44(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n46(_uploadFile, _downloadFile, value) {
   return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
 }
-function from_candid_variant_n46(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n48(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
     __kind__: "ok",
-    ok: from_candid_OrderStatus_n47(_uploadFile, _downloadFile, value.ok)
+    ok: from_candid_OrderStatus_n49(_uploadFile, _downloadFile, value.ok)
   } : "err" in value ? {
     __kind__: "err",
     err: value.err
@@ -37744,41 +37822,47 @@ function from_candid_variant_n6(_uploadFile, _downloadFile, value) {
     err: value.err
   } : value;
 }
-function from_candid_vec_n31(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_vec_n32(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n33(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_vec_n34(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n32(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_Cell_n33(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n34(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_Cell_n35(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n51(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_OrderEntry_n52(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n53(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_OrderEntry_n54(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n54(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_DeviceEntry_n55(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n56(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_DeviceEntry_n57(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n57(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_PendingActivationEntry_n58(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n59(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_PendingActivationEntry_n60(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n60(_uploadFile, _downloadFile, value) {
+function from_candid_vec_n62(_uploadFile, _downloadFile, value) {
   return value.map((x3) => from_candid_Device_n7(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n61(_uploadFile, _downloadFile, value) {
+function from_candid_vec_n63(_uploadFile, _downloadFile, value) {
   return value.map((x3) => from_candid_Order_n19(_uploadFile, _downloadFile, x3));
 }
-function to_candid_BookingStatus_n67(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n68(_uploadFile, _downloadFile, value);
+function to_candid_BookingStatus_n71(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n72(_uploadFile, _downloadFile, value);
 }
-function to_candid_DeviceRole_n37(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n38(_uploadFile, _downloadFile, value);
+function to_candid_DeviceRole_n39(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n40(_uploadFile, _downloadFile, value);
 }
-function to_candid_InvoiceStatus_n63(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n64(_uploadFile, _downloadFile, value);
-}
-function to_candid_PaymentStatus_n65(_uploadFile, _downloadFile, value) {
+function to_candid_InvoiceStatus_n65(_uploadFile, _downloadFile, value) {
   return to_candid_variant_n66(_uploadFile, _downloadFile, value);
+}
+function to_candid_PaymentStatus_n69(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n70(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n15(_uploadFile, _downloadFile, value) {
   return to_candid_variant_n16(_uploadFile, _downloadFile, value);
+}
+function to_candid_opt_n67(_uploadFile, _downloadFile, value) {
+  return value === null ? candid_none() : candid_some(value);
+}
+function to_candid_opt_n68(_uploadFile, _downloadFile, value) {
+  return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_variant_n16(_uploadFile, _downloadFile, value) {
   return value == "admin" ? {
@@ -37789,7 +37873,7 @@ function to_candid_variant_n16(_uploadFile, _downloadFile, value) {
     guest: null
   } : value;
 }
-function to_candid_variant_n38(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n40(_uploadFile, _downloadFile, value) {
   return value == "admin" ? {
     admin: null
   } : value == "cashier" ? {
@@ -37798,7 +37882,7 @@ function to_candid_variant_n38(_uploadFile, _downloadFile, value) {
     driver: null
   } : value;
 }
-function to_candid_variant_n64(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n66(_uploadFile, _downloadFile, value) {
   return value == "none" ? {
     none: null
   } : value == "invoiced" ? {
@@ -37807,7 +37891,7 @@ function to_candid_variant_n64(_uploadFile, _downloadFile, value) {
     failed: null
   } : value;
 }
-function to_candid_variant_n66(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n70(_uploadFile, _downloadFile, value) {
   return value == "paid" ? {
     paid: null
   } : value == "refunded" ? {
@@ -37816,7 +37900,7 @@ function to_candid_variant_n66(_uploadFile, _downloadFile, value) {
     unpaid: null
   } : value;
 }
-function to_candid_variant_n68(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n72(_uploadFile, _downloadFile, value) {
   return value == "cancelled" ? {
     cancelled: null
   } : value == "pending" ? {
@@ -38180,6 +38264,12 @@ async function getInvoice(orderId) {
     path: `/invoice/${encodeURIComponent(orderId)}`
   });
 }
+async function requestQr(orderId) {
+  return vpsFetch({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/qr`
+  });
+}
 async function upsertCustomer(email) {
   try {
     await vpsFetch({
@@ -38369,11 +38459,22 @@ const createLucideIcon = (iconName, iconNode) => {
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$L = [
+const __iconNode$M = [
   ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
   ["path", { d: "M19 12H5", key: "x3x0zl" }]
 ];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$L);
+const ArrowLeft = createLucideIcon("arrow-left", __iconNode$M);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$L = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+];
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$L);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38381,46 +38482,47 @@ const ArrowLeft = createLucideIcon("arrow-left", __iconNode$L);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$K = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
-];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$K);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$J = [
   ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }],
   ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }],
   ["path", { d: "M6 12h.01M18 12h.01", key: "113zkx" }]
 ];
-const Banknote = createLucideIcon("banknote", __iconNode$J);
+const Banknote = createLucideIcon("banknote", __iconNode$K);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$I = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$I);
+const __iconNode$J = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$J);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$H = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$H);
+const __iconNode$I = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$I);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$G = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-const ChevronUp = createLucideIcon("chevron-up", __iconNode$G);
+const __iconNode$H = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+const ChevronUp = createLucideIcon("chevron-up", __iconNode$H);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$G = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
+  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+];
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$G);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38429,10 +38531,9 @@ const ChevronUp = createLucideIcon("chevron-up", __iconNode$G);
  */
 const __iconNode$F = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
-  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const CircleAlert = createLucideIcon("circle-alert", __iconNode$F);
+const CircleCheck = createLucideIcon("circle-check", __iconNode$F);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38441,9 +38542,9 @@ const CircleAlert = createLucideIcon("circle-alert", __iconNode$F);
  */
 const __iconNode$E = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
 ];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$E);
+const Clock = createLucideIcon("clock", __iconNode$E);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38451,10 +38552,11 @@ const CircleCheck = createLucideIcon("circle-check", __iconNode$E);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$D = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
+  ["path", { d: "M12 13v8", key: "1l5pq0" }],
+  ["path", { d: "M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242", key: "1pljnt" }],
+  ["path", { d: "m8 17 4-4 4 4", key: "1quai1" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$D);
+const CloudUpload = createLucideIcon("cloud-upload", __iconNode$D);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38462,11 +38564,10 @@ const Clock = createLucideIcon("clock", __iconNode$D);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$C = [
-  ["path", { d: "M12 13v8", key: "1l5pq0" }],
-  ["path", { d: "M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242", key: "1pljnt" }],
-  ["path", { d: "m8 17 4-4 4 4", key: "1quai1" }]
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
 ];
-const CloudUpload = createLucideIcon("cloud-upload", __iconNode$C);
+const Copy = createLucideIcon("copy", __iconNode$C);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38474,10 +38575,11 @@ const CloudUpload = createLucideIcon("cloud-upload", __iconNode$C);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$B = [
-  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
-  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
+  ["path", { d: "M12 15V3", key: "m9g1x1" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
+  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
 ];
-const Copy = createLucideIcon("copy", __iconNode$B);
+const Download = createLucideIcon("download", __iconNode$B);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38485,11 +38587,11 @@ const Copy = createLucideIcon("copy", __iconNode$B);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$A = [
-  ["path", { d: "M12 15V3", key: "m9g1x1" }],
-  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
-  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
+  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
+  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
+  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
 ];
-const Download = createLucideIcon("download", __iconNode$A);
+const ExternalLink = createLucideIcon("external-link", __iconNode$A);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38497,18 +38599,6 @@ const Download = createLucideIcon("download", __iconNode$A);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$z = [
-  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
-  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
-  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
-];
-const ExternalLink = createLucideIcon("external-link", __iconNode$z);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$y = [
   [
     "path",
     {
@@ -38526,14 +38616,14 @@ const __iconNode$y = [
   ],
   ["path", { d: "m2 2 20 20", key: "1ooewy" }]
 ];
-const EyeOff = createLucideIcon("eye-off", __iconNode$y);
+const EyeOff = createLucideIcon("eye-off", __iconNode$z);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$x = [
+const __iconNode$y = [
   [
     "path",
     {
@@ -38543,7 +38633,21 @@ const __iconNode$x = [
   ],
   ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-const Eye = createLucideIcon("eye", __iconNode$x);
+const Eye = createLucideIcon("eye", __iconNode$y);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$x = [
+  ["path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", key: "1rqfz7" }],
+  ["path", { d: "M14 2v4a2 2 0 0 0 2 2h4", key: "tnqrlb" }],
+  ["path", { d: "M10 9H8", key: "b1mrlr" }],
+  ["path", { d: "M16 13H8", key: "t4e002" }],
+  ["path", { d: "M16 17H8", key: "z1uh3a" }]
+];
+const FileText = createLucideIcon("file-text", __iconNode$x);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38551,13 +38655,13 @@ const Eye = createLucideIcon("eye", __iconNode$x);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$w = [
-  ["path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", key: "1rqfz7" }],
-  ["path", { d: "M14 2v4a2 2 0 0 0 2 2h4", key: "tnqrlb" }],
-  ["path", { d: "M10 9H8", key: "b1mrlr" }],
-  ["path", { d: "M16 13H8", key: "t4e002" }],
-  ["path", { d: "M16 17H8", key: "z1uh3a" }]
+  ["path", { d: "M16 5h6", key: "1vod17" }],
+  ["path", { d: "M19 2v6", key: "4bpg5p" }],
+  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
 ];
-const FileText = createLucideIcon("file-text", __iconNode$w);
+const ImagePlus = createLucideIcon("image-plus", __iconNode$w);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38565,20 +38669,6 @@ const FileText = createLucideIcon("file-text", __iconNode$w);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$v = [
-  ["path", { d: "M16 5h6", key: "1vod17" }],
-  ["path", { d: "M19 2v6", key: "4bpg5p" }],
-  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
-];
-const ImagePlus = createLucideIcon("image-plus", __iconNode$v);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$u = [
   [
     "path",
     {
@@ -38588,14 +38678,14 @@ const __iconNode$u = [
   ],
   ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
 ];
-const KeyRound = createLucideIcon("key-round", __iconNode$u);
+const KeyRound = createLucideIcon("key-round", __iconNode$v);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$t = [
+const __iconNode$u = [
   ["path", { d: "M10 12h11", key: "6m4ad9" }],
   ["path", { d: "M10 18h11", key: "11hvi2" }],
   ["path", { d: "M10 6h11", key: "c7qv1k" }],
@@ -38603,15 +38693,26 @@ const __iconNode$t = [
   ["path", { d: "M4 6h1v4", key: "cnovpq" }],
   ["path", { d: "M6 18H4c0-1 2-2 2-3s-1-1.5-2-1", key: "m9a95d" }]
 ];
-const ListOrdered = createLucideIcon("list-ordered", __iconNode$t);
+const ListOrdered = createLucideIcon("list-ordered", __iconNode$u);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$s = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-const LoaderCircle = createLucideIcon("loader-circle", __iconNode$s);
+const __iconNode$t = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+const LoaderCircle = createLucideIcon("loader-circle", __iconNode$t);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$s = [
+  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
+  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
+];
+const Mail = createLucideIcon("mail", __iconNode$s);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38619,17 +38720,6 @@ const LoaderCircle = createLucideIcon("loader-circle", __iconNode$s);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$r = [
-  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
-  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
-];
-const Mail = createLucideIcon("mail", __iconNode$r);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$q = [
   [
     "path",
     {
@@ -38639,22 +38729,22 @@ const __iconNode$q = [
   ],
   ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }]
 ];
-const MapPin = createLucideIcon("map-pin", __iconNode$q);
+const MapPin = createLucideIcon("map-pin", __iconNode$r);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$p = [["path", { d: "M5 12h14", key: "1ays0h" }]];
-const Minus = createLucideIcon("minus", __iconNode$p);
+const __iconNode$q = [["path", { d: "M5 12h14", key: "1ays0h" }]];
+const Minus = createLucideIcon("minus", __iconNode$q);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$o = [
+const __iconNode$p = [
   ["path", { d: "m16 16 2 2 4-4", key: "gfu2re" }],
   [
     "path",
@@ -38667,14 +38757,14 @@ const __iconNode$o = [
   ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
   ["line", { x1: "12", x2: "12", y1: "22", y2: "12", key: "a4e8g8" }]
 ];
-const PackageCheck = createLucideIcon("package-check", __iconNode$o);
+const PackageCheck = createLucideIcon("package-check", __iconNode$p);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$n = [
+const __iconNode$o = [
   [
     "path",
     {
@@ -38688,14 +38778,14 @@ const __iconNode$n = [
   ["circle", { cx: "18.5", cy: "15.5", r: "2.5", key: "b5zd12" }],
   ["path", { d: "M20.27 17.27 22 19", key: "1l4muz" }]
 ];
-const PackageSearch = createLucideIcon("package-search", __iconNode$n);
+const PackageSearch = createLucideIcon("package-search", __iconNode$o);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$m = [
+const __iconNode$n = [
   [
     "path",
     {
@@ -38707,7 +38797,24 @@ const __iconNode$m = [
   ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
   ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
 ];
-const Package = createLucideIcon("package", __iconNode$m);
+const Package = createLucideIcon("package", __iconNode$n);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$m = [
+  [
+    "path",
+    {
+      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+      key: "1a8usu"
+    }
+  ],
+  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
+];
+const Pencil = createLucideIcon("pencil", __iconNode$m);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38718,13 +38825,12 @@ const __iconNode$l = [
   [
     "path",
     {
-      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
-      key: "1a8usu"
+      d: "M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384",
+      key: "9njp5v"
     }
-  ],
-  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
+  ]
 ];
-const Pencil = createLucideIcon("pencil", __iconNode$l);
+const Phone = createLucideIcon("phone", __iconNode$l);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38732,15 +38838,10 @@ const Pencil = createLucideIcon("pencil", __iconNode$l);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$k = [
-  [
-    "path",
-    {
-      d: "M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384",
-      key: "9njp5v"
-    }
-  ]
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
 ];
-const Phone = createLucideIcon("phone", __iconNode$k);
+const Plus = createLucideIcon("plus", __iconNode$k);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38748,10 +38849,20 @@ const Phone = createLucideIcon("phone", __iconNode$k);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$j = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "M12 5v14", key: "s699le" }]
+  ["rect", { width: "5", height: "5", x: "3", y: "3", rx: "1", key: "1tu5fj" }],
+  ["rect", { width: "5", height: "5", x: "16", y: "3", rx: "1", key: "1v8r4q" }],
+  ["rect", { width: "5", height: "5", x: "3", y: "16", rx: "1", key: "1x03jg" }],
+  ["path", { d: "M21 16h-3a2 2 0 0 0-2 2v3", key: "177gqh" }],
+  ["path", { d: "M21 21v.01", key: "ents32" }],
+  ["path", { d: "M12 7v3a2 2 0 0 1-2 2H7", key: "8crl2c" }],
+  ["path", { d: "M3 12h.01", key: "nlz23k" }],
+  ["path", { d: "M12 3h.01", key: "n36tog" }],
+  ["path", { d: "M12 16v.01", key: "133mhm" }],
+  ["path", { d: "M16 12h1", key: "1slzba" }],
+  ["path", { d: "M21 12v.01", key: "1lwtk9" }],
+  ["path", { d: "M12 21v-1", key: "1880an" }]
 ];
-const Plus = createLucideIcon("plus", __iconNode$j);
+const QrCode = createLucideIcon("qr-code", __iconNode$j);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -45190,6 +45301,19 @@ function useOrders() {
     enabled: !!actor && !isFetching
   });
 }
+function useGetOrder(orderId) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => actor && orderId ? getOrder(actor, orderId) : Promise.resolve(null),
+    enabled: !!actor && !isFetching && !!orderId,
+    // Poll every 5s so order.paymentStatus (which drives the QrPayment
+    // 'Thanh toán' button) refreshes live after a customer pays while on the
+    // page, matching the useOrderStatus poll. Without this, the button stays
+    // visible until a manual refetch.
+    refetchInterval: 5e3
+  });
+}
 function useMarkPickedUp() {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
@@ -45959,7 +46083,7 @@ function TableCell({ className, ...props }) {
     }
   );
 }
-function formatVnd$9(n) {
+function formatVnd$a(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -45992,7 +46116,7 @@ function CustomersTable({ data, testId }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium text-foreground", children: row.cusName }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-sm text-muted-foreground", children: row.cusPhone || "—" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono", children: row.orderCount }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$9(row.totalSpent) })
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$a(row.totalSpent) })
         ]
       },
       `${row.cusName}-${i}`
@@ -46095,7 +46219,7 @@ function formatVndShort(n) {
   if (n >= 1e3) return `${(n / 1e3).toFixed(0)}k`;
   return `${n}`;
 }
-function formatVnd$8(n) {
+function formatVnd$9(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -46202,7 +46326,7 @@ function RevenueChart({ data, testId }) {
                       height: Math.max(b2.h, 0),
                       rx: 3,
                       className: "fill-primary transition-smooth hover:fill-primary/80",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: `${formatDayLabel(b2.date)}: ${formatVnd$8(b2.revenue)}` })
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: `${formatDayLabel(b2.date)}: ${formatVnd$9(b2.revenue)}` })
                     }
                   ),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -51425,7 +51549,7 @@ const RANGE_LABELS = {
   "30d": "30 ngày",
   "90d": "90 ngày"
 };
-function formatVnd$7(n) {
+function formatVnd$8(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -51540,10 +51664,10 @@ function AnalyticsDashboard() {
               StatCard,
               {
                 label: "Tổng doanh thu",
-                value: formatVnd$7((a2 == null ? void 0 : a2.totalRevenue) ?? 0),
+                value: formatVnd$8((a2 == null ? void 0 : a2.totalRevenue) ?? 0),
                 icon: Banknote,
                 tone: "primary",
-                hint: `Trung bình ${formatVnd$7((a2 == null ? void 0 : a2.averageOrderValue) ?? 0)}/đơn`,
+                hint: `Trung bình ${formatVnd$8((a2 == null ? void 0 : a2.averageOrderValue) ?? 0)}/đơn`,
                 testId: "analytics.stat.total_revenue"
               }
             ),
@@ -51859,7 +51983,7 @@ function Skeleton({ className, ...props }) {
   );
 }
 const ALL_CATEGORY = "Tất cả";
-function formatVnd$6(value) {
+function formatVnd$7(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -51905,7 +52029,7 @@ function MenuCard({
             /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "line-clamp-2 text-sm font-semibold text-foreground", children: item.name }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 text-xs text-muted-foreground", children: item.unitName || "phần" })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-sm font-medium text-primary", children: formatVnd$6(item.price) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-sm font-medium text-primary", children: formatVnd$7(item.price) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-auto flex items-center justify-between gap-2 pt-1", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
               "VAT ",
@@ -52979,6 +53103,1934 @@ function SheetTitle({
       "data-slot": "sheet-title",
       className: cn("text-foreground font-semibold", className),
       ...props
+    }
+  );
+}
+function formatVnd$6(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+const EMPTY_CUSTOMER = {
+  cusName: "",
+  cusPhone: "",
+  cusAddress: "",
+  cusTaxCode: "",
+  receiverEmail: ""
+};
+const QUOTE_DEBOUNCE_MS = 900;
+function CreateOrder() {
+  const navigate = useNavigate();
+  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
+  const { data: paymentModeRaw } = useGetPaymentMode();
+  const isCustomerMode = paymentModeRaw === "customer";
+  const { data: storeOpen } = useIsStoreOpen();
+  const storeClosed = storeOpen === false;
+  const [customerModeAccepted, setCustomerModeAccepted] = reactExports.useState(false);
+  const [restaurantId, setRestaurantId] = reactExports.useState("");
+  const { data: menu, isLoading: menuLoading } = useMenus();
+  const [cart, setCart] = reactExports.useState({});
+  const [customer, setCustomer] = reactExports.useState(EMPTY_CUSTOMER);
+  const [touched, setTouched] = reactExports.useState(false);
+  const [quote$1, setQuote] = reactExports.useState(null);
+  const [quoteLoading, setQuoteLoading] = reactExports.useState(false);
+  const [quoteError, setQuoteError] = reactExports.useState(null);
+  const [submitting, setSubmitting] = reactExports.useState(false);
+  const [cartOpen, setCartOpen] = reactExports.useState(false);
+  const [upsellItems, setUpsellItems] = reactExports.useState([]);
+  const quoteDebounceRef = reactExports.useRef(null);
+  const selectedRestaurant = restaurants == null ? void 0 : restaurants.find(
+    (r2) => r2.restaurantId === restaurantId
+  );
+  const cartLines = reactExports.useMemo(() => {
+    if (!menu) return [];
+    return menu.filter((m2) => (cart[m2.itemId] ?? 0) > 0).map((m2) => ({ item: m2, quantity: cart[m2.itemId] }));
+  }, [menu, cart]);
+  const mainDishLines = reactExports.useMemo(
+    () => cartLines.filter((l2) => l2.item.category === "Món chính"),
+    [cartLines]
+  );
+  const utensilItem = reactExports.useMemo(
+    () => menu == null ? void 0 : menu.find(
+      (m2) => m2.category === "Khác" && m2.name === "Dụng cụ đựng đồ ăn"
+    ),
+    [menu]
+  );
+  const utensilQty = reactExports.useMemo(
+    () => mainDishLines.reduce((sum, l2) => sum + l2.quantity, 0),
+    [mainDishLines]
+  );
+  const utensilLine = reactExports.useMemo(() => {
+    if (!utensilItem || utensilQty <= 0) return null;
+    return { item: utensilItem, quantity: utensilQty };
+  }, [utensilItem, utensilQty]);
+  const displayCartLines = reactExports.useMemo(() => {
+    if (!utensilLine) return cartLines;
+    return [...cartLines, utensilLine];
+  }, [cartLines, utensilLine]);
+  const itemsTotal = reactExports.useMemo(
+    () => displayCartLines.reduce(
+      (sum, l2) => sum + Number(l2.item.price) * l2.quantity,
+      0
+    ),
+    [displayCartLines]
+  );
+  const itemCount = reactExports.useMemo(
+    () => displayCartLines.reduce((sum, l2) => sum + l2.quantity, 0),
+    [displayCartLines]
+  );
+  const customerErrors = touched ? validateCustomerForm(customer, { hideAddress: isCustomerMode }) : {};
+  function handleQuantityChange(itemId, delta) {
+    var _a2;
+    if (isCustomerMode && !customerModeAccepted) {
+      return;
+    }
+    if (delta > 0 && !restaurantId) {
+      ue.error("Vui lòng chọn nhà hàng trước khi thêm món.");
+      (_a2 = document.querySelector('[data-ocid="create_order.restaurant_card"]')) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    const prevQty = cart[itemId] ?? 0;
+    setCart((prev) => {
+      const next = Math.max(0, (prev[itemId] ?? 0) + delta);
+      const copy = { ...prev };
+      if (next === 0) delete copy[itemId];
+      else copy[itemId] = next;
+      return copy;
+    });
+    setQuote(null);
+    setQuoteError(null);
+    if (delta > 0 && prevQty === 0 && menu) {
+      const addedItem = menu.find((m2) => m2.itemId === itemId);
+      if ((addedItem == null ? void 0 : addedItem.category) === "Món chính") {
+        const suggestions = menu.filter(
+          (m2) => m2.visible && m2.category === "Món phụ" && (cart[m2.itemId] ?? 0) === 0
+        ).slice(0, 2);
+        if (suggestions.length > 0) {
+          setUpsellItems(suggestions);
+        }
+      }
+    }
+  }
+  function handleCustomerChange(field, value) {
+    setCustomer((prev) => ({ ...prev, [field]: value }));
+    if (field === "cusAddress") {
+      setQuote(null);
+      setQuoteError(null);
+    }
+  }
+  reactExports.useEffect(() => {
+    let cancelled = false;
+    const verified = getVerifiedEmail();
+    if (!verified) return;
+    setCustomer((prev) => ({
+      ...prev,
+      receiverEmail: verified.email
+    }));
+    getCustomer(verified.email).then((customer2) => {
+      if (cancelled || !customer2) return;
+      setCustomer((prev) => ({
+        ...prev,
+        cusName: customer2.name || prev.cusName,
+        cusPhone: customer2.phone || prev.cusPhone
+      }));
+    }).catch(() => {
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  function handleRestaurantChange(id) {
+    if (restaurantId && id !== restaurantId && itemCount > 0 && !window.confirm(
+      "Đổi nhà hàng sẽ xoá các món đã chọn trong giỏ hàng. Tiếp tục?"
+    )) {
+      return;
+    }
+    setRestaurantId(id);
+    setCart({});
+    setQuote(null);
+    setQuoteError(null);
+    setUpsellItems([]);
+  }
+  const canRequestQuote = reactExports.useCallback(() => {
+    return !!restaurantId && cartLines.length > 0 && !!customer.cusAddress.trim() && !!(selectedRestaurant == null ? void 0 : selectedRestaurant.address);
+  }, [
+    restaurantId,
+    cartLines.length,
+    customer.cusAddress,
+    selectedRestaurant == null ? void 0 : selectedRestaurant.address
+  ]);
+  const runQuote = reactExports.useCallback(async () => {
+    if (!canRequestQuote() || quoteLoading) return;
+    setQuoteLoading(true);
+    setQuoteError(null);
+    try {
+      const payload = {
+        restaurantId,
+        pickupAddress: selectedRestaurant.address,
+        dropAddress: customer.cusAddress.trim(),
+        items: displayCartLines.map((l2) => ({
+          itemId: l2.item.itemId,
+          name: l2.item.name,
+          quantity: l2.quantity
+        }))
+      };
+      const res = await quote(payload);
+      setQuote(res);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Không lấy được phí ship.";
+      setQuoteError(msg);
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, [
+    canRequestQuote,
+    quoteLoading,
+    restaurantId,
+    selectedRestaurant,
+    customer.cusAddress,
+    displayCartLines
+  ]);
+  reactExports.useEffect(() => {
+    if (isCustomerMode) return;
+    if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
+    if (!restaurantId || !customer.cusAddress.trim() || cartLines.length === 0 || !(selectedRestaurant == null ? void 0 : selectedRestaurant.address)) {
+      return;
+    }
+    quoteDebounceRef.current = setTimeout(() => {
+      runQuote();
+    }, QUOTE_DEBOUNCE_MS);
+    return () => {
+      if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
+    };
+  }, [
+    isCustomerMode,
+    customer.cusAddress,
+    restaurantId,
+    cartLines.length,
+    selectedRestaurant == null ? void 0 : selectedRestaurant.address,
+    runQuote
+  ]);
+  async function handleSubmit() {
+    setTouched(true);
+    const errs = validateCustomerForm(customer, {
+      hideAddress: isCustomerMode
+    });
+    if (Object.keys(errs).length > 0) {
+      ue.error("Vui lòng kiểm tra thông tin khách hàng.");
+      return;
+    }
+    if (!restaurantId || cartLines.length === 0) {
+      ue.error("Vui lòng chọn nhà hàng và ít nhất một món.");
+      return;
+    }
+    if (mainDishLines.length === 0) {
+      ue.error("Vui lòng chọn ít nhất một món chính để đặt đơn.");
+      return;
+    }
+    if (!isCustomerMode && !quote$1) {
+      ue.error("Đang chờ tính phí ship, vui lòng đợi trong giây lát.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = {
+        restaurantId,
+        pickupAddress: selectedRestaurant.address,
+        cusName: customer.cusName.trim(),
+        cusPhone: customer.cusPhone.trim(),
+        cusAddress: customer.cusAddress.trim(),
+        cusTaxCode: customer.cusTaxCode.trim(),
+        receiverEmail: customer.receiverEmail.trim(),
+        items: displayCartLines.map((l2) => ({
+          itemId: l2.item.itemId,
+          name: l2.item.name,
+          quantity: l2.quantity,
+          price: Number(l2.item.price),
+          vatRate: Number(l2.item.vatRate),
+          unitName: l2.item.unitName
+        })),
+        // Luồng customer: không có phí ship (VPS sẽ branch trên paymentMode).
+        shippingFee: isCustomerMode ? 0 : quote$1.shippingFee,
+        ahamoveOrderId: isCustomerMode ? "" : quote$1.ahamoveOrderId
+      };
+      const res = await create(payload);
+      if (!res.ok) {
+        throw new Error(res.error ?? "VPS từ chối tạo đơn.");
+      }
+      try {
+        const raw = localStorage.getItem("bbh_my_orders");
+        const arr = raw ? JSON.parse(raw) : [];
+        const list = Array.isArray(arr) ? arr : [];
+        list.push(res.orderId);
+        localStorage.setItem("bbh_my_orders", JSON.stringify(list));
+      } catch {
+      }
+      ue.success("Đặt đơn thành công!", {
+        description: `Mã đơn: ${res.orderId}`
+      });
+      setCart({});
+      setCustomer(EMPTY_CUSTOMER);
+      setQuote(null);
+      setTouched(false);
+      setCartOpen(false);
+      navigate({ to: "/track/$orderId", params: { orderId: res.orderId } });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Đặt đơn thất bại.";
+      ue.error("Đặt đơn thất bại", { description: msg });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+  const totalAmount = (quote$1 == null ? void 0 : quote$1.amount) ?? itemsTotal;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bbh-order-theme bg-background text-foreground", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-2xl px-4 py-6 pb-28 md:px-6 md:py-10",
+      "data-ocid": "create_order.page",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-6 flex flex-col gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "h1",
+            {
+              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+              "data-ocid": "create_order.title",
+              children: "Đặt món"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: isCustomerMode ? "Chọn nhà hàng, chọn món, nhập tên + SĐT — đặt đơn rồi thanh toán QR và tự đặt Grab Express nhận hàng." : "Chọn nhà hàng, chọn món, nhập thông tin khách — phí ship sẽ tự động tính khi bạn điền địa chỉ." })
+        ] }),
+        storeClosed ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-4 rounded-2xl border border-border bg-primary/5 px-6 py-12 text-center",
+            "data-ocid": "create_order.closed_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-7 w-7", "aria-hidden": "true" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-xl font-bold text-foreground", children: "Cửa hàng đang đóng" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "max-w-sm text-sm text-muted-foreground", children: "Hiện tại ngoài giờ mở cửa nên bạn chưa thể đặt món. Vui lòng quay lại trong giờ hoạt động của cửa hàng để đặt hàng." })
+            ]
+          }
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-6", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.restaurant_card", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 text-base", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground", children: "1" }),
+                "Chọn nhà hàng"
+              ] }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                RestaurantSelect,
+                {
+                  restaurants,
+                  isLoading: restaurantsLoading,
+                  value: restaurantId,
+                  onChange: handleRestaurantChange
+                }
+              ) })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.menu_card", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 text-base", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground", children: "2" }),
+                "Chọn món"
+              ] }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { children: [
+                !restaurantId && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "mb-3 flex items-center gap-2 rounded-lg border border-dashed border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground",
+                    "data-ocid": "create_order.menu_hint",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Package,
+                        {
+                          className: "h-4 w-4 shrink-0",
+                          "aria-hidden": "true"
+                        }
+                      ),
+                      "Xem menu thoải mái — chỉ cần chọn nhà hàng ở bước 1 trước khi thêm món vào giỏ."
+                    ]
+                  }
+                ),
+                isCustomerMode && !customerModeAccepted ? (
+                  // Cổng chấp nhận: thay menu bằng cảnh báo bắt buộc. Khách phải
+                  // bấm "Tôi hiểu và đồng ý" mỗi lần vào trang trước khi chọn món.
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    AlertDialog,
+                    {
+                      open: isCustomerMode && !customerModeAccepted,
+                      onOpenChange: () => {
+                      },
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogContent, { "data-ocid": "create_order.customer_accept_dialog", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogHeader, { children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogTitle, { children: "Xác nhận chế độ tự thanh toán" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogDescription, { children: "Bạn đang ở chế độ tự thanh toán: quý khách tự quét QR thanh toán và tự đặt Grab Express nhận hàng. Phí ship do quý khách tự chịu." })
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogFooter, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          AlertDialogAction,
+                          {
+                            onClick: () => setCustomerModeAccepted(true),
+                            "data-ocid": "create_order.customer_accept_button",
+                            children: "Tôi hiểu và đồng ý"
+                          }
+                        ) })
+                      ] })
+                    }
+                  )
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  MenuPicker,
+                  {
+                    menu,
+                    isLoading: menuLoading,
+                    cart,
+                    onQuantityChange: handleQuantityChange,
+                    disabled: submitting,
+                    fixedCategory: "Món chính"
+                  }
+                )
+              ] })
+            ] })
+          ] }),
+          upsellItems.length > 0 && (!isCustomerMode || customerModeAccepted) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "fixed inset-x-4 bottom-24 z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise",
+              "data-ocid": "create_order.upsell_strip",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-2 flex items-center justify-between", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-xs font-semibold text-[oklch(var(--bbh-gold))]", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+                    "Gọi thêm cho tròn vị?"
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "button",
+                    {
+                      type: "button",
+                      "aria-label": "Đóng gợi ý",
+                      onClick: () => setUpsellItems([]),
+                      className: "text-muted-foreground hover:text-foreground",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "h-4 w-4", "aria-hidden": "true" })
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2", children: upsellItems.map((m2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    className: "flex flex-1 items-center justify-between gap-2 rounded-lg bg-secondary p-2",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-1 text-xs font-semibold", children: m2.name }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: formatVnd$6(Number(m2.price)) })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          type: "button",
+                          "aria-label": `Thêm ${m2.name}`,
+                          onClick: () => {
+                            handleQuantityChange(m2.itemId, 1);
+                            setUpsellItems(
+                              (prev) => prev.filter((x3) => x3.itemId !== m2.itemId)
+                            );
+                          },
+                          className: "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground",
+                          children: "+"
+                        }
+                      )
+                    ]
+                  },
+                  m2.itemId
+                )) })
+              ]
+            }
+          ),
+          itemCount > 0 && (!isCustomerMode || customerModeAccepted) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              type: "button",
+              onClick: () => setCartOpen(true),
+              className: "fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-gradient-primary px-5 py-4 text-primary-foreground shadow-elevated",
+              "data-ocid": "create_order.open_cart_button",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex flex-col items-start", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs opacity-90", children: [
+                    itemCount,
+                    " món"
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold", children: formatVnd$6(totalAmount) })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingCart, { className: "h-4 w-4", "aria-hidden": "true" }),
+                  "Xem giỏ hàng"
+                ] })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Sheet, { open: cartOpen, onOpenChange: setCartOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            SheetContent,
+            {
+              side: "bottom",
+              className: "bbh-order-theme flex max-h-[92vh] flex-col overflow-y-auto rounded-t-2xl bg-background text-foreground",
+              "data-ocid": "create_order.cart_sheet",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(SheetHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SheetTitle, { className: "font-display", children: "Giỏ hàng của bạn" }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4 pb-4", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "ul",
+                    {
+                      className: "flex flex-col gap-2",
+                      "data-ocid": "create_order.cart_lines",
+                      children: displayCartLines.map((l2) => {
+                        const isUtensil = !!utensilLine && l2.item.itemId === utensilLine.item.itemId;
+                        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "li",
+                          {
+                            className: "flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm",
+                            children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-1 font-medium", children: l2.item.name }),
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground", children: [
+                                  formatVnd$6(Number(l2.item.price)),
+                                  " × ",
+                                  l2.quantity
+                                ] })
+                              ] }),
+                              isUtensil ? (
+                                // Dòng dụng cụ là trạng thái DERIVED — số lượng tự
+                                // đồng bộ theo món chính, không chỉnh sửa trực tiếp.
+                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 text-xs text-muted-foreground", children: "Tự động" })
+                              ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  Button,
+                                  {
+                                    type: "button",
+                                    variant: "outline",
+                                    size: "icon",
+                                    className: "h-11 w-11",
+                                    onClick: () => handleQuantityChange(l2.item.itemId, -1),
+                                    children: "−"
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "w-6 text-center font-mono", children: l2.quantity }),
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  Button,
+                                  {
+                                    type: "button",
+                                    variant: "outline",
+                                    size: "icon",
+                                    className: "h-11 w-11",
+                                    onClick: () => handleQuantityChange(l2.item.itemId, 1),
+                                    children: "+"
+                                  }
+                                )
+                              ] })
+                            ]
+                          },
+                          l2.item.itemId
+                        );
+                      })
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mb-2 text-sm font-semibold", children: "Thông tin khách hàng" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      CustomerForm,
+                      {
+                        values: customer,
+                        errors: customerErrors,
+                        onChange: handleCustomerChange,
+                        disabled: submitting,
+                        hideAddress: isCustomerMode
+                      }
+                    )
+                  ] }),
+                  !isCustomerMode && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "div",
+                    {
+                      className: "rounded-lg border border-dashed border-border bg-card p-3",
+                      "data-ocid": "create_order.quote_panel",
+                      children: quoteLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-muted-foreground", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          LoaderCircle,
+                          {
+                            className: "h-3.5 w-3.5 animate-spin",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        "Đang tính phí ship…"
+                      ] }) : quoteError ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-destructive", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          CircleAlert,
+                          {
+                            className: "h-3.5 w-3.5 shrink-0",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "min-w-0 flex-1", children: quoteError }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "button",
+                          {
+                            type: "button",
+                            className: "shrink-0 underline",
+                            onClick: () => runQuote(),
+                            children: "Thử lại"
+                          }
+                        )
+                      ] }) : quote$1 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1.5 text-sm", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Tạm tính (đã gồm VAT)" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$6(itemsTotal) })
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 text-muted-foreground", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              Truck,
+                              {
+                                className: "h-3.5 w-3.5",
+                                "aria-hidden": "true"
+                              }
+                            ),
+                            "Phí ship"
+                          ] }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$6(quote$1.shippingFee) })
+                        ] })
+                      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Nhập địa chỉ giao hàng ở trên — phí ship sẽ tự động hiện ở đây." })
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Separator, {}),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-sm font-semibold", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4", "aria-hidden": "true" }),
+                      "Tổng tiền"
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]", children: formatVnd$6(totalAmount) })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sticky bottom-0 -mx-6 border-t border-border bg-background px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "button",
+                      className: "min-h-[48px] w-full bg-gradient-primary text-primary-foreground",
+                      onClick: handleSubmit,
+                      disabled: submitting || cartLines.length === 0 || !isCustomerMode && !quote$1 || Object.keys(customerErrors).length > 0,
+                      "data-ocid": "create_order.submit_button",
+                      children: submitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          LoaderCircle,
+                          {
+                            className: "h-4 w-4 animate-spin",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        "Đang đặt đơn…"
+                      ] }) : isCustomerMode ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          ShoppingCart,
+                          {
+                            className: "h-4 w-4",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        "Đặt đơn"
+                      ] }) : !quote$1 ? "Đang chờ tính phí ship…" : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          ShoppingCart,
+                          {
+                            className: "h-4 w-4",
+                            "aria-hidden": "true"
+                          }
+                        ),
+                        "Đặt đơn · ",
+                        formatVnd$6(totalAmount)
+                      ] })
+                    }
+                  ) })
+                ] })
+              ]
+            }
+          ) })
+        ] })
+      ]
+    }
+  ) });
+}
+const ROLE_OPTIONS = [
+  { value: DeviceRole.cashier, label: "Thu ngân" },
+  { value: DeviceRole.driver, label: "Tài xế" },
+  { value: DeviceRole.admin, label: "Quản trị" }
+];
+function formatExpiry(ns) {
+  if (!ns || ns <= 0n) return "—";
+  try {
+    const ms2 = Number(ns / 1000000n);
+    if (!Number.isFinite(ms2) || ms2 <= 0) return "—";
+    return new Date(ms2).toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "—";
+  }
+}
+function ActivationCodeForm() {
+  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
+  const generateMutation = useGenerateActivationCode();
+  const [restaurantId, setRestaurantId] = reactExports.useState("");
+  const [role, setRole] = reactExports.useState(DeviceRole.cashier);
+  const [result, setResult] = reactExports.useState(null);
+  const canSubmit = !!restaurantId && !!role && !generateMutation.isPending;
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!restaurantId || !role) {
+      ue.error("Vui lòng chọn nhà hàng và vai trò.");
+      return;
+    }
+    try {
+      const pending = await generateMutation.mutateAsync({
+        restaurantId,
+        role
+      });
+      setResult({
+        code: pending.code,
+        expiresAt: pending.expiresAt,
+        restaurantId,
+        role
+      });
+      ue.success("Đã tạo mã kích hoạt thành công.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể tạo mã kích hoạt.";
+      ue.error(message);
+    }
+  }
+  async function copyCode() {
+    if (!(result == null ? void 0 : result.code)) return;
+    try {
+      await navigator.clipboard.writeText(result.code);
+      ue.success("Đã sao chép mã kích hoạt.");
+    } catch {
+      ue.error("Không sao chép được mã. Vui lòng sao chép thủ công.");
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "form",
+    {
+      onSubmit: handleSubmit,
+      className: "flex flex-col gap-4",
+      "data-ocid": "activation.form",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "activation-restaurant", className: "text-sm font-medium", children: "Nhà hàng" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: restaurantId,
+              onValueChange: (v2) => {
+                setRestaurantId(v2);
+                setResult(null);
+              },
+              disabled: restaurantsLoading,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  SelectTrigger,
+                  {
+                    id: "activation-restaurant",
+                    className: "w-full",
+                    "data-ocid": "activation.restaurant_select",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      SelectValue,
+                      {
+                        placeholder: restaurantsLoading ? "Đang tải…" : "Chọn nhà hàng"
+                      }
+                    )
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: restaurants && restaurants.length > 0 ? restaurants.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  SelectItem,
+                  {
+                    value: r2.restaurantId,
+                    "data-ocid": `activation.restaurant_option.${r2.restaurantId}`,
+                    children: r2.name || r2.restaurantId
+                  },
+                  r2.restaurantId
+                )) : /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "__none", disabled: true, children: "Chưa có nhà hàng" }) })
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "activation-role", className: "text-sm font-medium", children: "Vai trò" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: role,
+              onValueChange: (v2) => {
+                setRole(v2);
+                setResult(null);
+              },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  SelectTrigger,
+                  {
+                    id: "activation-role",
+                    className: "w-full",
+                    "data-ocid": "activation.role_select",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: "Chọn vai trò" })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: ROLE_OPTIONS.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  SelectItem,
+                  {
+                    value: opt.value,
+                    "data-ocid": `activation.role_option.${opt.value}`,
+                    children: opt.label
+                  },
+                  opt.value
+                )) })
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Button,
+          {
+            type: "submit",
+            disabled: !canSubmit,
+            "data-ocid": "activation.submit_button",
+            className: "w-full sm:w-auto",
+            children: [
+              generateMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(KeyRound, { className: "h-4 w-4", "aria-hidden": "true" }),
+              "Tạo mã kích hoạt"
+            ]
+          }
+        ),
+        result && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col gap-3 rounded-lg border border-success/40 bg-success/10 p-4",
+            "data-ocid": "activation.result",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-medium uppercase tracking-wide text-success", children: "Mã kích hoạt" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Input,
+                    {
+                      readOnly: true,
+                      value: result.code,
+                      className: "font-mono text-lg font-semibold tracking-widest",
+                      "data-ocid": "activation.code_input",
+                      "aria-label": "Mã kích hoạt 6 ký tự"
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "button",
+                      variant: "outline",
+                      size: "icon",
+                      onClick: copyCode,
+                      "data-ocid": "activation.copy_button",
+                      "aria-label": "Sao chép mã kích hoạt",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
+                    }
+                  )
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1 text-sm", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Hết hạn lúc:" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: formatExpiry(result.expiresAt) })
+              ] })
+            ]
+          }
+        )
+      ]
+    }
+  );
+}
+const ROLE_LABELS = {
+  [DeviceRole.admin]: "Quản trị",
+  [DeviceRole.cashier]: "Thu ngân",
+  [DeviceRole.driver]: "Tài xế"
+};
+function formatTimestamp(ns) {
+  if (!ns || ns <= 0n) return "—";
+  try {
+    const ms2 = Number(ns / 1000000n);
+    if (!Number.isFinite(ms2) || ms2 <= 0) return "—";
+    return new Date(ms2).toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "—";
+  }
+}
+function truncateId(id, max2 = 14) {
+  if (!id) return "—";
+  if (id.length <= max2) return id;
+  return `${id.slice(0, 6)}…${id.slice(-4)}`;
+}
+function DeviceTable({
+  devices,
+  isLoading = false,
+  onRevoke,
+  revokingDeviceId = null,
+  emptyMessage = "Chưa có thiết bị nào."
+}) {
+  if (isLoading) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground",
+        "data-ocid": "device.table.loading_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+          "Đang tải danh sách thiết bị…"
+        ]
+      }
+    );
+  }
+  if (!devices || devices.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "flex flex-col items-center justify-center gap-2 py-10 text-center",
+        "data-ocid": "device.table.empty_state",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: emptyMessage })
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      className: "overflow-hidden rounded-lg border border-border",
+      "data-ocid": "device.table",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { className: "bg-muted/40", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "pl-3", children: "Mã thiết bị" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Nhà hàng" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Vai trò" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Kích hoạt lúc" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-center", children: "Trạng thái" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "pr-3 text-right", children: "Thao tác" })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: devices.map((device, index2) => {
+          const isRevoking = revokingDeviceId === device.deviceId;
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            TableRow,
+            {
+              "data-ocid": `device.table.row.${index2}`,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pl-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "span",
+                  {
+                    className: "font-mono text-xs text-foreground",
+                    title: device.deviceId,
+                    children: truncateId(device.deviceId)
+                  }
+                ) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-foreground", children: device.restaurantId || "—" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-foreground", children: ROLE_LABELS[device.role] ?? device.role }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-muted-foreground", children: formatTimestamp(device.activatedAt) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-center", children: device.active ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "span",
+                  {
+                    className: "badge-success inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                    "data-ocid": `device.table.status.${index2}`,
+                    children: "Kích hoạt"
+                  }
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "span",
+                  {
+                    className: "badge-destructive inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                    "data-ocid": `device.table.status.${index2}`,
+                    children: "Đã thu hồi"
+                  }
+                ) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pr-3 text-right", children: device.active && onRevoke ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "destructive",
+                    size: "sm",
+                    onClick: () => onRevoke(device.deviceId),
+                    disabled: isRevoking,
+                    "data-ocid": `device.table.revoke_button.${index2}`,
+                    "aria-label": `Thu hồi thiết bị ${truncateId(device.deviceId)}`,
+                    children: [
+                      isRevoking ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        LoaderCircle,
+                        {
+                          className: "h-3.5 w-3.5 animate-spin",
+                          "aria-hidden": "true"
+                        }
+                      ) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+                      "Thu hồi"
+                    ]
+                  }
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" }) })
+              ]
+            },
+            device.deviceId
+          );
+        }) })
+      ] })
+    }
+  );
+}
+function SectionCard({
+  icon: Icon2,
+  title,
+  description,
+  children,
+  testId
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": testId, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+        title
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: description })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children })
+  ] });
+}
+const ROLE_FILTER_OPTIONS = [
+  { value: "all", label: "Tất cả vai trò" },
+  { value: DeviceRole.admin, label: "Quản trị" },
+  { value: DeviceRole.cashier, label: "Thu ngân" },
+  { value: DeviceRole.driver, label: "Tài xế" }
+];
+function matchesRole(device, filter) {
+  if (filter === "all") return true;
+  return device.role === filter;
+}
+function DeviceManager() {
+  var _a2, _b2;
+  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
+  const [selectedRestaurant, setSelectedRestaurant] = reactExports.useState("");
+  const [roleFilter, setRoleFilter] = reactExports.useState("all");
+  const [revokingDeviceId, setRevokingDeviceId] = reactExports.useState(null);
+  const [revokeDeviceId, setRevokeDeviceId] = reactExports.useState("");
+  const [cleanedCount, setCleanedCount] = reactExports.useState(null);
+  const devicesQuery = useDevicesByRestaurant(selectedRestaurant || void 0);
+  const revokeMutation = useRevokeDevice();
+  const revokeByIdMutation = useRevokeDevice();
+  const cleanupMutation = useCleanupExpiredActivations();
+  const activeRestaurantId = selectedRestaurant || ((_a2 = restaurants == null ? void 0 : restaurants[0]) == null ? void 0 : _a2.restaurantId);
+  const devices = (devicesQuery.data ?? []).filter(
+    (d2) => matchesRole(d2, roleFilter)
+  );
+  async function handleRevoke(deviceId) {
+    setRevokingDeviceId(deviceId);
+    try {
+      await revokeMutation.mutateAsync(deviceId);
+      ue.success("Đã thu hồi thiết bị.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể thu hồi thiết bị.";
+      ue.error(message);
+    } finally {
+      setRevokingDeviceId(null);
+    }
+  }
+  async function handleRevokeById(e) {
+    e.preventDefault();
+    if (!revokeDeviceId.trim()) {
+      ue.error("Vui lòng nhập mã thiết bị.");
+      return;
+    }
+    try {
+      await revokeByIdMutation.mutateAsync(revokeDeviceId.trim());
+      ue.success("Đã thu hồi thiết bị.");
+      setRevokeDeviceId("");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể thu hồi thiết bị.";
+      ue.error(message);
+    }
+  }
+  async function handleCleanup() {
+    try {
+      const count2 = await cleanupMutation.mutateAsync();
+      setCleanedCount(count2);
+      ue.success(`Đã dọn dẹp ${count2.toString()} mã hết hạn.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể dọn dẹp mã hết hạn.";
+      ue.error(message);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10",
+      "data-ocid": "device.page",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "h1",
+            {
+              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+              "data-ocid": "device.title",
+              children: "Quản lý thiết bị"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Xem và thu hồi thiết bị đã kích hoạt theo nhà hàng và vai trò." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "mt-6 flex flex-col gap-3 sm:flex-row sm:items-end",
+            "data-ocid": "device.filters",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "label",
+                  {
+                    htmlFor: "device-restaurant",
+                    className: "text-sm font-medium text-muted-foreground",
+                    children: "Theo nhà hàng"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Select,
+                  {
+                    value: selectedRestaurant || "all",
+                    onValueChange: (v2) => setSelectedRestaurant(v2 === "all" ? "" : v2),
+                    disabled: restaurantsLoading,
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        SelectTrigger,
+                        {
+                          id: "device-restaurant",
+                          className: "w-full sm:w-[260px]",
+                          "data-ocid": "device.restaurant_select",
+                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            SelectValue,
+                            {
+                              placeholder: restaurantsLoading ? "Đang tải…" : "Tất cả nhà hàng"
+                            }
+                          )
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "all", "data-ocid": "device.restaurant_option.all", children: "Tất cả nhà hàng" }),
+                        restaurants == null ? void 0 : restaurants.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          SelectItem,
+                          {
+                            value: r2.restaurantId,
+                            "data-ocid": `device.restaurant_option.${r2.restaurantId}`,
+                            children: r2.name || r2.restaurantId
+                          },
+                          r2.restaurantId
+                        ))
+                      ] })
+                    ]
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "label",
+                  {
+                    htmlFor: "device-role",
+                    className: "text-sm font-medium text-muted-foreground",
+                    children: "Theo vai trò"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Select,
+                  {
+                    value: roleFilter,
+                    onValueChange: (v2) => setRoleFilter(v2),
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        SelectTrigger,
+                        {
+                          id: "device-role",
+                          className: "w-full sm:w-[200px]",
+                          "data-ocid": "device.role_select",
+                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {})
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: ROLE_FILTER_OPTIONS.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        SelectItem,
+                        {
+                          value: opt.value,
+                          "data-ocid": `device.role_option.${opt.value}`,
+                          children: opt.label
+                        },
+                        opt.value
+                      )) })
+                    ]
+                  }
+                )
+              ] })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-6", "data-ocid": "device.content", children: restaurantsLoading && !restaurants ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground",
+            "data-ocid": "device.loading_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+              "Đang tải danh sách nhà hàng…"
+            ]
+          }
+        ) : !activeRestaurantId ? /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { "data-ocid": "device.empty_restaurant_state", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Smartphone,
+              {
+                className: "h-4 w-4 text-muted-foreground",
+                "aria-hidden": "true"
+              }
+            ),
+            "Chưa có nhà hàng"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Thêm nhà hàng trước khi quản lý thiết bị." })
+        ] }) }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "device.table_card", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "font-display", children: [
+              "Thiết bị của",
+              " ",
+              ((_b2 = restaurants == null ? void 0 : restaurants.find((r2) => r2.restaurantId === activeRestaurantId)) == null ? void 0 : _b2.name) ?? activeRestaurantId
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
+              devices.length,
+              " thiết bị hiển thị sau khi lọc."
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            DeviceTable,
+            {
+              devices,
+              isLoading: devicesQuery.isLoading,
+              onRevoke: handleRevoke,
+              revokingDeviceId,
+              emptyMessage: "Chưa có thiết bị nào khớp với bộ lọc."
+            }
+          ) })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard,
+            {
+              icon: KeyRound,
+              title: "Tạo mã kích hoạt",
+              description: "Tạo mã 6 ký tự hợp lệ 15 phút để kích hoạt thiết bị mới.",
+              testId: "device.activation_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ActivationCodeForm, {})
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard,
+            {
+              icon: ShieldOff,
+              title: "Thu hồi thiết bị",
+              description: "Nhập mã thiết bị để thu hồi quyền truy cập ngay lập tức.",
+              testId: "device.revoke_by_id_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleRevokeById,
+                  className: "flex flex-col gap-3",
+                  "data-ocid": "device.revoke_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "revoke-device", className: "text-sm font-medium", children: "Mã thiết bị" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Input,
+                        {
+                          id: "revoke-device",
+                          value: revokeDeviceId,
+                          onChange: (e) => setRevokeDeviceId(e.target.value),
+                          placeholder: "VD: dev-abc123",
+                          "data-ocid": "device.revoke_input"
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        variant: "destructive",
+                        disabled: revokeByIdMutation.isPending || !revokeDeviceId.trim(),
+                        "data-ocid": "device.revoke.submit_button",
+                        className: "w-full sm:w-auto",
+                        children: [
+                          revokeByIdMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Thu hồi"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              )
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard,
+            {
+              icon: Sparkles,
+              title: "Dọn dẹp mã hết hạn",
+              description: "Xóa các mã kích hoạt đã quá hạn để giải phóng bộ nhớ canister.",
+              testId: "device.cleanup_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "outline",
+                    onClick: handleCleanup,
+                    disabled: cleanupMutation.isPending,
+                    "data-ocid": "device.cleanup.button",
+                    className: "w-full sm:w-auto",
+                    children: [
+                      cleanupMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "h-4 w-4", "aria-hidden": "true" }),
+                      "Dọn dẹp"
+                    ]
+                  }
+                ),
+                cleanedCount !== null && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "p",
+                  {
+                    className: "text-sm text-muted-foreground",
+                    "data-ocid": "device.cleanup.result",
+                    children: [
+                      "Đã dọn dẹp",
+                      " ",
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-foreground", children: cleanedCount.toString() }),
+                      " ",
+                      "mã hết hạn."
+                    ]
+                  }
+                )
+              ] })
+            }
+          )
+        ] })
+      ]
+    }
+  );
+}
+function getDeviceId() {
+  const KEY = "bb65.deviceId";
+  try {
+    const existing = localStorage.getItem(KEY);
+    if (existing) return existing;
+    const id = `dev-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+    localStorage.setItem(KEY, id);
+    return id;
+  } catch {
+    return `dev-session-${Date.now().toString(36)}`;
+  }
+}
+function ActivationForm({ onActivated }) {
+  const { actor } = useCanister();
+  const [code, setCode] = reactExports.useState("");
+  const [submitting, setSubmitting] = reactExports.useState(false);
+  const [error, setError] = reactExports.useState(null);
+  const normalized = code.trim().toUpperCase();
+  const isValid = normalized.length === 6;
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!actor || submitting || !isValid) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const deviceId = getDeviceId();
+      const device = await activateDevice(actor, normalized, deviceId);
+      if (device.role !== DeviceRole.driver) {
+        setError(
+          "Mã này không dành cho thiết bị tài xế. Vui lòng dùng mã vai trò 'driver'."
+        );
+        return;
+      }
+      if (!device.active) {
+        setError("Thiết bị chưa được kích hoạt. Vui lòng thử lại.");
+        return;
+      }
+      ue.success("Kích hoạt thiết bị thành công");
+      onActivated(device.restaurantId, device.deviceId);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/expir|hết hạn|expired/i.test(msg)) {
+        setError("Mã kích hoạt đã hết hạn (15 phút). Vui lòng yêu cầu mã mới.");
+      } else if (/used|đã dùng/i.test(msg)) {
+        setError("Mã kích hoạt đã được sử dụng. Vui lòng yêu cầu mã mới.");
+      } else if (/not found|không tìm/i.test(msg)) {
+        setError("Mã kích hoạt không đúng. Vui lòng kiểm tra lại.");
+      } else {
+        setError(`Kích hoạt thất bại: ${msg}`);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8 md:px-6 md:py-12",
+      "data-ocid": "activation.section",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "flex flex-col items-center gap-3 text-center", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary",
+              "aria-hidden": "true",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "h-8 w-8" })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-bold tracking-tight md:text-3xl", children: "Kích hoạt thiết bị" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Nhập mã kích hoạt 6 ký tự do quản trị viên cấp. Mã có hiệu lực 15 phút." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "form",
+          {
+            onSubmit: handleSubmit,
+            className: "flex flex-col gap-5",
+            "data-ocid": "activation.form",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "label",
+                  {
+                    htmlFor: "activation-code",
+                    className: "text-sm font-semibold text-foreground",
+                    children: "Mã kích hoạt"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    id: "activation-code",
+                    type: "text",
+                    inputMode: "text",
+                    autoComplete: "one-time-code",
+                    autoCapitalize: "characters",
+                    autoCorrect: "off",
+                    spellCheck: false,
+                    value: code,
+                    onChange: (e) => {
+                      setCode(e.target.value.replace(/[^A-Za-z0-9]/g, "").slice(0, 6));
+                      setError(null);
+                    },
+                    disabled: submitting,
+                    placeholder: "ABC123",
+                    "aria-label": "Mã kích hoạt 6 ký tự",
+                    "aria-invalid": !!error,
+                    "aria-describedby": error ? "activation-error" : void 0,
+                    "data-ocid": "activation.input",
+                    className: "mx-auto w-full max-w-[16rem] rounded-lg border border-input bg-card px-3 py-4 text-center font-mono text-3xl font-bold tracking-[0.4em] uppercase text-foreground shadow-sm outline-none transition-smooth placeholder:text-2xl placeholder:tracking-[0.3em] placeholder:font-normal placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-center text-xs text-muted-foreground", children: [
+                  normalized.length,
+                  "/6 ký tự"
+                ] })
+              ] }),
+              error && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "p",
+                {
+                  id: "activation-error",
+                  role: "alert",
+                  "data-ocid": "activation.error_state",
+                  className: "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm font-medium text-destructive",
+                  children: error
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "submit",
+                  disabled: submitting || !isValid,
+                  "data-ocid": "activation.submit_button",
+                  className: "inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-base font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  children: submitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin", "aria-hidden": "true" }),
+                    "Đang kích hoạt…"
+                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                    "Kích hoạt",
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-5 w-5", "aria-hidden": "true" })
+                  ] })
+                }
+              )
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Không có mã? Liên hệ quản trị viên nhà hàng để được cấp mã kích hoạt mới." })
+      ]
+    }
+  );
+}
+function formatVnd$5(amount) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+function formatTime$1(ns) {
+  const ms2 = Number(ns) / 1e6;
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(ms2));
+}
+function isPending(o) {
+  return o.paymentStatus === PaymentStatus.unpaid;
+}
+function isToday$1(ns) {
+  const ms2 = Number(ns) / 1e6;
+  const d2 = new Date(ms2);
+  const now2 = /* @__PURE__ */ new Date();
+  return d2.getFullYear() === now2.getFullYear() && d2.getMonth() === now2.getMonth() && d2.getDate() === now2.getDate();
+}
+const OVERDUE_MINUTES = 60;
+function elapsedMinutes(createdAt) {
+  const ms2 = Number(createdAt) / 1e6;
+  return (Date.now() - ms2) / 6e4;
+}
+function isOverdue(createdAt) {
+  return elapsedMinutes(createdAt) > OVERDUE_MINUTES;
+}
+function PaymentQueue({
+  orders,
+  isLoading,
+  isError,
+  onPay,
+  payingOrderId
+}) {
+  const pending = orders.filter((o) => isPending(o) && isToday$1(o.createdAt));
+  const sorted = [...pending].sort((a2, b2) => {
+    const aOverdue = isOverdue(a2.createdAt) ? 0 : 1;
+    const bOverdue = isOverdue(b2.createdAt) ? 0 : 1;
+    if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+    return Number(a2.createdAt - b2.createdAt);
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8",
+      "data-ocid": "queue.section",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center justify-between gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(ListOrdered, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-bold tracking-tight md:text-2xl", children: "Hàng đợi thanh toán" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "span",
+            {
+              className: "inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
+              "data-ocid": "queue.count",
+              children: [
+                sorted.length,
+                " đơn"
+              ]
+            }
+          )
+        ] }),
+        isError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive",
+            "data-ocid": "queue.error_state",
+            children: "Không tải được danh sách đơn. Đang thử lại tự động mỗi 5 giây…"
+          }
+        ),
+        isLoading && sorted.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-4 py-10 text-center",
+            "data-ocid": "queue.loading_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-6 w-6 animate-spin text-muted-foreground" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang tải đơn chờ…" })
+            ]
+          }
+        ),
+        !isLoading && sorted.length === 0 && !isError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
+            "data-ocid": "queue.empty_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
+                  "aria-hidden": "true",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingBag, { className: "h-7 w-7" })
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Không có đơn chờ thanh toán" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Hàng đợi trống. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
+            ]
+          }
+        ),
+        sorted.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "ul",
+          {
+            className: "flex flex-col gap-3",
+            "data-ocid": "queue.list",
+            "aria-label": "Danh sách đơn chờ thanh toán",
+            children: sorted.map((order, idx) => {
+              const isPaying = payingOrderId === order.orderId;
+              const overdue = isOverdue(order.createdAt);
+              const lateMinutes = Math.floor(
+                elapsedMinutes(order.createdAt) - OVERDUE_MINUTES
+              );
+              return /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "li",
+                {
+                  "data-ocid": `queue.item.${idx + 1}`,
+                  className: `rounded-xl border p-4 shadow-sm transition-smooth hover:shadow-md ${overdue ? "border-destructive bg-destructive/10 ring-1 ring-destructive/40" : "border-border bg-card"}`,
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary", children: [
+                          "#",
+                          idx + 1
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "span",
+                          {
+                            className: "inline-flex items-center gap-1 text-xs text-muted-foreground",
+                            title: "Thời gian tạo đơn",
+                            children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
+                              formatTime$1(order.createdAt)
+                            ]
+                          }
+                        ),
+                        overdue && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "span",
+                          {
+                            className: "inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground",
+                            "data-ocid": `queue.overdue_badge.${idx + 1}`,
+                            children: [
+                              "Trễ ",
+                              lateMinutes,
+                              " phút"
+                            ]
+                          }
+                        )
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-2 truncate font-display text-base font-semibold text-foreground", children: order.cusName || "Khách vãng lai" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 truncate font-mono text-xs text-muted-foreground", children: order.orderId }),
+                      order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-0.5 text-xs text-muted-foreground", children: [
+                        "SĐT: ",
+                        order.cusPhone
+                      ] }),
+                      order.items && order.items.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "ul",
+                        {
+                          className: "mt-2 flex flex-col gap-0.5 border-t border-border/60 pt-2",
+                          "data-ocid": `queue.item_list.${idx + 1}`,
+                          children: order.items.map((it2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "li",
+                            {
+                              className: "flex items-baseline justify-between gap-2 text-xs text-muted-foreground",
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "truncate", children: [
+                                  it2.name,
+                                  " × ",
+                                  Number(it2.quantity)
+                                ] }),
+                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$5(
+                                  BigInt(Number(it2.price) * Number(it2.quantity))
+                                ) })
+                              ]
+                            },
+                            it2.itemId
+                          ))
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-end gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$5(order.amount - order.shippingFee) }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: () => onPay(order),
+                          disabled: isPaying,
+                          "data-ocid": `queue.pay_button.${idx + 1}`,
+                          "aria-label": `Thanh toán đơn ${order.cusName || order.orderId}`,
+                          className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+                          children: isPaying ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              LoaderCircle,
+                              {
+                                className: "h-4 w-4 animate-spin",
+                                "aria-hidden": "true"
+                              }
+                            ),
+                            "Đang mở…"
+                          ] }) : "Thanh toán"
+                        }
+                      )
+                    ] })
+                  ] })
+                },
+                order.orderId
+              );
+            })
+          }
+        )
+      ]
+    }
+  );
+}
+function formatVnd$4(amount) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+function formatTime(ns) {
+  const ms2 = Number(ns) / 1e6;
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(ms2));
+}
+function isToday(ns) {
+  const ms2 = Number(ns) / 1e6;
+  const d2 = new Date(ms2);
+  const now2 = /* @__PURE__ */ new Date();
+  return d2.getFullYear() === now2.getFullYear() && d2.getMonth() === now2.getMonth() && d2.getDate() === now2.getDate();
+}
+function PickupQueue({ orders, isLoading, isError }) {
+  const today = orders.filter((o) => isToday(o.createdAt));
+  const sorted = [...today].sort((a2, b2) => Number(a2.createdAt - b2.createdAt));
+  const markPickedUp2 = useMarkPickedUp();
+  function handlePickedUp(order) {
+    markPickedUp2.mutate(order.orderId, {
+      onSuccess: (updated) => {
+        ue.success(
+          `Đã xác nhận nhận hàng: ${updated.cusName || updated.orderId}`
+        );
+      },
+      onError: (err) => {
+        ue.error(
+          `Không xác nhận được đơn ${order.cusName || order.orderId}: ${err.message}`
+        );
+      }
+    });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8",
+      "data-ocid": "pickup.section",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center justify-between gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(PackageCheck, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-bold tracking-tight md:text-2xl", children: "Hàng đợi tài xế nhận hàng" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "span",
+            {
+              className: "inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
+              "data-ocid": "pickup.count",
+              children: [
+                sorted.length,
+                " đơn"
+              ]
+            }
+          )
+        ] }),
+        isError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive",
+            "data-ocid": "pickup.error_state",
+            children: "Không tải được danh sách đơn. Đang thử lại tự động mỗi 5 giây…"
+          }
+        ),
+        isLoading && sorted.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-4 py-10 text-center",
+            "data-ocid": "pickup.loading_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-6 w-6 animate-spin text-muted-foreground" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang tải đơn chờ nhận…" })
+            ]
+          }
+        ),
+        !isLoading && sorted.length === 0 && !isError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
+            "data-ocid": "pickup.empty_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
+                  "aria-hidden": "true",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(PackageCheck, { className: "h-7 w-7" })
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Không có đơn chờ nhận hàng" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Chưa có đơn nào đã thanh toán chờ nhận. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
+            ]
+          }
+        ),
+        sorted.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "ul",
+          {
+            className: "flex flex-col gap-3",
+            "data-ocid": "pickup.list",
+            "aria-label": "Danh sách đơn chờ nhận hàng",
+            children: sorted.map((order, idx) => {
+              const isMarking = markPickedUp2.isPending;
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "li",
+                {
+                  "data-ocid": `pickup.item.${idx + 1}`,
+                  className: "rounded-xl border border-border bg-card p-4 shadow-sm transition-smooth hover:shadow-md",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "div",
+                      {
+                        className: "flex items-center justify-between gap-3 rounded-lg bg-primary/5 p-3",
+                        "data-ocid": `pickup.customer.${idx + 1}`,
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground", children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(User, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+                              "Khách hàng"
+                            ] }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-1 truncate font-display text-lg font-bold text-foreground", children: order.cusName || "Khách vãng lai" }),
+                            order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-foreground", children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                Phone,
+                                {
+                                  className: "h-3.5 w-3.5 text-primary",
+                                  "aria-hidden": "true"
+                                }
+                              ),
+                              order.cusPhone
+                            ] })
+                          ] }),
+                          order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "a",
+                            {
+                              href: `tel:${order.cusPhone}`,
+                              "data-ocid": `pickup.call_button.${idx + 1}`,
+                              "aria-label": `Gọi điện cho ${order.cusName || "khách hàng"}: ${order.cusPhone}`,
+                              className: "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Phone, { className: "h-5 w-5", "aria-hidden": "true" })
+                            }
+                          )
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-start justify-between gap-3", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary", children: [
+                            "#",
+                            idx + 1
+                          ] }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "span",
+                            {
+                              className: "inline-flex items-center gap-1 text-xs text-muted-foreground",
+                              title: "Thời gian tạo đơn",
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
+                                formatTime(order.createdAt)
+                              ]
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "span",
+                            {
+                              className: "inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success",
+                              "data-ocid": `pickup.paid_badge.${idx + 1}`,
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-3 w-3", "aria-hidden": "true" }),
+                                "Đã thanh toán"
+                              ]
+                            }
+                          )
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1.5 truncate font-mono text-xs text-muted-foreground", children: order.orderId }),
+                        order.items && order.items.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "ul",
+                          {
+                            className: "mt-2 flex flex-col gap-0.5 border-t border-border/60 pt-2",
+                            "data-ocid": `pickup.item_list.${idx + 1}`,
+                            children: order.items.map((it2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                              "li",
+                              {
+                                className: "flex items-baseline justify-between gap-2 text-xs text-muted-foreground",
+                                children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "truncate", children: [
+                                    it2.name,
+                                    " × ",
+                                    Number(it2.quantity)
+                                  ] }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$4(
+                                    BigInt(Number(it2.price) * Number(it2.quantity))
+                                  ) })
+                                ]
+                              },
+                              it2.itemId
+                            ))
+                          }
+                        )
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-end gap-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$4(order.amount - order.shippingFee) }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "button",
+                          {
+                            type: "button",
+                            onClick: () => handlePickedUp(order),
+                            disabled: isMarking,
+                            "data-ocid": `pickup.picked_up_button.${idx + 1}`,
+                            "aria-label": `Xác nhận đã nhận hàng: đơn ${order.cusName || order.orderId}`,
+                            className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-success px-4 py-2 text-sm font-semibold text-success-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+                            children: isMarking ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                LoaderCircle,
+                                {
+                                  className: "h-4 w-4 animate-spin",
+                                  "aria-hidden": "true"
+                                }
+                              ),
+                              "Đang ghi…"
+                            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                CircleCheck,
+                                {
+                                  className: "h-4 w-4",
+                                  "aria-hidden": "true"
+                                }
+                              ),
+                              "Tài xế đã nhận hàng"
+                            ] })
+                          }
+                        )
+                      ] })
+                    ] })
+                  ]
+                },
+                order.orderId
+              );
+            })
+          }
+        )
+      ]
     }
   );
 }
@@ -54086,2306 +56138,7 @@ var QRCodeSVG = React$4.forwardRef(
   }
 );
 QRCodeSVG.displayName = "QRCodeSVG";
-function formatVnd$5(value) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0
-  }).format(value);
-}
-function formatVndBigint(value) {
-  return `${new Intl.NumberFormat("vi-VN").format(Number(value))}đ`;
-}
-const EMPTY_CUSTOMER = {
-  cusName: "",
-  cusPhone: "",
-  cusAddress: "",
-  cusTaxCode: "",
-  receiverEmail: ""
-};
-const QUOTE_DEBOUNCE_MS = 900;
-const GRAB_EXPRESS_INSTRUCTIONS = `Bước tiếp theo: Đặt Grab Express để nhận hàng
-1. Mở app Grab trên điện thoại
-2. Chọn dịch vụ "GrabExpress"
-3. Điểm đón: dán địa chỉ nhà hàng (đã copy ở trên)
-4. Điểm đến: nhập địa chỉ nhận hàng của bạn
-5. Khi tài xế liên hệ, cung cấp tên + số điện thoại đặt hàng của bạn để nhà hàng đối chiếu và giao hàng
-Lưu ý: đây là bước bạn tự thực hiện trên app Grab của mình — Bunbohue65 không đặt tài xế hộ trong chế độ này.`;
-function CreateOrder() {
-  const navigate = useNavigate();
-  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
-  const { actor } = useCanister();
-  const { data: paymentModeRaw } = useGetPaymentMode();
-  const isCustomerMode = paymentModeRaw === "customer";
-  const { data: storeOpen } = useIsStoreOpen();
-  const storeClosed = storeOpen === false;
-  const [customerModeAccepted, setCustomerModeAccepted] = reactExports.useState(false);
-  const [restaurantId, setRestaurantId] = reactExports.useState("");
-  const { data: menu, isLoading: menuLoading } = useMenus();
-  const [cart, setCart] = reactExports.useState({});
-  const [customer, setCustomer] = reactExports.useState(EMPTY_CUSTOMER);
-  const [touched, setTouched] = reactExports.useState(false);
-  const [quote$1, setQuote] = reactExports.useState(null);
-  const [quoteLoading, setQuoteLoading] = reactExports.useState(false);
-  const [quoteError, setQuoteError] = reactExports.useState(null);
-  const [submitting, setSubmitting] = reactExports.useState(false);
-  const [cartOpen, setCartOpen] = reactExports.useState(false);
-  const [upsellItems, setUpsellItems] = reactExports.useState([]);
-  const quoteDebounceRef = reactExports.useRef(null);
-  const [paidOrder, setPaidOrder] = reactExports.useState(null);
-  const [qrPolling, setQrPolling] = reactExports.useState(true);
-  const [showPostPayment, setShowPostPayment] = reactExports.useState(false);
-  const qrCanvasRef = reactExports.useRef(null);
-  const [orderPlaced, setOrderPlaced] = reactExports.useState(false);
-  const [qrExpiresAt, setQrExpiresAt] = reactExports.useState(null);
-  const [, setQrExpired] = reactExports.useState(false);
-  const [qrTimeout, setQrTimeout] = reactExports.useState(false);
-  const [now2, setNow] = reactExports.useState(() => Date.now());
-  const qrTimeoutNotifiedRef = reactExports.useRef(false);
-  const selectedRestaurant = restaurants == null ? void 0 : restaurants.find(
-    (r2) => r2.restaurantId === restaurantId
-  );
-  const cartLines = reactExports.useMemo(() => {
-    if (!menu) return [];
-    return menu.filter((m2) => (cart[m2.itemId] ?? 0) > 0).map((m2) => ({ item: m2, quantity: cart[m2.itemId] }));
-  }, [menu, cart]);
-  const itemsTotal = reactExports.useMemo(
-    () => cartLines.reduce((sum, l2) => sum + Number(l2.item.price) * l2.quantity, 0),
-    [cartLines]
-  );
-  const itemCount = reactExports.useMemo(
-    () => cartLines.reduce((sum, l2) => sum + l2.quantity, 0),
-    [cartLines]
-  );
-  const customerErrors = touched ? validateCustomerForm(customer, { hideAddress: isCustomerMode }) : {};
-  function handleQuantityChange(itemId, delta) {
-    var _a2;
-    if (isCustomerMode && !customerModeAccepted) {
-      return;
-    }
-    if (delta > 0 && !restaurantId) {
-      ue.error("Vui lòng chọn nhà hàng trước khi thêm món.");
-      (_a2 = document.querySelector('[data-ocid="create_order.restaurant_card"]')) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-    const prevQty = cart[itemId] ?? 0;
-    setCart((prev) => {
-      const next = Math.max(0, (prev[itemId] ?? 0) + delta);
-      const copy = { ...prev };
-      if (next === 0) delete copy[itemId];
-      else copy[itemId] = next;
-      return copy;
-    });
-    setQuote(null);
-    setQuoteError(null);
-    if (delta > 0 && prevQty === 0 && menu) {
-      const addedItem = menu.find((m2) => m2.itemId === itemId);
-      if ((addedItem == null ? void 0 : addedItem.category) === "Món chính") {
-        const suggestions = menu.filter(
-          (m2) => m2.visible && m2.category === "Món phụ" && (cart[m2.itemId] ?? 0) === 0
-        ).slice(0, 2);
-        if (suggestions.length > 0) {
-          setUpsellItems(suggestions);
-        }
-      }
-    }
-  }
-  function handleCustomerChange(field, value) {
-    setCustomer((prev) => ({ ...prev, [field]: value }));
-    if (field === "cusAddress") {
-      setQuote(null);
-      setQuoteError(null);
-    }
-  }
-  reactExports.useEffect(() => {
-    let cancelled = false;
-    const verified = getVerifiedEmail();
-    if (!verified) return;
-    setCustomer((prev) => ({
-      ...prev,
-      receiverEmail: verified.email
-    }));
-    getCustomer(verified.email).then((customer2) => {
-      if (cancelled || !customer2) return;
-      setCustomer((prev) => ({
-        ...prev,
-        cusName: customer2.name || prev.cusName,
-        cusPhone: customer2.phone || prev.cusPhone
-      }));
-    }).catch(() => {
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  function handleRestaurantChange(id) {
-    if (restaurantId && id !== restaurantId && itemCount > 0 && !window.confirm(
-      "Đổi nhà hàng sẽ xoá các món đã chọn trong giỏ hàng. Tiếp tục?"
-    )) {
-      return;
-    }
-    setRestaurantId(id);
-    setCart({});
-    setQuote(null);
-    setQuoteError(null);
-    setUpsellItems([]);
-  }
-  const canRequestQuote = reactExports.useCallback(() => {
-    return !!restaurantId && cartLines.length > 0 && !!customer.cusAddress.trim() && !!(selectedRestaurant == null ? void 0 : selectedRestaurant.address);
-  }, [
-    restaurantId,
-    cartLines.length,
-    customer.cusAddress,
-    selectedRestaurant == null ? void 0 : selectedRestaurant.address
-  ]);
-  const runQuote = reactExports.useCallback(async () => {
-    if (!canRequestQuote() || quoteLoading) return;
-    setQuoteLoading(true);
-    setQuoteError(null);
-    try {
-      const payload = {
-        restaurantId,
-        pickupAddress: selectedRestaurant.address,
-        dropAddress: customer.cusAddress.trim(),
-        items: cartLines.map((l2) => ({
-          itemId: l2.item.itemId,
-          name: l2.item.name,
-          quantity: l2.quantity
-        }))
-      };
-      const res = await quote(payload);
-      setQuote(res);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Không lấy được phí ship.";
-      setQuoteError(msg);
-    } finally {
-      setQuoteLoading(false);
-    }
-  }, [
-    canRequestQuote,
-    quoteLoading,
-    restaurantId,
-    selectedRestaurant,
-    customer.cusAddress,
-    cartLines
-  ]);
-  reactExports.useEffect(() => {
-    if (isCustomerMode) return;
-    if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
-    if (!restaurantId || !customer.cusAddress.trim() || cartLines.length === 0 || !(selectedRestaurant == null ? void 0 : selectedRestaurant.address)) {
-      return;
-    }
-    quoteDebounceRef.current = setTimeout(() => {
-      runQuote();
-    }, QUOTE_DEBOUNCE_MS);
-    return () => {
-      if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
-    };
-  }, [
-    isCustomerMode,
-    customer.cusAddress,
-    restaurantId,
-    cartLines.length,
-    selectedRestaurant == null ? void 0 : selectedRestaurant.address,
-    runQuote
-  ]);
-  reactExports.useEffect(() => {
-    if (!actor || !paidOrder || !qrPolling) return;
-    let cancelled = false;
-    async function check() {
-      if (!actor || !paidOrder || cancelled) return;
-      try {
-        const s = await getOrderStatus(actor, paidOrder.orderId);
-        if (cancelled) return;
-        if (s.paymentStatus === PaymentStatus.paid) {
-          setQrPolling(false);
-          setTimeout(() => {
-            if (!cancelled) setShowPostPayment(true);
-          }, 1500);
-        }
-      } catch (err) {
-        if (cancelled) return;
-        const msg = err instanceof Error ? err.message : "Không kiểm tra được trạng thái thanh toán.";
-        ue.error("Lỗi kiểm tra thanh toán", { description: msg });
-      }
-    }
-    void check();
-    const id = setInterval(check, 5e3);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [actor, paidOrder, qrPolling]);
-  reactExports.useEffect(() => {
-    if (!paidOrder || showPostPayment) return;
-    const id = setInterval(() => setNow(Date.now()), 1e3);
-    return () => clearInterval(id);
-  }, [paidOrder, showPostPayment]);
-  reactExports.useEffect(() => {
-    if (!paidOrder || !qrExpiresAt || showPostPayment) return;
-    if (now2 >= qrExpiresAt) {
-      setQrExpired(true);
-      if (!qrTimeoutNotifiedRef.current) {
-        qrTimeoutNotifiedRef.current = true;
-        setQrPolling(false);
-        setQrTimeout(true);
-        ue.error("QR thanh toán đã hết hạn", {
-          description: "Đơn chưa được thanh toán trong 15 phút. Bạn có thể hủy đơn hoặc liên hệ nhà hàng để được hỗ trợ."
-        });
-      }
-    }
-  }, [now2, qrExpiresAt, paidOrder, showPostPayment]);
-  async function handleSubmit() {
-    setTouched(true);
-    const errs = validateCustomerForm(customer, {
-      hideAddress: isCustomerMode
-    });
-    if (Object.keys(errs).length > 0) {
-      ue.error("Vui lòng kiểm tra thông tin khách hàng.");
-      return;
-    }
-    if (!restaurantId || cartLines.length === 0) {
-      ue.error("Vui lòng chọn nhà hàng và ít nhất một món.");
-      return;
-    }
-    if (!isCustomerMode && !quote$1) {
-      ue.error("Đang chờ tính phí ship, vui lòng đợi trong giây lát.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const payload = {
-        restaurantId,
-        pickupAddress: selectedRestaurant.address,
-        cusName: customer.cusName.trim(),
-        cusPhone: customer.cusPhone.trim(),
-        cusAddress: customer.cusAddress.trim(),
-        cusTaxCode: customer.cusTaxCode.trim(),
-        receiverEmail: customer.receiverEmail.trim(),
-        items: cartLines.map((l2) => ({
-          itemId: l2.item.itemId,
-          name: l2.item.name,
-          quantity: l2.quantity,
-          price: Number(l2.item.price),
-          vatRate: Number(l2.item.vatRate),
-          unitName: l2.item.unitName
-        })),
-        // Luồng customer: không có phí ship (VPS sẽ branch trên paymentMode).
-        shippingFee: isCustomerMode ? 0 : quote$1.shippingFee,
-        ahamoveOrderId: isCustomerMode ? "" : quote$1.ahamoveOrderId
-      };
-      const res = await create(payload);
-      if (!res.ok) {
-        throw new Error(res.error ?? "VPS từ chối tạo đơn.");
-      }
-      try {
-        const raw = localStorage.getItem("bbh_my_orders");
-        const arr = raw ? JSON.parse(raw) : [];
-        const list = Array.isArray(arr) ? arr : [];
-        list.push(res.orderId);
-        localStorage.setItem("bbh_my_orders", JSON.stringify(list));
-      } catch {
-      }
-      if (isCustomerMode) {
-        setOrderPlaced(true);
-        setCart({});
-        if (!actor) {
-          ue.error("Không kết nối được canister để tải QR thanh toán.");
-          return;
-        }
-        try {
-          let order = null;
-          if (res.pendingSync) {
-            ue.info("Đang đồng bộ đơn hàng…", {
-              description: "Hệ thống đang đồng bộ đơn với máy chủ. Vui lòng đợi trong giây lát."
-            });
-            const syncDeadline = Date.now() + 3e4;
-            while (Date.now() < syncDeadline) {
-              try {
-                order = await getOrder(actor, res.orderId);
-                break;
-              } catch {
-                await new Promise((r2) => setTimeout(r2, 2e3));
-              }
-            }
-            if (!order) {
-              throw new Error(
-                "Đơn chưa đồng bộ xong với máy chủ. Vui lòng thử lại sau."
-              );
-            }
-          } else {
-            order = await getOrder(actor, res.orderId);
-          }
-          setPaidOrder(order);
-          setQrPolling(true);
-          setShowPostPayment(false);
-          setQrExpiresAt(Number(order.createdAt) / 1e6 + 15 * 60 * 1e3);
-          setQrExpired(false);
-          setQrTimeout(false);
-          qrTimeoutNotifiedRef.current = false;
-          setNow(Date.now());
-          ue.success("Đặt đơn thành công!", {
-            description: "Vui lòng quét QR để thanh toán."
-          });
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Không tải được QR thanh toán.";
-          ue.error("Không tải được QR thanh toán", { description: msg });
-        }
-      } else {
-        ue.success("Đặt đơn thành công!", {
-          description: `Mã đơn: ${res.orderId}`
-        });
-        setCart({});
-        setCustomer(EMPTY_CUSTOMER);
-        setQuote(null);
-        setTouched(false);
-        setCartOpen(false);
-        navigate({ to: "/track/$orderId", params: { orderId: res.orderId } });
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Đặt đơn thất bại.";
-      ue.error("Đặt đơn thất bại", { description: msg });
-    } finally {
-      setSubmitting(false);
-    }
-  }
-  async function handleCopyQrPng() {
-    const canvas = qrCanvasRef.current;
-    if (!canvas) {
-      ue.error("QR chưa sẵn sàng để copy.");
-      return;
-    }
-    try {
-      const blob = await new Promise(
-        (resolve) => canvas.toBlob((b2) => resolve(b2), "image/png")
-      );
-      if (!blob) {
-        throw new Error("Không tạo được ảnh PNG từ QR.");
-      }
-      if (typeof navigator !== "undefined" && navigator.clipboard && typeof ClipboardItem !== "undefined") {
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob })
-        ]);
-        ue.success("Đã copy ảnh QR vào clipboard.");
-        return;
-      }
-      const url = canvas.toDataURL("image/png");
-      const a2 = document.createElement("a");
-      a2.href = url;
-      a2.download = "qr-thanh-toan.png";
-      document.body.appendChild(a2);
-      a2.click();
-      document.body.removeChild(a2);
-      ue.success(
-        "Trình duyệt không hỗ trợ copy ảnh — đã tải file qr-thanh-toan.png."
-      );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Không copy được ảnh QR.";
-      ue.error("Copy ảnh QR thất bại", { description: msg });
-    }
-  }
-  async function handleCopyRestaurantAddress() {
-    const addr = (selectedRestaurant == null ? void 0 : selectedRestaurant.address) ?? (paidOrder == null ? void 0 : paidOrder.cusAddress) ?? "";
-    if (!addr) {
-      ue.error("Không có địa chỉ nhà hàng để copy.");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(addr);
-      ue.success("Đã copy địa chỉ nhà hàng.");
-    } catch {
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = addr;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        ue.success("Đã copy địa chỉ nhà hàng.");
-      } catch {
-        ue.error("Không copy được địa chỉ.");
-      }
-    }
-  }
-  const totalAmount = (quote$1 == null ? void 0 : quote$1.amount) ?? itemsTotal;
-  const qrPayAmount = paidOrder ? paidOrder.amount - paidOrder.shippingFee : 0n;
-  const restaurantAddressForPost = (selectedRestaurant == null ? void 0 : selectedRestaurant.address) ?? (paidOrder == null ? void 0 : paidOrder.cusAddress) ?? "";
-  const remainingMs = qrExpiresAt ? Math.max(0, qrExpiresAt - now2) : 0;
-  const remainingSec = Math.floor(remainingMs / 1e3);
-  const countdownText = `${String(Math.floor(remainingSec / 60)).padStart(
-    2,
-    "0"
-  )}:${String(remainingSec % 60).padStart(2, "0")}`;
-  function handleQrTimeoutDismiss() {
-    setQrTimeout(false);
-    setQrExpired(false);
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bbh-order-theme bg-background text-foreground", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-2xl px-4 py-6 pb-28 md:px-6 md:py-10",
-      "data-ocid": "create_order.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-6 flex flex-col gap-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "h1",
-            {
-              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
-              "data-ocid": "create_order.title",
-              children: "Đặt món"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: isCustomerMode ? "Chọn nhà hàng, chọn món, nhập tên + SĐT — thanh toán QR rồi tự đặt Grab Express nhận hàng." : "Chọn nhà hàng, chọn món, nhập thông tin khách — phí ship sẽ tự động tính khi bạn điền địa chỉ." })
-        ] }),
-        storeClosed ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col items-center gap-4 rounded-2xl border border-border bg-primary/5 px-6 py-12 text-center",
-            "data-ocid": "create_order.closed_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-7 w-7", "aria-hidden": "true" }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-xl font-bold text-foreground", children: "Cửa hàng đang đóng" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "max-w-sm text-sm text-muted-foreground", children: "Hiện tại ngoài giờ mở cửa nên bạn chưa thể đặt món. Vui lòng quay lại trong giờ hoạt động của cửa hàng để đặt hàng." })
-            ]
-          }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-6", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.restaurant_card", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 text-base", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground", children: "1" }),
-                "Chọn nhà hàng"
-              ] }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                RestaurantSelect,
-                {
-                  restaurants,
-                  isLoading: restaurantsLoading,
-                  value: restaurantId,
-                  onChange: handleRestaurantChange
-                }
-              ) })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "create_order.menu_card", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 text-base", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground", children: "2" }),
-                "Chọn món"
-              ] }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { children: [
-                !restaurantId && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "div",
-                  {
-                    className: "mb-3 flex items-center gap-2 rounded-lg border border-dashed border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground",
-                    "data-ocid": "create_order.menu_hint",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        Package,
-                        {
-                          className: "h-4 w-4 shrink-0",
-                          "aria-hidden": "true"
-                        }
-                      ),
-                      "Xem menu thoải mái — chỉ cần chọn nhà hàng ở bước 1 trước khi thêm món vào giỏ."
-                    ]
-                  }
-                ),
-                isCustomerMode && !customerModeAccepted ? (
-                  // Cổng chấp nhận: thay menu bằng cảnh báo bắt buộc. Khách phải
-                  // bấm "Tôi hiểu và đồng ý" mỗi lần vào trang trước khi chọn món.
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    AlertDialog,
-                    {
-                      open: isCustomerMode && !customerModeAccepted,
-                      onOpenChange: () => {
-                      },
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogContent, { "data-ocid": "create_order.customer_accept_dialog", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogHeader, { children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogTitle, { children: "Xác nhận chế độ tự thanh toán" }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogDescription, { children: "Bạn đang ở chế độ tự thanh toán: quý khách tự quét QR thanh toán và tự đặt Grab Express nhận hàng. Phí ship do quý khách tự chịu." })
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogFooter, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          AlertDialogAction,
-                          {
-                            onClick: () => setCustomerModeAccepted(true),
-                            "data-ocid": "create_order.customer_accept_button",
-                            children: "Tôi hiểu và đồng ý"
-                          }
-                        ) })
-                      ] })
-                    }
-                  )
-                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  MenuPicker,
-                  {
-                    menu,
-                    isLoading: menuLoading,
-                    cart,
-                    onQuantityChange: handleQuantityChange,
-                    disabled: submitting,
-                    fixedCategory: "Món chính"
-                  }
-                )
-              ] })
-            ] })
-          ] }),
-          upsellItems.length > 0 && (!isCustomerMode || customerModeAccepted) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
-            {
-              className: "fixed inset-x-4 bottom-24 z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise",
-              "data-ocid": "create_order.upsell_strip",
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-2 flex items-center justify-between", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-xs font-semibold text-[oklch(var(--bbh-gold))]", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-                    "Gọi thêm cho tròn vị?"
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "button",
-                    {
-                      type: "button",
-                      "aria-label": "Đóng gợi ý",
-                      onClick: () => setUpsellItems([]),
-                      className: "text-muted-foreground hover:text-foreground",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "h-4 w-4", "aria-hidden": "true" })
-                    }
-                  )
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2", children: upsellItems.map((m2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "div",
-                  {
-                    className: "flex flex-1 items-center justify-between gap-2 rounded-lg bg-secondary p-2",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-1 text-xs font-semibold", children: m2.name }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: formatVnd$5(Number(m2.price)) })
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "button",
-                        {
-                          type: "button",
-                          "aria-label": `Thêm ${m2.name}`,
-                          onClick: () => {
-                            handleQuantityChange(m2.itemId, 1);
-                            setUpsellItems(
-                              (prev) => prev.filter((x3) => x3.itemId !== m2.itemId)
-                            );
-                          },
-                          className: "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground",
-                          children: "+"
-                        }
-                      )
-                    ]
-                  },
-                  m2.itemId
-                )) })
-              ]
-            }
-          ),
-          itemCount > 0 && !paidOrder && (!isCustomerMode || customerModeAccepted) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
-            {
-              type: "button",
-              onClick: () => setCartOpen(true),
-              className: "fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-gradient-primary px-5 py-4 text-primary-foreground shadow-elevated",
-              "data-ocid": "create_order.open_cart_button",
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex flex-col items-start", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs opacity-90", children: [
-                    itemCount,
-                    " món"
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold", children: formatVnd$5(totalAmount) })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingCart, { className: "h-4 w-4", "aria-hidden": "true" }),
-                  "Xem giỏ hàng"
-                ] })
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Sheet, { open: cartOpen, onOpenChange: setCartOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            SheetContent,
-            {
-              side: "bottom",
-              className: "bbh-order-theme flex max-h-[92vh] flex-col overflow-y-auto rounded-t-2xl bg-background text-foreground",
-              "data-ocid": "create_order.cart_sheet",
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(SheetHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SheetTitle, { className: "font-display", children: "Giỏ hàng của bạn" }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4 pb-4", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "ul",
-                    {
-                      className: "flex flex-col gap-2",
-                      "data-ocid": "create_order.cart_lines",
-                      children: cartLines.map((l2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                        "li",
-                        {
-                          className: "flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm",
-                          children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-1 font-medium", children: l2.item.name }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground", children: [
-                                formatVnd$5(Number(l2.item.price)),
-                                " × ",
-                                l2.quantity
-                              ] })
-                            ] }),
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                Button,
-                                {
-                                  type: "button",
-                                  variant: "outline",
-                                  size: "icon",
-                                  className: "h-11 w-11",
-                                  onClick: () => handleQuantityChange(l2.item.itemId, -1),
-                                  children: "−"
-                                }
-                              ),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "w-6 text-center font-mono", children: l2.quantity }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                Button,
-                                {
-                                  type: "button",
-                                  variant: "outline",
-                                  size: "icon",
-                                  className: "h-11 w-11",
-                                  onClick: () => handleQuantityChange(l2.item.itemId, 1),
-                                  children: "+"
-                                }
-                              )
-                            ] })
-                          ]
-                        },
-                        l2.item.itemId
-                      ))
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mb-2 text-sm font-semibold", children: "Thông tin khách hàng" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      CustomerForm,
-                      {
-                        values: customer,
-                        errors: customerErrors,
-                        onChange: handleCustomerChange,
-                        disabled: submitting,
-                        hideAddress: isCustomerMode
-                      }
-                    )
-                  ] }),
-                  !isCustomerMode && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "div",
-                    {
-                      className: "rounded-lg border border-dashed border-border bg-card p-3",
-                      "data-ocid": "create_order.quote_panel",
-                      children: quoteLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-muted-foreground", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          LoaderCircle,
-                          {
-                            className: "h-3.5 w-3.5 animate-spin",
-                            "aria-hidden": "true"
-                          }
-                        ),
-                        "Đang tính phí ship…"
-                      ] }) : quoteError ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-destructive", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          CircleAlert,
-                          {
-                            className: "h-3.5 w-3.5 shrink-0",
-                            "aria-hidden": "true"
-                          }
-                        ),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "min-w-0 flex-1", children: quoteError }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          "button",
-                          {
-                            type: "button",
-                            className: "shrink-0 underline",
-                            onClick: () => runQuote(),
-                            children: "Thử lại"
-                          }
-                        )
-                      ] }) : quote$1 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1.5 text-sm", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Tạm tính (đã gồm VAT)" }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$5(itemsTotal) })
-                        ] }),
-                        quote$1.packagingQty > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 text-muted-foreground", children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              Package,
-                              {
-                                className: "h-3.5 w-3.5",
-                                "aria-hidden": "true"
-                              }
-                            ),
-                            quote$1.packagingItemName || "Dụng cụ đựng đồ ăn",
-                            " ",
-                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", children: "Bắt buộc" })
-                          ] }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$5(quote$1.packagingFee) })
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 text-muted-foreground", children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              Truck,
-                              {
-                                className: "h-3.5 w-3.5",
-                                "aria-hidden": "true"
-                              }
-                            ),
-                            "Phí ship"
-                          ] }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$5(quote$1.shippingFee) })
-                        ] })
-                      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Nhập địa chỉ giao hàng ở trên — phí ship sẽ tự động hiện ở đây." })
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(Separator, {}),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-sm font-semibold", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4", "aria-hidden": "true" }),
-                      "Tổng tiền"
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]", children: formatVnd$5(totalAmount) })
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sticky bottom-0 -mx-6 border-t border-border bg-background px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    Button,
-                    {
-                      type: "button",
-                      className: "min-h-[48px] w-full bg-gradient-primary text-primary-foreground",
-                      onClick: handleSubmit,
-                      disabled: submitting || orderPlaced || cartLines.length === 0 || !isCustomerMode && !quote$1 || Object.keys(customerErrors).length > 0,
-                      "data-ocid": "create_order.submit_button",
-                      children: submitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          LoaderCircle,
-                          {
-                            className: "h-4 w-4 animate-spin",
-                            "aria-hidden": "true"
-                          }
-                        ),
-                        "Đang đặt đơn…"
-                      ] }) : isCustomerMode ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          ShoppingCart,
-                          {
-                            className: "h-4 w-4",
-                            "aria-hidden": "true"
-                          }
-                        ),
-                        "Đặt đơn và Thanh toán · ",
-                        formatVnd$5(totalAmount)
-                      ] }) : !quote$1 ? "Đang chờ tính phí ship…" : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          ShoppingCart,
-                          {
-                            className: "h-4 w-4",
-                            "aria-hidden": "true"
-                          }
-                        ),
-                        "Đặt đơn · ",
-                        formatVnd$5(totalAmount)
-                      ] })
-                    }
-                  ) })
-                ] })
-              ]
-            }
-          ) }),
-          paidOrder && !showPostPayment && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
-            {
-              className: "mt-6 flex flex-col items-center gap-5 rounded-2xl border border-border bg-card p-6 shadow-elevated",
-              "data-ocid": "create_order.qr_card",
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "h2",
-                    {
-                      className: "font-display text-xl font-bold text-foreground",
-                      "data-ocid": "create_order.qr_title",
-                      children: "Quét QR để thanh toán"
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-muted-foreground", children: "Số tiền thanh toán" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "p",
-                    {
-                      className: "font-display text-3xl font-bold tracking-tight text-[oklch(var(--bbh-gold))]",
-                      "data-ocid": "create_order.qr_amount",
-                      children: formatVndBigint(qrPayAmount)
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Tiền hàng — phí ship = 0 ở chế độ khách tự thanh toán" })
-                ] }),
-                !qrTimeout && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "div",
-                  {
-                    className: "flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 py-1.5 text-xs font-medium text-muted-foreground",
-                    "data-ocid": "create_order.qr_countdown",
-                    role: "timer",
-                    "aria-live": "polite",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-                      "QR hết hạn sau ",
-                      countdownText
-                    ]
-                  }
-                ),
-                qrTimeout && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "div",
-                  {
-                    className: "flex w-full max-w-sm flex-col gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4",
-                    "data-ocid": "create_order.qr_timeout_warning",
-                    role: "alert",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          CircleAlert,
-                          {
-                            className: "mt-0.5 h-5 w-5 shrink-0 text-destructive",
-                            "aria-hidden": "true"
-                          }
-                        ),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-destructive", children: "QR thanh toán đã hết hạn" }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Đơn chưa được thanh toán trong 15 phút nên mã QR không còn hiệu lực. Bạn có thể hủy đơn hoặc liên hệ nhà hàng để được hỗ trợ." })
-                        ] })
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        Button,
-                        {
-                          type: "button",
-                          variant: "outline",
-                          className: "min-h-[44px] w-full",
-                          onClick: handleQrTimeoutDismiss,
-                          "data-ocid": "create_order.qr_timeout_dismiss_button",
-                          children: "Đã hiểu"
-                        }
-                      )
-                    ]
-                  }
-                ),
-                paidOrder.tingeeQrCode ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "div",
-                  {
-                    className: "rounded-xl bg-foreground p-4 md:p-6",
-                    "data-ocid": "create_order.qr_canvas",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      QRCodeCanvas,
-                      {
-                        ref: (node) => {
-                          qrCanvasRef.current = node;
-                        },
-                        value: paidOrder.tingeeQrCode,
-                        size: 256,
-                        level: "M",
-                        includeMargin: false,
-                        bgColor: "#000000",
-                        fgColor: "#ffffff",
-                        "aria-label": "Mã QR thanh toán Tingee"
-                      }
-                    )
-                  }
-                ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "div",
-                  {
-                    className: "flex w-full max-w-sm flex-col items-center gap-3 rounded-xl bg-secondary p-4 text-center",
-                    "data-ocid": "create_order.qr_not_ready",
-                    role: "alert",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        LoaderCircle,
-                        {
-                          className: "h-6 w-6 animate-spin text-muted-foreground",
-                          "aria-hidden": "true"
-                        }
-                      ),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Mã QR đang được tạo. Vui lòng đợi trong giây lát…" })
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full max-w-sm flex-col gap-2", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                    Button,
-                    {
-                      type: "button",
-                      variant: "outline",
-                      className: "min-h-[44px] w-full",
-                      onClick: handleCopyQrPng,
-                      disabled: !paidOrder.tingeeQrCode,
-                      "data-ocid": "create_order.copy_qr_png_button",
-                      children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" }),
-                        "Copy ảnh QR"
-                      ]
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Đang kiểm tra trạng thái mỗi 5 giây. QR sẽ tự đóng khi nhận được xác nhận thanh toán." })
-                ] })
-              ]
-            }
-          ),
-          showPostPayment && paidOrder && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
-            {
-              className: "mt-6 flex flex-col gap-4",
-              "data-ocid": "create_order.post_payment",
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "div",
-                  {
-                    className: "flex items-center gap-2 rounded-xl border border-success/40 bg-success/15 px-4 py-3 text-success",
-                    "data-ocid": "create_order.paid_banner",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-5 w-5", "aria-hidden": "true" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-bold", children: "Đơn đã thanh toán" })
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "div",
-                  {
-                    className: "rounded-xl border border-border bg-card p-4",
-                    "data-ocid": "create_order.restaurant_address_card",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(MapPin, { className: "h-4 w-4", "aria-hidden": "true" }),
-                        "Địa chỉ nhà hàng"
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mb-3 text-sm text-muted-foreground", children: restaurantAddressForPost || "Không có địa chỉ nhà hàng." }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                        Button,
-                        {
-                          type: "button",
-                          variant: "outline",
-                          className: "min-h-[44px] w-full",
-                          onClick: handleCopyRestaurantAddress,
-                          disabled: !restaurantAddressForPost,
-                          "data-ocid": "create_order.copy_address_button",
-                          children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" }),
-                            "Sao chép"
-                          ]
-                        }
-                      )
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "div",
-                  {
-                    className: "rounded-xl border border-border bg-secondary/40 p-4",
-                    "data-ocid": "create_order.grab_instructions",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(Truck, { className: "h-4 w-4", "aria-hidden": "true" }),
-                        "Hướng dẫn đặt Grab Express"
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "pre",
-                        {
-                          className: "whitespace-pre-wrap font-body text-sm leading-relaxed text-foreground",
-                          "data-ocid": "create_order.grab_instructions_text",
-                          children: GRAB_EXPRESS_INSTRUCTIONS
-                        }
-                      )
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: 'Đơn hàng đã lưu vào "Theo dõi đơn" — bạn có thể xem lại ở menu.' })
-              ]
-            }
-          )
-        ] })
-      ]
-    }
-  ) });
-}
-const ROLE_OPTIONS = [
-  { value: DeviceRole.cashier, label: "Thu ngân" },
-  { value: DeviceRole.driver, label: "Tài xế" },
-  { value: DeviceRole.admin, label: "Quản trị" }
-];
-function formatExpiry(ns) {
-  if (!ns || ns <= 0n) return "—";
-  try {
-    const ms2 = Number(ns / 1000000n);
-    if (!Number.isFinite(ms2) || ms2 <= 0) return "—";
-    return new Date(ms2).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  } catch {
-    return "—";
-  }
-}
-function ActivationCodeForm() {
-  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
-  const generateMutation = useGenerateActivationCode();
-  const [restaurantId, setRestaurantId] = reactExports.useState("");
-  const [role, setRole] = reactExports.useState(DeviceRole.cashier);
-  const [result, setResult] = reactExports.useState(null);
-  const canSubmit = !!restaurantId && !!role && !generateMutation.isPending;
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!restaurantId || !role) {
-      ue.error("Vui lòng chọn nhà hàng và vai trò.");
-      return;
-    }
-    try {
-      const pending = await generateMutation.mutateAsync({
-        restaurantId,
-        role
-      });
-      setResult({
-        code: pending.code,
-        expiresAt: pending.expiresAt,
-        restaurantId,
-        role
-      });
-      ue.success("Đã tạo mã kích hoạt thành công.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể tạo mã kích hoạt.";
-      ue.error(message);
-    }
-  }
-  async function copyCode() {
-    if (!(result == null ? void 0 : result.code)) return;
-    try {
-      await navigator.clipboard.writeText(result.code);
-      ue.success("Đã sao chép mã kích hoạt.");
-    } catch {
-      ue.error("Không sao chép được mã. Vui lòng sao chép thủ công.");
-    }
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "form",
-    {
-      onSubmit: handleSubmit,
-      className: "flex flex-col gap-4",
-      "data-ocid": "activation.form",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "activation-restaurant", className: "text-sm font-medium", children: "Nhà hàng" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            Select,
-            {
-              value: restaurantId,
-              onValueChange: (v2) => {
-                setRestaurantId(v2);
-                setResult(null);
-              },
-              disabled: restaurantsLoading,
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  SelectTrigger,
-                  {
-                    id: "activation-restaurant",
-                    className: "w-full",
-                    "data-ocid": "activation.restaurant_select",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      SelectValue,
-                      {
-                        placeholder: restaurantsLoading ? "Đang tải…" : "Chọn nhà hàng"
-                      }
-                    )
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: restaurants && restaurants.length > 0 ? restaurants.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  SelectItem,
-                  {
-                    value: r2.restaurantId,
-                    "data-ocid": `activation.restaurant_option.${r2.restaurantId}`,
-                    children: r2.name || r2.restaurantId
-                  },
-                  r2.restaurantId
-                )) : /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "__none", disabled: true, children: "Chưa có nhà hàng" }) })
-              ]
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "activation-role", className: "text-sm font-medium", children: "Vai trò" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            Select,
-            {
-              value: role,
-              onValueChange: (v2) => {
-                setRole(v2);
-                setResult(null);
-              },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  SelectTrigger,
-                  {
-                    id: "activation-role",
-                    className: "w-full",
-                    "data-ocid": "activation.role_select",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: "Chọn vai trò" })
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: ROLE_OPTIONS.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  SelectItem,
-                  {
-                    value: opt.value,
-                    "data-ocid": `activation.role_option.${opt.value}`,
-                    children: opt.label
-                  },
-                  opt.value
-                )) })
-              ]
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          Button,
-          {
-            type: "submit",
-            disabled: !canSubmit,
-            "data-ocid": "activation.submit_button",
-            className: "w-full sm:w-auto",
-            children: [
-              generateMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(KeyRound, { className: "h-4 w-4", "aria-hidden": "true" }),
-              "Tạo mã kích hoạt"
-            ]
-          }
-        ),
-        result && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col gap-3 rounded-lg border border-success/40 bg-success/10 p-4",
-            "data-ocid": "activation.result",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-medium uppercase tracking-wide text-success", children: "Mã kích hoạt" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    Input,
-                    {
-                      readOnly: true,
-                      value: result.code,
-                      className: "font-mono text-lg font-semibold tracking-widest",
-                      "data-ocid": "activation.code_input",
-                      "aria-label": "Mã kích hoạt 6 ký tự"
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    Button,
-                    {
-                      type: "button",
-                      variant: "outline",
-                      size: "icon",
-                      onClick: copyCode,
-                      "data-ocid": "activation.copy_button",
-                      "aria-label": "Sao chép mã kích hoạt",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
-                    }
-                  )
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1 text-sm", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Hết hạn lúc:" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: formatExpiry(result.expiresAt) })
-              ] })
-            ]
-          }
-        )
-      ]
-    }
-  );
-}
-const ROLE_LABELS = {
-  [DeviceRole.admin]: "Quản trị",
-  [DeviceRole.cashier]: "Thu ngân",
-  [DeviceRole.driver]: "Tài xế"
-};
-function formatTimestamp(ns) {
-  if (!ns || ns <= 0n) return "—";
-  try {
-    const ms2 = Number(ns / 1000000n);
-    if (!Number.isFinite(ms2) || ms2 <= 0) return "—";
-    return new Date(ms2).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  } catch {
-    return "—";
-  }
-}
-function truncateId(id, max2 = 14) {
-  if (!id) return "—";
-  if (id.length <= max2) return id;
-  return `${id.slice(0, 6)}…${id.slice(-4)}`;
-}
-function DeviceTable({
-  devices,
-  isLoading = false,
-  onRevoke,
-  revokingDeviceId = null,
-  emptyMessage = "Chưa có thiết bị nào."
-}) {
-  if (isLoading) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      "div",
-      {
-        className: "flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground",
-        "data-ocid": "device.table.loading_state",
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
-          "Đang tải danh sách thiết bị…"
-        ]
-      }
-    );
-  }
-  if (!devices || devices.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        className: "flex flex-col items-center justify-center gap-2 py-10 text-center",
-        "data-ocid": "device.table.empty_state",
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: emptyMessage })
-      }
-    );
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      className: "overflow-hidden rounded-lg border border-border",
-      "data-ocid": "device.table",
-      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { className: "bg-muted/40", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "pl-3", children: "Mã thiết bị" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Nhà hàng" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Vai trò" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Kích hoạt lúc" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-center", children: "Trạng thái" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "pr-3 text-right", children: "Thao tác" })
-        ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: devices.map((device, index2) => {
-          const isRevoking = revokingDeviceId === device.deviceId;
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            TableRow,
-            {
-              "data-ocid": `device.table.row.${index2}`,
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pl-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "span",
-                  {
-                    className: "font-mono text-xs text-foreground",
-                    title: device.deviceId,
-                    children: truncateId(device.deviceId)
-                  }
-                ) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-foreground", children: device.restaurantId || "—" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-foreground", children: ROLE_LABELS[device.role] ?? device.role }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-muted-foreground", children: formatTimestamp(device.activatedAt) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-center", children: device.active ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "span",
-                  {
-                    className: "badge-success inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                    "data-ocid": `device.table.status.${index2}`,
-                    children: "Kích hoạt"
-                  }
-                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "span",
-                  {
-                    className: "badge-destructive inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                    "data-ocid": `device.table.status.${index2}`,
-                    children: "Đã thu hồi"
-                  }
-                ) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "pr-3 text-right", children: device.active && onRevoke ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  Button,
-                  {
-                    type: "button",
-                    variant: "destructive",
-                    size: "sm",
-                    onClick: () => onRevoke(device.deviceId),
-                    disabled: isRevoking,
-                    "data-ocid": `device.table.revoke_button.${index2}`,
-                    "aria-label": `Thu hồi thiết bị ${truncateId(device.deviceId)}`,
-                    children: [
-                      isRevoking ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        LoaderCircle,
-                        {
-                          className: "h-3.5 w-3.5 animate-spin",
-                          "aria-hidden": "true"
-                        }
-                      ) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-                      "Thu hồi"
-                    ]
-                  }
-                ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" }) })
-              ]
-            },
-            device.deviceId
-          );
-        }) })
-      ] })
-    }
-  );
-}
-function SectionCard({
-  icon: Icon2,
-  title,
-  description,
-  children,
-  testId
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": testId, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
-        title
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: description })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children })
-  ] });
-}
-const ROLE_FILTER_OPTIONS = [
-  { value: "all", label: "Tất cả vai trò" },
-  { value: DeviceRole.admin, label: "Quản trị" },
-  { value: DeviceRole.cashier, label: "Thu ngân" },
-  { value: DeviceRole.driver, label: "Tài xế" }
-];
-function matchesRole(device, filter) {
-  if (filter === "all") return true;
-  return device.role === filter;
-}
-function DeviceManager() {
-  var _a2, _b2;
-  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
-  const [selectedRestaurant, setSelectedRestaurant] = reactExports.useState("");
-  const [roleFilter, setRoleFilter] = reactExports.useState("all");
-  const [revokingDeviceId, setRevokingDeviceId] = reactExports.useState(null);
-  const [revokeDeviceId, setRevokeDeviceId] = reactExports.useState("");
-  const [cleanedCount, setCleanedCount] = reactExports.useState(null);
-  const devicesQuery = useDevicesByRestaurant(selectedRestaurant || void 0);
-  const revokeMutation = useRevokeDevice();
-  const revokeByIdMutation = useRevokeDevice();
-  const cleanupMutation = useCleanupExpiredActivations();
-  const activeRestaurantId = selectedRestaurant || ((_a2 = restaurants == null ? void 0 : restaurants[0]) == null ? void 0 : _a2.restaurantId);
-  const devices = (devicesQuery.data ?? []).filter(
-    (d2) => matchesRole(d2, roleFilter)
-  );
-  async function handleRevoke(deviceId) {
-    setRevokingDeviceId(deviceId);
-    try {
-      await revokeMutation.mutateAsync(deviceId);
-      ue.success("Đã thu hồi thiết bị.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể thu hồi thiết bị.";
-      ue.error(message);
-    } finally {
-      setRevokingDeviceId(null);
-    }
-  }
-  async function handleRevokeById(e) {
-    e.preventDefault();
-    if (!revokeDeviceId.trim()) {
-      ue.error("Vui lòng nhập mã thiết bị.");
-      return;
-    }
-    try {
-      await revokeByIdMutation.mutateAsync(revokeDeviceId.trim());
-      ue.success("Đã thu hồi thiết bị.");
-      setRevokeDeviceId("");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể thu hồi thiết bị.";
-      ue.error(message);
-    }
-  }
-  async function handleCleanup() {
-    try {
-      const count2 = await cleanupMutation.mutateAsync();
-      setCleanedCount(count2);
-      ue.success(`Đã dọn dẹp ${count2.toString()} mã hết hạn.`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể dọn dẹp mã hết hạn.";
-      ue.error(message);
-    }
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10",
-      "data-ocid": "device.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "h1",
-            {
-              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
-              "data-ocid": "device.title",
-              children: "Quản lý thiết bị"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Xem và thu hồi thiết bị đã kích hoạt theo nhà hàng và vai trò." })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "mt-6 flex flex-col gap-3 sm:flex-row sm:items-end",
-            "data-ocid": "device.filters",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "label",
-                  {
-                    htmlFor: "device-restaurant",
-                    className: "text-sm font-medium text-muted-foreground",
-                    children: "Theo nhà hàng"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  Select,
-                  {
-                    value: selectedRestaurant || "all",
-                    onValueChange: (v2) => setSelectedRestaurant(v2 === "all" ? "" : v2),
-                    disabled: restaurantsLoading,
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        SelectTrigger,
-                        {
-                          id: "device-restaurant",
-                          className: "w-full sm:w-[260px]",
-                          "data-ocid": "device.restaurant_select",
-                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            SelectValue,
-                            {
-                              placeholder: restaurantsLoading ? "Đang tải…" : "Tất cả nhà hàng"
-                            }
-                          )
-                        }
-                      ),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "all", "data-ocid": "device.restaurant_option.all", children: "Tất cả nhà hàng" }),
-                        restaurants == null ? void 0 : restaurants.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          SelectItem,
-                          {
-                            value: r2.restaurantId,
-                            "data-ocid": `device.restaurant_option.${r2.restaurantId}`,
-                            children: r2.name || r2.restaurantId
-                          },
-                          r2.restaurantId
-                        ))
-                      ] })
-                    ]
-                  }
-                )
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "label",
-                  {
-                    htmlFor: "device-role",
-                    className: "text-sm font-medium text-muted-foreground",
-                    children: "Theo vai trò"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  Select,
-                  {
-                    value: roleFilter,
-                    onValueChange: (v2) => setRoleFilter(v2),
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        SelectTrigger,
-                        {
-                          id: "device-role",
-                          className: "w-full sm:w-[200px]",
-                          "data-ocid": "device.role_select",
-                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {})
-                        }
-                      ),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: ROLE_FILTER_OPTIONS.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        SelectItem,
-                        {
-                          value: opt.value,
-                          "data-ocid": `device.role_option.${opt.value}`,
-                          children: opt.label
-                        },
-                        opt.value
-                      )) })
-                    ]
-                  }
-                )
-              ] })
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-6", "data-ocid": "device.content", children: restaurantsLoading && !restaurants ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground",
-            "data-ocid": "device.loading_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
-              "Đang tải danh sách nhà hàng…"
-            ]
-          }
-        ) : !activeRestaurantId ? /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { "data-ocid": "device.empty_restaurant_state", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              Smartphone,
-              {
-                className: "h-4 w-4 text-muted-foreground",
-                "aria-hidden": "true"
-              }
-            ),
-            "Chưa có nhà hàng"
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Thêm nhà hàng trước khi quản lý thiết bị." })
-        ] }) }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "device.table_card", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "font-display", children: [
-              "Thiết bị của",
-              " ",
-              ((_b2 = restaurants == null ? void 0 : restaurants.find((r2) => r2.restaurantId === activeRestaurantId)) == null ? void 0 : _b2.name) ?? activeRestaurantId
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
-              devices.length,
-              " thiết bị hiển thị sau khi lọc."
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            DeviceTable,
-            {
-              devices,
-              isLoading: devicesQuery.isLoading,
-              onRevoke: handleRevoke,
-              revokingDeviceId,
-              emptyMessage: "Chưa có thiết bị nào khớp với bộ lọc."
-            }
-          ) })
-        ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard,
-            {
-              icon: KeyRound,
-              title: "Tạo mã kích hoạt",
-              description: "Tạo mã 6 ký tự hợp lệ 15 phút để kích hoạt thiết bị mới.",
-              testId: "device.activation_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ActivationCodeForm, {})
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard,
-            {
-              icon: ShieldOff,
-              title: "Thu hồi thiết bị",
-              description: "Nhập mã thiết bị để thu hồi quyền truy cập ngay lập tức.",
-              testId: "device.revoke_by_id_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "form",
-                {
-                  onSubmit: handleRevokeById,
-                  className: "flex flex-col gap-3",
-                  "data-ocid": "device.revoke_form",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "revoke-device", className: "text-sm font-medium", children: "Mã thiết bị" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        Input,
-                        {
-                          id: "revoke-device",
-                          value: revokeDeviceId,
-                          onChange: (e) => setRevokeDeviceId(e.target.value),
-                          placeholder: "VD: dev-abc123",
-                          "data-ocid": "device.revoke_input"
-                        }
-                      )
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      Button,
-                      {
-                        type: "submit",
-                        variant: "destructive",
-                        disabled: revokeByIdMutation.isPending || !revokeDeviceId.trim(),
-                        "data-ocid": "device.revoke.submit_button",
-                        className: "w-full sm:w-auto",
-                        children: [
-                          revokeByIdMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-4 w-4", "aria-hidden": "true" }),
-                          "Thu hồi"
-                        ]
-                      }
-                    )
-                  ]
-                }
-              )
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard,
-            {
-              icon: Sparkles,
-              title: "Dọn dẹp mã hết hạn",
-              description: "Xóa các mã kích hoạt đã quá hạn để giải phóng bộ nhớ canister.",
-              testId: "device.cleanup_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  Button,
-                  {
-                    type: "button",
-                    variant: "outline",
-                    onClick: handleCleanup,
-                    disabled: cleanupMutation.isPending,
-                    "data-ocid": "device.cleanup.button",
-                    className: "w-full sm:w-auto",
-                    children: [
-                      cleanupMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "h-4 w-4", "aria-hidden": "true" }),
-                      "Dọn dẹp"
-                    ]
-                  }
-                ),
-                cleanedCount !== null && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "p",
-                  {
-                    className: "text-sm text-muted-foreground",
-                    "data-ocid": "device.cleanup.result",
-                    children: [
-                      "Đã dọn dẹp",
-                      " ",
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-foreground", children: cleanedCount.toString() }),
-                      " ",
-                      "mã hết hạn."
-                    ]
-                  }
-                )
-              ] })
-            }
-          )
-        ] })
-      ]
-    }
-  );
-}
-function getDeviceId() {
-  const KEY = "bb65.deviceId";
-  try {
-    const existing = localStorage.getItem(KEY);
-    if (existing) return existing;
-    const id = `dev-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
-    localStorage.setItem(KEY, id);
-    return id;
-  } catch {
-    return `dev-session-${Date.now().toString(36)}`;
-  }
-}
-function ActivationForm({ onActivated }) {
-  const { actor } = useCanister();
-  const [code, setCode] = reactExports.useState("");
-  const [submitting, setSubmitting] = reactExports.useState(false);
-  const [error, setError] = reactExports.useState(null);
-  const normalized = code.trim().toUpperCase();
-  const isValid = normalized.length === 6;
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!actor || submitting || !isValid) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const deviceId = getDeviceId();
-      const device = await activateDevice(actor, normalized, deviceId);
-      if (device.role !== DeviceRole.driver) {
-        setError(
-          "Mã này không dành cho thiết bị tài xế. Vui lòng dùng mã vai trò 'driver'."
-        );
-        return;
-      }
-      if (!device.active) {
-        setError("Thiết bị chưa được kích hoạt. Vui lòng thử lại.");
-        return;
-      }
-      ue.success("Kích hoạt thiết bị thành công");
-      onActivated(device.restaurantId, device.deviceId);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (/expir|hết hạn|expired/i.test(msg)) {
-        setError("Mã kích hoạt đã hết hạn (15 phút). Vui lòng yêu cầu mã mới.");
-      } else if (/used|đã dùng/i.test(msg)) {
-        setError("Mã kích hoạt đã được sử dụng. Vui lòng yêu cầu mã mới.");
-      } else if (/not found|không tìm/i.test(msg)) {
-        setError("Mã kích hoạt không đúng. Vui lòng kiểm tra lại.");
-      } else {
-        setError(`Kích hoạt thất bại: ${msg}`);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8 md:px-6 md:py-12",
-      "data-ocid": "activation.section",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "flex flex-col items-center gap-3 text-center", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "div",
-            {
-              className: "flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary",
-              "aria-hidden": "true",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "h-8 w-8" })
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-bold tracking-tight md:text-3xl", children: "Kích hoạt thiết bị" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Nhập mã kích hoạt 6 ký tự do quản trị viên cấp. Mã có hiệu lực 15 phút." })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "form",
-          {
-            onSubmit: handleSubmit,
-            className: "flex flex-col gap-5",
-            "data-ocid": "activation.form",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "label",
-                  {
-                    htmlFor: "activation-code",
-                    className: "text-sm font-semibold text-foreground",
-                    children: "Mã kích hoạt"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "input",
-                  {
-                    id: "activation-code",
-                    type: "text",
-                    inputMode: "text",
-                    autoComplete: "one-time-code",
-                    autoCapitalize: "characters",
-                    autoCorrect: "off",
-                    spellCheck: false,
-                    value: code,
-                    onChange: (e) => {
-                      setCode(e.target.value.replace(/[^A-Za-z0-9]/g, "").slice(0, 6));
-                      setError(null);
-                    },
-                    disabled: submitting,
-                    placeholder: "ABC123",
-                    "aria-label": "Mã kích hoạt 6 ký tự",
-                    "aria-invalid": !!error,
-                    "aria-describedby": error ? "activation-error" : void 0,
-                    "data-ocid": "activation.input",
-                    className: "mx-auto w-full max-w-[16rem] rounded-lg border border-input bg-card px-3 py-4 text-center font-mono text-3xl font-bold tracking-[0.4em] uppercase text-foreground shadow-sm outline-none transition-smooth placeholder:text-2xl placeholder:tracking-[0.3em] placeholder:font-normal placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-center text-xs text-muted-foreground", children: [
-                  normalized.length,
-                  "/6 ký tự"
-                ] })
-              ] }),
-              error && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "p",
-                {
-                  id: "activation-error",
-                  role: "alert",
-                  "data-ocid": "activation.error_state",
-                  className: "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm font-medium text-destructive",
-                  children: error
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  type: "submit",
-                  disabled: submitting || !isValid,
-                  "data-ocid": "activation.submit_button",
-                  className: "inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-base font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                  children: submitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin", "aria-hidden": "true" }),
-                    "Đang kích hoạt…"
-                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                    "Kích hoạt",
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-5 w-5", "aria-hidden": "true" })
-                  ] })
-                }
-              )
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Không có mã? Liên hệ quản trị viên nhà hàng để được cấp mã kích hoạt mới." })
-      ]
-    }
-  );
-}
-function formatVnd$4(amount) {
-  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
-}
-function formatTime$1(ns) {
-  const ms2 = Number(ns) / 1e6;
-  return new Intl.DateTimeFormat("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(ms2));
-}
-function isPending(o) {
-  return o.paymentStatus === PaymentStatus.unpaid;
-}
-function isToday$1(ns) {
-  const ms2 = Number(ns) / 1e6;
-  const d2 = new Date(ms2);
-  const now2 = /* @__PURE__ */ new Date();
-  return d2.getFullYear() === now2.getFullYear() && d2.getMonth() === now2.getMonth() && d2.getDate() === now2.getDate();
-}
-const OVERDUE_MINUTES = 60;
-function elapsedMinutes(createdAt) {
-  const ms2 = Number(createdAt) / 1e6;
-  return (Date.now() - ms2) / 6e4;
-}
-function isOverdue(createdAt) {
-  return elapsedMinutes(createdAt) > OVERDUE_MINUTES;
-}
-function PaymentQueue({
-  orders,
-  isLoading,
-  isError,
-  onPay,
-  payingOrderId
-}) {
-  const pending = orders.filter((o) => isPending(o) && isToday$1(o.createdAt));
-  const sorted = [...pending].sort((a2, b2) => {
-    const aOverdue = isOverdue(a2.createdAt) ? 0 : 1;
-    const bOverdue = isOverdue(b2.createdAt) ? 0 : 1;
-    if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-    return Number(a2.createdAt - b2.createdAt);
-  });
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8",
-      "data-ocid": "queue.section",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center justify-between gap-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(ListOrdered, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-bold tracking-tight md:text-2xl", children: "Hàng đợi thanh toán" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "span",
-            {
-              className: "inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
-              "data-ocid": "queue.count",
-              children: [
-                sorted.length,
-                " đơn"
-              ]
-            }
-          )
-        ] }),
-        isError && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive",
-            "data-ocid": "queue.error_state",
-            children: "Không tải được danh sách đơn. Đang thử lại tự động mỗi 5 giây…"
-          }
-        ),
-        isLoading && sorted.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-4 py-10 text-center",
-            "data-ocid": "queue.loading_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-6 w-6 animate-spin text-muted-foreground" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang tải đơn chờ…" })
-            ]
-          }
-        ),
-        !isLoading && sorted.length === 0 && !isError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
-            "data-ocid": "queue.empty_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "div",
-                {
-                  className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
-                  "aria-hidden": "true",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingBag, { className: "h-7 w-7" })
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Không có đơn chờ thanh toán" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Hàng đợi trống. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
-            ]
-          }
-        ),
-        sorted.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "ul",
-          {
-            className: "flex flex-col gap-3",
-            "data-ocid": "queue.list",
-            "aria-label": "Danh sách đơn chờ thanh toán",
-            children: sorted.map((order, idx) => {
-              const isPaying = payingOrderId === order.orderId;
-              const overdue = isOverdue(order.createdAt);
-              const lateMinutes = Math.floor(
-                elapsedMinutes(order.createdAt) - OVERDUE_MINUTES
-              );
-              return /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "li",
-                {
-                  "data-ocid": `queue.item.${idx + 1}`,
-                  className: `rounded-xl border p-4 shadow-sm transition-smooth hover:shadow-md ${overdue ? "border-destructive bg-destructive/10 ring-1 ring-destructive/40" : "border-border bg-card"}`,
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary", children: [
-                          "#",
-                          idx + 1
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          "span",
-                          {
-                            className: "inline-flex items-center gap-1 text-xs text-muted-foreground",
-                            title: "Thời gian tạo đơn",
-                            children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
-                              formatTime$1(order.createdAt)
-                            ]
-                          }
-                        ),
-                        overdue && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          "span",
-                          {
-                            className: "inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground",
-                            "data-ocid": `queue.overdue_badge.${idx + 1}`,
-                            children: [
-                              "Trễ ",
-                              lateMinutes,
-                              " phút"
-                            ]
-                          }
-                        )
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-2 truncate font-display text-base font-semibold text-foreground", children: order.cusName || "Khách vãng lai" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 truncate font-mono text-xs text-muted-foreground", children: order.orderId }),
-                      order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-0.5 text-xs text-muted-foreground", children: [
-                        "SĐT: ",
-                        order.cusPhone
-                      ] }),
-                      order.items && order.items.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "ul",
-                        {
-                          className: "mt-2 flex flex-col gap-0.5 border-t border-border/60 pt-2",
-                          "data-ocid": `queue.item_list.${idx + 1}`,
-                          children: order.items.map((it2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            "li",
-                            {
-                              className: "flex items-baseline justify-between gap-2 text-xs text-muted-foreground",
-                              children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "truncate", children: [
-                                  it2.name,
-                                  " × ",
-                                  Number(it2.quantity)
-                                ] }),
-                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$4(
-                                  BigInt(Number(it2.price) * Number(it2.quantity))
-                                ) })
-                              ]
-                            },
-                            it2.itemId
-                          ))
-                        }
-                      )
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-end gap-2", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$4(order.amount - order.shippingFee) }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "button",
-                        {
-                          type: "button",
-                          onClick: () => onPay(order),
-                          disabled: isPaying,
-                          "data-ocid": `queue.pay_button.${idx + 1}`,
-                          "aria-label": `Thanh toán đơn ${order.cusName || order.orderId}`,
-                          className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
-                          children: isPaying ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              LoaderCircle,
-                              {
-                                className: "h-4 w-4 animate-spin",
-                                "aria-hidden": "true"
-                              }
-                            ),
-                            "Đang mở…"
-                          ] }) : "Thanh toán"
-                        }
-                      )
-                    ] })
-                  ] })
-                },
-                order.orderId
-              );
-            })
-          }
-        )
-      ]
-    }
-  );
-}
 function formatVnd$3(amount) {
-  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
-}
-function formatTime(ns) {
-  const ms2 = Number(ns) / 1e6;
-  return new Intl.DateTimeFormat("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(ms2));
-}
-function isToday(ns) {
-  const ms2 = Number(ns) / 1e6;
-  const d2 = new Date(ms2);
-  const now2 = /* @__PURE__ */ new Date();
-  return d2.getFullYear() === now2.getFullYear() && d2.getMonth() === now2.getMonth() && d2.getDate() === now2.getDate();
-}
-function PickupQueue({ orders, isLoading, isError }) {
-  const today = orders.filter((o) => isToday(o.createdAt));
-  const sorted = [...today].sort((a2, b2) => Number(a2.createdAt - b2.createdAt));
-  const markPickedUp2 = useMarkPickedUp();
-  function handlePickedUp(order) {
-    markPickedUp2.mutate(order.orderId, {
-      onSuccess: (updated) => {
-        ue.success(
-          `Đã xác nhận nhận hàng: ${updated.cusName || updated.orderId}`
-        );
-      },
-      onError: (err) => {
-        ue.error(
-          `Không xác nhận được đơn ${order.cusName || order.orderId}: ${err.message}`
-        );
-      }
-    });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8",
-      "data-ocid": "pickup.section",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center justify-between gap-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(PackageCheck, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-bold tracking-tight md:text-2xl", children: "Hàng đợi tài xế nhận hàng" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "span",
-            {
-              className: "inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
-              "data-ocid": "pickup.count",
-              children: [
-                sorted.length,
-                " đơn"
-              ]
-            }
-          )
-        ] }),
-        isError && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive",
-            "data-ocid": "pickup.error_state",
-            children: "Không tải được danh sách đơn. Đang thử lại tự động mỗi 5 giây…"
-          }
-        ),
-        isLoading && sorted.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-4 py-10 text-center",
-            "data-ocid": "pickup.loading_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-6 w-6 animate-spin text-muted-foreground" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang tải đơn chờ nhận…" })
-            ]
-          }
-        ),
-        !isLoading && sorted.length === 0 && !isError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
-            "data-ocid": "pickup.empty_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "div",
-                {
-                  className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
-                  "aria-hidden": "true",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(PackageCheck, { className: "h-7 w-7" })
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Không có đơn chờ nhận hàng" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Chưa có đơn nào đã thanh toán chờ nhận. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
-            ]
-          }
-        ),
-        sorted.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "ul",
-          {
-            className: "flex flex-col gap-3",
-            "data-ocid": "pickup.list",
-            "aria-label": "Danh sách đơn chờ nhận hàng",
-            children: sorted.map((order, idx) => {
-              const isMarking = markPickedUp2.isPending;
-              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "li",
-                {
-                  "data-ocid": `pickup.item.${idx + 1}`,
-                  className: "rounded-xl border border-border bg-card p-4 shadow-sm transition-smooth hover:shadow-md",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      "div",
-                      {
-                        className: "flex items-center justify-between gap-3 rounded-lg bg-primary/5 p-3",
-                        "data-ocid": `pickup.customer.${idx + 1}`,
-                        children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground", children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(User, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-                              "Khách hàng"
-                            ] }),
-                            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-1 truncate font-display text-lg font-bold text-foreground", children: order.cusName || "Khách vãng lai" }),
-                            order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-foreground", children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                Phone,
-                                {
-                                  className: "h-3.5 w-3.5 text-primary",
-                                  "aria-hidden": "true"
-                                }
-                              ),
-                              order.cusPhone
-                            ] })
-                          ] }),
-                          order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            "a",
-                            {
-                              href: `tel:${order.cusPhone}`,
-                              "data-ocid": `pickup.call_button.${idx + 1}`,
-                              "aria-label": `Gọi điện cho ${order.cusName || "khách hàng"}: ${order.cusPhone}`,
-                              className: "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Phone, { className: "h-5 w-5", "aria-hidden": "true" })
-                            }
-                          )
-                        ]
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-start justify-between gap-3", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary", children: [
-                            "#",
-                            idx + 1
-                          ] }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            "span",
-                            {
-                              className: "inline-flex items-center gap-1 text-xs text-muted-foreground",
-                              title: "Thời gian tạo đơn",
-                              children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
-                                formatTime(order.createdAt)
-                              ]
-                            }
-                          ),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            "span",
-                            {
-                              className: "inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success",
-                              "data-ocid": `pickup.paid_badge.${idx + 1}`,
-                              children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-3 w-3", "aria-hidden": "true" }),
-                                "Đã thanh toán"
-                              ]
-                            }
-                          )
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1.5 truncate font-mono text-xs text-muted-foreground", children: order.orderId }),
-                        order.items && order.items.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          "ul",
-                          {
-                            className: "mt-2 flex flex-col gap-0.5 border-t border-border/60 pt-2",
-                            "data-ocid": `pickup.item_list.${idx + 1}`,
-                            children: order.items.map((it2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                              "li",
-                              {
-                                className: "flex items-baseline justify-between gap-2 text-xs text-muted-foreground",
-                                children: [
-                                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "truncate", children: [
-                                    it2.name,
-                                    " × ",
-                                    Number(it2.quantity)
-                                  ] }),
-                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$3(
-                                    BigInt(Number(it2.price) * Number(it2.quantity))
-                                  ) })
-                                ]
-                              },
-                              it2.itemId
-                            ))
-                          }
-                        )
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-end gap-2", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$3(order.amount - order.shippingFee) }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          "button",
-                          {
-                            type: "button",
-                            onClick: () => handlePickedUp(order),
-                            disabled: isMarking,
-                            "data-ocid": `pickup.picked_up_button.${idx + 1}`,
-                            "aria-label": `Xác nhận đã nhận hàng: đơn ${order.cusName || order.orderId}`,
-                            className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-success px-4 py-2 text-sm font-semibold text-success-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
-                            children: isMarking ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                LoaderCircle,
-                                {
-                                  className: "h-4 w-4 animate-spin",
-                                  "aria-hidden": "true"
-                                }
-                              ),
-                              "Đang ghi…"
-                            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                CircleCheck,
-                                {
-                                  className: "h-4 w-4",
-                                  "aria-hidden": "true"
-                                }
-                              ),
-                              "Tài xế đã nhận hàng"
-                            ] })
-                          }
-                        )
-                      ] })
-                    ] })
-                  ]
-                },
-                order.orderId
-              );
-            })
-          }
-        )
-      ]
-    }
-  );
-}
-function formatVnd$2(amount) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
 }
 function QRDisplay({ order, onClose, onPaid }) {
@@ -56460,7 +56213,7 @@ function QRDisplay({ order, onClose, onPaid }) {
                     {
                       className: "font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl",
                       "data-ocid": "qr.amount",
-                      children: formatVnd$2(order.amount - order.shippingFee)
+                      children: formatVnd$3(order.amount - order.shippingFee)
                     }
                   ),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Tiền hàng (không gồm phí ship — phí ship thuộc về Ahamove)" })
@@ -57374,7 +57127,7 @@ function MenuItemForm({ item, onSaved, onCancel }) {
     }
   );
 }
-function formatVnd$1(n) {
+function formatVnd$2(n) {
   try {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -57515,7 +57268,7 @@ function MenuItemTable({
                     }
                   ) }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "max-w-[200px] truncate text-sm font-medium text-foreground", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { title: item.name, children: item.name }) }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono text-sm text-foreground", children: formatVnd$1(item.price) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono text-sm text-foreground", children: formatVnd$2(item.price) }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-muted-foreground", children: item.unitName || "—" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "text-right font-mono text-sm text-muted-foreground", children: [
                     String(item.vatRate),
@@ -57846,6 +57599,152 @@ function MenuManager() {
     }
   );
 }
+function formatVnd$1(amount) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+function isSameDayUtc7(ns) {
+  const ms2 = Number(ns) / 1e6;
+  const d2 = new Date(ms2 + 7 * 60 * 60 * 1e3);
+  const now2 = new Date(Date.now() + 7 * 60 * 60 * 1e3);
+  return d2.getUTCFullYear() === now2.getUTCFullYear() && d2.getUTCMonth() === now2.getUTCMonth() && d2.getUTCDate() === now2.getUTCDate();
+}
+function QrPayment({ order }) {
+  const [state, setState] = reactExports.useState({ kind: "idle" });
+  const isPaid = order.paymentStatus === PaymentStatus.paid;
+  const isSameDay = isSameDayUtc7(order.createdAt);
+  if (isPaid) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "span",
+      {
+        className: "inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/15 px-3 py-1.5 text-sm font-semibold text-success",
+        "data-ocid": "qr_payment.paid_badge",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-4 w-4", "aria-hidden": "true" }),
+          "Đã thanh toán"
+        ]
+      }
+    );
+  }
+  if (!isSameDay) {
+    return null;
+  }
+  async function handlePay() {
+    setState({ kind: "loading" });
+    try {
+      const res = await requestQr(order.orderId);
+      if (res.ok) {
+        setState({ kind: "success", qrCode: res.qrCode, reused: res.reused });
+      } else {
+        setState({
+          kind: "error",
+          retryable: res.retryable,
+          message: res.message
+        });
+      }
+    } catch {
+      setState({
+        kind: "error",
+        retryable: true,
+        message: "Không kết nối được máy chủ thanh toán. Vui lòng thử lại sau giây lát."
+      });
+    }
+  }
+  if (state.kind === "error") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "rounded-lg border border-destructive/30 bg-destructive/10 p-4",
+        "data-ocid": "qr_payment.error_state",
+        role: "alert",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              CircleAlert,
+              {
+                className: "mt-0.5 h-4 w-4 shrink-0 text-destructive",
+                "aria-hidden": "true"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-destructive", children: state.retryable ? state.message : "Không thể tạo mã thanh toán cho đơn này. Vui lòng liên hệ tổng đài để được hỗ trợ." })
+          ] }),
+          state.retryable && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              type: "button",
+              onClick: handlePay,
+              "data-ocid": "qr_payment.retry_button",
+              className: "mt-3 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { className: "h-4 w-4", "aria-hidden": "true" }),
+                "Thử lại"
+              ]
+            }
+          )
+        ]
+      }
+    );
+  }
+  if (state.kind === "success") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "rounded-lg border border-border bg-card p-4",
+        "data-ocid": "qr_payment.success_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-medium text-foreground", children: "Quét QR để thanh toán" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold text-primary", children: formatVnd$1(order.amount) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "mt-3 flex justify-center rounded-xl bg-foreground p-4",
+              "data-ocid": "qr_payment.canvas",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                QRCodeCanvas,
+                {
+                  value: state.qrCode,
+                  size: 200,
+                  level: "M",
+                  includeMargin: false,
+                  bgColor: "#000000",
+                  fgColor: "#ffffff",
+                  "aria-label": "Mã QR thanh toán Tingee"
+                }
+              )
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-3 text-center text-xs text-muted-foreground", children: "Khách quét mã bằng app ngân hàng để hoàn tất thanh toán." }),
+          state.reused && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "p",
+            {
+              className: "mt-2 text-center text-xs text-muted-foreground",
+              "data-ocid": "qr_payment.reused_note",
+              children: "Mã QR hiện tại vẫn còn hiệu lực, bạn có thể tiếp tục sử dụng."
+            }
+          )
+        ]
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: handlePay,
+      disabled: state.kind === "loading",
+      "data-ocid": "qr_payment.pay_button",
+      className: "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+      children: state.kind === "loading" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+        "Đang tạo QR…"
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(QrCode, { className: "h-4 w-4", "aria-hidden": "true" }),
+        "Thanh toán"
+      ] })
+    }
+  );
+}
 const BOOKING_MAP = {
   [BookingStatus.pending]: { variant: "warning", label: "Chờ xác nhận" },
   [BookingStatus.confirmed]: { variant: "info", label: "Đã xác nhận" },
@@ -57937,72 +57836,81 @@ function shortOrderId(orderId) {
 }
 function OrderCard({ order, index: index2 }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    Link,
+    "div",
     {
-      to: "/track/$orderId",
-      params: { orderId: order.orderId },
       "data-ocid": `order.card.${index2}`,
-      className: "group block rounded-lg border border-border bg-card p-4 shadow-sm transition-smooth hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+      className: "flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-smooth hover:border-primary/40 hover:shadow-md",
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Receipt,
-                {
-                  className: "h-4 w-4 shrink-0 text-muted-foreground",
-                  "aria-hidden": "true"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "span",
-                {
-                  className: "truncate font-mono text-xs text-muted-foreground",
-                  title: order.orderId,
-                  children: shortOrderId(order.orderId)
-                }
-              )
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-1 truncate font-display text-base font-semibold text-foreground", children: order.cusName || "Khách vãng lai" }),
-            order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 truncate text-sm text-muted-foreground", children: order.cusPhone })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-right", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-base font-semibold text-foreground", children: formatVnd(order.amount) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Tổng cộng" })
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-1.5", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.bookingStatus }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.paymentStatus })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "mt-3 divide-y divide-border border-t border-border", children: order.items.map((item, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "li",
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Link,
           {
-            "data-ocid": `order.card.${index2}.item.${i + 1}`,
-            className: "flex items-baseline justify-between gap-3 py-2 text-sm",
+            to: "/track/$orderId",
+            params: { orderId: order.orderId },
+            className: "group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "min-w-0 flex-1 truncate text-foreground", children: [
-                item.name,
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-1.5 text-muted-foreground", children: [
-                  "× ",
-                  Number(item.quantity)
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      Receipt,
+                      {
+                        className: "h-4 w-4 shrink-0 text-muted-foreground",
+                        "aria-hidden": "true"
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "span",
+                      {
+                        className: "truncate font-mono text-xs text-muted-foreground",
+                        title: order.orderId,
+                        children: shortOrderId(order.orderId)
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-1 truncate font-display text-base font-semibold text-foreground", children: order.cusName || "Khách vãng lai" }),
+                  order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 truncate text-sm text-muted-foreground", children: order.cusPhone })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-right", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-base font-semibold text-foreground", children: formatVnd(order.amount) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Tổng cộng" })
                 ] })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono text-xs text-muted-foreground", children: formatUnitPrice(item.price, item.unitName) })
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-1.5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.bookingStatus }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.paymentStatus })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "mt-3 divide-y divide-border border-t border-border", children: order.items.map((item, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "li",
+                {
+                  "data-ocid": `order.card.${index2}.item.${i + 1}`,
+                  className: "flex items-baseline justify-between gap-3 py-2 text-sm",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "min-w-0 flex-1 truncate text-foreground", children: [
+                      item.name,
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-1.5 text-muted-foreground", children: [
+                        "× ",
+                        Number(item.quantity)
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono text-xs text-muted-foreground", children: formatUnitPrice(item.price, item.unitName) })
+                  ]
+                },
+                item.itemId || i
+              )) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-center justify-between border-t border-border pt-3", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
+                  order.items.length,
+                  " mặt hàng"
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center gap-1 text-sm font-medium text-primary transition-smooth group-hover:gap-2", children: [
+                  "Xem chi tiết",
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-4 w-4", "aria-hidden": "true" })
+                ] })
+              ] })
             ]
-          },
-          item.itemId || i
-        )) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-center justify-between border-t border-border pt-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
-            order.items.length,
-            " mặt hàng"
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center gap-1 text-sm font-medium text-primary transition-smooth group-hover:gap-2", children: [
-            "Xem chi tiết",
-            /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-4 w-4", "aria-hidden": "true" })
-          ] })
-        ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-3 border-t border-border pt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(QrPayment, { order }) })
       ]
     }
   );
@@ -58212,6 +58120,7 @@ function OrderTracker() {
     isFetching,
     dataUpdatedAt
   } = useOrderStatus(orderId);
+  const { data: order } = useGetOrder(orderId);
   const [invoiceState, setInvoiceState] = reactExports.useState({
     kind: "idle"
   });
@@ -58393,6 +58302,7 @@ function OrderTracker() {
           OrderStatusView,
           {
             status: data,
+            order,
             lastUpdated,
             isFetching,
             invoiceState,
@@ -58405,6 +58315,7 @@ function OrderTracker() {
 }
 function OrderStatusView({
   status,
+  order,
   lastUpdated,
   isFetching,
   invoiceState,
@@ -58462,6 +58373,14 @@ function OrderStatusView({
             ] })
           ] })
         ]
+      }
+    ),
+    order && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "rounded-lg border border-border bg-card p-5 shadow-sm",
+        "data-ocid": "order_tracker.payment_panel",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(QrPayment, { order })
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(
