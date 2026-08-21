@@ -38251,6 +38251,12 @@ async function getInvoice(orderId) {
     path: `/invoice/${encodeURIComponent(orderId)}`
   });
 }
+async function requestQr(orderId) {
+  return vpsFetch({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/qr`
+  });
+}
 async function upsertCustomer(email) {
   try {
     await vpsFetch({
@@ -55384,8 +55390,37 @@ function QRDisplay({ order, onClose, onPaid }) {
   const [status, setStatus] = reactExports.useState(order.paymentStatus);
   const [polling, setPolling] = reactExports.useState(true);
   const [retryTick, setRetryTick] = reactExports.useState(0);
-  const qrReady = !!order.tingeeQrCode;
-  const qrValue = order.tingeeQrCode ?? "";
+  const [qrState, setQrState] = reactExports.useState({ kind: "loading" });
+  reactExports.useEffect(() => {
+    let cancelled = false;
+    async function generate() {
+      setQrState({ kind: "loading" });
+      try {
+        const res = await requestQr(order.orderId);
+        if (cancelled) return;
+        if (res.ok) {
+          setQrState({ kind: "ready", qrCode: res.qrCode });
+        } else {
+          setQrState({
+            kind: "error",
+            retryable: res.retryable,
+            message: res.message
+          });
+        }
+      } catch {
+        if (cancelled) return;
+        setQrState({
+          kind: "error",
+          retryable: true,
+          message: "Không kết nối được máy chủ thanh toán. Vui lòng thử lại sau giây lát."
+        });
+      }
+    }
+    void generate();
+    return () => {
+      cancelled = true;
+    };
+  }, [order.orderId, retryTick]);
   reactExports.useEffect(() => {
     if (!actor || !polling) return;
     let cancelled = false;
@@ -55412,6 +55447,8 @@ function QRDisplay({ order, onClose, onPaid }) {
     };
   }, [actor, order, polling, onPaid, retryTick]);
   const isPaid = status === PaymentStatus.paid;
+  const qrReady = qrState.kind === "ready";
+  const qrValue = qrState.kind === "ready" ? qrState.qrCode : "";
   const handleRetry = () => {
     setRetryTick((t) => t + 1);
   };
@@ -55516,7 +55553,7 @@ function QRDisplay({ order, onClose, onPaid }) {
                 ),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display text-xl font-semibold text-foreground", children: "QR chưa sẵn sàng" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-2 text-sm text-muted-foreground", children: 'Mã QR đang được tạo. Vui lòng liên hệ tổng đài để được hỗ trợ hoặc bấm "Thử lại" sau giây lát.' })
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-2 text-sm text-muted-foreground", children: qrState.kind === "error" ? qrState.retryable ? qrState.message : "Không thể tạo mã thanh toán cho đơn này. Vui lòng liên hệ tổng đài để được hỗ trợ." : 'Mã QR đang được tạo. Vui lòng liên hệ tổng đài để được hỗ trợ hoặc bấm "Thử lại" sau giây lát.' })
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs(
                   "button",

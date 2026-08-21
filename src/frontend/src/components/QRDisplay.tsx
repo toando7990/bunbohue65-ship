@@ -1,10 +1,17 @@
 // QRDisplay — Bước 3 của DriverPaymentScreen.
 // Hiển thị QR Tingee full screen, poll getOrderStatus 5s, tự ẩn khi #paid.
 // Mobile-first: large centered QR, dark container, status badge, nút đóng.
+//
+// Khi driver bấm [Thanh toán], QRDisplay gọi requestQr(orderId) (VPS POST
+// /order/:id/qr, idempotent) để tạo QR động Tingee — giống hệt luồng khách
+// hàng (QrPayment.tsx). QR đọc từ phản hồi requestQr (qrCode), chính là trường
+// mà updateOrderQr ghi vào Order (qrCode), KHÔNG phải tingeeQrCode (luôn rỗng).
 
 import { type Order, PaymentStatus } from "@/backend";
 import { useCanister } from "@/lib/canister";
 import { getOrderStatus } from "@/lib/canister";
+import { requestQr } from "@/lib/vps-client";
+import type { RequestQrResponse } from "@/types";
 import { CheckCircle2, Loader2, Phone, RefreshCw, X } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useEffect, useState } from "react";
@@ -15,6 +22,12 @@ interface QRDisplayProps {
   onPaid: (order: Order) => void;
 }
 
+// Trạng thái tạo QR.
+type QrState =
+  | { kind: "loading" }
+  | { kind: "ready"; qrCode: string }
+  | { kind: "error"; retryable: boolean; message: string };
+
 function formatVnd(amount: bigint): string {
   return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
 }
@@ -24,15 +37,47 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
   const [status, setStatus] = useState<PaymentStatus>(order.paymentStatus);
   const [polling, setPolling] = useState(true);
   const [retryTick, setRetryTick] = useState(0);
+  const [qrState, setQrState] = useState<QrState>({ kind: "loading" });
 
-  // QR chỉ render khi có tingeeQrCode (chuỗi VietQR EMV thật) từ Tingee.
-  // Không dùng tingeeQrId — đó chỉ là mã định danh nội bộ (qrAccount), không
-  // phải chuỗi QR hợp lệ để app ngân hàng quét thanh toán.
-  const qrReady = !!order.tingeeQrCode;
-  const qrValue = order.tingeeQrCode ?? "";
+  // Tạo QR động Tingee ngay khi mở modal (và khi bấm "Thử lại" qua retryTick).
+  // requestQr idempotent: nếu QR hiện có còn hiệu lực, VPS trả lại QR cũ (reused).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: retryTick là intentional re-trigger cho nút Thử lại
+  useEffect(() => {
+    let cancelled = false;
+
+    async function generate() {
+      setQrState({ kind: "loading" });
+      try {
+        const res: RequestQrResponse = await requestQr(order.orderId);
+        if (cancelled) return;
+        if (res.ok) {
+          setQrState({ kind: "ready", qrCode: res.qrCode });
+        } else {
+          setQrState({
+            kind: "error",
+            retryable: res.retryable,
+            message: res.message,
+          });
+        }
+      } catch {
+        if (cancelled) return;
+        setQrState({
+          kind: "error",
+          retryable: true,
+          message:
+            "Không kết nối được máy chủ thanh toán. Vui lòng thử lại sau giây lát.",
+        });
+      }
+    }
+
+    void generate();
+    return () => {
+      cancelled = true;
+    };
+  }, [order.orderId, retryTick]);
+
   // Poll getOrderStatus 5s; tự ẩn khi #paid. Polling vẫn chạy kể cả khi QR chưa
-  // sẵn sàng — nếu Tingee generate QR sau (retry), tingeeQrId sẽ có giá trị ở
-  // order mới từ parent → qrReady=true → QR thật tự render.
+  // sẵn sàng — nếu requestQr thất bại, nút "Thử lại" sẽ gọi lại generate.
   // retryTick là INTENTIONAL trigger: khi user bấm "Thử lại", handleRetry tăng
   // retryTick → useEffect re-run → poll ngay lập tức, không cần đợi 5s tiếp theo.
   // biome-ignore lint/correctness/useExhaustiveDependencies: retryTick là intentional re-trigger cho nút Thử lại
@@ -67,8 +112,10 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
   }, [actor, order, polling, onPaid, retryTick]);
 
   const isPaid = status === PaymentStatus.paid;
+  const qrReady = qrState.kind === "ready";
+  const qrValue = qrState.kind === "ready" ? qrState.qrCode : "";
 
-  // Kích hoạt một lần poll ngay lập tức khi user bấm "Thử lại".
+  // Kích hoạt một lần tạo QR + poll ngay lập tức khi user bấm "Thử lại".
   const handleRetry = () => {
     setRetryTick((t) => t + 1);
   };
@@ -174,8 +221,11 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
                 QR chưa sẵn sàng
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Mã QR đang được tạo. Vui lòng liên hệ tổng đài để được hỗ trợ
-                hoặc bấm "Thử lại" sau giây lát.
+                {qrState.kind === "error"
+                  ? qrState.retryable
+                    ? qrState.message
+                    : "Không thể tạo mã thanh toán cho đơn này. Vui lòng liên hệ tổng đài để được hỗ trợ."
+                  : 'Mã QR đang được tạo. Vui lòng liên hệ tổng đài để được hỗ trợ hoặc bấm "Thử lại" sau giây lát.'}
               </p>
             </div>
 
