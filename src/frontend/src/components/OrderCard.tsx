@@ -3,11 +3,13 @@
 // đến /track/:orderId; footer chứa <QrPayment> (nút "Thanh toán" / QR / badge).
 // Card là <div> bọc ngoài để tránh thẻ tương tác lồng nhau (Link chứa button).
 
-import { QrPayment } from "@/components/QrPayment";
 import { StatusBadge } from "@/components/StatusBadge";
+import { useRestaurants } from "@/hooks/useQueries";
 import type { BookingStatus, Order, PaymentStatus } from "@/types";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Receipt } from "lucide-react";
+import { ArrowRight, Check, Copy, MapPin, Receipt } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 // Định dạng số tiền VND từ bigint (đơn vị đồng).
 function formatVnd(amount: bigint): string {
@@ -30,6 +32,46 @@ function shortOrderId(orderId: string): string {
   return `${orderId.slice(0, 8)}…${orderId.slice(-4)}`;
 }
 
+// Nút copy nhỏ — sao chép giá trị vào clipboard để dán vào app ngoài.
+function CopyButton({
+  value,
+  label,
+  ocid,
+}: {
+  value: string;
+  label: string;
+  ocid: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      toast.success(`Đã sao chép ${label}.`);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Không sao chép được. Vui lòng sao chép thủ công.");
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      data-ocid={ocid}
+      aria-label={`Sao chép ${label}`}
+      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-smooth hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {copied ? (
+        <Check className="h-4 w-4 text-success" aria-hidden="true" />
+      ) : (
+        <Copy className="h-4 w-4" aria-hidden="true" />
+      )}
+    </button>
+  );
+}
+
 export interface OrderCardProps {
   order: Order;
   /** Index trong list (1-based) cho deterministic marker. */
@@ -37,6 +79,13 @@ export interface OrderCardProps {
 }
 
 export function OrderCard({ order, index }: OrderCardProps) {
+  // Tra cứu địa chỉ nhà hàng theo restaurantId để hiển thị + copy.
+  const { data: restaurants } = useRestaurants();
+  const restaurant = restaurants?.find(
+    (r) => r.restaurantId === order.restaurantId,
+  );
+  const restaurantAddress = restaurant?.address ?? "";
+
   return (
     <div
       data-ocid={`order.card.${index}`}
@@ -70,13 +119,38 @@ export function OrderCard({ order, index }: OrderCardProps) {
               </p>
             )}
           </div>
-          <div className="text-right">
-            <p className="font-display text-base font-semibold text-foreground">
-              {formatVnd(order.amount)}
-            </p>
-            <p className="text-xs text-muted-foreground">Tổng cộng</p>
+          <div className="flex items-start gap-1.5">
+            <div className="text-right">
+              <p className="font-display text-base font-semibold text-foreground">
+                {formatVnd(order.amount)}
+              </p>
+              <p className="text-xs text-muted-foreground">Tổng cộng</p>
+            </div>
+            <CopyButton
+              value={formatVnd(order.amount)}
+              label="tổng tiền"
+              ocid={`order.card.${index}.copy_amount_button`}
+            />
           </div>
         </div>
+
+        {/* Địa chỉ nhà hàng — copy để dán vào app ngoài */}
+        {restaurantAddress && (
+          <div className="mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2">
+            <MapPin
+              className="h-4 w-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+              {restaurantAddress}
+            </span>
+            <CopyButton
+              value={restaurantAddress}
+              label="địa chỉ nhà hàng"
+              ocid={`order.card.${index}.copy_address_button`}
+            />
+          </div>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <StatusBadge status={order.bookingStatus as BookingStatus} />
@@ -113,10 +187,6 @@ export function OrderCard({ order, index }: OrderCardProps) {
           </span>
         </div>
       </Link>
-
-      <div className="mt-3 border-t border-border pt-3">
-        <QrPayment order={order} />
-      </div>
     </div>
   );
 }

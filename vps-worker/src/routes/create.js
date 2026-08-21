@@ -16,7 +16,6 @@
 
 const express = require('express');
 const crypto = require('crypto');
-const ahamove = require('../lib/ahamove');
 const canister = require('../lib/canister');
 const { rateLimit } = require('../middleware/rate-limit');
 
@@ -38,96 +37,25 @@ router.post('/order/create', async (req, res, next) => {
     const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const now = Date.now();
 
-    // 0. Fetch paymentMode từ canister. 'customer' → bỏ qua Ahamove, customer
-    //    tự đến lấy hàng; 'driver' (default) → flow Ahamove như cũ.
-    //    Phải fetch TRƯỚC khi validate: customer mode ẩn trường cusAddress
-    //    trên UI nên cusAddress luôn rỗng → không require trong customer mode.
-    let paymentMode = 'driver';
-    try {
-      const mode = await canister.getPaymentMode();
-      if (mode === 'customer' || mode === 'driver') {
-        paymentMode = mode;
-      }
-    } catch (e) {
-      console.warn('[create] canister getPaymentMode failed, defaulting to driver:', e.message);
-    }
-
-    // Validate required fields. cusAddress chỉ required khi paymentMode='driver'
-    // (customer mode: khách nhập địa chỉ trong Grab Express, không trong app).
+    // Validate required fields.
     if (!restaurantId || !cusName || !cusPhone || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ ok: false, error: 'Missing required fields' });
-    }
-    if (paymentMode === 'driver' && !cusAddress) {
       return res.status(400).json({ ok: false, error: 'Missing required fields' });
     }
 
     // Tính tiền (frontend gửi price + vatRate trong items)
+    // Giá menu đã gồm VAT → không cộng thêm 8% VAT.
+    // Khách tự đặt tài xế bằng app ngoài → không tạo đơn Ahamove, không cộng phí ship.
     const goodsAmount = items.reduce((s, it) => s + Number(it.price) * Number(it.quantity), 0);
-    const taxTotal = Math.round(goodsAmount * VAT_RATE);
-    const itemsTotal = goodsAmount + taxTotal;
+    const taxTotal = 0;
 
-    // 1. Ahamove create order (v3) — chỉ khi paymentMode='driver'.
-    //    Nếu frontend đã gửi ahamoveOrderId thì dùng lại, không tạo mới.
-    //    v3 body: service_id (string), path[pickup+drop], items[], payment_method,
-    //    order_time (0 = immediate), requests (top-level array if any).
-    //    Response: { order_id, status, shared_link, order: { total_fee, ... } }.
-    let ahamoveOrderId = frontendAhamoveOrderId || '';
-    let shippingFee = Number(frontendShippingFee) || 0;
-    let sharedLinkFromAhamove = '';
-    let bookingStatus = 'confirmed';
-    if (paymentMode === 'customer') {
-      // Customer pickup: không gọi Ahamove. Đơn xác nhận ngay, phí ship = 0.
-      ahamoveOrderId = '';
-      shippingFee = 0;
-      sharedLinkFromAhamove = '';
-      bookingStatus = 'confirmed';
-    } else if (!ahamoveOrderId) {
-      try {
-        const ahBody = {
-          service_id: process.env.AHAMOVE_SERVICE_ID || 'HAN-BIKE',
-          order_time: 0,
-          payment_method: 'CASH',
-          path: [
-            {
-              name: restaurantId || 'Restaurant',
-              mobile: cusPhone,
-              address: pickupAddress || '',
-              lat: 0,
-              lng: 0,
-            },
-            {
-              mobile: cusPhone,
-              name: cusName || 'Khách hàng',
-              address: cusAddress,
-              lat: 0,
-              lng: 0,
-            },
-          ],
-          items: items.map((it) => ({
-            _id: it.itemId,
-            num: Number(it.quantity) || 1,
-            name: it.name,
-            price: Number(it.price) || 0,
-          })),
-        };
-        const ah = await ahamove.createOrder(ahBody);
-        ahamoveOrderId = ah.order_id || '';
-        sharedLinkFromAhamove = ah.shared_link || '';
-        bookingStatus = ahamove.mapAhamoveStatus(ah.status) || 'confirmed';
-        // v3: shippingFee from response.order.total_fee (NOT raw.total_fee/fee).
-        shippingFee = Number(ah.order?.total_fee ?? 0);
-        if (!ahamoveOrderId) {
-          return res.status(502).json({ ok: false, error: 'Ahamove create failed: missing order_id' });
-        }
-      } catch (e) {
-        const ahDetail = e.response&&e.response.data ? JSON.stringify(e.response.data) : e.message; console.error('[create] Ahamove createOrder failed:', ahDetail);
-        return res.status(502).json({ ok: false, error: `Ahamove create failed: ${ahDetail}` });
-      }
-    }
+    // Không tạo đơn Ahamove (khách tự đặt tài xế bằng app ngoài, trả phí trực tiếp bên ngoài).
+    const ahamoveOrderId = frontendAhamoveOrderId || '';
+    const shippingFee = 0;
+    const sharedLinkFromAhamove = '';
+    const bookingStatus = 'confirmed';
 
-    // paymentMode='customer': QR chỉ chứa tiền hàng (shippingFee=0).
-    // paymentMode='driver': QR chứa itemsTotal + shippingFee.
-    const amount = itemsTotal + shippingFee;
+    // QR chỉ chứa tiền hàng (đã gồm VAT, không phí ship).
+    const amount = goodsAmount;
 
     // KHÔNG tạo QR Tingee ở đây nữa. QR động chỉ được tạo khi khách bấm
     // 'Thanh toán' trên thẻ đơn trong 'Theo dõi đơn' (POST /order/:id/qr).

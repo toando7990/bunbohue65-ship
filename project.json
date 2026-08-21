@@ -1,16 +1,16 @@
 {
-  "overview": "Ứng dụng đặt món ăn Bunbohue65 Ship với menu, giỏ hàng và thanh toán QR.",
+  "overview": "Bunbohue65 Ship là ứng dụng đặt món ăn giao hàng, nơi khách đặt đơn và tài xế thanh toán tiền đơn tại nhà hàng bằng cách quét mã QR Tingee.",
   "features": [
-    "Đặt món ăn từ menu",
-    "Tự động thêm món dụng cụ đựng đồ ăn vào giỏ theo số lượng món chính",
-    "Thanh toán qua mã QR",
-    "Quản lý menu qua trang admin"
+    "Đặt món từ nhà hàng và tự chuyển sang theo dõi đơn",
+    "Theo dõi đơn với trạng thái thanh toán và tiến trình 2 bước",
+    "Sao chép địa chỉ nhà hàng và tổng tiền hàng",
+    "Tài xế thanh toán tiền đơn bằng quét mã QR Tingee tại nhà hàng"
   ],
-  "category": "food-ordering",
+  "category": "food-delivery",
   "tags": [
-    "food",
+    "food-delivery",
     "ordering",
-    "vietnamese"
+    "qr-payment"
   ],
-  "last_updated": "2026-08-20T05:11:29.310Z"
+  "last_updated": "2026-08-21T01:10:05.369Z"
 }

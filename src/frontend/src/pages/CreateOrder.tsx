@@ -1,17 +1,16 @@
 // CreateOrder page — Đặt hàng.
 // Flow: chọn nhà hàng → chọn món (MenuPicker) → nhập thông tin khách (CustomerForm)
-//       → tự động tính phí ship (VPS /quote, debounce) → đặt đơn (VPS /order/create).
+//       → đặt đơn (VPS /order/create).
 // Theme: bọc trong .bbh-order-theme (sơn mài đỏ / vàng hoàng cung, xem index.css).
 // UI tiếng Việt. Mobile-first.
 //
-// Hai chế độ thanh toán (paymentMode từ backend):
-//   - 'driver' (mặc định): khách nhập địa chỉ → Ahamove /quote → phí ship →
-//     "Đặt đơn" → chuyển đến /track/$orderId.
-//   - 'customer': ẩn địa chỉ, bỏ /quote, ẩn phí ship → "Đặt đơn" → chuyển đến
-//     /track/$orderId.
-// Cả hai chế độ chỉ tạo đơn qua POST /order/create (VPS worker) — KHÔNG tạo QR
-// tại thời điểm đặt đơn. QR thanh toán được tạo theo yêu cầu ở trang theo dõi
-// đơn (POST /order/:id/qr). Sau khi tạo đơn thành công, chuyển khách sang
+// Khách tự đặt tài xế bằng app ngoài (không qua hệ thống này) nên biểu mẫu
+// KHÔNG có bước đặt tài xế, KHÔNG nhập địa chỉ giao hàng và KHÔNG tính phí ship
+// (khách trả phí trực tiếp bên ngoài). Tổng tiền hiển thị = giá hàng (đã gồm VAT).
+//
+// Chỉ tạo đơn qua POST /order/create (VPS worker) — KHÔNG tạo QR tại thời điểm
+// đặt đơn. QR thanh toán được tạo theo yêu cầu ở trang theo dõi đơn
+// (POST /order/:id/qr). Sau khi tạo đơn thành công, chuyển khách sang
 // "Theo dõi đơn" (/track/$orderId).
 
 import {
@@ -22,15 +21,6 @@ import {
 } from "@/components/CustomerForm";
 import { MenuPicker } from "@/components/MenuPicker";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -40,39 +30,25 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  useGetPaymentMode,
-  useIsStoreOpen,
-  useMenus,
-  useRestaurants,
-} from "@/hooks/useQueries";
+import { useIsStoreOpen, useMenus, useRestaurants } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import {
   create as vpsCreate,
   getCustomer as vpsGetCustomer,
-  quote as vpsQuote,
 } from "@/lib/vps-client";
-import type {
-  CreateOrderPayload,
-  MenuItem,
-  QuoteRequest,
-  QuoteResponse,
-  Restaurant,
-} from "@/types";
+import type { CreateOrderPayload, MenuItem, Restaurant } from "@/types";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  AlertCircle,
   Clock,
   Loader2,
   Package,
   Receipt,
   ShoppingCart,
   Sparkles,
-  Truck,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 function formatVnd(value: number): string {
@@ -91,23 +67,13 @@ const EMPTY_CUSTOMER: CustomerFormValues = {
   receiverEmail: "",
 };
 
-const QUOTE_DEBOUNCE_MS = 900;
-
 export default function CreateOrder() {
   const navigate = useNavigate();
   const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
-  // paymentMode: 'customer' → luồng khách tự thanh toán; mọi giá trị khác
-  // (kể cả đang loading hoặc 'driver') → giữ nguyên luồng gốc.
-  const { data: paymentModeRaw } = useGetPaymentMode();
-  const isCustomerMode = paymentModeRaw === "customer";
   // A1: trạng thái mở/đóng cửa hàng (toàn cục). data===false → cửa hàng đang
-  // đóng → chặn CẢ hai luồng (driver + customer) và hiện màn hình chờ thay vì
-  // cho phép chọn món.
+  // đóng → chặn đặt đơn và hiện màn hình chờ thay vì cho phép chọn món.
   const { data: storeOpen } = useIsStoreOpen();
   const storeClosed = storeOpen === false;
-  // Cổng chấp nhận chế độ khách tự thanh toán: mặc định false, chỉ chuyển true
-  // khi khách bấm "Tôi hiểu và đồng ý" trong AlertDialog. Reset mỗi lần vào trang.
-  const [customerModeAccepted, setCustomerModeAccepted] = useState(false);
 
   const [restaurantId, setRestaurantId] = useState<string>("");
   // Menu dùng chung cho toàn bộ chuỗi nhà hàng — hiện ngay từ đầu, không phụ thuộc
@@ -116,15 +82,11 @@ export default function CreateOrder() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [customer, setCustomer] = useState<CustomerFormValues>(EMPTY_CUSTOMER);
   const [touched, setTouched] = useState(false);
-  const [quote, setQuote] = useState<QuoteResponse | null>(null);
-  const [quoteLoading, setQuoteLoading] = useState(false);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
   // Gợi ý gọi thêm — hiện 1 lần khi khách thêm món đầu tiên vào giỏ.
   const [upsellItems, setUpsellItems] = useState<MenuItem[]>([]);
-  const quoteDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedRestaurant: Restaurant | undefined = restaurants?.find(
     (r) => r.restaurantId === restaurantId,
@@ -190,14 +152,9 @@ export default function CreateOrder() {
   );
 
   const customerErrors: CustomerFormErrors = touched
-    ? validateCustomerForm(customer, { hideAddress: isCustomerMode })
+    ? validateCustomerForm(customer, { hideAddress: true })
     : {};
   function handleQuantityChange(itemId: string, delta: number) {
-    // Chế độ khách tự thanh toán: chặn mọi thao tác thêm/bớt món (kể cả từ
-    // giỏ hàng và gợi ý gọi thêm) cho đến khi khách xác nhận cảnh báo.
-    if (isCustomerMode && !customerModeAccepted) {
-      return;
-    }
     // Chưa chọn nhà hàng → chặn thêm món, nhắc khách chọn nhà hàng trước (bước 1).
     if (delta > 0 && !restaurantId) {
       toast.error("Vui lòng chọn nhà hàng trước khi thêm món.");
@@ -216,8 +173,6 @@ export default function CreateOrder() {
       else copy[itemId] = next;
       return copy;
     });
-    setQuote(null);
-    setQuoteError(null);
 
     // Mỗi lần thêm MÓN CHÍNH mới (chưa có trong giỏ trước đó) → gợi ý món phụ.
     // Lặp lại cho từng món chính khác nhau, không giới hạn 1 lần/phiên.
@@ -244,10 +199,6 @@ export default function CreateOrder() {
     value: string,
   ) {
     setCustomer((prev) => ({ ...prev, [field]: value }));
-    if (field === "cusAddress") {
-      setQuote(null);
-      setQuoteError(null);
-    }
   }
 
   // Tự động điền thông tin khách từ email đã xác thực.
@@ -295,92 +246,12 @@ export default function CreateOrder() {
     }
     setRestaurantId(id);
     setCart({});
-    setQuote(null);
-    setQuoteError(null);
     setUpsellItems([]);
   }
 
-  const canRequestQuote = useCallback((): boolean => {
-    return (
-      !!restaurantId &&
-      cartLines.length > 0 &&
-      !!customer.cusAddress.trim() &&
-      !!selectedRestaurant?.address
-    );
-  }, [
-    restaurantId,
-    cartLines.length,
-    customer.cusAddress,
-    selectedRestaurant?.address,
-  ]);
-
-  const runQuote = useCallback(async () => {
-    if (!canRequestQuote() || quoteLoading) return;
-    setQuoteLoading(true);
-    setQuoteError(null);
-    try {
-      const payload: QuoteRequest = {
-        restaurantId,
-        pickupAddress: selectedRestaurant!.address,
-        dropAddress: customer.cusAddress.trim(),
-        items: displayCartLines.map((l) => ({
-          itemId: l.item.itemId,
-          name: l.item.name,
-          quantity: l.quantity,
-        })),
-      };
-      const res = await vpsQuote(payload);
-      setQuote(res);
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Không lấy được phí ship.";
-      setQuoteError(msg);
-    } finally {
-      setQuoteLoading(false);
-    }
-  }, [
-    canRequestQuote,
-    quoteLoading,
-    restaurantId,
-    selectedRestaurant,
-    customer.cusAddress,
-    displayCartLines,
-  ]);
-
-  // Tự động tính phí ship: debounce sau khi địa chỉ/giỏ hàng thay đổi.
-  // Không còn nút "Lấy phí ship" thủ công — khách chỉ cần điền địa chỉ.
-  // CHỈ chạy ở luồng driver. Luồng customer bỏ qua hoàn toàn (không /quote).
-  useEffect(() => {
-    if (isCustomerMode) return;
-    if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
-    if (
-      !restaurantId ||
-      !customer.cusAddress.trim() ||
-      cartLines.length === 0 ||
-      !selectedRestaurant?.address
-    ) {
-      return;
-    }
-    quoteDebounceRef.current = setTimeout(() => {
-      runQuote();
-    }, QUOTE_DEBOUNCE_MS);
-    return () => {
-      if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
-    };
-  }, [
-    isCustomerMode,
-    customer.cusAddress,
-    restaurantId,
-    cartLines.length,
-    selectedRestaurant?.address,
-    runQuote,
-  ]);
-
   async function handleSubmit() {
     setTouched(true);
-    const errs = validateCustomerForm(customer, {
-      hideAddress: isCustomerMode,
-    });
+    const errs = validateCustomerForm(customer, { hideAddress: true });
     if (Object.keys(errs).length > 0) {
       toast.error("Vui lòng kiểm tra thông tin khách hàng.");
       return;
@@ -394,11 +265,6 @@ export default function CreateOrder() {
     // thiện bằng tiếng Việt — không hiện mã lỗi kỹ thuật.
     if (mainDishLines.length === 0) {
       toast.error("Vui lòng chọn ít nhất một món chính để đặt đơn.");
-      return;
-    }
-    // Luồng driver cần quote trước khi đặt. Luồng customer bỏ qua (không phí ship).
-    if (!isCustomerMode && !quote) {
-      toast.error("Đang chờ tính phí ship, vui lòng đợi trong giây lát.");
       return;
     }
 
@@ -420,9 +286,9 @@ export default function CreateOrder() {
           vatRate: Number(l.item.vatRate),
           unitName: l.item.unitName,
         })),
-        // Luồng customer: không có phí ship (VPS sẽ branch trên paymentMode).
-        shippingFee: isCustomerMode ? 0 : quote!.shippingFee,
-        ahamoveOrderId: isCustomerMode ? "" : quote!.ahamoveOrderId,
+        // Không tính phí ship trong hệ thống — khách trả phí trực tiếp bên ngoài.
+        shippingFee: 0,
+        ahamoveOrderId: "",
       };
       const res = await vpsCreate(payload);
       if (!res.ok) {
@@ -446,7 +312,6 @@ export default function CreateOrder() {
       });
       setCart({});
       setCustomer(EMPTY_CUSTOMER);
-      setQuote(null);
       setTouched(false);
       setCartOpen(false);
       navigate({ to: "/track/$orderId", params: { orderId: res.orderId } });
@@ -458,7 +323,7 @@ export default function CreateOrder() {
     }
   }
 
-  const totalAmount = quote?.amount ?? itemsTotal;
+  const totalAmount = itemsTotal;
 
   return (
     <div className="bbh-order-theme bg-background text-foreground">
@@ -474,9 +339,8 @@ export default function CreateOrder() {
             Đặt món
           </h1>
           <p className="text-sm text-muted-foreground">
-            {isCustomerMode
-              ? "Chọn nhà hàng, chọn món, nhập tên + SĐT — đặt đơn rồi thanh toán QR và tự đặt Grab Express nhận hàng."
-              : "Chọn nhà hàng, chọn món, nhập thông tin khách — phí ship sẽ tự động tính khi bạn điền địa chỉ."}
+            Chọn nhà hàng, chọn món, nhập tên + SĐT — đặt đơn rồi thanh toán QR
+            và tự đặt Grab Express nhận hàng.
           </p>
         </header>
 
@@ -543,107 +407,73 @@ export default function CreateOrder() {
                       khi thêm món vào giỏ.
                     </div>
                   )}
-                  {isCustomerMode && !customerModeAccepted ? (
-                    // Cổng chấp nhận: thay menu bằng cảnh báo bắt buộc. Khách phải
-                    // bấm "Tôi hiểu và đồng ý" mỗi lần vào trang trước khi chọn món.
-                    <AlertDialog
-                      open={isCustomerMode && !customerModeAccepted}
-                      onOpenChange={() => {
-                        // Không cho đóng bằng Escape/click nền — chấp nhận chỉ được
-                        // cấp khi bấm nút "Tôi hiểu và đồng ý" bên dưới.
-                      }}
-                    >
-                      <AlertDialogContent data-ocid="create_order.customer_accept_dialog">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Xác nhận chế độ tự thanh toán
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Bạn đang ở chế độ tự thanh toán: quý khách tự quét
-                            QR thanh toán và tự đặt Grab Express nhận hàng. Phí
-                            ship do quý khách tự chịu.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogAction
-                            onClick={() => setCustomerModeAccepted(true)}
-                            data-ocid="create_order.customer_accept_button"
-                          >
-                            Tôi hiểu và đồng ý
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  ) : (
-                    <MenuPicker
-                      menu={menu}
-                      isLoading={menuLoading}
-                      cart={cart}
-                      onQuantityChange={handleQuantityChange}
-                      disabled={submitting}
-                      fixedCategory="Món chính"
-                    />
-                  )}
+                  <MenuPicker
+                    menu={menu}
+                    isLoading={menuLoading}
+                    cart={cart}
+                    onQuantityChange={handleQuantityChange}
+                    disabled={submitting}
+                    fixedCategory="Món chính"
+                  />
                 </CardContent>
               </Card>
             </div>
 
             {/* Gợi ý gọi thêm */}
-            {upsellItems.length > 0 &&
-              (!isCustomerMode || customerModeAccepted) && (
-                <div
-                  className="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise"
-                  data-ocid="create_order.upsell_strip"
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-xs font-semibold text-[oklch(var(--bbh-gold))]">
-                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                      Gọi thêm cho tròn vị?
-                    </span>
-                    <button
-                      type="button"
-                      aria-label="Đóng gợi ý"
-                      onClick={() => setUpsellItems([])}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-4 w-4" aria-hidden="true" />
-                    </button>
-                  </div>
-                  <div className="flex gap-2">
-                    {upsellItems.map((m) => (
-                      <div
-                        key={m.itemId}
-                        className="flex flex-1 items-center justify-between gap-2 rounded-lg bg-secondary p-2"
-                      >
-                        <div className="min-w-0">
-                          <p className="line-clamp-1 text-xs font-semibold">
-                            {m.name}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {formatVnd(Number(m.price))}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          aria-label={`Thêm ${m.name}`}
-                          onClick={() => {
-                            handleQuantityChange(m.itemId, 1);
-                            setUpsellItems((prev) =>
-                              prev.filter((x) => x.itemId !== m.itemId),
-                            );
-                          }}
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
-                        >
-                          +
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+            {upsellItems.length > 0 && (
+              <div
+                className="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise"
+                data-ocid="create_order.upsell_strip"
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-[oklch(var(--bbh-gold))]">
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                    Gọi thêm cho tròn vị?
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Đóng gợi ý"
+                    onClick={() => setUpsellItems([])}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </button>
                 </div>
-              )}
+                <div className="flex gap-2">
+                  {upsellItems.map((m) => (
+                    <div
+                      key={m.itemId}
+                      className="flex flex-1 items-center justify-between gap-2 rounded-lg bg-secondary p-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="line-clamp-1 text-xs font-semibold">
+                          {m.name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {formatVnd(Number(m.price))}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Thêm ${m.name}`}
+                        onClick={() => {
+                          handleQuantityChange(m.itemId, 1);
+                          setUpsellItems((prev) =>
+                            prev.filter((x) => x.itemId !== m.itemId),
+                          );
+                        }}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Thanh giỏ hàng nổi */}
-            {itemCount > 0 && (!isCustomerMode || customerModeAccepted) && (
+            {itemCount > 0 && (
               <button
                 type="button"
                 onClick={() => setCartOpen(true)}
@@ -747,71 +577,9 @@ export default function CreateOrder() {
                       errors={customerErrors}
                       onChange={handleCustomerChange}
                       disabled={submitting}
-                      hideAddress={isCustomerMode}
+                      hideAddress
                     />
                   </div>
-
-                  {/* Trạng thái phí ship — tự động, không có nút bấm.
-                  CHỈ hiện ở luồng driver. Luồng customer bỏ qua hoàn toàn. */}
-                  {!isCustomerMode && (
-                    <div
-                      className="rounded-lg border border-dashed border-border bg-card p-3"
-                      data-ocid="create_order.quote_panel"
-                    >
-                      {quoteLoading ? (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Loader2
-                            className="h-3.5 w-3.5 animate-spin"
-                            aria-hidden="true"
-                          />
-                          Đang tính phí ship…
-                        </div>
-                      ) : quoteError ? (
-                        <div className="flex items-center gap-2 text-sm text-destructive">
-                          <AlertCircle
-                            className="h-3.5 w-3.5 shrink-0"
-                            aria-hidden="true"
-                          />
-                          <span className="min-w-0 flex-1">{quoteError}</span>
-                          <button
-                            type="button"
-                            className="shrink-0 underline"
-                            onClick={() => runQuote()}
-                          >
-                            Thử lại
-                          </button>
-                        </div>
-                      ) : quote ? (
-                        <div className="flex flex-col gap-1.5 text-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">
-                              Tạm tính (đã gồm VAT)
-                            </span>
-                            <span className="font-mono font-medium">
-                              {formatVnd(itemsTotal)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <Truck
-                                className="h-3.5 w-3.5"
-                                aria-hidden="true"
-                              />
-                              Phí ship
-                            </span>
-                            <span className="font-mono font-medium">
-                              {formatVnd(quote.shippingFee)}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          Nhập địa chỉ giao hàng ở trên — phí ship sẽ tự động
-                          hiện ở đây.
-                        </p>
-                      )}
-                    </div>
-                  )}
 
                   <Separator />
 
@@ -833,7 +601,6 @@ export default function CreateOrder() {
                       disabled={
                         submitting ||
                         cartLines.length === 0 ||
-                        (!isCustomerMode && !quote) ||
                         Object.keys(customerErrors).length > 0
                       }
                       data-ocid="create_order.submit_button"
@@ -846,16 +613,6 @@ export default function CreateOrder() {
                           />
                           Đang đặt đơn…
                         </>
-                      ) : isCustomerMode ? (
-                        <>
-                          <ShoppingCart
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          />
-                          Đặt đơn
-                        </>
-                      ) : !quote ? (
-                        "Đang chờ tính phí ship…"
                       ) : (
                         <>
                           <ShoppingCart

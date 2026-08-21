@@ -37946,12 +37946,6 @@ async function getOrder(actor, orderId) {
 async function getOrderStatus(actor, orderId) {
   return unwrap(await actor.getOrderStatus(orderId));
 }
-async function listPaidOrdersForPickup(actor) {
-  return actor.listPaidOrdersForPickup();
-}
-async function markPickedUp(actor, orderId) {
-  return unwrap(await actor.markPickedUp(orderId));
-}
 async function generateActivationCode(actor, restaurantId, role) {
   return unwrap(await actor.generateActivationCode(restaurantId, role));
 }
@@ -38244,13 +38238,6 @@ function safeParse(text) {
     return text;
   }
 }
-async function quote(payload) {
-  return vpsFetch({
-    method: "POST",
-    path: "/quote",
-    body: payload
-  });
-}
 async function create(payload) {
   return vpsFetch({
     method: "POST",
@@ -38262,12 +38249,6 @@ async function getInvoice(orderId) {
   return vpsFetch({
     method: "GET",
     path: `/invoice/${encodeURIComponent(orderId)}`
-  });
-}
-async function requestQr(orderId) {
-  return vpsFetch({
-    method: "POST",
-    path: `/order/${encodeURIComponent(orderId)}/qr`
   });
 }
 async function upsertCustomer(email) {
@@ -38459,92 +38440,58 @@ const createLucideIcon = (iconName, iconNode) => {
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$M = [
+const __iconNode$J = [
   ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
   ["path", { d: "M19 12H5", key: "x3x0zl" }]
 ];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$M);
+const ArrowLeft = createLucideIcon("arrow-left", __iconNode$J);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$L = [
+const __iconNode$I = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
 ];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$L);
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$I);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$K = [
+const __iconNode$H = [
   ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }],
   ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }],
   ["path", { d: "M6 12h.01M18 12h.01", key: "113zkx" }]
 ];
-const Banknote = createLucideIcon("banknote", __iconNode$K);
+const Banknote = createLucideIcon("banknote", __iconNode$H);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$J = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$J);
+const __iconNode$G = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$G);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$I = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$I);
+const __iconNode$F = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$F);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$H = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-const ChevronUp = createLucideIcon("chevron-up", __iconNode$H);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$G = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
-  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
-];
-const CircleAlert = createLucideIcon("circle-alert", __iconNode$G);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$F = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
-];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$F);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$E = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
-];
-const Clock = createLucideIcon("clock", __iconNode$E);
+const __iconNode$E = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+const ChevronUp = createLucideIcon("chevron-up", __iconNode$E);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38552,11 +38499,11 @@ const Clock = createLucideIcon("clock", __iconNode$E);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$D = [
-  ["path", { d: "M12 13v8", key: "1l5pq0" }],
-  ["path", { d: "M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242", key: "1pljnt" }],
-  ["path", { d: "m8 17 4-4 4 4", key: "1quai1" }]
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
+  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
 ];
-const CloudUpload = createLucideIcon("cloud-upload", __iconNode$D);
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$D);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38564,10 +38511,10 @@ const CloudUpload = createLucideIcon("cloud-upload", __iconNode$D);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$C = [
-  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
-  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const Copy = createLucideIcon("copy", __iconNode$C);
+const CircleCheck = createLucideIcon("circle-check", __iconNode$C);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38575,11 +38522,10 @@ const Copy = createLucideIcon("copy", __iconNode$C);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$B = [
-  ["path", { d: "M12 15V3", key: "m9g1x1" }],
-  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
-  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
 ];
-const Download = createLucideIcon("download", __iconNode$B);
+const Clock = createLucideIcon("clock", __iconNode$B);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38587,11 +38533,11 @@ const Download = createLucideIcon("download", __iconNode$B);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$A = [
-  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
-  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
-  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
+  ["path", { d: "M12 13v8", key: "1l5pq0" }],
+  ["path", { d: "M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242", key: "1pljnt" }],
+  ["path", { d: "m8 17 4-4 4 4", key: "1quai1" }]
 ];
-const ExternalLink = createLucideIcon("external-link", __iconNode$A);
+const CloudUpload = createLucideIcon("cloud-upload", __iconNode$A);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38599,6 +38545,41 @@ const ExternalLink = createLucideIcon("external-link", __iconNode$A);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$z = [
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
+];
+const Copy = createLucideIcon("copy", __iconNode$z);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$y = [
+  ["path", { d: "M12 15V3", key: "m9g1x1" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
+  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
+];
+const Download = createLucideIcon("download", __iconNode$y);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$x = [
+  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
+  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
+  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
+];
+const ExternalLink = createLucideIcon("external-link", __iconNode$x);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$w = [
   [
     "path",
     {
@@ -38616,52 +38597,7 @@ const __iconNode$z = [
   ],
   ["path", { d: "m2 2 20 20", key: "1ooewy" }]
 ];
-const EyeOff = createLucideIcon("eye-off", __iconNode$z);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$y = [
-  [
-    "path",
-    {
-      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
-      key: "1nclc0"
-    }
-  ],
-  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
-];
-const Eye = createLucideIcon("eye", __iconNode$y);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$x = [
-  ["path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", key: "1rqfz7" }],
-  ["path", { d: "M14 2v4a2 2 0 0 0 2 2h4", key: "tnqrlb" }],
-  ["path", { d: "M10 9H8", key: "b1mrlr" }],
-  ["path", { d: "M16 13H8", key: "t4e002" }],
-  ["path", { d: "M16 17H8", key: "z1uh3a" }]
-];
-const FileText = createLucideIcon("file-text", __iconNode$x);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$w = [
-  ["path", { d: "M16 5h6", key: "1vod17" }],
-  ["path", { d: "M19 2v6", key: "4bpg5p" }],
-  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
-];
-const ImagePlus = createLucideIcon("image-plus", __iconNode$w);
+const EyeOff = createLucideIcon("eye-off", __iconNode$w);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38672,13 +38608,13 @@ const __iconNode$v = [
   [
     "path",
     {
-      d: "M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z",
-      key: "1s6t7t"
+      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+      key: "1nclc0"
     }
   ],
-  ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
+  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-const KeyRound = createLucideIcon("key-round", __iconNode$v);
+const Eye = createLucideIcon("eye", __iconNode$v);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38686,22 +38622,27 @@ const KeyRound = createLucideIcon("key-round", __iconNode$v);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$u = [
-  ["path", { d: "M10 12h11", key: "6m4ad9" }],
-  ["path", { d: "M10 18h11", key: "11hvi2" }],
-  ["path", { d: "M10 6h11", key: "c7qv1k" }],
-  ["path", { d: "M4 10h2", key: "16xx2s" }],
-  ["path", { d: "M4 6h1v4", key: "cnovpq" }],
-  ["path", { d: "M6 18H4c0-1 2-2 2-3s-1-1.5-2-1", key: "m9a95d" }]
+  ["path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", key: "1rqfz7" }],
+  ["path", { d: "M14 2v4a2 2 0 0 0 2 2h4", key: "tnqrlb" }],
+  ["path", { d: "M10 9H8", key: "b1mrlr" }],
+  ["path", { d: "M16 13H8", key: "t4e002" }],
+  ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-const ListOrdered = createLucideIcon("list-ordered", __iconNode$u);
+const FileText = createLucideIcon("file-text", __iconNode$u);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$t = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-const LoaderCircle = createLucideIcon("loader-circle", __iconNode$t);
+const __iconNode$t = [
+  ["path", { d: "M16 5h6", key: "1vod17" }],
+  ["path", { d: "M19 2v6", key: "4bpg5p" }],
+  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
+];
+const ImagePlus = createLucideIcon("image-plus", __iconNode$t);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38709,10 +38650,16 @@ const LoaderCircle = createLucideIcon("loader-circle", __iconNode$t);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$s = [
-  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
-  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
+  [
+    "path",
+    {
+      d: "M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z",
+      key: "1s6t7t"
+    }
+  ],
+  ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
 ];
-const Mail = createLucideIcon("mail", __iconNode$s);
+const KeyRound = createLucideIcon("key-round", __iconNode$s);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38720,6 +38667,40 @@ const Mail = createLucideIcon("mail", __iconNode$s);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$r = [
+  ["path", { d: "M10 12h11", key: "6m4ad9" }],
+  ["path", { d: "M10 18h11", key: "11hvi2" }],
+  ["path", { d: "M10 6h11", key: "c7qv1k" }],
+  ["path", { d: "M4 10h2", key: "16xx2s" }],
+  ["path", { d: "M4 6h1v4", key: "cnovpq" }],
+  ["path", { d: "M6 18H4c0-1 2-2 2-3s-1-1.5-2-1", key: "m9a95d" }]
+];
+const ListOrdered = createLucideIcon("list-ordered", __iconNode$r);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$q = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+const LoaderCircle = createLucideIcon("loader-circle", __iconNode$q);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$p = [
+  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
+  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
+];
+const Mail = createLucideIcon("mail", __iconNode$p);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$o = [
   [
     "path",
     {
@@ -38729,42 +38710,22 @@ const __iconNode$r = [
   ],
   ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }]
 ];
-const MapPin = createLucideIcon("map-pin", __iconNode$r);
+const MapPin = createLucideIcon("map-pin", __iconNode$o);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$q = [["path", { d: "M5 12h14", key: "1ays0h" }]];
-const Minus = createLucideIcon("minus", __iconNode$q);
+const __iconNode$n = [["path", { d: "M5 12h14", key: "1ays0h" }]];
+const Minus = createLucideIcon("minus", __iconNode$n);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$p = [
-  ["path", { d: "m16 16 2 2 4-4", key: "gfu2re" }],
-  [
-    "path",
-    {
-      d: "M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14",
-      key: "e7tb2h"
-    }
-  ],
-  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }],
-  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
-  ["line", { x1: "12", x2: "12", y1: "22", y2: "12", key: "a4e8g8" }]
-];
-const PackageCheck = createLucideIcon("package-check", __iconNode$p);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$o = [
+const __iconNode$m = [
   [
     "path",
     {
@@ -38778,14 +38739,14 @@ const __iconNode$o = [
   ["circle", { cx: "18.5", cy: "15.5", r: "2.5", key: "b5zd12" }],
   ["path", { d: "M20.27 17.27 22 19", key: "1l4muz" }]
 ];
-const PackageSearch = createLucideIcon("package-search", __iconNode$o);
+const PackageSearch = createLucideIcon("package-search", __iconNode$m);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$n = [
+const __iconNode$l = [
   [
     "path",
     {
@@ -38797,14 +38758,14 @@ const __iconNode$n = [
   ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
   ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
 ];
-const Package = createLucideIcon("package", __iconNode$n);
+const Package = createLucideIcon("package", __iconNode$l);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$m = [
+const __iconNode$k = [
   [
     "path",
     {
@@ -38814,14 +38775,14 @@ const __iconNode$m = [
   ],
   ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
 ];
-const Pencil = createLucideIcon("pencil", __iconNode$m);
+const Pencil = createLucideIcon("pencil", __iconNode$k);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$l = [
+const __iconNode$j = [
   [
     "path",
     {
@@ -38830,39 +38791,7 @@ const __iconNode$l = [
     }
   ]
 ];
-const Phone = createLucideIcon("phone", __iconNode$l);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$k = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "M12 5v14", key: "s699le" }]
-];
-const Plus = createLucideIcon("plus", __iconNode$k);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$j = [
-  ["rect", { width: "5", height: "5", x: "3", y: "3", rx: "1", key: "1tu5fj" }],
-  ["rect", { width: "5", height: "5", x: "16", y: "3", rx: "1", key: "1v8r4q" }],
-  ["rect", { width: "5", height: "5", x: "3", y: "16", rx: "1", key: "1x03jg" }],
-  ["path", { d: "M21 16h-3a2 2 0 0 0-2 2v3", key: "177gqh" }],
-  ["path", { d: "M21 21v.01", key: "ents32" }],
-  ["path", { d: "M12 7v3a2 2 0 0 1-2 2H7", key: "8crl2c" }],
-  ["path", { d: "M3 12h.01", key: "nlz23k" }],
-  ["path", { d: "M12 3h.01", key: "n36tog" }],
-  ["path", { d: "M12 16v.01", key: "133mhm" }],
-  ["path", { d: "M16 12h1", key: "1slzba" }],
-  ["path", { d: "M21 12v.01", key: "1lwtk9" }],
-  ["path", { d: "M12 21v-1", key: "1880an" }]
-];
-const QrCode = createLucideIcon("qr-code", __iconNode$j);
+const Phone = createLucideIcon("phone", __iconNode$j);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38870,14 +38799,10 @@ const QrCode = createLucideIcon("qr-code", __iconNode$j);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$i = [
-  [
-    "path",
-    { d: "M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", key: "q3az6g" }
-  ],
-  ["path", { d: "M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8", key: "1h4pet" }],
-  ["path", { d: "M12 17.5v-11", key: "1jc1ny" }]
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
 ];
-const Receipt = createLucideIcon("receipt", __iconNode$i);
+const Plus = createLucideIcon("plus", __iconNode$i);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38885,12 +38810,14 @@ const Receipt = createLucideIcon("receipt", __iconNode$i);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$h = [
-  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
-  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
-  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
-  ["path", { d: "M8 16H3v5", key: "1cv678" }]
+  [
+    "path",
+    { d: "M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", key: "q3az6g" }
+  ],
+  ["path", { d: "M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8", key: "1h4pet" }],
+  ["path", { d: "M12 17.5v-11", key: "1jc1ny" }]
 ];
-const RefreshCw = createLucideIcon("refresh-cw", __iconNode$h);
+const Receipt = createLucideIcon("receipt", __iconNode$h);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38898,6 +38825,19 @@ const RefreshCw = createLucideIcon("refresh-cw", __iconNode$h);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$g = [
+  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+  ["path", { d: "M8 16H3v5", key: "1cv678" }]
+];
+const RefreshCw = createLucideIcon("refresh-cw", __iconNode$g);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$f = [
   [
     "path",
     {
@@ -38908,18 +38848,7 @@ const __iconNode$g = [
   ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7", key: "1ydtos" }],
   ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7", key: "t51u73" }]
 ];
-const Save = createLucideIcon("save", __iconNode$g);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$f = [
-  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
-  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
-];
-const Search = createLucideIcon("search", __iconNode$f);
+const Save = createLucideIcon("save", __iconNode$f);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38927,6 +38856,17 @@ const Search = createLucideIcon("search", __iconNode$f);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$e = [
+  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
+  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
+];
+const Search = createLucideIcon("search", __iconNode$e);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$d = [
   [
     "path",
     {
@@ -38936,14 +38876,14 @@ const __iconNode$e = [
   ],
   ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const ShieldCheck = createLucideIcon("shield-check", __iconNode$e);
+const ShieldCheck = createLucideIcon("shield-check", __iconNode$d);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$d = [
+const __iconNode$c = [
   ["path", { d: "m2 2 20 20", key: "1ooewy" }],
   [
     "path",
@@ -38960,19 +38900,7 @@ const __iconNode$d = [
     }
   ]
 ];
-const ShieldOff = createLucideIcon("shield-off", __iconNode$d);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$c = [
-  ["path", { d: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z", key: "hou9p0" }],
-  ["path", { d: "M3 6h18", key: "d0wm0j" }],
-  ["path", { d: "M16 10a4 4 0 0 1-8 0", key: "1ltviw" }]
-];
-const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$c);
+const ShieldOff = createLucideIcon("shield-off", __iconNode$c);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -38980,6 +38908,18 @@ const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$c);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$b = [
+  ["path", { d: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z", key: "hou9p0" }],
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M16 10a4 4 0 0 1-8 0", key: "1ltviw" }]
+];
+const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$b);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$a = [
   ["circle", { cx: "8", cy: "21", r: "1", key: "jimo8o" }],
   ["circle", { cx: "19", cy: "21", r: "1", key: "13723u" }],
   [
@@ -38990,18 +38930,7 @@ const __iconNode$b = [
     }
   ]
 ];
-const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$b);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$a = [
-  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
-  ["path", { d: "M12 18h.01", key: "mhygvu" }]
-];
-const Smartphone = createLucideIcon("smartphone", __iconNode$a);
+const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$a);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -39009,6 +38938,17 @@ const Smartphone = createLucideIcon("smartphone", __iconNode$a);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$9 = [
+  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
+  ["path", { d: "M12 18h.01", key: "mhygvu" }]
+];
+const Smartphone = createLucideIcon("smartphone", __iconNode$9);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$8 = [
   [
     "path",
     {
@@ -39021,14 +38961,14 @@ const __iconNode$9 = [
   ["path", { d: "M4 17v2", key: "vumght" }],
   ["path", { d: "M5 18H3", key: "zchphs" }]
 ];
-const Sparkles = createLucideIcon("sparkles", __iconNode$9);
+const Sparkles = createLucideIcon("sparkles", __iconNode$8);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$8 = [
+const __iconNode$7 = [
   [
     "path",
     {
@@ -39038,21 +38978,7 @@ const __iconNode$8 = [
   ],
   ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
 ];
-const Tag = createLucideIcon("tag", __iconNode$8);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$7 = [
-  ["path", { d: "M3 6h18", key: "d0wm0j" }],
-  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
-  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
-  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
-  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
-];
-const Trash2 = createLucideIcon("trash-2", __iconNode$7);
+const Tag = createLucideIcon("tag", __iconNode$7);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -39060,10 +38986,13 @@ const Trash2 = createLucideIcon("trash-2", __iconNode$7);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$6 = [
-  ["path", { d: "M16 7h6v6", key: "box55l" }],
-  ["path", { d: "m22 7-8.5 8.5-5-5L2 17", key: "1t1m79" }]
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
+  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
+  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
+  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
 ];
-const TrendingUp = createLucideIcon("trending-up", __iconNode$6);
+const Trash2 = createLucideIcon("trash-2", __iconNode$6);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -39071,6 +39000,17 @@ const TrendingUp = createLucideIcon("trending-up", __iconNode$6);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$5 = [
+  ["path", { d: "M16 7h6v6", key: "box55l" }],
+  ["path", { d: "m22 7-8.5 8.5-5-5L2 17", key: "1t1m79" }]
+];
+const TrendingUp = createLucideIcon("trending-up", __iconNode$5);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$4 = [
   ["path", { d: "M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2", key: "wrbu53" }],
   ["path", { d: "M15 18H9", key: "1lyqi6" }],
   [
@@ -39083,18 +39023,7 @@ const __iconNode$5 = [
   ["circle", { cx: "17", cy: "18", r: "2", key: "332jqn" }],
   ["circle", { cx: "7", cy: "18", r: "2", key: "19iecd" }]
 ];
-const Truck = createLucideIcon("truck", __iconNode$5);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$4 = [
-  ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
-  ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }]
-];
-const User = createLucideIcon("user", __iconNode$4);
+const Truck = createLucideIcon("truck", __iconNode$4);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -45314,17 +45243,6 @@ function useGetOrder(orderId) {
     refetchInterval: 5e3
   });
 }
-function useMarkPickedUp() {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (orderId) => {
-      if (!actor) throw new Error("Actor not ready");
-      return markPickedUp(actor, orderId);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["orders", "paid-for-pickup"] })
-  });
-}
 function useMenus() {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
@@ -45539,7 +45457,7 @@ function useIsStoreOpen() {
 function pad2(n) {
   return n.toString().padStart(2, "0");
 }
-function formatTime$2(hour, minute) {
+function formatTime$1(hour, minute) {
   return `${pad2(hour)}:${pad2(minute)}`;
 }
 function SectionCard$1({
@@ -45975,10 +45893,10 @@ function AdminPanel() {
                       {
                         className: "text-xs text-muted-foreground",
                         "data-ocid": "admin.store_hours.current_value",
-                        children: storeHoursQuery.isLoading ? "Đang tải giờ hiện tại…" : storeHoursQuery.data ? `Giờ hiện tại: ${formatTime$2(
+                        children: storeHoursQuery.isLoading ? "Đang tải giờ hiện tại…" : storeHoursQuery.data ? `Giờ hiện tại: ${formatTime$1(
                           Number(storeHoursQuery.data.openHour),
                           Number(storeHoursQuery.data.openMinute)
-                        )} – ${formatTime$2(
+                        )} – ${formatTime$1(
                           Number(storeHoursQuery.data.closeHour),
                           Number(storeHoursQuery.data.closeMinute)
                         )}` : "Chưa cấu hình giờ mở/đóng."
@@ -46083,7 +46001,7 @@ function TableCell({ className, ...props }) {
     }
   );
 }
-function formatVnd$a(n) {
+function formatVnd$9(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -46116,7 +46034,7 @@ function CustomersTable({ data, testId }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium text-foreground", children: row.cusName }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-sm text-muted-foreground", children: row.cusPhone || "—" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono", children: row.orderCount }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$a(row.totalSpent) })
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$9(row.totalSpent) })
         ]
       },
       `${row.cusName}-${i}`
@@ -46219,7 +46137,7 @@ function formatVndShort(n) {
   if (n >= 1e3) return `${(n / 1e3).toFixed(0)}k`;
   return `${n}`;
 }
-function formatVnd$9(n) {
+function formatVnd$8(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -46326,7 +46244,7 @@ function RevenueChart({ data, testId }) {
                       height: Math.max(b2.h, 0),
                       rx: 3,
                       className: "fill-primary transition-smooth hover:fill-primary/80",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: `${formatDayLabel(b2.date)}: ${formatVnd$9(b2.revenue)}` })
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: `${formatDayLabel(b2.date)}: ${formatVnd$8(b2.revenue)}` })
                     }
                   ),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -51549,7 +51467,7 @@ const RANGE_LABELS = {
   "30d": "30 ngày",
   "90d": "90 ngày"
 };
-function formatVnd$8(n) {
+function formatVnd$7(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -51664,10 +51582,10 @@ function AnalyticsDashboard() {
               StatCard,
               {
                 label: "Tổng doanh thu",
-                value: formatVnd$8((a2 == null ? void 0 : a2.totalRevenue) ?? 0),
+                value: formatVnd$7((a2 == null ? void 0 : a2.totalRevenue) ?? 0),
                 icon: Banknote,
                 tone: "primary",
-                hint: `Trung bình ${formatVnd$8((a2 == null ? void 0 : a2.averageOrderValue) ?? 0)}/đơn`,
+                hint: `Trung bình ${formatVnd$7((a2 == null ? void 0 : a2.averageOrderValue) ?? 0)}/đơn`,
                 testId: "analytics.stat.total_revenue"
               }
             ),
@@ -51983,7 +51901,7 @@ function Skeleton({ className, ...props }) {
   );
 }
 const ALL_CATEGORY = "Tất cả";
-function formatVnd$7(value) {
+function formatVnd$6(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -52029,7 +51947,7 @@ function MenuCard({
             /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "line-clamp-2 text-sm font-semibold text-foreground", children: item.name }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 text-xs text-muted-foreground", children: item.unitName || "phần" })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-sm font-medium text-primary", children: formatVnd$7(item.price) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-sm font-medium text-primary", children: formatVnd$6(item.price) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-auto flex items-center justify-between gap-2 pt-1", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
               "VAT ",
@@ -52292,6 +52210,49 @@ function RestaurantSelect({
       }
     ) : null
   ] });
+}
+var NAME = "Separator";
+var DEFAULT_ORIENTATION = "horizontal";
+var ORIENTATIONS = ["horizontal", "vertical"];
+var Separator$1 = reactExports.forwardRef((props, forwardedRef) => {
+  const { decorative, orientation: orientationProp = DEFAULT_ORIENTATION, ...domProps } = props;
+  const orientation = isValidOrientation(orientationProp) ? orientationProp : DEFAULT_ORIENTATION;
+  const ariaOrientation = orientation === "vertical" ? orientation : void 0;
+  const semanticProps = decorative ? { role: "none" } : { "aria-orientation": ariaOrientation, role: "separator" };
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Primitive$1.div,
+    {
+      "data-orientation": orientation,
+      ...semanticProps,
+      ...domProps,
+      ref: forwardedRef
+    }
+  );
+});
+Separator$1.displayName = NAME;
+function isValidOrientation(orientation) {
+  return ORIENTATIONS.includes(orientation);
+}
+var Root$2 = Separator$1;
+function Separator({
+  className,
+  orientation = "horizontal",
+  decorative = true,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Root$2,
+    {
+      "data-slot": "separator",
+      decorative,
+      orientation,
+      className: cn(
+        "bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px",
+        className
+      ),
+      ...props
+    }
+  );
 }
 function useStateMachine(initialState, machine) {
   return reactExports.useReducer((state, event) => {
@@ -52714,7 +52675,7 @@ var DescriptionWarning$1 = ({ contentRef, descriptionId }) => {
   }, [MESSAGE, contentRef, descriptionId]);
   return null;
 };
-var Root$2 = Dialog$1;
+var Root$1 = Dialog$1;
 var Trigger = DialogTrigger;
 var Portal = DialogPortal$1;
 var Overlay = DialogOverlay$1;
@@ -52722,313 +52683,8 @@ var Content = DialogContent$1;
 var Title = DialogTitle$1;
 var Description = DialogDescription$1;
 var Close = DialogClose;
-var ROOT_NAME = "AlertDialog";
-var [createAlertDialogContext] = createContextScope(ROOT_NAME, [
-  createDialogScope
-]);
-var useDialogScope = createDialogScope();
-var AlertDialog$1 = (props) => {
-  const { __scopeAlertDialog, ...alertDialogProps } = props;
-  const dialogScope = useDialogScope(__scopeAlertDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$2, { ...dialogScope, ...alertDialogProps, modal: true });
-};
-AlertDialog$1.displayName = ROOT_NAME;
-var TRIGGER_NAME = "AlertDialogTrigger";
-var AlertDialogTrigger = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...triggerProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger, { ...dialogScope, ...triggerProps, ref: forwardedRef });
-  }
-);
-AlertDialogTrigger.displayName = TRIGGER_NAME;
-var PORTAL_NAME = "AlertDialogPortal";
-var AlertDialogPortal$1 = (props) => {
-  const { __scopeAlertDialog, ...portalProps } = props;
-  const dialogScope = useDialogScope(__scopeAlertDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { ...dialogScope, ...portalProps });
-};
-AlertDialogPortal$1.displayName = PORTAL_NAME;
-var OVERLAY_NAME = "AlertDialogOverlay";
-var AlertDialogOverlay$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...overlayProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { ...dialogScope, ...overlayProps, ref: forwardedRef });
-  }
-);
-AlertDialogOverlay$1.displayName = OVERLAY_NAME;
-var CONTENT_NAME = "AlertDialogContent";
-var [AlertDialogContentProvider, useAlertDialogContentContext] = createAlertDialogContext(CONTENT_NAME);
-var Slottable = /* @__PURE__ */ createSlottable("AlertDialogContent");
-var AlertDialogContent$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, children, ...contentProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    const contentRef = reactExports.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, contentRef);
-    const cancelRef = reactExports.useRef(null);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      WarningProvider,
-      {
-        contentName: CONTENT_NAME,
-        titleName: TITLE_NAME,
-        docsSlug: "alert-dialog",
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogContentProvider, { scope: __scopeAlertDialog, cancelRef, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          Content,
-          {
-            role: "alertdialog",
-            ...dialogScope,
-            ...contentProps,
-            ref: composedRefs,
-            onOpenAutoFocus: composeEventHandlers(contentProps.onOpenAutoFocus, (event) => {
-              var _a2;
-              event.preventDefault();
-              (_a2 = cancelRef.current) == null ? void 0 : _a2.focus({ preventScroll: true });
-            }),
-            onPointerDownOutside: (event) => event.preventDefault(),
-            onInteractOutside: (event) => event.preventDefault(),
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Slottable, { children }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(DescriptionWarning, { contentRef })
-            ]
-          }
-        ) })
-      }
-    );
-  }
-);
-AlertDialogContent$1.displayName = CONTENT_NAME;
-var TITLE_NAME = "AlertDialogTitle";
-var AlertDialogTitle$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...titleProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { ...dialogScope, ...titleProps, ref: forwardedRef });
-  }
-);
-AlertDialogTitle$1.displayName = TITLE_NAME;
-var DESCRIPTION_NAME = "AlertDialogDescription";
-var AlertDialogDescription$1 = reactExports.forwardRef((props, forwardedRef) => {
-  const { __scopeAlertDialog, ...descriptionProps } = props;
-  const dialogScope = useDialogScope(__scopeAlertDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Description, { ...dialogScope, ...descriptionProps, ref: forwardedRef });
-});
-AlertDialogDescription$1.displayName = DESCRIPTION_NAME;
-var ACTION_NAME = "AlertDialogAction";
-var AlertDialogAction$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...actionProps } = props;
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { ...dialogScope, ...actionProps, ref: forwardedRef });
-  }
-);
-AlertDialogAction$1.displayName = ACTION_NAME;
-var CANCEL_NAME = "AlertDialogCancel";
-var AlertDialogCancel$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeAlertDialog, ...cancelProps } = props;
-    const { cancelRef } = useAlertDialogContentContext(CANCEL_NAME, __scopeAlertDialog);
-    const dialogScope = useDialogScope(__scopeAlertDialog);
-    const ref = useComposedRefs(forwardedRef, cancelRef);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { ...dialogScope, ...cancelProps, ref });
-  }
-);
-AlertDialogCancel$1.displayName = CANCEL_NAME;
-var DescriptionWarning = ({ contentRef }) => {
-  const MESSAGE = `\`${CONTENT_NAME}\` requires a description for the component to be accessible for screen reader users.
-
-You can add a description to the \`${CONTENT_NAME}\` by passing a \`${DESCRIPTION_NAME}\` component as a child, which also benefits sighted users by adding visible context to the dialog.
-
-Alternatively, you can use your own component as a description by assigning it an \`id\` and passing the same value to the \`aria-describedby\` prop in \`${CONTENT_NAME}\`. If the description is confusing or duplicative for sighted users, you can use the \`@radix-ui/react-visually-hidden\` primitive as a wrapper around your description component.
-
-For more information, see https://radix-ui.com/primitives/docs/components/alert-dialog`;
-  reactExports.useEffect(() => {
-    var _a2;
-    const hasDescription = document.getElementById(
-      (_a2 = contentRef.current) == null ? void 0 : _a2.getAttribute("aria-describedby")
-    );
-    if (!hasDescription) console.warn(MESSAGE);
-  }, [MESSAGE, contentRef]);
-  return null;
-};
-var Root2 = AlertDialog$1;
-var Portal2 = AlertDialogPortal$1;
-var Overlay2 = AlertDialogOverlay$1;
-var Content2 = AlertDialogContent$1;
-var Action = AlertDialogAction$1;
-var Cancel = AlertDialogCancel$1;
-var Title2 = AlertDialogTitle$1;
-var Description2 = AlertDialogDescription$1;
-function AlertDialog({
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2, { "data-slot": "alert-dialog", ...props });
-}
-function AlertDialogPortal({
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal2, { "data-slot": "alert-dialog-portal", ...props });
-}
-function AlertDialogOverlay({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Overlay2,
-    {
-      "data-slot": "alert-dialog-overlay",
-      className: cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function AlertDialogContent({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogPortal, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogOverlay, {}),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Content2,
-      {
-        "data-slot": "alert-dialog-content",
-        className: cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
-          className
-        ),
-        ...props
-      }
-    )
-  ] });
-}
-function AlertDialogHeader({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "alert-dialog-header",
-      className: cn("flex flex-col gap-2 text-center sm:text-left", className),
-      ...props
-    }
-  );
-}
-function AlertDialogFooter({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "alert-dialog-footer",
-      className: cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function AlertDialogTitle({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Title2,
-    {
-      "data-slot": "alert-dialog-title",
-      className: cn("text-lg font-semibold", className),
-      ...props
-    }
-  );
-}
-function AlertDialogDescription({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Description2,
-    {
-      "data-slot": "alert-dialog-description",
-      className: cn("text-muted-foreground text-sm", className),
-      ...props
-    }
-  );
-}
-function AlertDialogAction({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Action,
-    {
-      className: cn(buttonVariants(), className),
-      ...props
-    }
-  );
-}
-function AlertDialogCancel({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Cancel,
-    {
-      className: cn(buttonVariants({ variant: "outline" }), className),
-      ...props
-    }
-  );
-}
-var NAME = "Separator";
-var DEFAULT_ORIENTATION = "horizontal";
-var ORIENTATIONS = ["horizontal", "vertical"];
-var Separator$1 = reactExports.forwardRef((props, forwardedRef) => {
-  const { decorative, orientation: orientationProp = DEFAULT_ORIENTATION, ...domProps } = props;
-  const orientation = isValidOrientation(orientationProp) ? orientationProp : DEFAULT_ORIENTATION;
-  const ariaOrientation = orientation === "vertical" ? orientation : void 0;
-  const semanticProps = decorative ? { role: "none" } : { "aria-orientation": ariaOrientation, role: "separator" };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive$1.div,
-    {
-      "data-orientation": orientation,
-      ...semanticProps,
-      ...domProps,
-      ref: forwardedRef
-    }
-  );
-});
-Separator$1.displayName = NAME;
-function isValidOrientation(orientation) {
-  return ORIENTATIONS.includes(orientation);
-}
-var Root$1 = Separator$1;
-function Separator({
-  className,
-  orientation = "horizontal",
-  decorative = true,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Root$1,
-    {
-      "data-slot": "separator",
-      decorative,
-      orientation,
-      className: cn(
-        "bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px",
-        className
-      ),
-      ...props
-    }
-  );
-}
 function Sheet({ ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$2, { "data-slot": "sheet", ...props });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { "data-slot": "sheet", ...props });
 }
 function SheetPortal({
   ...props
@@ -53106,7 +52762,7 @@ function SheetTitle({
     }
   );
 }
-function formatVnd$6(value) {
+function formatVnd$5(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -53120,27 +52776,19 @@ const EMPTY_CUSTOMER = {
   cusTaxCode: "",
   receiverEmail: ""
 };
-const QUOTE_DEBOUNCE_MS = 900;
 function CreateOrder() {
   const navigate = useNavigate();
   const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
-  const { data: paymentModeRaw } = useGetPaymentMode();
-  const isCustomerMode = paymentModeRaw === "customer";
   const { data: storeOpen } = useIsStoreOpen();
   const storeClosed = storeOpen === false;
-  const [customerModeAccepted, setCustomerModeAccepted] = reactExports.useState(false);
   const [restaurantId, setRestaurantId] = reactExports.useState("");
   const { data: menu, isLoading: menuLoading } = useMenus();
   const [cart, setCart] = reactExports.useState({});
   const [customer, setCustomer] = reactExports.useState(EMPTY_CUSTOMER);
   const [touched, setTouched] = reactExports.useState(false);
-  const [quote$1, setQuote] = reactExports.useState(null);
-  const [quoteLoading, setQuoteLoading] = reactExports.useState(false);
-  const [quoteError, setQuoteError] = reactExports.useState(null);
   const [submitting, setSubmitting] = reactExports.useState(false);
   const [cartOpen, setCartOpen] = reactExports.useState(false);
   const [upsellItems, setUpsellItems] = reactExports.useState([]);
-  const quoteDebounceRef = reactExports.useRef(null);
   const selectedRestaurant = restaurants == null ? void 0 : restaurants.find(
     (r2) => r2.restaurantId === restaurantId
   );
@@ -53181,12 +52829,9 @@ function CreateOrder() {
     () => displayCartLines.reduce((sum, l2) => sum + l2.quantity, 0),
     [displayCartLines]
   );
-  const customerErrors = touched ? validateCustomerForm(customer, { hideAddress: isCustomerMode }) : {};
+  const customerErrors = touched ? validateCustomerForm(customer, { hideAddress: true }) : {};
   function handleQuantityChange(itemId, delta) {
     var _a2;
-    if (isCustomerMode && !customerModeAccepted) {
-      return;
-    }
     if (delta > 0 && !restaurantId) {
       ue.error("Vui lòng chọn nhà hàng trước khi thêm món.");
       (_a2 = document.querySelector('[data-ocid="create_order.restaurant_card"]')) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -53200,8 +52845,6 @@ function CreateOrder() {
       else copy[itemId] = next;
       return copy;
     });
-    setQuote(null);
-    setQuoteError(null);
     if (delta > 0 && prevQty === 0 && menu) {
       const addedItem = menu.find((m2) => m2.itemId === itemId);
       if ((addedItem == null ? void 0 : addedItem.category) === "Món chính") {
@@ -53216,10 +52859,6 @@ function CreateOrder() {
   }
   function handleCustomerChange(field, value) {
     setCustomer((prev) => ({ ...prev, [field]: value }));
-    if (field === "cusAddress") {
-      setQuote(null);
-      setQuoteError(null);
-    }
   }
   reactExports.useEffect(() => {
     let cancelled = false;
@@ -53250,74 +52889,11 @@ function CreateOrder() {
     }
     setRestaurantId(id);
     setCart({});
-    setQuote(null);
-    setQuoteError(null);
     setUpsellItems([]);
   }
-  const canRequestQuote = reactExports.useCallback(() => {
-    return !!restaurantId && cartLines.length > 0 && !!customer.cusAddress.trim() && !!(selectedRestaurant == null ? void 0 : selectedRestaurant.address);
-  }, [
-    restaurantId,
-    cartLines.length,
-    customer.cusAddress,
-    selectedRestaurant == null ? void 0 : selectedRestaurant.address
-  ]);
-  const runQuote = reactExports.useCallback(async () => {
-    if (!canRequestQuote() || quoteLoading) return;
-    setQuoteLoading(true);
-    setQuoteError(null);
-    try {
-      const payload = {
-        restaurantId,
-        pickupAddress: selectedRestaurant.address,
-        dropAddress: customer.cusAddress.trim(),
-        items: displayCartLines.map((l2) => ({
-          itemId: l2.item.itemId,
-          name: l2.item.name,
-          quantity: l2.quantity
-        }))
-      };
-      const res = await quote(payload);
-      setQuote(res);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Không lấy được phí ship.";
-      setQuoteError(msg);
-    } finally {
-      setQuoteLoading(false);
-    }
-  }, [
-    canRequestQuote,
-    quoteLoading,
-    restaurantId,
-    selectedRestaurant,
-    customer.cusAddress,
-    displayCartLines
-  ]);
-  reactExports.useEffect(() => {
-    if (isCustomerMode) return;
-    if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
-    if (!restaurantId || !customer.cusAddress.trim() || cartLines.length === 0 || !(selectedRestaurant == null ? void 0 : selectedRestaurant.address)) {
-      return;
-    }
-    quoteDebounceRef.current = setTimeout(() => {
-      runQuote();
-    }, QUOTE_DEBOUNCE_MS);
-    return () => {
-      if (quoteDebounceRef.current) clearTimeout(quoteDebounceRef.current);
-    };
-  }, [
-    isCustomerMode,
-    customer.cusAddress,
-    restaurantId,
-    cartLines.length,
-    selectedRestaurant == null ? void 0 : selectedRestaurant.address,
-    runQuote
-  ]);
   async function handleSubmit() {
     setTouched(true);
-    const errs = validateCustomerForm(customer, {
-      hideAddress: isCustomerMode
-    });
+    const errs = validateCustomerForm(customer, { hideAddress: true });
     if (Object.keys(errs).length > 0) {
       ue.error("Vui lòng kiểm tra thông tin khách hàng.");
       return;
@@ -53328,10 +52904,6 @@ function CreateOrder() {
     }
     if (mainDishLines.length === 0) {
       ue.error("Vui lòng chọn ít nhất một món chính để đặt đơn.");
-      return;
-    }
-    if (!isCustomerMode && !quote$1) {
-      ue.error("Đang chờ tính phí ship, vui lòng đợi trong giây lát.");
       return;
     }
     setSubmitting(true);
@@ -53352,9 +52924,9 @@ function CreateOrder() {
           vatRate: Number(l2.item.vatRate),
           unitName: l2.item.unitName
         })),
-        // Luồng customer: không có phí ship (VPS sẽ branch trên paymentMode).
-        shippingFee: isCustomerMode ? 0 : quote$1.shippingFee,
-        ahamoveOrderId: isCustomerMode ? "" : quote$1.ahamoveOrderId
+        // Không tính phí ship trong hệ thống — khách trả phí trực tiếp bên ngoài.
+        shippingFee: 0,
+        ahamoveOrderId: ""
       };
       const res = await create(payload);
       if (!res.ok) {
@@ -53373,7 +52945,6 @@ function CreateOrder() {
       });
       setCart({});
       setCustomer(EMPTY_CUSTOMER);
-      setQuote(null);
       setTouched(false);
       setCartOpen(false);
       navigate({ to: "/track/$orderId", params: { orderId: res.orderId } });
@@ -53384,7 +52955,7 @@ function CreateOrder() {
       setSubmitting(false);
     }
   }
-  const totalAmount = (quote$1 == null ? void 0 : quote$1.amount) ?? itemsTotal;
+  const totalAmount = itemsTotal;
   return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bbh-order-theme bg-background text-foreground", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "section",
     {
@@ -53400,7 +52971,7 @@ function CreateOrder() {
               children: "Đặt món"
             }
           ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: isCustomerMode ? "Chọn nhà hàng, chọn món, nhập tên + SĐT — đặt đơn rồi thanh toán QR và tự đặt Grab Express nhận hàng." : "Chọn nhà hàng, chọn món, nhập thông tin khách — phí ship sẽ tự động tính khi bạn điền địa chỉ." })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Chọn nhà hàng, chọn món, nhập tên + SĐT — đặt đơn rồi thanh toán QR và tự đặt Grab Express nhận hàng." })
         ] }),
         storeClosed ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
@@ -53453,32 +53024,7 @@ function CreateOrder() {
                     ]
                   }
                 ),
-                isCustomerMode && !customerModeAccepted ? (
-                  // Cổng chấp nhận: thay menu bằng cảnh báo bắt buộc. Khách phải
-                  // bấm "Tôi hiểu và đồng ý" mỗi lần vào trang trước khi chọn món.
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    AlertDialog,
-                    {
-                      open: isCustomerMode && !customerModeAccepted,
-                      onOpenChange: () => {
-                      },
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogContent, { "data-ocid": "create_order.customer_accept_dialog", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogHeader, { children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogTitle, { children: "Xác nhận chế độ tự thanh toán" }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogDescription, { children: "Bạn đang ở chế độ tự thanh toán: quý khách tự quét QR thanh toán và tự đặt Grab Express nhận hàng. Phí ship do quý khách tự chịu." })
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogFooter, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          AlertDialogAction,
-                          {
-                            onClick: () => setCustomerModeAccepted(true),
-                            "data-ocid": "create_order.customer_accept_button",
-                            children: "Tôi hiểu và đồng ý"
-                          }
-                        ) })
-                      ] })
-                    }
-                  )
-                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
                   MenuPicker,
                   {
                     menu,
@@ -53492,7 +53038,7 @@ function CreateOrder() {
               ] })
             ] })
           ] }),
-          upsellItems.length > 0 && (!isCustomerMode || customerModeAccepted) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          upsellItems.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "div",
             {
               className: "fixed inset-x-4 bottom-24 z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise",
@@ -53521,7 +53067,7 @@ function CreateOrder() {
                     children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
                         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-1 text-xs font-semibold", children: m2.name }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: formatVnd$6(Number(m2.price)) })
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: formatVnd$5(Number(m2.price)) })
                       ] }),
                       /* @__PURE__ */ jsxRuntimeExports.jsx(
                         "button",
@@ -53545,7 +53091,7 @@ function CreateOrder() {
               ]
             }
           ),
-          itemCount > 0 && (!isCustomerMode || customerModeAccepted) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          itemCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "button",
             {
               type: "button",
@@ -53558,7 +53104,7 @@ function CreateOrder() {
                     itemCount,
                     " món"
                   ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold", children: formatVnd$6(totalAmount) })
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold", children: formatVnd$5(totalAmount) })
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingCart, { className: "h-4 w-4", "aria-hidden": "true" }),
@@ -53591,7 +53137,7 @@ function CreateOrder() {
                               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
                                 /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-1 font-medium", children: l2.item.name }),
                                 /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground", children: [
-                                  formatVnd$6(Number(l2.item.price)),
+                                  formatVnd$5(Number(l2.item.price)),
                                   " × ",
                                   l2.quantity
                                 ] })
@@ -53641,70 +53187,17 @@ function CreateOrder() {
                         errors: customerErrors,
                         onChange: handleCustomerChange,
                         disabled: submitting,
-                        hideAddress: isCustomerMode
+                        hideAddress: true
                       }
                     )
                   ] }),
-                  !isCustomerMode && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "div",
-                    {
-                      className: "rounded-lg border border-dashed border-border bg-card p-3",
-                      "data-ocid": "create_order.quote_panel",
-                      children: quoteLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-muted-foreground", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          LoaderCircle,
-                          {
-                            className: "h-3.5 w-3.5 animate-spin",
-                            "aria-hidden": "true"
-                          }
-                        ),
-                        "Đang tính phí ship…"
-                      ] }) : quoteError ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-destructive", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          CircleAlert,
-                          {
-                            className: "h-3.5 w-3.5 shrink-0",
-                            "aria-hidden": "true"
-                          }
-                        ),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "min-w-0 flex-1", children: quoteError }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          "button",
-                          {
-                            type: "button",
-                            className: "shrink-0 underline",
-                            onClick: () => runQuote(),
-                            children: "Thử lại"
-                          }
-                        )
-                      ] }) : quote$1 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1.5 text-sm", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Tạm tính (đã gồm VAT)" }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$6(itemsTotal) })
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 text-muted-foreground", children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              Truck,
-                              {
-                                className: "h-3.5 w-3.5",
-                                "aria-hidden": "true"
-                              }
-                            ),
-                            "Phí ship"
-                          ] }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-medium", children: formatVnd$6(quote$1.shippingFee) })
-                        ] })
-                      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Nhập địa chỉ giao hàng ở trên — phí ship sẽ tự động hiện ở đây." })
-                    }
-                  ),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Separator, {}),
                   /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-sm font-semibold", children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4", "aria-hidden": "true" }),
                       "Tổng tiền"
                     ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]", children: formatVnd$6(totalAmount) })
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]", children: formatVnd$5(totalAmount) })
                   ] }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sticky bottom-0 -mx-6 border-t border-border bg-background px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
                     Button,
@@ -53712,7 +53205,7 @@ function CreateOrder() {
                       type: "button",
                       className: "min-h-[48px] w-full bg-gradient-primary text-primary-foreground",
                       onClick: handleSubmit,
-                      disabled: submitting || cartLines.length === 0 || !isCustomerMode && !quote$1 || Object.keys(customerErrors).length > 0,
+                      disabled: submitting || cartLines.length === 0 || Object.keys(customerErrors).length > 0,
                       "data-ocid": "create_order.submit_button",
                       children: submitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
                         /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -53723,16 +53216,7 @@ function CreateOrder() {
                           }
                         ),
                         "Đang đặt đơn…"
-                      ] }) : isCustomerMode ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          ShoppingCart,
-                          {
-                            className: "h-4 w-4",
-                            "aria-hidden": "true"
-                          }
-                        ),
-                        "Đặt đơn"
-                      ] }) : !quote$1 ? "Đang chờ tính phí ship…" : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
                         /* @__PURE__ */ jsxRuntimeExports.jsx(
                           ShoppingCart,
                           {
@@ -53741,7 +53225,7 @@ function CreateOrder() {
                           }
                         ),
                         "Đặt đơn · ",
-                        formatVnd$6(totalAmount)
+                        formatVnd$5(totalAmount)
                       ] })
                     }
                   ) })
@@ -54572,10 +54056,10 @@ function ActivationForm({ onActivated }) {
     }
   );
 }
-function formatVnd$5(amount) {
+function formatVnd$4(amount) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
 }
-function formatTime$1(ns) {
+function formatTime(ns) {
   const ms2 = Number(ns) / 1e6;
   return new Intl.DateTimeFormat("vi-VN", {
     hour: "2-digit",
@@ -54585,7 +54069,7 @@ function formatTime$1(ns) {
 function isPending(o) {
   return o.paymentStatus === PaymentStatus.unpaid;
 }
-function isToday$1(ns) {
+function isToday(ns) {
   const ms2 = Number(ns) / 1e6;
   const d2 = new Date(ms2);
   const now2 = /* @__PURE__ */ new Date();
@@ -54606,7 +54090,7 @@ function PaymentQueue({
   onPay,
   payingOrderId
 }) {
-  const pending = orders.filter((o) => isPending(o) && isToday$1(o.createdAt));
+  const pending = orders.filter((o) => isPending(o) && isToday(o.createdAt));
   const sorted = [...pending].sort((a2, b2) => {
     const aOverdue = isOverdue(a2.createdAt) ? 0 : 1;
     const bOverdue = isOverdue(b2.createdAt) ? 0 : 1;
@@ -54705,7 +54189,7 @@ function PaymentQueue({
                             title: "Thời gian tạo đơn",
                             children: [
                               /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
-                              formatTime$1(order.createdAt)
+                              formatTime(order.createdAt)
                             ]
                           }
                         ),
@@ -54743,7 +54227,7 @@ function PaymentQueue({
                                   " × ",
                                   Number(it2.quantity)
                                 ] }),
-                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$5(
+                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$4(
                                   BigInt(Number(it2.price) * Number(it2.quantity))
                                 ) })
                               ]
@@ -54754,7 +54238,7 @@ function PaymentQueue({
                       )
                     ] }),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-end gap-2", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$5(order.amount - order.shippingFee) }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$4(order.amount - order.shippingFee) }),
                       /* @__PURE__ */ jsxRuntimeExports.jsx(
                         "button",
                         {
@@ -54778,252 +54262,6 @@ function PaymentQueue({
                       )
                     ] })
                   ] })
-                },
-                order.orderId
-              );
-            })
-          }
-        )
-      ]
-    }
-  );
-}
-function formatVnd$4(amount) {
-  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
-}
-function formatTime(ns) {
-  const ms2 = Number(ns) / 1e6;
-  return new Intl.DateTimeFormat("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(ms2));
-}
-function isToday(ns) {
-  const ms2 = Number(ns) / 1e6;
-  const d2 = new Date(ms2);
-  const now2 = /* @__PURE__ */ new Date();
-  return d2.getFullYear() === now2.getFullYear() && d2.getMonth() === now2.getMonth() && d2.getDate() === now2.getDate();
-}
-function PickupQueue({ orders, isLoading, isError }) {
-  const today = orders.filter((o) => isToday(o.createdAt));
-  const sorted = [...today].sort((a2, b2) => Number(a2.createdAt - b2.createdAt));
-  const markPickedUp2 = useMarkPickedUp();
-  function handlePickedUp(order) {
-    markPickedUp2.mutate(order.orderId, {
-      onSuccess: (updated) => {
-        ue.success(
-          `Đã xác nhận nhận hàng: ${updated.cusName || updated.orderId}`
-        );
-      },
-      onError: (err) => {
-        ue.error(
-          `Không xác nhận được đơn ${order.cusName || order.orderId}: ${err.message}`
-        );
-      }
-    });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8",
-      "data-ocid": "pickup.section",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center justify-between gap-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(PackageCheck, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-bold tracking-tight md:text-2xl", children: "Hàng đợi tài xế nhận hàng" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "span",
-            {
-              className: "inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
-              "data-ocid": "pickup.count",
-              children: [
-                sorted.length,
-                " đơn"
-              ]
-            }
-          )
-        ] }),
-        isError && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive",
-            "data-ocid": "pickup.error_state",
-            children: "Không tải được danh sách đơn. Đang thử lại tự động mỗi 5 giây…"
-          }
-        ),
-        isLoading && sorted.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-4 py-10 text-center",
-            "data-ocid": "pickup.loading_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-6 w-6 animate-spin text-muted-foreground" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang tải đơn chờ nhận…" })
-            ]
-          }
-        ),
-        !isLoading && sorted.length === 0 && !isError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
-            "data-ocid": "pickup.empty_state",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "div",
-                {
-                  className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
-                  "aria-hidden": "true",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(PackageCheck, { className: "h-7 w-7" })
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Không có đơn chờ nhận hàng" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Chưa có đơn nào đã thanh toán chờ nhận. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
-            ]
-          }
-        ),
-        sorted.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "ul",
-          {
-            className: "flex flex-col gap-3",
-            "data-ocid": "pickup.list",
-            "aria-label": "Danh sách đơn chờ nhận hàng",
-            children: sorted.map((order, idx) => {
-              const isMarking = markPickedUp2.isPending;
-              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "li",
-                {
-                  "data-ocid": `pickup.item.${idx + 1}`,
-                  className: "rounded-xl border border-border bg-card p-4 shadow-sm transition-smooth hover:shadow-md",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      "div",
-                      {
-                        className: "flex items-center justify-between gap-3 rounded-lg bg-primary/5 p-3",
-                        "data-ocid": `pickup.customer.${idx + 1}`,
-                        children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground", children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(User, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-                              "Khách hàng"
-                            ] }),
-                            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-1 truncate font-display text-lg font-bold text-foreground", children: order.cusName || "Khách vãng lai" }),
-                            order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-foreground", children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                Phone,
-                                {
-                                  className: "h-3.5 w-3.5 text-primary",
-                                  "aria-hidden": "true"
-                                }
-                              ),
-                              order.cusPhone
-                            ] })
-                          ] }),
-                          order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            "a",
-                            {
-                              href: `tel:${order.cusPhone}`,
-                              "data-ocid": `pickup.call_button.${idx + 1}`,
-                              "aria-label": `Gọi điện cho ${order.cusName || "khách hàng"}: ${order.cusPhone}`,
-                              className: "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Phone, { className: "h-5 w-5", "aria-hidden": "true" })
-                            }
-                          )
-                        ]
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-start justify-between gap-3", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary", children: [
-                            "#",
-                            idx + 1
-                          ] }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            "span",
-                            {
-                              className: "inline-flex items-center gap-1 text-xs text-muted-foreground",
-                              title: "Thời gian tạo đơn",
-                              children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
-                                formatTime(order.createdAt)
-                              ]
-                            }
-                          ),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            "span",
-                            {
-                              className: "inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success",
-                              "data-ocid": `pickup.paid_badge.${idx + 1}`,
-                              children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-3 w-3", "aria-hidden": "true" }),
-                                "Đã thanh toán"
-                              ]
-                            }
-                          )
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1.5 truncate font-mono text-xs text-muted-foreground", children: order.orderId }),
-                        order.items && order.items.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          "ul",
-                          {
-                            className: "mt-2 flex flex-col gap-0.5 border-t border-border/60 pt-2",
-                            "data-ocid": `pickup.item_list.${idx + 1}`,
-                            children: order.items.map((it2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                              "li",
-                              {
-                                className: "flex items-baseline justify-between gap-2 text-xs text-muted-foreground",
-                                children: [
-                                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "truncate", children: [
-                                    it2.name,
-                                    " × ",
-                                    Number(it2.quantity)
-                                  ] }),
-                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$4(
-                                    BigInt(Number(it2.price) * Number(it2.quantity))
-                                  ) })
-                                ]
-                              },
-                              it2.itemId
-                            ))
-                          }
-                        )
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-end gap-2", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$4(order.amount - order.shippingFee) }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          "button",
-                          {
-                            type: "button",
-                            onClick: () => handlePickedUp(order),
-                            disabled: isMarking,
-                            "data-ocid": `pickup.picked_up_button.${idx + 1}`,
-                            "aria-label": `Xác nhận đã nhận hàng: đơn ${order.cusName || order.orderId}`,
-                            className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-success px-4 py-2 text-sm font-semibold text-success-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
-                            children: isMarking ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                LoaderCircle,
-                                {
-                                  className: "h-4 w-4 animate-spin",
-                                  "aria-hidden": "true"
-                                }
-                              ),
-                              "Đang ghi…"
-                            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                CircleCheck,
-                                {
-                                  className: "h-4 w-4",
-                                  "aria-hidden": "true"
-                                }
-                              ),
-                              "Tài xế đã nhận hàng"
-                            ] })
-                          }
-                        )
-                      ] })
-                    ] })
-                  ]
                 },
                 order.orderId
               );
@@ -56331,19 +55569,6 @@ function usePendingOrders(restaurantId) {
     refetchOnWindowFocus: true
   });
 }
-function usePaidOrdersForPickup(enabled) {
-  const { actor, isFetching } = useActor(createActor);
-  return useQuery({
-    queryKey: ["orders", "paid-for-pickup"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return listPaidOrdersForPickup(actor);
-    },
-    enabled: !!actor && !isFetching && enabled,
-    refetchInterval: 5e3,
-    refetchOnWindowFocus: true
-  });
-}
 const DRIVER_STORAGE_KEY = "bbh_driver_activation";
 function loadStoredActivation() {
   try {
@@ -56365,9 +55590,7 @@ function DriverPaymentScreen() {
     (stored == null ? void 0 : stored.deviceId) ?? null
   );
   const [activeOrder, setActiveOrder] = reactExports.useState(null);
-  const [activeTab, setActiveTab] = reactExports.useState("payment");
   const ordersQuery = usePendingOrders(restaurantId ?? void 0);
-  const pickupQuery = usePaidOrdersForPickup(activeTab === "pickup");
   function handleActivated(restId, devId) {
     setRestaurantId(restId);
     setDeviceId(devId);
@@ -56421,39 +55644,7 @@ function DriverPaymentScreen() {
             ] }) })
           }
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "nav",
-          {
-            className: "border-b border-border bg-card",
-            "data-ocid": "driver.tabs",
-            "aria-label": "Chức năng tài xế",
-            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mx-auto flex w-full max-w-2xl", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  type: "button",
-                  onClick: () => setActiveTab("payment"),
-                  "data-ocid": "driver.tab.payment",
-                  "aria-selected": activeTab === "payment",
-                  className: `flex-1 px-4 py-3 text-sm font-semibold transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${activeTab === "payment" ? "border-b-2 border-primary text-primary" : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"}`,
-                  children: "Thanh toán"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  type: "button",
-                  onClick: () => setActiveTab("pickup"),
-                  "data-ocid": "driver.tab.pickup",
-                  "aria-selected": activeTab === "pickup",
-                  className: `flex-1 px-4 py-3 text-sm font-semibold transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${activeTab === "pickup" ? "border-b-2 border-primary text-primary" : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"}`,
-                  children: "Hàng đợi tài xế nhận hàng"
-                }
-              )
-            ] })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1", children: activeTab === "payment" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           PaymentQueue,
           {
             orders: ordersQuery.data ?? [],
@@ -56461,13 +55652,6 @@ function DriverPaymentScreen() {
             isError: ordersQuery.isError,
             onPay: handlePay,
             payingOrderId: (activeOrder == null ? void 0 : activeOrder.orderId) ?? null
-          }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-          PickupQueue,
-          {
-            orders: pickupQuery.data ?? [],
-            isLoading: pickupQuery.isLoading,
-            isError: pickupQuery.isError
           }
         ) }),
         activeOrder && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -57127,6 +56311,268 @@ function MenuItemForm({ item, onSaved, onCancel }) {
     }
   );
 }
+var ROOT_NAME = "AlertDialog";
+var [createAlertDialogContext] = createContextScope(ROOT_NAME, [
+  createDialogScope
+]);
+var useDialogScope = createDialogScope();
+var AlertDialog$1 = (props) => {
+  const { __scopeAlertDialog, ...alertDialogProps } = props;
+  const dialogScope = useDialogScope(__scopeAlertDialog);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { ...dialogScope, ...alertDialogProps, modal: true });
+};
+AlertDialog$1.displayName = ROOT_NAME;
+var TRIGGER_NAME = "AlertDialogTrigger";
+var AlertDialogTrigger = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...triggerProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger, { ...dialogScope, ...triggerProps, ref: forwardedRef });
+  }
+);
+AlertDialogTrigger.displayName = TRIGGER_NAME;
+var PORTAL_NAME = "AlertDialogPortal";
+var AlertDialogPortal$1 = (props) => {
+  const { __scopeAlertDialog, ...portalProps } = props;
+  const dialogScope = useDialogScope(__scopeAlertDialog);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { ...dialogScope, ...portalProps });
+};
+AlertDialogPortal$1.displayName = PORTAL_NAME;
+var OVERLAY_NAME = "AlertDialogOverlay";
+var AlertDialogOverlay$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...overlayProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Overlay, { ...dialogScope, ...overlayProps, ref: forwardedRef });
+  }
+);
+AlertDialogOverlay$1.displayName = OVERLAY_NAME;
+var CONTENT_NAME = "AlertDialogContent";
+var [AlertDialogContentProvider, useAlertDialogContentContext] = createAlertDialogContext(CONTENT_NAME);
+var Slottable = /* @__PURE__ */ createSlottable("AlertDialogContent");
+var AlertDialogContent$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, children, ...contentProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    const contentRef = reactExports.useRef(null);
+    const composedRefs = useComposedRefs(forwardedRef, contentRef);
+    const cancelRef = reactExports.useRef(null);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      WarningProvider,
+      {
+        contentName: CONTENT_NAME,
+        titleName: TITLE_NAME,
+        docsSlug: "alert-dialog",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogContentProvider, { scope: __scopeAlertDialog, cancelRef, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Content,
+          {
+            role: "alertdialog",
+            ...dialogScope,
+            ...contentProps,
+            ref: composedRefs,
+            onOpenAutoFocus: composeEventHandlers(contentProps.onOpenAutoFocus, (event) => {
+              var _a2;
+              event.preventDefault();
+              (_a2 = cancelRef.current) == null ? void 0 : _a2.focus({ preventScroll: true });
+            }),
+            onPointerDownOutside: (event) => event.preventDefault(),
+            onInteractOutside: (event) => event.preventDefault(),
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Slottable, { children }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(DescriptionWarning, { contentRef })
+            ]
+          }
+        ) })
+      }
+    );
+  }
+);
+AlertDialogContent$1.displayName = CONTENT_NAME;
+var TITLE_NAME = "AlertDialogTitle";
+var AlertDialogTitle$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...titleProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { ...dialogScope, ...titleProps, ref: forwardedRef });
+  }
+);
+AlertDialogTitle$1.displayName = TITLE_NAME;
+var DESCRIPTION_NAME = "AlertDialogDescription";
+var AlertDialogDescription$1 = reactExports.forwardRef((props, forwardedRef) => {
+  const { __scopeAlertDialog, ...descriptionProps } = props;
+  const dialogScope = useDialogScope(__scopeAlertDialog);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Description, { ...dialogScope, ...descriptionProps, ref: forwardedRef });
+});
+AlertDialogDescription$1.displayName = DESCRIPTION_NAME;
+var ACTION_NAME = "AlertDialogAction";
+var AlertDialogAction$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...actionProps } = props;
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { ...dialogScope, ...actionProps, ref: forwardedRef });
+  }
+);
+AlertDialogAction$1.displayName = ACTION_NAME;
+var CANCEL_NAME = "AlertDialogCancel";
+var AlertDialogCancel$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeAlertDialog, ...cancelProps } = props;
+    const { cancelRef } = useAlertDialogContentContext(CANCEL_NAME, __scopeAlertDialog);
+    const dialogScope = useDialogScope(__scopeAlertDialog);
+    const ref = useComposedRefs(forwardedRef, cancelRef);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Close, { ...dialogScope, ...cancelProps, ref });
+  }
+);
+AlertDialogCancel$1.displayName = CANCEL_NAME;
+var DescriptionWarning = ({ contentRef }) => {
+  const MESSAGE = `\`${CONTENT_NAME}\` requires a description for the component to be accessible for screen reader users.
+
+You can add a description to the \`${CONTENT_NAME}\` by passing a \`${DESCRIPTION_NAME}\` component as a child, which also benefits sighted users by adding visible context to the dialog.
+
+Alternatively, you can use your own component as a description by assigning it an \`id\` and passing the same value to the \`aria-describedby\` prop in \`${CONTENT_NAME}\`. If the description is confusing or duplicative for sighted users, you can use the \`@radix-ui/react-visually-hidden\` primitive as a wrapper around your description component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/alert-dialog`;
+  reactExports.useEffect(() => {
+    var _a2;
+    const hasDescription = document.getElementById(
+      (_a2 = contentRef.current) == null ? void 0 : _a2.getAttribute("aria-describedby")
+    );
+    if (!hasDescription) console.warn(MESSAGE);
+  }, [MESSAGE, contentRef]);
+  return null;
+};
+var Root2 = AlertDialog$1;
+var Portal2 = AlertDialogPortal$1;
+var Overlay2 = AlertDialogOverlay$1;
+var Content2 = AlertDialogContent$1;
+var Action = AlertDialogAction$1;
+var Cancel = AlertDialogCancel$1;
+var Title2 = AlertDialogTitle$1;
+var Description2 = AlertDialogDescription$1;
+function AlertDialog({
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2, { "data-slot": "alert-dialog", ...props });
+}
+function AlertDialogPortal({
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal2, { "data-slot": "alert-dialog-portal", ...props });
+}
+function AlertDialogOverlay({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Overlay2,
+    {
+      "data-slot": "alert-dialog-overlay",
+      className: cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function AlertDialogContent({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogPortal, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogOverlay, {}),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Content2,
+      {
+        "data-slot": "alert-dialog-content",
+        className: cn(
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          className
+        ),
+        ...props
+      }
+    )
+  ] });
+}
+function AlertDialogHeader({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "alert-dialog-header",
+      className: cn("flex flex-col gap-2 text-center sm:text-left", className),
+      ...props
+    }
+  );
+}
+function AlertDialogFooter({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "alert-dialog-footer",
+      className: cn(
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function AlertDialogTitle({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Title2,
+    {
+      "data-slot": "alert-dialog-title",
+      className: cn("text-lg font-semibold", className),
+      ...props
+    }
+  );
+}
+function AlertDialogDescription({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Description2,
+    {
+      "data-slot": "alert-dialog-description",
+      className: cn("text-muted-foreground text-sm", className),
+      ...props
+    }
+  );
+}
+function AlertDialogAction({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Action,
+    {
+      className: cn(buttonVariants(), className),
+      ...props
+    }
+  );
+}
+function AlertDialogCancel({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Cancel,
+    {
+      className: cn(buttonVariants({ variant: "outline" }), className),
+      ...props
+    }
+  );
+}
 function formatVnd$2(n) {
   try {
     return new Intl.NumberFormat("vi-VN", {
@@ -57361,7 +56807,7 @@ function MenuItemTable({
 function Dialog({
   ...props
 }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$2, { "data-slot": "dialog", ...props });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$1, { "data-slot": "dialog", ...props });
 }
 function DialogPortal({
   ...props
@@ -57599,152 +57045,6 @@ function MenuManager() {
     }
   );
 }
-function formatVnd$1(amount) {
-  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
-}
-function isSameDayUtc7(ns) {
-  const ms2 = Number(ns) / 1e6;
-  const d2 = new Date(ms2 + 7 * 60 * 60 * 1e3);
-  const now2 = new Date(Date.now() + 7 * 60 * 60 * 1e3);
-  return d2.getUTCFullYear() === now2.getUTCFullYear() && d2.getUTCMonth() === now2.getUTCMonth() && d2.getUTCDate() === now2.getUTCDate();
-}
-function QrPayment({ order }) {
-  const [state, setState] = reactExports.useState({ kind: "idle" });
-  const isPaid = order.paymentStatus === PaymentStatus.paid;
-  const isSameDay = isSameDayUtc7(order.createdAt);
-  if (isPaid) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      "span",
-      {
-        className: "inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/15 px-3 py-1.5 text-sm font-semibold text-success",
-        "data-ocid": "qr_payment.paid_badge",
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-4 w-4", "aria-hidden": "true" }),
-          "Đã thanh toán"
-        ]
-      }
-    );
-  }
-  if (!isSameDay) {
-    return null;
-  }
-  async function handlePay() {
-    setState({ kind: "loading" });
-    try {
-      const res = await requestQr(order.orderId);
-      if (res.ok) {
-        setState({ kind: "success", qrCode: res.qrCode, reused: res.reused });
-      } else {
-        setState({
-          kind: "error",
-          retryable: res.retryable,
-          message: res.message
-        });
-      }
-    } catch {
-      setState({
-        kind: "error",
-        retryable: true,
-        message: "Không kết nối được máy chủ thanh toán. Vui lòng thử lại sau giây lát."
-      });
-    }
-  }
-  if (state.kind === "error") {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      "div",
-      {
-        className: "rounded-lg border border-destructive/30 bg-destructive/10 p-4",
-        "data-ocid": "qr_payment.error_state",
-        role: "alert",
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              CircleAlert,
-              {
-                className: "mt-0.5 h-4 w-4 shrink-0 text-destructive",
-                "aria-hidden": "true"
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-destructive", children: state.retryable ? state.message : "Không thể tạo mã thanh toán cho đơn này. Vui lòng liên hệ tổng đài để được hỗ trợ." })
-          ] }),
-          state.retryable && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
-            {
-              type: "button",
-              onClick: handlePay,
-              "data-ocid": "qr_payment.retry_button",
-              className: "mt-3 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { className: "h-4 w-4", "aria-hidden": "true" }),
-                "Thử lại"
-              ]
-            }
-          )
-        ]
-      }
-    );
-  }
-  if (state.kind === "success") {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      "div",
-      {
-        className: "rounded-lg border border-border bg-card p-4",
-        "data-ocid": "qr_payment.success_state",
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-medium text-foreground", children: "Quét QR để thanh toán" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold text-primary", children: formatVnd$1(order.amount) })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "div",
-            {
-              className: "mt-3 flex justify-center rounded-xl bg-foreground p-4",
-              "data-ocid": "qr_payment.canvas",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                QRCodeCanvas,
-                {
-                  value: state.qrCode,
-                  size: 200,
-                  level: "M",
-                  includeMargin: false,
-                  bgColor: "#000000",
-                  fgColor: "#ffffff",
-                  "aria-label": "Mã QR thanh toán Tingee"
-                }
-              )
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-3 text-center text-xs text-muted-foreground", children: "Khách quét mã bằng app ngân hàng để hoàn tất thanh toán." }),
-          state.reused && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "p",
-            {
-              className: "mt-2 text-center text-xs text-muted-foreground",
-              "data-ocid": "qr_payment.reused_note",
-              children: "Mã QR hiện tại vẫn còn hiệu lực, bạn có thể tiếp tục sử dụng."
-            }
-          )
-        ]
-      }
-    );
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: handlePay,
-      disabled: state.kind === "loading",
-      "data-ocid": "qr_payment.pay_button",
-      className: "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
-      children: state.kind === "loading" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
-        "Đang tạo QR…"
-      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(QrCode, { className: "h-4 w-4", "aria-hidden": "true" }),
-        "Thanh toán"
-      ] })
-    }
-  );
-}
 const BOOKING_MAP = {
   [BookingStatus.pending]: { variant: "warning", label: "Chờ xác nhận" },
   [BookingStatus.confirmed]: { variant: "info", label: "Đã xác nhận" },
@@ -57819,7 +57119,7 @@ function StatusBadge({
     }
   );
 }
-function formatVnd(amount) {
+function formatVnd$1(amount) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -57827,91 +57127,149 @@ function formatVnd(amount) {
   }).format(Number(amount));
 }
 function formatUnitPrice(price, unitName) {
-  const base = formatVnd(price);
+  const base = formatVnd$1(price);
   return unitName ? `${base}/${unitName}` : base;
 }
 function shortOrderId(orderId) {
   if (orderId.length <= 16) return orderId;
   return `${orderId.slice(0, 8)}…${orderId.slice(-4)}`;
 }
+function CopyButton$1({
+  value,
+  label,
+  ocid
+}) {
+  const [copied, setCopied] = reactExports.useState(false);
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      ue.success(`Đã sao chép ${label}.`);
+      setTimeout(() => setCopied(false), 2e3);
+    } catch {
+      ue.error("Không sao chép được. Vui lòng sao chép thủ công.");
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: handleCopy,
+      "data-ocid": ocid,
+      "aria-label": `Sao chép ${label}`,
+      className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-smooth hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      children: copied ? /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "h-4 w-4 text-success", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
+    }
+  );
+}
 function OrderCard({ order, index: index2 }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+  const { data: restaurants } = useRestaurants();
+  const restaurant = restaurants == null ? void 0 : restaurants.find(
+    (r2) => r2.restaurantId === order.restaurantId
+  );
+  const restaurantAddress = (restaurant == null ? void 0 : restaurant.address) ?? "";
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "div",
     {
       "data-ocid": `order.card.${index2}`,
       className: "flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-smooth hover:border-primary/40 hover:shadow-md",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          Link,
-          {
-            to: "/track/$orderId",
-            params: { orderId: order.orderId },
-            className: "group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      Receipt,
-                      {
-                        className: "h-4 w-4 shrink-0 text-muted-foreground",
-                        "aria-hidden": "true"
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      "span",
-                      {
-                        className: "truncate font-mono text-xs text-muted-foreground",
-                        title: order.orderId,
-                        children: shortOrderId(order.orderId)
-                      }
-                    )
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-1 truncate font-display text-base font-semibold text-foreground", children: order.cusName || "Khách vãng lai" }),
-                  order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 truncate text-sm text-muted-foreground", children: order.cusPhone })
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Link,
+        {
+          to: "/track/$orderId",
+          params: { orderId: order.orderId },
+          className: "group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Receipt,
+                    {
+                      className: "h-4 w-4 shrink-0 text-muted-foreground",
+                      "aria-hidden": "true"
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "span",
+                    {
+                      className: "truncate font-mono text-xs text-muted-foreground",
+                      title: order.orderId,
+                      children: shortOrderId(order.orderId)
+                    }
+                  )
                 ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-1 truncate font-display text-base font-semibold text-foreground", children: order.cusName || "Khách vãng lai" }),
+                order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 truncate text-sm text-muted-foreground", children: order.cusPhone })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-1.5", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-right", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-base font-semibold text-foreground", children: formatVnd(order.amount) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-base font-semibold text-foreground", children: formatVnd$1(order.amount) }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Tổng cộng" })
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-1.5", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.bookingStatus }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.paymentStatus })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "mt-3 divide-y divide-border border-t border-border", children: order.items.map((item, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "li",
-                {
-                  "data-ocid": `order.card.${index2}.item.${i + 1}`,
-                  className: "flex items-baseline justify-between gap-3 py-2 text-sm",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "min-w-0 flex-1 truncate text-foreground", children: [
-                      item.name,
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-1.5 text-muted-foreground", children: [
-                        "× ",
-                        Number(item.quantity)
-                      ] })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono text-xs text-muted-foreground", children: formatUnitPrice(item.price, item.unitName) })
-                  ]
-                },
-                item.itemId || i
-              )) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-center justify-between border-t border-border pt-3", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
-                  order.items.length,
-                  " mặt hàng"
                 ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center gap-1 text-sm font-medium text-primary transition-smooth group-hover:gap-2", children: [
-                  "Xem chi tiết",
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-4 w-4", "aria-hidden": "true" })
-                ] })
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  CopyButton$1,
+                  {
+                    value: formatVnd$1(order.amount),
+                    label: "tổng tiền",
+                    ocid: `order.card.${index2}.copy_amount_button`
+                  }
+                )
               ] })
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-3 border-t border-border pt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(QrPayment, { order }) })
-      ]
+            ] }),
+            restaurantAddress && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                MapPin,
+                {
+                  className: "h-4 w-4 shrink-0 text-muted-foreground",
+                  "aria-hidden": "true"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "min-w-0 flex-1 truncate text-sm text-foreground", children: restaurantAddress }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                CopyButton$1,
+                {
+                  value: restaurantAddress,
+                  label: "địa chỉ nhà hàng",
+                  ocid: `order.card.${index2}.copy_address_button`
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-1.5", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.bookingStatus }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.paymentStatus })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "mt-3 divide-y divide-border border-t border-border", children: order.items.map((item, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "li",
+              {
+                "data-ocid": `order.card.${index2}.item.${i + 1}`,
+                className: "flex items-baseline justify-between gap-3 py-2 text-sm",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "min-w-0 flex-1 truncate text-foreground", children: [
+                    item.name,
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-1.5 text-muted-foreground", children: [
+                      "× ",
+                      Number(item.quantity)
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono text-xs text-muted-foreground", children: formatUnitPrice(item.price, item.unitName) })
+                ]
+              },
+              item.itemId || i
+            )) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-center justify-between border-t border-border pt-3", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-muted-foreground", children: [
+                order.items.length,
+                " mặt hàng"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center gap-1 text-sm font-medium text-primary transition-smooth group-hover:gap-2", children: [
+                "Xem chi tiết",
+                /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-4 w-4", "aria-hidden": "true" })
+              ] })
+            ] })
+          ]
+        }
+      )
     }
   );
 }
@@ -58076,40 +57434,65 @@ function useOrderStatus(orderId) {
 }
 const TIMELINE = [
   {
-    key: BookingStatus.pending,
-    label: "Chờ xác nhận",
-    description: "Đơn vừa tạo, chờ nhà hàng xác nhận.",
+    key: "waiting",
+    label: "Chờ tài xế thanh toán",
+    description: "Tài xế đang đến nhận hàng và thanh toán.",
     icon: Clock
   },
   {
-    key: BookingStatus.confirmed,
-    label: "Đã xác nhận",
-    description: "Nhà hàng đã xác nhận, chuẩn bị giao.",
-    icon: CircleCheck
-  },
-  {
-    key: BookingStatus.shipping,
-    label: "Đang giao",
-    description: "Tài xế đang giao hàng đến khách.",
+    key: BookingStatus.pickedUp,
+    label: "Tài xế đã nhận hàng",
+    description: "Tài xế đã nhận hàng — đơn hoàn tất.",
     icon: Truck
-  },
-  {
-    key: BookingStatus.completed,
-    label: "Hoàn thành",
-    description: "Đơn đã giao thành công.",
-    icon: CircleCheck
   }
 ];
 function stepIndex(status) {
-  const order = [
-    BookingStatus.pending,
-    BookingStatus.confirmed,
-    BookingStatus.shipping,
-    BookingStatus.completed
-  ];
-  return order.indexOf(status);
+  if (status === BookingStatus.pickedUp || status === BookingStatus.completed) {
+    return 1;
+  }
+  return 0;
+}
+function formatVnd(amount) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+function CopyButton({ value, label }) {
+  const [copied, setCopied] = reactExports.useState(false);
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2e3);
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "button",
+    {
+      type: "button",
+      onClick: handleCopy,
+      "data-ocid": "order_tracker.copy_button",
+      "aria-label": label,
+      className: cn(
+        "inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        copied ? "border-success/40 bg-success/15 text-success" : "border-border bg-card text-foreground hover:bg-secondary"
+      ),
+      children: [
+        copied ? /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-4 w-4", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" }),
+        copied ? "Đã sao chép" : "Sao chép"
+      ]
+    }
+  );
 }
 function OrderTracker() {
+  var _a2;
   const { orderId } = useParams({ strict: false });
   const {
     data,
@@ -58121,6 +57504,7 @@ function OrderTracker() {
     dataUpdatedAt
   } = useOrderStatus(orderId);
   const { data: order } = useGetOrder(orderId);
+  const { data: restaurants } = useRestaurants();
   const [invoiceState, setInvoiceState] = reactExports.useState({
     kind: "idle"
   });
@@ -58303,6 +57687,7 @@ function OrderTracker() {
           {
             status: data,
             order,
+            restaurantAddress: (_a2 = restaurants == null ? void 0 : restaurants.find((r2) => r2.restaurantId === (order == null ? void 0 : order.restaurantId))) == null ? void 0 : _a2.address,
             lastUpdated,
             isFetching,
             invoiceState,
@@ -58316,6 +57701,7 @@ function OrderTracker() {
 function OrderStatusView({
   status,
   order,
+  restaurantAddress,
   lastUpdated,
   isFetching,
   invoiceState,
@@ -58358,29 +57744,67 @@ function OrderStatusView({
               }
             )
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-4 flex flex-wrap gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Đặt hàng" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: booking, size: "md" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Thanh toán" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: payment, size: "md" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Hoá đơn" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: invoice, size: "md" })
-            ] })
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-4 flex flex-col gap-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Thanh toán" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: payment, size: "md" })
           ] })
         ]
       }
     ),
-    order && /* @__PURE__ */ jsxRuntimeExports.jsx(
+    order && /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
       {
         className: "rounded-lg border border-border bg-card p-5 shadow-sm",
-        "data-ocid": "order_tracker.payment_panel",
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(QrPayment, { order })
+        "data-ocid": "order_tracker.copy_panel",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Thông tin đặt tài xế" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Sao chép thông tin bên dưới để dán vào app đặt tài xế bên ngoài." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-4 space-y-4", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "flex items-center gap-1.5 text-xs text-muted-foreground", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(MapPin, { className: "h-3.5 w-3.5 shrink-0", "aria-hidden": "true" }),
+                  "Địa chỉ nhà hàng"
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "p",
+                  {
+                    className: "mt-1 break-words text-sm font-medium text-foreground",
+                    "data-ocid": "order_tracker.restaurant_address",
+                    children: restaurantAddress || "—"
+                  }
+                )
+              ] }),
+              restaurantAddress && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                CopyButton,
+                {
+                  value: restaurantAddress,
+                  label: "Sao chép địa chỉ nhà hàng"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Tổng tiền hàng" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "p",
+                  {
+                    className: "mt-1 font-display text-lg font-bold text-primary",
+                    "data-ocid": "order_tracker.total_amount",
+                    children: formatVnd(order.amount)
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                CopyButton,
+                {
+                  value: formatVnd(order.amount),
+                  label: "Sao chép tổng tiền hàng"
+                }
+              )
+            ] })
+          ] })
+        ]
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(

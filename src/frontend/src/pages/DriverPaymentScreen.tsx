@@ -6,16 +6,13 @@
 import type { Order } from "@/backend";
 import { ActivationForm } from "@/components/ActivationForm";
 import { PaymentQueue } from "@/components/PaymentQueue";
-import { PickupQueue } from "@/components/PickupQueue";
 import { QRDisplay } from "@/components/QRDisplay";
-import { usePaidOrdersForPickup } from "@/hooks/usePendingOrders";
 import { usePendingOrders } from "@/hooks/usePendingOrders";
 import { Smartphone } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 const DRIVER_STORAGE_KEY = "bbh_driver_activation";
-type DriverTab = "payment" | "pickup";
 
 function loadStoredActivation(): {
   restaurantId: string;
@@ -44,12 +41,8 @@ export function DriverPaymentScreen() {
     stored?.deviceId ?? null,
   );
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  // Tab active sau kích hoạt: "payment" (Thanh toán, mặc định) | "pickup" (Hàng đợi nhận hàng).
-  const [activeTab, setActiveTab] = useState<DriverTab>("payment");
 
   const ordersQuery = usePendingOrders(restaurantId ?? undefined);
-  // Pickup query chỉ poll khi tab pickup đang active — tiết kiệm cycle.
-  const pickupQuery = usePaidOrdersForPickup(activeTab === "pickup");
 
   function handleActivated(restId: string, devId: string) {
     setRestaurantId(restId);
@@ -115,61 +108,18 @@ export function DriverPaymentScreen() {
         </div>
       </div>
 
-      {/* Bước 2: tab Thanh toán (mặc định) / Hàng đợi nhận hàng */}
-      <nav
-        className="border-b border-border bg-card"
-        data-ocid="driver.tabs"
-        aria-label="Chức năng tài xế"
-      >
-        <div className="mx-auto flex w-full max-w-2xl">
-          <button
-            type="button"
-            onClick={() => setActiveTab("payment")}
-            data-ocid="driver.tab.payment"
-            aria-selected={activeTab === "payment"}
-            className={`flex-1 px-4 py-3 text-sm font-semibold transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
-              activeTab === "payment"
-                ? "border-b-2 border-primary text-primary"
-                : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Thanh toán
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("pickup")}
-            data-ocid="driver.tab.pickup"
-            aria-selected={activeTab === "pickup"}
-            className={`flex-1 px-4 py-3 text-sm font-semibold transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
-              activeTab === "pickup"
-                ? "border-b-2 border-primary text-primary"
-                : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Hàng đợi tài xế nhận hàng
-          </button>
-        </div>
-      </nav>
-
+      {/* Bước 2: hàng đợi thanh toán — tài xế quét QR động Tingee thanh toán */}
       <div className="flex-1">
-        {activeTab === "payment" ? (
-          <PaymentQueue
-            orders={ordersQuery.data ?? []}
-            isLoading={ordersQuery.isLoading}
-            isError={ordersQuery.isError}
-            onPay={handlePay}
-            payingOrderId={activeOrder?.orderId ?? null}
-          />
-        ) : (
-          <PickupQueue
-            orders={pickupQuery.data ?? []}
-            isLoading={pickupQuery.isLoading}
-            isError={pickupQuery.isError}
-          />
-        )}
+        <PaymentQueue
+          orders={ordersQuery.data ?? []}
+          isLoading={ordersQuery.isLoading}
+          isError={ordersQuery.isError}
+          onPay={handlePay}
+          payingOrderId={activeOrder?.orderId ?? null}
+        />
       </div>
 
-      {/* Bước 3: QR full screen overlay — ngoài tab switch để hoạt động mọi lúc */}
+      {/* Bước 3: QR full screen overlay — hoạt động mọi lúc */}
       {activeOrder && (
         <QRDisplay
           order={activeOrder}

@@ -66,6 +66,7 @@ const IDL_FACTORY = ({ IDL }) => {
     ahamoveOrderId: IDL.Text,
     tingeeQrId: IDL.Text,
     sharedLink: IDL.Text,
+    tingeeQrCode: IDL.Text,
     invoiceId: IDL.Text,
     pdfUrl: IDL.Text,
     billId: IDL.Opt(IDL.Text),

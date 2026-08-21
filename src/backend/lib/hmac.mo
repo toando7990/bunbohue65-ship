@@ -189,6 +189,14 @@ module {
   };
 
   // Apply a payment-status update to an order in the store.
+  //
+  // Khi Tingee xác nhận đơn đã thanh toán (#paid) và đơn đang ở trạng thái
+  // #confirmed, đơn TỰ ĐỘNG chuyển sang #pickedUp (Tài xế đã nhận hàng) — bước
+  // kết thúc hoàn toàn của đơn. Tab 'Hàng đợi tài xế nhận hàng' (với nút
+  // markPickedUp thủ công) đã bị bỏ, nên việc chuyển trạng thái phải xảy ra tự
+  // động khi thanh toán được xác nhận thay vì tài xế bấm nút. Giữ nguyên guard
+  // #confirmed giống markPickedUp (lib/payment-mode-config.mo) để không chuyển
+  // trạng thái khi đơn chưa được xác nhận.
   public func applyPaymentStatus(
     orders : CoreTypes.OrderStore,
     orderId : CoreTypes.OrderId,
@@ -198,7 +206,17 @@ module {
     switch (orders.get(orderId)) {
       case null { #err("Order not found") };
       case (?order) {
-        let updated : CoreTypes.Order = { order with paymentStatus; updatedAt = now };
+        let bookingStatus = if (paymentStatus == #paid and order.bookingStatus == #confirmed) {
+          #pickedUp;
+        } else {
+          order.bookingStatus;
+        };
+        let updated : CoreTypes.Order = {
+          order with
+          paymentStatus;
+          bookingStatus;
+          updatedAt = now;
+        };
         orders.add(orderId, updated);
         #ok(updated);
       };

@@ -1,11 +1,13 @@
 // OrderTracker — poll getOrderStatus canister 5s, hiển thị trạng thái realtime.
-// Nút "Theo dõi hành trình" mở Ahamove shared_link. Nút "Tải hoá đơn" tải Bkav
-// PDF qua VPS /order/:id/invoice (vps-client.getInvoice). UI tiếng Việt.
+// Khách tự đặt tài xế bằng app ngoài nên trang này chỉ cung cấp thông tin để dán
+// vào app ngoài: địa chỉ nhà hàng + tổng tiền (nút copy), trạng thái "Thanh toán"
+// và tiến trình 2 bước (Chờ tài xế thanh toán -> Tài xế đã nhận hàng). Không có
+// nút "Thanh toán" cho khách. Nút "Theo dõi hành trình" mở Ahamove shared_link.
+// Nút "Tải hoá đơn" tải Bkav PDF qua VPS /order/:id/invoice. UI tiếng Việt.
 
-import { QrPayment } from "@/components/QrPayment";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
-import { useGetOrder } from "@/hooks/useQueries";
+import { useGetOrder, useRestaurants } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
 import { getInvoice } from "@/lib/vps-client";
 import type { Order, OrderStatus } from "@/types";
@@ -16,6 +18,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
+  Copy,
   Download,
   ExternalLink,
   FileText,
@@ -33,9 +36,9 @@ type InvoiceState =
   | { kind: "success"; url: string }
   | { kind: "error"; message: string };
 
-// Bước hành trình giao hàng dựa trên BookingStatus.
+// Bước hành trình giao hàng — chỉ còn 2 bước, "Tài xế đã nhận hàng" là bước kết thúc.
 interface TimelineStep {
-  key: BookingStatus;
+  key: string;
   label: string;
   description: string;
   icon: typeof Clock;
@@ -43,40 +46,76 @@ interface TimelineStep {
 
 const TIMELINE: TimelineStep[] = [
   {
-    key: BookingStatus.pending,
-    label: "Chờ xác nhận",
-    description: "Đơn vừa tạo, chờ nhà hàng xác nhận.",
+    key: "waiting",
+    label: "Chờ tài xế thanh toán",
+    description: "Tài xế đang đến nhận hàng và thanh toán.",
     icon: Clock,
   },
   {
-    key: BookingStatus.confirmed,
-    label: "Đã xác nhận",
-    description: "Nhà hàng đã xác nhận, chuẩn bị giao.",
-    icon: CheckCircle2,
-  },
-  {
-    key: BookingStatus.shipping,
-    label: "Đang giao",
-    description: "Tài xế đang giao hàng đến khách.",
+    key: BookingStatus.pickedUp,
+    label: "Tài xế đã nhận hàng",
+    description: "Tài xế đã nhận hàng — đơn hoàn tất.",
     icon: Truck,
-  },
-  {
-    key: BookingStatus.completed,
-    label: "Hoàn thành",
-    description: "Đơn đã giao thành công.",
-    icon: CheckCircle2,
   },
 ];
 
-// Vị trí bước hiện tại trong timeline (cancelled = -1, không hiển thị progress).
+// Vị trí bước hiện tại trong timeline 2 bước. pickedUp (và completed) là bước kết
+// thúc; mọi trạng thái trước đó đều đang ở bước "Chờ tài xế thanh toán".
 function stepIndex(status: BookingStatus): number {
-  const order: BookingStatus[] = [
-    BookingStatus.pending,
-    BookingStatus.confirmed,
-    BookingStatus.shipping,
-    BookingStatus.completed,
-  ];
-  return order.indexOf(status);
+  if (status === BookingStatus.pickedUp || status === BookingStatus.completed) {
+    return 1;
+  }
+  return 0;
+}
+
+// Định dạng số tiền VND từ bigint (đơn vị đồng).
+function formatVnd(amount: bigint): string {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+
+// Nút copy dùng chung — copy chuỗi vào clipboard để dán vào app ngoài.
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      // Fallback cho trình duyệt không hỗ trợ Clipboard API.
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      data-ocid="order_tracker.copy_button"
+      aria-label={label}
+      className={cn(
+        "inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        copied
+          ? "border-success/40 bg-success/15 text-success"
+          : "border-border bg-card text-foreground hover:bg-secondary",
+      )}
+    >
+      {copied ? (
+        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+      ) : (
+        <Copy className="h-4 w-4" aria-hidden="true" />
+      )}
+      {copied ? "Đã sao chép" : "Sao chép"}
+    </button>
+  );
 }
 
 export default function OrderTracker() {
@@ -90,9 +129,11 @@ export default function OrderTracker() {
     isFetching,
     dataUpdatedAt,
   } = useOrderStatus(orderId);
-  // Full Order (createdAt/amount/billId/qrCode/expireAt) — OrderStatus doesn't
-  // carry these, but QrPayment needs them to render the "Thanh toán" button.
+  // Full Order (createdAt/amount/restaurantId/...) — OrderStatus không mang các
+  // trường này, cần để hiển thị địa chỉ nhà hàng và tổng tiền.
   const { data: order } = useGetOrder(orderId);
+  // Tra cứu địa chỉ nhà hàng theo restaurantId của đơn.
+  const { data: restaurants } = useRestaurants();
   const [invoiceState, setInvoiceState] = useState<InvoiceState>({
     kind: "idle",
   });
@@ -263,6 +304,10 @@ export default function OrderTracker() {
         <OrderStatusView
           status={data}
           order={order}
+          restaurantAddress={
+            restaurants?.find((r) => r.restaurantId === order?.restaurantId)
+              ?.address
+          }
           lastUpdated={lastUpdated}
           isFetching={isFetching}
           invoiceState={invoiceState}
@@ -276,6 +321,7 @@ export default function OrderTracker() {
 interface OrderStatusViewProps {
   status: OrderStatus;
   order: Order | null | undefined;
+  restaurantAddress: string | undefined;
   lastUpdated: string;
   isFetching: boolean;
   invoiceState: InvoiceState;
@@ -285,6 +331,7 @@ interface OrderStatusViewProps {
 function OrderStatusView({
   status,
   order,
+  restaurantAddress,
   lastUpdated,
   isFetching,
   invoiceState,
@@ -301,7 +348,7 @@ function OrderStatusView({
 
   return (
     <div className="mt-6 space-y-6">
-      {/* Trạng thái tổng hợp */}
+      {/* Trạng thái — chỉ hiển thị "Thanh toán" */}
       <div
         className="rounded-lg border border-border bg-card p-5 shadow-sm"
         data-ocid="order_tracker.status_panel"
@@ -323,33 +370,69 @@ function OrderStatusView({
           </span>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground">Đặt hàng</span>
-            <StatusBadge status={booking} size="md" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground">Thanh toán</span>
-            <StatusBadge status={payment} size="md" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground">Hoá đơn</span>
-            <StatusBadge status={invoice} size="md" />
-          </div>
+        <div className="mt-4 flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Thanh toán</span>
+          <StatusBadge status={payment} size="md" />
         </div>
       </div>
 
-      {/* Thanh toán — hiển thị QR khi đơn chưa thanh toán trong ngày */}
+      {/* Thông tin để dán vào app ngoài — địa chỉ nhà hàng + tổng tiền */}
       {order && (
         <div
           className="rounded-lg border border-border bg-card p-5 shadow-sm"
-          data-ocid="order_tracker.payment_panel"
+          data-ocid="order_tracker.copy_panel"
         >
-          <QrPayment order={order} />
+          <h2 className="font-display text-lg font-semibold">
+            Thông tin đặt tài xế
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Sao chép thông tin bên dưới để dán vào app đặt tài xế bên ngoài.
+          </p>
+
+          <div className="mt-4 space-y-4">
+            {/* Địa chỉ nhà hàng */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  Địa chỉ nhà hàng
+                </p>
+                <p
+                  className="mt-1 break-words text-sm font-medium text-foreground"
+                  data-ocid="order_tracker.restaurant_address"
+                >
+                  {restaurantAddress || "—"}
+                </p>
+              </div>
+              {restaurantAddress && (
+                <CopyButton
+                  value={restaurantAddress}
+                  label="Sao chép địa chỉ nhà hàng"
+                />
+              )}
+            </div>
+
+            {/* Tổng tiền hàng */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Tổng tiền hàng</p>
+                <p
+                  className="mt-1 font-display text-lg font-bold text-primary"
+                  data-ocid="order_tracker.total_amount"
+                >
+                  {formatVnd(order.amount)}
+                </p>
+              </div>
+              <CopyButton
+                value={formatVnd(order.amount)}
+                label="Sao chép tổng tiền hàng"
+              />
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Hành trình giao hàng */}
+      {/* Hành trình giao hàng — 2 bước */}
       <div
         className="rounded-lg border border-border bg-card p-5 shadow-sm"
         data-ocid="order_tracker.timeline_panel"
