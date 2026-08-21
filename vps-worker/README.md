@@ -199,6 +199,8 @@ Dùng cho autofill tên/SĐT khi khách nhập email (`GET /customers/:email`) v
 | `updateStatus` | `orderId\|<bookingStatus>` |
 | `updatePaymentStatus` | `orderId\|<paymentStatus>` |
 | `updateInvoiceStatus` | `orderId\|<invoiceStatus>\|invoiceId` |
+| `updateOrderQr` | `orderId\|qrCode\|billId\|expireAt` |
+| `markPaymentExpired` | `orderId\|expired` |
 
 Digest = lowercase hex SHA-256 (64 chars).
 
@@ -210,9 +212,9 @@ Digest = lowercase hex SHA-256 (64 chars).
 | Retry queue | 30s | Retry createOrder push (5 lần, exponential backoff) |
 | Reconciliation | 5 phút | So sánh VPS vs canister state, alert email nếu lệch |
 | Poll Ahamove | 10s | Backup cho webhook Ahamove |
-| Poll Tingee | 5s | Backup cho webhook Tingee |
+| Poll Tingee | 5s | **Nguồn trạng thái thanh toán DUY NHẤT** — poll `get-status-dynamic-qr` cho QR còn hiệu lực (`expire_at > now`) chưa thanh toán; paid → `updatePaymentStatus('paid')` + `deleteDynamicQr`; QR hết hạn/bill không tồn tại → `markPaymentExpired` |
 | Invoice | 1 phút | Tạo Bkav invoice cho completed + paid |
-| Unpaid auto-cancel | 1 phút | Tự hủy đơn chưa thanh toán quá 15 phút (canister `listPendingPaymentOrders` + `cancelOrder`) |
+| Unpaid expiry | 1 phút | Đơn có QR hết hạn chưa thanh toán → `markPaymentExpired` + xoá QR fields (tài xế tạo QR mới); đơn KHÔNG có QR quá hạn → `cancelOrder` |
 
 ## Tingee API (Dynamic QR Payment)
 

@@ -279,6 +279,7 @@ actor Main {
     case (#unpaid) "unpaid";
     case (#paid) "paid";
     case (#refunded) "refunded";
+    case (#expired) "expired";
   };
   func invoiceStatusText(s : CoreTypes.InvoiceStatus) : Text = switch s {
     case (#none) "none";

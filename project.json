@@ -1,16 +1,16 @@
 {
-  "overview": "Bunbohue65 Ship là ứng dụng đặt món ăn giao hàng, nơi khách đặt đơn và tài xế thanh toán tiền đơn tại nhà hàng bằng cách quét mã QR Tingee.",
+  "overview": "App Bún Bò Huế 65 Ship — hệ thống đặt món và giao hàng với thanh toán QR động Tingee cho tài xế trả tiền đơn tại nhà hàng.",
   "features": [
-    "Đặt món từ nhà hàng và tự chuyển sang theo dõi đơn",
-    "Theo dõi đơn với trạng thái thanh toán và tiến trình 2 bước",
-    "Sao chép địa chỉ nhà hàng và tổng tiền hàng",
-    "Tài xế thanh toán tiền đơn bằng quét mã QR Tingee tại nhà hàng"
+    "Đặt món và theo dõi đơn hàng",
+    "Tài xế quét QR động Tingee để thanh toán đơn",
+    "Xác thực thanh toán qua endpoint get-status-dynamic-qr của Tingee",
+    "Quản lý thiết bị, thực đơn, nhà hàng"
   ],
   "category": "food-delivery",
   "tags": [
     "food-delivery",
-    "ordering",
+    "tingee-payment",
     "qr-payment"
   ],
-  "last_updated": "2026-08-21T01:10:05.369Z"
+  "last_updated": "2026-08-21T10:30:10.943Z"
 }

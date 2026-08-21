@@ -288,6 +288,7 @@ export enum InvoiceStatus {
     failed = "failed"
 }
 export enum PaymentStatus {
+    expired = "expired",
     paid = "paid",
     refunded = "refunded",
     unpaid = "unpaid"
@@ -335,6 +336,7 @@ export interface backendInterface {
     listPaidOrdersForPickup(): Promise<Array<Order>>;
     listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
     listRestaurants(): Promise<Array<Restaurant>>;
+    markPaymentExpired(orderId: string, hmac: string): Promise<Result>;
     markPickedUp(orderId: string): Promise<Result>;
     restoreUpgradeState(blob: Uint8Array): Promise<boolean>;
     revokeDevice(deviceId: DeviceId): Promise<Result_4>;

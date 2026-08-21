@@ -200,42 +200,19 @@ router.post('/webhook/ahamove/cancel', verifyAhamoveWebhook, async (req, res, ne
 });
 
 // POST /webhook/tingee — body: { qr_id, status, ... }
+// KHÔNG còn dùng để xác định trạng thái thanh toán. get-status-dynamic-qr
+// (startTingeePoll) là nguồn trạng thái DUY NHẤT. Route này chỉ log và ack.
 router.post('/webhook/tingee', verifyTingeeWebhook, async (req, res, next) => {
   try {
     const db = req.app.locals.db;
-    const { qr_id: tingeeQrId, status } = req.body || {};
+    const { qr_id: tingeeQrId } = req.body || {};
     if (!tingeeQrId) return res.status(400).json({ error: 'qr_id required' });
 
     db.prepare(`INSERT INTO tingee_logs (order_id, tingee_qr_id, action, response_body, created_at) VALUES (?, ?, 'webhook', ?, ?)`)
       .run(tingeeQrId, tingeeQrId, JSON.stringify(req.body), Date.now());
 
-    // Lookup order: thử tingee_qr_account trước (spec mới), fallback tingee_qr_id (cũ).
-    let row = db.prepare(
-      `SELECT order_id, tingee_qr_account, tingee_bill_id FROM orders WHERE tingee_qr_account = ?`,
-    ).get(tingeeQrId);
-    if (!row) {
-      row = db.prepare(
-        `SELECT order_id, tingee_qr_account, tingee_bill_id FROM orders WHERE tingee_qr_id = ?`,
-      ).get(tingeeQrId);
-    }
-    if (!row) return res.status(404).json({ error: 'order not found' });
-
-    const s = String(status || '').toLowerCase();
-    if (s === 'paid' || s === 'success') {
-      try {
-        await canister.updatePaymentStatus(row.order_id, 'paid');
-        db.prepare(`UPDATE orders SET payment_status = 'paid', updated_at = ? WHERE order_id = ?`)
-          .run(Date.now(), row.order_id);
-        // Sau paid → delete dynamic QR (spec mới: { qrAccount, billId }).
-        try {
-          await tingee.deleteDynamicQr({ qrAccount: row.tingee_qr_account, billId: row.tingee_bill_id });
-        } catch (e) {
-          console.warn('[webhook/tingee] deleteDynamicQr failed:', e.message);
-        }
-      } catch (e) {
-        console.error('[webhook/tingee] canister updatePaymentStatus error:', e.message);
-      }
-    }
+    // Payment status được xác định bởi get-status-dynamic-qr (startTingeePoll),
+    // không phải webhook này. Ack để Tingee không retry.
     res.json({ ok: true });
   } catch (e) {
     next(e);
@@ -280,45 +257,36 @@ function startAhamovePoll(db) {
   return task;
 }
 
-// Poll Tingee 5s: các order unpaid có tingee_qr_account + tingee_bill_id (spec mới).
-// Fallback: order có tingee_qr_id nhưng thiếu qrAccount/billId → skip + warn.
-  function startTingeePoll(db) {
-  // QR Tingee hết hạn sau 15 phút (expireInMinute khi tạo) — sau mốc đó, bill
-  // không còn tồn tại ở phía Tingee nữa (code 1003 "Bill không tồn tại"), nên
-  // polling tiếp chỉ tốn request vô ích và có thể khiến Tingee chặn tốc độ
-  // (code 1001) — ảnh hưởng lây sang cả các request tạo QR mới thật sự cần.
-  // Chỉ polling đơn tạo trong 20 phút gần nhất (15 phút hết hạn + 5 phút dư).
-  const TINGEE_POLL_WINDOW_MS = 20 * 60 * 1000;
+// Poll Tingee 5s — get-status-dynamic-qr là nguồn trạng thái thanh toán DUY NHẤT.
+// Cửa sổ poll khóa theo expire_at của QR (thời điểm QR hết hạn), KHÔNG theo
+// created_at của đơn — vì QR được tạo khi tài xế bấm 'Thanh toán' (thường lâu
+// sau khi tạo đơn). Poll các QR động còn hiệu lực (expire_at > now) và chưa
+// thanh toán cho đến khi xác định được trạng thái cuối.
+function startTingeePoll(db) {
   // Backoff khi gặp code 1001 (thao tác quá nhanh / rate limit): tạm ngừng poll
   // đơn đó trong 60s để không làm Tingee chặn tốc độ lây sang request tạo QR mới.
   const RATE_LIMIT_BACKOFF_MS = 60 * 1000;
-  // In-memory trạng thái poll: orderId → skipUntilMs (backoff 1001) hoặc
-  // orderId → stopped (1003, bill không tồn tại — ngừng poll vĩnh viễn trong
-  // phiên này). Reset khi worker khởi động lại là chấp nhận được.
+  // In-memory trạng thái poll: orderId → skipUntilMs (backoff 1001). Reset khi
+  // worker khởi động lại là chấp nhận được.
   const backoffUntil = new Map(); // orderId -> ms
-  const stopped = new Set();      // orderId (1003)
   const task = cron.schedule('*/5 * * * * *', async () => {
     if (shutdown.shuttingDown) return;
     try {
+      // Chỉ poll đơn unpaid có qrAccount + billId hợp lệ và QR còn hiệu lực
+      // (expire_at > now). Đơn có QR hết hạn (expire_at <= now) sẽ được
+      // startUnpaidExpiry (sync.js) xử lý markPaymentExpired.
       const rows = db.prepare(
-        `SELECT order_id, amount, tingee_qr_id, tingee_qr_account, tingee_bill_id
+        `SELECT order_id, amount, tingee_qr_account, tingee_bill_id, expire_at
          FROM orders
          WHERE payment_status = 'unpaid'
-           AND created_at > ?
-           AND (
-             (tingee_qr_account != '' AND tingee_bill_id != '')
-             OR tingee_qr_id != ''
-           )`,
-      ).all(Date.now() - TINGEE_POLL_WINDOW_MS);
+           AND tingee_qr_account != ''
+           AND tingee_bill_id != ''
+           AND expire_at IS NOT NULL
+           AND expire_at > ?`,
+      ).all(Math.floor(Date.now() / 1000));
       const now = Date.now();
       for (const row of rows) {
-        // Chỉ poll khi đơn có billId thật (tránh code=1003 'Bill không tồn tại').
-        if (!row.tingee_bill_id) {
-          console.warn('[poll/tingee] skip (missing billId):', row.order_id);
-          continue;
-        }
-        // Đã ngừng poll (1003) hoặc đang backoff (1001) → bỏ qua đơn này.
-        if (stopped.has(row.order_id)) continue;
+        // Đang backoff (1001) → bỏ qua đơn này.
         const until = backoffUntil.get(row.order_id);
         if (until !== undefined && now < until) continue;
         try {
@@ -326,13 +294,18 @@ function startAhamovePoll(db) {
             qrAccount: row.tingee_qr_account,
             billId: row.tingee_bill_id,
           });
-          // Thành công → xoá backoff/stopped nếu có.
+          // Log mọi kết quả get-status-dynamic-qr vào tingee_logs (action 'get_status').
+          db.prepare(
+            `INSERT INTO tingee_logs (order_id, tingee_qr_id, action, response_body, status_code, created_at)
+             VALUES (?, ?, 'get_status', ?, ?, ?)`,
+          ).run(row.order_id, row.tingee_qr_account, JSON.stringify(data.raw || data), 200, Date.now());
+          // Thành công → xoá backoff nếu có.
           backoffUntil.delete(row.order_id);
-          stopped.delete(row.order_id);
-          const billInfo = (data && data.billInfo) || {};
+          const billInfo = (data && data.data && data.data.billInfo) || {};
           const statusOk = String(billInfo.status || '').toLowerCase() === 'fully-paid';
           const amountOk = Number(billInfo.totalAmountPaid || 0) >= Number(row.amount || 0);
           if (statusOk || amountOk) {
+            // Đã thanh toán → push updatePaymentStatus('paid') + xoá QR.
             await canister.updatePaymentStatus(row.order_id, 'paid');
             db.prepare(`UPDATE orders SET payment_status = 'paid', updated_at = ? WHERE order_id = ?`)
               .run(Date.now(), row.order_id);
@@ -347,11 +320,17 @@ function startAhamovePoll(db) {
             backoffUntil.set(row.order_id, Date.now() + RATE_LIMIT_BACKOFF_MS);
             console.warn('[poll/tingee] rate limit (1001), backoff:', row.order_id);
           } else if (code === '1003') {
-            // Bill không tồn tại (hết hạn/bị xoá) → ngừng poll đơn này thay vì
-            // retry cùng billId. Khách bấm 'Thanh toán' lại sẽ tạo QR mới qua
-            // POST /order/:id/qr (idempotent).
-            stopped.add(row.order_id);
-            console.warn('[poll/tingee] bill not found (1003), stop polling:', row.order_id);
+            // Bill không tồn tại (hết hạn/bị xoá) → đánh dấu đơn expired để tài
+            // xế tạo QR mới. startUnpaidExpiry (sync.js) cũng xử lý nhánh này.
+            console.warn('[poll/tingee] bill not found (1003), mark expired:', row.order_id);
+            try {
+              await canister.markPaymentExpired(row.order_id);
+              db.prepare(
+                `UPDATE orders SET payment_status = 'expired', tingee_qr_account = '', tingee_bill_id = '', tingee_qr_code = '', expire_at = NULL, updated_at = ? WHERE order_id = ?`,
+              ).run(Date.now(), row.order_id);
+            } catch (err) {
+              console.error('[poll/tingee] markPaymentExpired error:', row.order_id, err.message);
+            }
           } else {
             console.error('[poll/tingee] error:', row.order_id, code, e.message);
           }

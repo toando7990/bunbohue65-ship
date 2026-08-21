@@ -3,6 +3,8 @@ type AccessControlShuttle__115352029 =
   {var adminAssigned : Bool; userRoles : [(Principal, UserRole__501219985)]};
 type AccessControlShuttle__29914945 =
   {var adminAssigned : Bool; userRoles : [(Principal, UserRole__918223312)]};
+type AccessControlShuttle__309869275 =
+  {var adminAssigned : Bool; userRoles : [(Principal, UserRole__818783860)]};
 type AccessControlShuttle__594490090 =
   {var adminAssigned : Bool; userRoles : [(Principal, UserRole__195243494)]};
 type AccessControlShuttle__60378297 =
@@ -13,6 +15,8 @@ type AccessControlShuttle__758203353 =
   {var adminAssigned : Bool; userRoles : [(Principal, UserRole__284522038)]};
 type BookingStatus__128508187 =
   {#cancelled; #completed; #confirmed; #pending; #shipping};
+type BookingStatus__216641408 =
+  {#cancelled; #completed; #confirmed; #pending; #pickedUp; #shipping};
 type BookingStatus__236342154 =
   {#cancelled; #completed; #confirmed; #pending; #shipping};
 type BookingStatus__406637550 =
@@ -30,6 +34,7 @@ type BookingStatus__98456925 =
 type BookingStatus__999232988 =
   {#cancelled; #completed; #confirmed; #pending; #pickedUp; #shipping};
 type Data__265875254<K, V> = {var count : Nat__58649523; kvs : [var ?(K, V)]};
+type DeviceRole__11091617 = {#admin; #cashier; #driver};
 type DeviceRole__121149242 = {#admin; #cashier; #driver};
 type DeviceRole__24208916 = {#admin; #cashier; #driver};
 type DeviceRole__314308715 = {#admin; #cashier; #driver};
@@ -80,6 +85,14 @@ type Device__351239453 =
     restaurantId : Text;
     role : DeviceRole__314308715
   };
+type Device__50924608 =
+  {
+    activatedAt : Int;
+    active : Bool;
+    deviceId : Text;
+    restaurantId : Text;
+    role : DeviceRole__11091617
+  };
 type Device__586681384 =
   {
     activatedAt : Int;
@@ -126,6 +139,7 @@ type Internal__161573640<K, V> =
 type InvoiceStatus__1066639790 = {#failed; #invoiced; #none};
 type InvoiceStatus__244877320 = {#failed; #invoiced; #none};
 type InvoiceStatus__274298275 = {#failed; #invoiced; #none};
+type InvoiceStatus__378757338 = {#failed; #invoiced; #none};
 type InvoiceStatus__389510949 = {#failed; #invoiced; #none};
 type InvoiceStatus__422561880 = {#failed; #invoiced; #none};
 type InvoiceStatus__431974778 = {#failed; #invoiced; #none};
@@ -237,6 +251,17 @@ type MenuItem__849693412 =
     vatRate : Nat;
     visible : Bool
   };
+type MenuItem__968463987 =
+  {
+    category : Text;
+    image : Blob;
+    itemId : Text;
+    name : Text;
+    price : Nat;
+    unitName : Text;
+    vatRate : Nat;
+    visible : Bool
+  };
 type Nat__58649523 = Nat__920180692;
 type Nat__920180692 = Nat;
 type NewActor__1055154095 =
@@ -288,6 +313,22 @@ type NewActor__35846981 =
     restaurants : Map__386906547<Text, Restaurant__77430328>;
     vpsSecret : Text;
     vpsSecretPrevious : Text
+  };
+type NewActor__418213216 =
+  {
+    var accessControlShuttle : AccessControlShuttle__309869275;
+    admin : Principal;
+    devices : Map__386906547<Text, Device__50924608>;
+    menus : Map__386906547<Text, MenuItem__968463987>;
+    orders : Map__386906547<Text, NewOrder__136906828>;
+    otpRecords : Map__386906547<Text, OtpRecord__1062537752>;
+    var paymentMode : PaymentMode__71069645;
+    pendingActivations : Map__386906547<Text, PendingActivation__388512804>;
+    restaurantMenuOverrides : Map__386906547<Text, Map__386906547<Text, Nat>>;
+    restaurants : Map__386906547<Text, Restaurant__171784395>;
+    var storeHours : StoreHours__472559812;
+    var vpsSecret : Text;
+    var vpsSecretPrevious : Text
   };
 type NewActor__547210969 =
   {
@@ -374,6 +415,35 @@ type NewMenuItem__981209448 =
     unitName : Text;
     vatRate : Nat;
     visible : Bool
+  };
+type NewOrder__136906828 =
+  {
+    ahamoveOrderId : Text;
+    amount : Nat;
+    billId : ?Text;
+    bookingStatus : BookingStatus__216641408;
+    createdAt : Int;
+    cusAddress : Text;
+    cusName : Text;
+    cusPhone : Text;
+    cusTaxCode : Text;
+    expireAt : ?Nat64;
+    goodsAmount : Nat;
+    invoiceId : Text;
+    invoiceStatus : InvoiceStatus__378757338;
+    items : [OrderItem__631018336];
+    orderId : Text;
+    paymentStatus : NewPaymentStatus__545300394;
+    pdfUrl : Text;
+    qrCode : ?Text;
+    receiverEmail : Text;
+    restaurantId : Text;
+    sharedLink : Text;
+    shippingFee : Nat;
+    taxTotal : Nat;
+    tingeeQrCode : Text;
+    tingeeQrId : Text;
+    updatedAt : Int
   };
 type NewOrder__39372528 =
   {
@@ -481,6 +551,7 @@ type NewOrder__99260789 =
     tingeeQrId : Text;
     updatedAt : Int
   };
+type NewPaymentStatus__545300394 = {#expired; #paid; #refunded; #unpaid};
 type Node__430031793<K, V> =
   {#internal : Internal__161573640<K, V>; #leaf : Leaf__1045638083<K, V>};
 type OldActor__1000832780 =
@@ -509,6 +580,22 @@ type OldActor__1020235230 =
     pendingActivations : Map__386906547<Text, PendingActivation__439932341>;
     restaurantMenuOverrides : Map__386906547<Text, Map__386906547<Text, Nat>>;
     restaurants : Map__386906547<Text, Restaurant__871528260>;
+    var vpsSecret : Text;
+    var vpsSecretPrevious : Text
+  };
+type OldActor__147103740 =
+  {
+    var accessControlShuttle : AccessControlShuttle__309869275;
+    admin : Principal;
+    devices : Map__386906547<Text, Device__50924608>;
+    menus : Map__386906547<Text, MenuItem__968463987>;
+    orders : Map__386906547<Text, OldOrder__642216943>;
+    otpRecords : Map__386906547<Text, OtpRecord__1062537752>;
+    var paymentMode : PaymentMode__71069645;
+    pendingActivations : Map__386906547<Text, PendingActivation__388512804>;
+    restaurantMenuOverrides : Map__386906547<Text, Map__386906547<Text, Nat>>;
+    restaurants : Map__386906547<Text, Restaurant__171784395>;
+    var storeHours : StoreHours__472559812;
     var vpsSecret : Text;
     var vpsSecretPrevious : Text
   };
@@ -654,6 +741,35 @@ type OldOrder__586042102 =
     tingeeQrId : Text;
     updatedAt : Int
   };
+type OldOrder__642216943 =
+  {
+    ahamoveOrderId : Text;
+    amount : Nat;
+    billId : ?Text;
+    bookingStatus : BookingStatus__216641408;
+    createdAt : Int;
+    cusAddress : Text;
+    cusName : Text;
+    cusPhone : Text;
+    cusTaxCode : Text;
+    expireAt : ?Nat64;
+    goodsAmount : Nat;
+    invoiceId : Text;
+    invoiceStatus : InvoiceStatus__378757338;
+    items : [OrderItem__631018336];
+    orderId : Text;
+    paymentStatus : OldPaymentStatus__737334505;
+    pdfUrl : Text;
+    qrCode : ?Text;
+    receiverEmail : Text;
+    restaurantId : Text;
+    sharedLink : Text;
+    shippingFee : Nat;
+    taxTotal : Nat;
+    tingeeQrCode : Text;
+    tingeeQrId : Text;
+    updatedAt : Int
+  };
 type OldOrder__838518005 =
   {
     ahamoveOrderId : Text;
@@ -705,6 +821,7 @@ type OldOrder__975120881 =
     tingeeQrId : Text;
     updatedAt : Int
   };
+type OldPaymentStatus__737334505 = {#paid; #refunded; #unpaid};
 type OrderItem__1067720783 =
   {
     itemId : Text;
@@ -760,6 +877,15 @@ type OrderItem__330660668 =
     vatRate : Nat
   };
 type OrderItem__339344727 =
+  {
+    itemId : Text;
+    name : Text;
+    price : Nat;
+    quantity : Nat;
+    unitName : Text;
+    vatRate : Nat
+  };
+type OrderItem__631018336 =
   {
     itemId : Text;
     name : Text;
@@ -968,6 +1094,14 @@ type OtpRecord__1031443896 =
     sendCount : Nat;
     verified : Bool
   };
+type OtpRecord__1062537752 =
+  {
+    codeHash : Blob;
+    email : Text;
+    expiresAt : Int;
+    sendCount : Nat;
+    verified : Bool
+  };
 type OtpRecord__225013901 =
   {
     codeHash : Blob;
@@ -993,18 +1127,28 @@ type OtpRecord__784159473 =
     verified : Bool
   };
 type PaymentMode__602815704 = {#customer; #driver};
+type PaymentMode__71069645 = {#customer; #driver};
 type PaymentMode__82202488 = {#customer; #driver};
 type PaymentMode__920994660 = {#customer; #driver};
 type PaymentStatus__101445590 = {#paid; #refunded; #unpaid};
 type PaymentStatus__151823750 = {#paid; #refunded; #unpaid};
 type PaymentStatus__15404243 = {#paid; #refunded; #unpaid};
-type PaymentStatus__291794765 = {#paid; #refunded; #unpaid};
+type PaymentStatus__291794765 = {#expired; #paid; #refunded; #unpaid};
 type PaymentStatus__32596451 = {#paid; #refunded; #unpaid};
 type PaymentStatus__531755638 = {#paid; #refunded; #unpaid};
 type PaymentStatus__703146257 = {#paid; #refunded; #unpaid};
 type PaymentStatus__779798149 = {#paid; #refunded; #unpaid};
 type PaymentStatus__831221864 = {#paid; #refunded; #unpaid};
 type PaymentStatus__988507147 = {#paid; #refunded; #unpaid};
+type PendingActivation__388512804 =
+  {
+    code : Text;
+    createdAt : Int;
+    expiresAt : Int;
+    restaurantId : Text;
+    role : DeviceRole__11091617;
+    used : Bool
+  };
 type PendingActivation__400056086 =
   {
     code : Text;
@@ -1095,6 +1239,14 @@ type PendingActivation__909193841 =
     role : DeviceRole__707404043;
     used : Bool
   };
+type Restaurant__171784395 =
+  {
+    address : Text;
+    name : Text;
+    phone : Text;
+    restaurantId : Text;
+    visible : Bool
+  };
 type Restaurant__334689939 =
   {
     address : Text;
@@ -1177,6 +1329,8 @@ type Restaurant__985304966 =
   };
 type StoreHours__434667875 =
   {closeHour : Nat; closeMinute : Nat; openHour : Nat; openMinute : Nat};
+type StoreHours__472559812 =
+  {closeHour : Nat; closeMinute : Nat; openHour : Nat; openMinute : Nat};
 type StoreHours__797780222 =
   {closeHour : Nat; closeMinute : Nat; openHour : Nat; openMinute : Nat};
 type UserRole__12474748 = {#admin; #guest; #user};
@@ -1184,6 +1338,7 @@ type UserRole__195243494 = {#admin; #guest; #user};
 type UserRole__284522038 = {#admin; #guest; #user};
 type UserRole__501219985 = {#admin; #guest; #user};
 type UserRole__817703864 = {#admin; #guest; #user};
+type UserRole__818783860 = {#admin; #guest; #user};
 type UserRole__91647283 = {#admin; #guest; #user};
 type UserRole__918223312 = {#admin; #guest; #user};
 {
@@ -1195,7 +1350,8 @@ type UserRole__918223312 = {#admin; #guest; #user};
   "20260815_000000" : (old : OldActor__557239299) -> NewActor__1055154095;
   "20260817_000000" : (old : OldActor__852312503) -> NewActor__605662815;
   "20260818_000000" : (old : OldActor__309113320) -> NewActor__630897503;
-  "20260820_000000" : (old : OldActor__1000832780) -> NewActor__576788459
+  "20260820_000000" : (old : OldActor__1000832780) -> NewActor__576788459;
+  "20260821_000000" : (old : OldActor__147103740) -> NewActor__418213216
 }
 actor  {
   stable var accessControlShuttle :

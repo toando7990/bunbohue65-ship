@@ -201,4 +201,21 @@ mixin (
       case (?o) { #ok(o) };
     };
   };
+
+  // Mark an order's payment as expired. Invoked by the VPS worker when Tingee
+  // get-status-dynamic-qr reports that the QR passed expire_at while still
+  // unpaid. HMAC-verified over expiredPayload (orderId|expired) so only the VPS
+  // worker can set paymentStatus=#expired, which lets the driver generate a new
+  // QR for the order. Returns #err when the order does not exist.
+  public shared func markPaymentExpired(
+    orderId : Text,
+    hmac : Text,
+  ) : async Result.Result<CoreTypes.Order, Text> {
+    let payload : HmacTypes.Payload = HmacLib.expiredPayload(orderId);
+    if (not HmacLib.verifyHmac(state.secretState.vpsSecret, state.secretState.vpsSecretPrevious, payload, hmac)) {
+      return #err("Invalid HMAC");
+    };
+    let now : Int = Time.now();
+    HmacLib.applyExpired(state.orders, orderId, now);
+  };
 };

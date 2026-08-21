@@ -1680,6 +1680,9 @@ video {
 .border-dashed {
   border-style: dashed;
 }
+.border-amber-500\/60 {
+  border-color: rgb(245 158 11 / 0.6);
+}
 .border-border {
   border-color: oklch(var(--border));
 }
@@ -1731,6 +1734,13 @@ video {
 .bg-accent {
   --tw-bg-opacity: 1;
   background-color: oklch(var(--accent) / var(--tw-bg-opacity, 1));
+}
+.bg-amber-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(245 158 11 / var(--tw-bg-opacity, 1));
+}
+.bg-amber-500\/10 {
+  background-color: rgb(245 158 11 / 0.1);
 }
 .bg-background {
   background-color: oklch(var(--background));
@@ -2151,6 +2161,10 @@ video {
 .text-accent-foreground {
   color: oklch(var(--accent-foreground));
 }
+.text-amber-50 {
+  --tw-text-opacity: 1;
+  color: rgb(255 251 235 / var(--tw-text-opacity, 1));
+}
 .text-background {
   color: oklch(var(--background));
 }
@@ -2307,6 +2321,9 @@ video {
   --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
   --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
   box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+.ring-amber-500\/40 {
+  --tw-ring-color: rgb(245 158 11 / 0.4);
 }
 .ring-destructive\/30 {
   --tw-ring-color: oklch(var(--destructive) / 0.3);

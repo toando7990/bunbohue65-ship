@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS orders (
   invoice_id          TEXT NOT NULL DEFAULT '',
   pdf_url             TEXT NOT NULL DEFAULT '',        -- link PDF hóa đơn từ Bkav (CmdType 816)
   booking_status      TEXT NOT NULL DEFAULT 'confirmed',  -- pending|confirmed|shipping|completed|cancelled
-  payment_status      TEXT NOT NULL DEFAULT 'unpaid',     -- unpaid|paid|refunded
+  payment_status      TEXT NOT NULL DEFAULT 'unpaid',     -- unpaid|paid|refunded|expired
   invoice_status      TEXT NOT NULL DEFAULT 'none',      -- none|invoiced|failed
   canister_synced     INTEGER NOT NULL DEFAULT 0,         -- 0/1: đã push createOrder thành công
   retry_count         INTEGER NOT NULL DEFAULT 0,

@@ -122,6 +122,7 @@ type PendingActivation =
  };
 type PaymentStatus = 
  variant {
+   expired;
    paid;
    refunded;
    unpaid;
@@ -307,6 +308,7 @@ service : {
   listPaidOrdersForPickup: () -> (vec Order);
   listPendingPaymentOrders: (restaurantId: text) -> (vec Order);
   listRestaurants: () -> (vec Restaurant) query;
+  markPaymentExpired: (orderId: text, hmac: text) -> (Result);
   markPickedUp: (orderId: text) -> (Result);
   restoreUpgradeState: ("blob": blob) -> (bool);
   revokeDevice: (deviceId: DeviceId) -> (Result_4);

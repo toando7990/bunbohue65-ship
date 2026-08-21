@@ -24,6 +24,9 @@ module {
     #unpaid;
     #paid;
     #refunded;
+    // QR hết hạn (vượt expire_at) mà chưa thanh toán. VPS worker đẩy về qua
+    // markPaymentExpired (HMAC) để tài xế có thể tạo QR mới cho đơn.
+    #expired;
   };
 
   // E-invoice issuance status

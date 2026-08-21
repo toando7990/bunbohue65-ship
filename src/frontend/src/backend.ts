@@ -334,6 +334,7 @@ export enum InvoiceStatus {
     failed = "failed"
 }
 export enum PaymentStatus {
+    expired = "expired",
     paid = "paid",
     refunded = "refunded",
     unpaid = "unpaid"
@@ -384,6 +385,7 @@ export interface backendInterface {
     listPaidOrdersForPickup(): Promise<Array<Order>>;
     listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
     listRestaurants(): Promise<Array<Restaurant>>;
+    markPaymentExpired(orderId: string, hmac: string): Promise<Result>;
     markPickedUp(orderId: string): Promise<Result>;
     restoreUpgradeState(blob: Uint8Array): Promise<boolean>;
     revokeDevice(deviceId: DeviceId): Promise<Result_4>;
@@ -886,6 +888,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.listRestaurants();
             return result;
+        }
+    }
+    async markPaymentExpired(arg0: string, arg1: string): Promise<Result> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.markPaymentExpired(arg0, arg1);
+                return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.markPaymentExpired(arg0, arg1);
+            return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
         }
     }
     async markPickedUp(arg0: string): Promise<Result> {
@@ -1563,13 +1579,15 @@ function from_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uin
     } : value;
 }
 function from_candid_variant_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    expired: null;
+} | {
     paid: null;
 } | {
     refunded: null;
 } | {
     unpaid: null;
 }): PaymentStatus {
-    return "paid" in value ? PaymentStatus.paid : "refunded" in value ? PaymentStatus.refunded : "unpaid" in value ? PaymentStatus.unpaid : value;
+    return "expired" in value ? PaymentStatus.expired : "paid" in value ? PaymentStatus.paid : "refunded" in value ? PaymentStatus.refunded : "unpaid" in value ? PaymentStatus.unpaid : value;
 }
 function from_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     cancelled: null;
@@ -1928,13 +1946,17 @@ function to_candid_variant_n66(_uploadFile: (file: ExternalBlob) => Promise<Uint
     } : value;
 }
 function to_candid_variant_n70(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PaymentStatus): {
+    expired: null;
+} | {
     paid: null;
 } | {
     refunded: null;
 } | {
     unpaid: null;
 } {
-    return value == PaymentStatus.paid ? {
+    return value == PaymentStatus.expired ? {
+        expired: null
+    } : value == PaymentStatus.paid ? {
         paid: null
     } : value == PaymentStatus.refunded ? {
         refunded: null

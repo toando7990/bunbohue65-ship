@@ -93,10 +93,6 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
         setStatus(s.paymentStatus);
         if (s.paymentStatus === PaymentStatus.paid) {
           setPolling(false);
-          // Cho driver thấy trạng thái thành công 1.5s rồi tự đóng.
-          setTimeout(() => {
-            if (!cancelled) onPaid(order);
-          }, 1500);
         }
       } catch {
         // Lỗi poll im lặng — sẽ thử lại ở lần sau.
@@ -109,7 +105,16 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [actor, order, polling, onPaid, retryTick]);
+  }, [actor, order, polling, retryTick]);
+
+  // Tự đóng khi #paid: effect riêng theo dõi `status`, KHÔNG phụ thuộc `polling`
+  // nên cleanup của nó không bị chạy khi setPolling(false) ở trên. Cho driver thấy
+  // trạng thái thành công 1.5s rồi gọi onPaid(order) để đóng modal + refresh queue.
+  useEffect(() => {
+    if (status !== PaymentStatus.paid) return;
+    const id = setTimeout(() => onPaid(order), 1500);
+    return () => clearTimeout(id);
+  }, [status, order, onPaid]);
 
   const isPaid = status === PaymentStatus.paid;
   const qrReady = qrState.kind === "ready";

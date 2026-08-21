@@ -69,6 +69,7 @@ export const UserRole = IDL.Variant({
   'guest' : IDL.Null,
 });
 export const PaymentStatus = IDL.Variant({
+  'expired' : IDL.Null,
   'paid' : IDL.Null,
   'refunded' : IDL.Null,
   'unpaid' : IDL.Null,
@@ -283,6 +284,7 @@ export const idlService = IDL.Service({
   'listPaidOrdersForPickup' : IDL.Func([], [IDL.Vec(Order)], []),
   'listPendingPaymentOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
   'listRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
+  'markPaymentExpired' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
   'markPickedUp' : IDL.Func([IDL.Text], [Result], []),
   'restoreUpgradeState' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
   'revokeDevice' : IDL.Func([DeviceId], [Result_4], []),
@@ -410,6 +412,7 @@ export const idlFactory = ({ IDL }) => {
     'guest' : IDL.Null,
   });
   const PaymentStatus = IDL.Variant({
+    'expired' : IDL.Null,
     'paid' : IDL.Null,
     'refunded' : IDL.Null,
     'unpaid' : IDL.Null,
@@ -619,6 +622,7 @@ export const idlFactory = ({ IDL }) => {
     'listPaidOrdersForPickup' : IDL.Func([], [IDL.Vec(Order)], []),
     'listPendingPaymentOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
     'listRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
+    'markPaymentExpired' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'markPickedUp' : IDL.Func([IDL.Text], [Result], []),
     'restoreUpgradeState' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
     'revokeDevice' : IDL.Func([DeviceId], [Result_4], []),

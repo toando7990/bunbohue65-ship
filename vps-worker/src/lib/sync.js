@@ -141,16 +141,44 @@ function startReconciliation(db) {
   return task;
 }
 
-// Cron 1 phút: auto-cancel đơn unpaid hết hạn (khớp expiry QR 15 phút).
+// Cron 1 phút: xử lý đơn unpaid hết hạn.
+// - Đơn CÓ QR (tingee_qr_account + tingee_bill_id) và QR đã hết hạn (expire_at
+//   <= now) chưa thanh toán → markPaymentExpired (#expired) + xoá QR fields để
+//   tài xế tạo QR mới. KHÔNG cancel đơn có QR.
+// - Đơn KHÔNG CÓ QR và quá hạn (createdAt > UNPAID_EXPIRY_MS) → cancelOrder.
 // Canister không có timer → VPS worker chạy cron này.
-// Với mỗi restaurant, query listPendingPaymentOrders từ canister, lọc các đơn
-// có createdAt (nanoseconds) quá 15 phút, gọi cancelOrder và cập nhật local.
 const UNPAID_EXPIRY_MS = 15 * 60 * 1000;
 
 function startUnpaidExpiry(db) {
   const task = cron.schedule('*/1 * * * *', async () => {
     if (shutdown.shuttingDown) return;
     try {
+      // 1) Đơn có QR hết hạn chưa thanh toán → markPaymentExpired + xoá QR fields.
+      const expiredQr = db.prepare(
+        `SELECT order_id FROM orders
+         WHERE payment_status = 'unpaid'
+           AND tingee_qr_account != ''
+           AND tingee_bill_id != ''
+           AND expire_at IS NOT NULL
+           AND expire_at <= ?`,
+      ).all(Math.floor(Date.now() / 1000));
+      for (const row of expiredQr) {
+        try {
+          const result = await canister.markPaymentExpired(row.order_id);
+          if (result?.ok) {
+            db.prepare(
+              `UPDATE orders SET payment_status = 'expired', tingee_qr_account = '', tingee_bill_id = '', tingee_qr_code = '', expire_at = NULL, updated_at = ? WHERE order_id = ?`,
+            ).run(Date.now(), row.order_id);
+            console.log('[sync] marked QR-expired unpaid order expired:', row.order_id);
+          } else {
+            console.warn('[sync] markPaymentExpired failed:', row.order_id, result?.err);
+          }
+        } catch (e) {
+          console.error('[sync] markPaymentExpired error:', row.order_id, e.message);
+        }
+      }
+
+      // 2) Đơn KHÔNG CÓ QR và quá hạn → cancelOrder (giữ nguyên hành vi cũ).
       const restaurants = db.prepare(
         `SELECT DISTINCT restaurant_id FROM orders WHERE booking_status != 'cancelled'`,
       ).all();
@@ -168,6 +196,11 @@ function startUnpaidExpiry(db) {
           if (!createdAtNs) continue;
           const ageMs = Date.now() - createdAtNs / 1e6;
           if (ageMs <= UNPAID_EXPIRY_MS) continue;
+          // Tránh cancel đơn có QR — QR hết hạn đã được xử lý ở bước 1.
+          const local = db.prepare(
+            `SELECT tingee_qr_account, tingee_bill_id FROM orders WHERE order_id = ?`,
+          ).get(order.orderId);
+          if (local && local.tingee_qr_account && local.tingee_bill_id) continue;
           try {
             const cancelResult = await canister.cancelOrder(order.orderId);
             if (cancelResult?.ok) {

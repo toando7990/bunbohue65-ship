@@ -28,8 +28,18 @@ function formatTime(ns: bigint): string {
 }
 
 // Đảm bảo chỉ hiển thị đơn chưa thanh toán (defensive — canister đã lọc).
+// Bao gồm cả đơn #expired (QR hết hạn chưa thanh toán) để tài xế có thể
+// chạm [Thanh toán] tạo QR mới, theo yêu cầu "tạo QR mới sau khi QR cũ hết hạn".
 function isPending(o: Order): boolean {
-  return o.paymentStatus === PaymentStatus.unpaid;
+  return (
+    o.paymentStatus === PaymentStatus.unpaid ||
+    o.paymentStatus === PaymentStatus.expired
+  );
+}
+
+// Đơn có QR hết hạn chưa thanh toán (#expired) — cần tạo QR mới.
+function isExpired(o: Order): boolean {
+  return o.paymentStatus === PaymentStatus.expired;
 }
 
 // Chỉ hiện đơn tạo trong ngày hôm nay (giờ địa phương của thiết bị).
@@ -140,6 +150,7 @@ export function PaymentQueue({
           {sorted.map((order, idx) => {
             const isPaying = payingOrderId === order.orderId;
             const overdue = isOverdue(order.createdAt);
+            const expired = isExpired(order);
             const lateMinutes = Math.floor(
               elapsedMinutes(order.createdAt) - OVERDUE_MINUTES,
             );
@@ -148,9 +159,11 @@ export function PaymentQueue({
                 key={order.orderId}
                 data-ocid={`queue.item.${idx + 1}`}
                 className={`rounded-xl border p-4 shadow-sm transition-smooth hover:shadow-md ${
-                  overdue
-                    ? "border-destructive bg-destructive/10 ring-1 ring-destructive/40"
-                    : "border-border bg-card"
+                  expired
+                    ? "border-amber-500/60 bg-amber-500/10 ring-1 ring-amber-500/40"
+                    : overdue
+                      ? "border-destructive bg-destructive/10 ring-1 ring-destructive/40"
+                      : "border-border bg-card"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -166,7 +179,15 @@ export function PaymentQueue({
                         <Clock className="h-3 w-3" aria-hidden="true" />
                         {formatTime(order.createdAt)}
                       </span>
-                      {overdue && (
+                      {expired && (
+                        <span
+                          className="inline-flex items-center rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-amber-50"
+                          data-ocid={`queue.expired_badge.${idx + 1}`}
+                        >
+                          QR hết hạn — tạo lại
+                        </span>
+                      )}
+                      {!expired && overdue && (
                         <span
                           className="inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground"
                           data-ocid={`queue.overdue_badge.${idx + 1}`}
@@ -231,6 +252,8 @@ export function PaymentQueue({
                           />
                           Đang mở…
                         </>
+                      ) : expired ? (
+                        "Tạo QR mới"
                       ) : (
                         "Thanh toán"
                       )}

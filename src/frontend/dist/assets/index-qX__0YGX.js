@@ -36111,6 +36111,7 @@ const UserRole = Variant({
   "guest": Null
 });
 const PaymentStatus$1 = Variant({
+  "expired": Null,
   "paid": Null,
   "refunded": Null,
   "unpaid": Null
@@ -36324,6 +36325,7 @@ Service({
   "listPaidOrdersForPickup": Func([], [Vec(Order)], []),
   "listPendingPaymentOrders": Func([Text], [Vec(Order)], []),
   "listRestaurants": Func([], [Vec(Restaurant)], ["query"]),
+  "markPaymentExpired": Func([Text, Text], [Result], []),
   "markPickedUp": Func([Text], [Result], []),
   "restoreUpgradeState": Func([Vec(Nat8)], [Bool], []),
   "revokeDevice": Func([DeviceId], [Result_4], []),
@@ -36448,6 +36450,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "guest": IDL2.Null
   });
   const PaymentStatus2 = IDL2.Variant({
+    "expired": IDL2.Null,
     "paid": IDL2.Null,
     "refunded": IDL2.Null,
     "unpaid": IDL2.Null
@@ -36656,6 +36659,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "listPaidOrdersForPickup": IDL2.Func([], [IDL2.Vec(Order2)], []),
     "listPendingPaymentOrders": IDL2.Func([IDL2.Text], [IDL2.Vec(Order2)], []),
     "listRestaurants": IDL2.Func([], [IDL2.Vec(Restaurant2)], ["query"]),
+    "markPaymentExpired": IDL2.Func([IDL2.Text, IDL2.Text], [Result2], []),
     "markPickedUp": IDL2.Func([IDL2.Text], [Result2], []),
     "restoreUpgradeState": IDL2.Func([IDL2.Vec(IDL2.Nat8)], [IDL2.Bool], []),
     "revokeDevice": IDL2.Func([DeviceId2], [Result_42], []),
@@ -36752,6 +36756,7 @@ var InvoiceStatus = /* @__PURE__ */ ((InvoiceStatus2) => {
   return InvoiceStatus2;
 })(InvoiceStatus || {});
 var PaymentStatus = /* @__PURE__ */ ((PaymentStatus2) => {
+  PaymentStatus2["expired"] = "expired";
   PaymentStatus2["paid"] = "paid";
   PaymentStatus2["refunded"] = "refunded";
   PaymentStatus2["unpaid"] = "unpaid";
@@ -37240,6 +37245,20 @@ class Backend {
       return result;
     }
   }
+  async markPaymentExpired(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.markPaymentExpired(arg0, arg1);
+        return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.markPaymentExpired(arg0, arg1);
+      return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+    }
+  }
   async markPickedUp(arg0) {
     if (this.processError) {
       try {
@@ -37721,7 +37740,7 @@ function from_candid_variant_n2(_uploadFile, _downloadFile, value) {
   } : value;
 }
 function from_candid_variant_n22(_uploadFile, _downloadFile, value) {
-  return "paid" in value ? "paid" : "refunded" in value ? "refunded" : "unpaid" in value ? "unpaid" : value;
+  return "expired" in value ? "expired" : "paid" in value ? "paid" : "refunded" in value ? "refunded" : "unpaid" in value ? "unpaid" : value;
 }
 function from_candid_variant_n24(_uploadFile, _downloadFile, value) {
   return "cancelled" in value ? "cancelled" : "pending" in value ? "pending" : "completed" in value ? "completed" : "shipping" in value ? "shipping" : "pickedUp" in value ? "pickedUp" : "confirmed" in value ? "confirmed" : value;
@@ -37892,7 +37911,9 @@ function to_candid_variant_n66(_uploadFile, _downloadFile, value) {
   } : value;
 }
 function to_candid_variant_n70(_uploadFile, _downloadFile, value) {
-  return value == "paid" ? {
+  return value == "expired" ? {
+    expired: null
+  } : value == "paid" ? {
     paid: null
   } : value == "refunded" ? {
     refunded: null
@@ -54073,7 +54094,10 @@ function formatTime(ns) {
   }).format(new Date(ms2));
 }
 function isPending(o) {
-  return o.paymentStatus === PaymentStatus.unpaid;
+  return o.paymentStatus === PaymentStatus.unpaid || o.paymentStatus === PaymentStatus.expired;
+}
+function isExpired(o) {
+  return o.paymentStatus === PaymentStatus.expired;
 }
 function isToday(ns) {
   const ms2 = Number(ns) / 1e6;
@@ -54173,6 +54197,7 @@ function PaymentQueue({
             children: sorted.map((order, idx) => {
               const isPaying = payingOrderId === order.orderId;
               const overdue = isOverdue(order.createdAt);
+              const expired = isExpired(order);
               const lateMinutes = Math.floor(
                 elapsedMinutes(order.createdAt) - OVERDUE_MINUTES
               );
@@ -54180,7 +54205,7 @@ function PaymentQueue({
                 "li",
                 {
                   "data-ocid": `queue.item.${idx + 1}`,
-                  className: `rounded-xl border p-4 shadow-sm transition-smooth hover:shadow-md ${overdue ? "border-destructive bg-destructive/10 ring-1 ring-destructive/40" : "border-border bg-card"}`,
+                  className: `rounded-xl border p-4 shadow-sm transition-smooth hover:shadow-md ${expired ? "border-amber-500/60 bg-amber-500/10 ring-1 ring-amber-500/40" : overdue ? "border-destructive bg-destructive/10 ring-1 ring-destructive/40" : "border-border bg-card"}`,
                   children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
@@ -54199,7 +54224,15 @@ function PaymentQueue({
                             ]
                           }
                         ),
-                        overdue && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        expired && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "span",
+                          {
+                            className: "inline-flex items-center rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-amber-50",
+                            "data-ocid": `queue.expired_badge.${idx + 1}`,
+                            children: "QR hết hạn — tạo lại"
+                          }
+                        ),
+                        !expired && overdue && /* @__PURE__ */ jsxRuntimeExports.jsxs(
                           "span",
                           {
                             className: "inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground",
@@ -54263,7 +54296,7 @@ function PaymentQueue({
                               }
                             ),
                             "Đang mở…"
-                          ] }) : "Thanh toán"
+                          ] }) : expired ? "Tạo QR mới" : "Thanh toán"
                         }
                       )
                     ] })
@@ -55432,9 +55465,6 @@ function QRDisplay({ order, onClose, onPaid }) {
         setStatus(s.paymentStatus);
         if (s.paymentStatus === PaymentStatus.paid) {
           setPolling(false);
-          setTimeout(() => {
-            if (!cancelled) onPaid(order);
-          }, 1500);
         }
       } catch {
       }
@@ -55445,7 +55475,12 @@ function QRDisplay({ order, onClose, onPaid }) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [actor, order, polling, onPaid, retryTick]);
+  }, [actor, order, polling, retryTick]);
+  reactExports.useEffect(() => {
+    if (status !== PaymentStatus.paid) return;
+    const id = setTimeout(() => onPaid(order), 1500);
+    return () => clearTimeout(id);
+  }, [status, order, onPaid]);
   const isPaid = status === PaymentStatus.paid;
   const qrReady = qrState.kind === "ready";
   const qrValue = qrState.kind === "ready" ? qrState.qrCode : "";
@@ -57096,7 +57131,8 @@ const BOOKING_MAP = {
 const PAYMENT_MAP = {
   [PaymentStatus.paid]: { variant: "success", label: "Đã thanh toán" },
   [PaymentStatus.unpaid]: { variant: "warning", label: "Chưa thanh toán" },
-  [PaymentStatus.refunded]: { variant: "muted", label: "Đã hoàn tiền" }
+  [PaymentStatus.refunded]: { variant: "muted", label: "Đã hoàn tiền" },
+  [PaymentStatus.expired]: { variant: "destructive", label: "QR hết hạn" }
 };
 const INVOICE_MAP = {
   [InvoiceStatus.none]: { variant: "muted", label: "Chưa có hoá đơn" },

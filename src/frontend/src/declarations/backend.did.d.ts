@@ -108,7 +108,8 @@ export interface OrderStatus {
   'tingeeQrId' : string,
   'invoiceStatus' : InvoiceStatus,
 }
-export type PaymentStatus = { 'paid' : null } |
+export type PaymentStatus = { 'expired' : null } |
+  { 'paid' : null } |
   { 'refunded' : null } |
   { 'unpaid' : null };
 export interface PendingActivation {
@@ -248,6 +249,7 @@ export interface _SERVICE {
   'listPaidOrdersForPickup' : ActorMethod<[], Array<Order>>,
   'listPendingPaymentOrders' : ActorMethod<[string], Array<Order>>,
   'listRestaurants' : ActorMethod<[], Array<Restaurant>>,
+  'markPaymentExpired' : ActorMethod<[string, string], Result>,
   'markPickedUp' : ActorMethod<[string], Result>,
   'restoreUpgradeState' : ActorMethod<[Uint8Array], boolean>,
   'revokeDevice' : ActorMethod<[DeviceId], Result_4>,

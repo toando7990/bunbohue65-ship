@@ -58,7 +58,7 @@ const IDL_FACTORY = ({ IDL }) => {
       pickedUp: IDL.Null, completed: IDL.Null, cancelled: IDL.Null,
     }),
     paymentStatus: IDL.Variant({
-      unpaid: IDL.Null, paid: IDL.Null, refunded: IDL.Null,
+      unpaid: IDL.Null, paid: IDL.Null, refunded: IDL.Null, expired: IDL.Null,
     }),
     invoiceStatus: IDL.Variant({
       none: IDL.Null, invoiced: IDL.Null, failed: IDL.Null,
@@ -104,6 +104,9 @@ const IDL_FACTORY = ({ IDL }) => {
     ),
     updateOrderQr: IDL.Func(
       [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text), IDL.Opt(IDL.Nat64), IDL.Text], [ResultOrder], [],
+    ),
+    markPaymentExpired: IDL.Func(
+      [IDL.Text, IDL.Text], [ResultOrder], [],
     ),
     listPendingPaymentOrders: IDL.Func([IDL.Text], [IDL.Vec(Order)], ['query']),
     cancelOrder: IDL.Func([IDL.Text, IDL.Text], [ResultOrder], []),
@@ -191,6 +194,15 @@ async function updateOrderQr(orderId, qrCode, billId, expireAt) {
   return await actor.updateOrderQr(orderId, qrCodeOpt, billIdOpt, expireAtOpt, hmacSig);
 }
 
+// markPaymentExpired — đánh dấu đơn #expired khi QR động hết hạn chưa thanh toán.
+// HMAC payload: orderId|expired (khớp canister HmacLib.expiredPayload). Sau khi
+// đơn chuyển #expired, tài xế có thể tạo QR mới qua POST /order/:id/qr.
+async function markPaymentExpired(orderId) {
+  const actor = getActor();
+  const hmacSig = hmac.signMarkPaymentExpired(VPS_SECRET, orderId);
+  return await actor.markPaymentExpired(orderId, hmacSig);
+}
+
 // getOrderStatus — query (frontend poll 5s có thể gọi trực tiếp canister,
 // nhưng VPS cũng dùng cho reconciliation).
 async function getOrderStatus(orderId) {
@@ -230,6 +242,6 @@ async function getPaymentMode() {
 
 module.exports = {
   getActor, createOrder, updateStatus, updatePaymentStatus,
-  updateInvoiceStatus, updateOrderQr, getOrderStatus, listPendingPaymentOrders, cancelOrder,
+  updateInvoiceStatus, updateOrderQr, markPaymentExpired, getOrderStatus, listPendingPaymentOrders, cancelOrder,
   getMenuForRestaurant, getPaymentMode,
 };

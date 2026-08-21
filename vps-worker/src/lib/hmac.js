@@ -47,6 +47,13 @@ function signUpdateOrderQr(secret, orderId, qrCode, billId, expireAt) {
   return sign(secret, `${orderId}|${qr}|${bill}|${exp}`);
 }
 
+// markPaymentExpired: orderId|expired
+// Khớp canister HmacLib.expiredPayload(orderId) — dùng khi QR động hết hạn
+// chưa thanh toán để đánh dấu đơn #expired, cho phép tài xế tạo QR mới.
+function signMarkPaymentExpired(secret, orderId) {
+  return sign(secret, `${orderId}|expired`);
+}
+
 module.exports = {
   sign,
   signCreateOrder,
@@ -54,4 +61,5 @@ module.exports = {
   signUpdatePaymentStatus,
   signUpdateInvoiceStatus,
   signUpdateOrderQr,
+  signMarkPaymentExpired,
 };

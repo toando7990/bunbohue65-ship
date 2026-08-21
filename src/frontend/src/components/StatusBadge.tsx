@@ -34,6 +34,7 @@ const PAYMENT_MAP: Record<PaymentStatus, VariantSpec> = {
   [PaymentStatus.paid]: { variant: "success", label: "Đã thanh toán" },
   [PaymentStatus.unpaid]: { variant: "warning", label: "Chưa thanh toán" },
   [PaymentStatus.refunded]: { variant: "muted", label: "Đã hoàn tiền" },
+  [PaymentStatus.expired]: { variant: "destructive", label: "QR hết hạn" },
 };
 
 // Map InvoiceStatus → variant + nhãn tiếng Việt.

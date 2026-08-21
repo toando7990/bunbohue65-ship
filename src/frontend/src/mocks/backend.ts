@@ -59,6 +59,7 @@ export const mockBackend: backendInterface = {
   listPaidOrdersForPickup: async () => [],
   listRestaurants: async () => [],
   markPickedUp: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  markPaymentExpired: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   restoreUpgradeState: async () => false,
   revokeDevice: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   schema: async () => "{}",

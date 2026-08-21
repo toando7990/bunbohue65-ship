@@ -140,7 +140,7 @@ module {
     pruneOldOrders(state);
     let snapshot = state.orders.toArray();
     let pending = snapshot.filter(func((_id, o) : (Text, Order)) : Bool {
-      o.restaurantId == restaurantId and o.paymentStatus == #unpaid;
+      o.restaurantId == restaurantId and (o.paymentStatus == #unpaid or o.paymentStatus == #expired);
     });
     pending.map(func((_id, o) : (Text, Order)) : Order { o });
   };

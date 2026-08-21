@@ -131,6 +131,7 @@ module {
       case (#unpaid) "unpaid";
       case (#paid) "paid";
       case (#refunded) "refunded";
+      case (#expired) "expired";
     };
     orderId # "|" # statusText;
   };
@@ -242,6 +243,38 @@ module {
           invoiceStatus;
           invoiceId;
           pdfUrl;
+          updatedAt = now;
+        };
+        orders.add(orderId, updated);
+        #ok(updated);
+      };
+    };
+  };
+
+  // Canonical payload for an order payment-expiry update:
+  //   orderId | expired
+  // The VPS worker signs this when Tingee get-status-dynamic-qr reports that
+  // the QR passed expire_at while still unpaid, so the canister can set
+  // paymentStatus=#expired and let the driver generate a new QR.
+  public func expiredPayload(orderId : CoreTypes.OrderId) : HmacTypes.Payload {
+    orderId # "|" # "expired";
+  };
+
+  // Apply a payment-expiry update to an order in the store. Sets
+  // paymentStatus=#expired (QR hết hạn chưa thanh toán) so the driver can
+  // generate a new QR. Returns the updated order, or #err if the order id is
+  // unknown. HMAC verification is the mixin's responsibility.
+  public func applyExpired(
+    orders : CoreTypes.OrderStore,
+    orderId : CoreTypes.OrderId,
+    now : Int,
+  ) : Result.Result<CoreTypes.Order, Text> {
+    switch (orders.get(orderId)) {
+      case null { #err("Order not found") };
+      case (?order) {
+        let updated : CoreTypes.Order = {
+          order with
+          paymentStatus = #expired;
           updatedAt = now;
         };
         orders.add(orderId, updated);
