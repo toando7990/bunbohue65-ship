@@ -3,9 +3,11 @@
 // UI tiếng Việt: Báo cáo, Doanh thu, Đơn hàng, Chi nhánh, Tổng doanh thu, Tổng đơn, Chi nhánh hoạt động.
 
 import { BranchTable } from "@/components/BranchTable";
+import { CustomerTable } from "@/components/CustomerTable";
 import { OrdersChart } from "@/components/OrdersChart";
 import { RevenueChart } from "@/components/RevenueChart";
 import { StatCard } from "@/components/StatCard";
+import { TopItemsChart } from "@/components/TopItemsChart";
 import {
   Card,
   CardContent,
@@ -26,11 +28,15 @@ import type { AnalyticsResponse } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import {
   Banknote,
+  Flame,
   Package,
   ShoppingCart,
+  Sparkles,
   Store,
   TrendingUp,
   Truck,
+  UserCheck,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -273,6 +279,65 @@ export function AnalyticsDashboard() {
             </CardHeader>
             <CardContent>
               <BranchTable data={branchData} testId="analytics.branch_table" />
+            </CardContent>
+          </Card>
+
+          {/* Món bán chạy nhất */}
+          <Card data-ocid="analytics.top_items_card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-display">
+                <Flame className="h-4 w-4 text-primary" aria-hidden="true" />
+                Món bán chạy nhất
+              </CardTitle>
+              <CardDescription>
+                Top 10 món theo số lượng bán trong{" "}
+                {RANGE_LABELS[range].toLowerCase()} (không tính đơn đã huỷ).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TopItemsChart
+                data={a?.topItems ?? []}
+                testId="analytics.top_items_chart"
+              />
+            </CardContent>
+          </Card>
+
+          {/* Khách hàng thật (group theo SĐT) — khách mới/quay lại + top chi tiêu */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <StatCard
+              label="Khách mới"
+              value={formatNumber(a?.customers.new ?? 0)}
+              icon={Sparkles}
+              tone="info"
+              hint={`Trên tổng ${formatNumber(a?.customers.total ?? 0)} khách trong khoảng này`}
+              testId="analytics.stat.new_customers"
+            />
+            <StatCard
+              label="Khách quay lại"
+              value={formatNumber(a?.customers.returning ?? 0)}
+              icon={UserCheck}
+              tone="success"
+              hint="Đã từng đặt trước khoảng thời gian này"
+              testId="analytics.stat.returning_customers"
+            />
+          </div>
+
+          <Card data-ocid="analytics.customers_card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-display">
+                <Users className="h-4 w-4 text-primary" aria-hidden="true" />
+                Khách hàng
+              </CardTitle>
+              <CardDescription>
+                Top 10 khách theo tổng chi trong{" "}
+                {RANGE_LABELS[range].toLowerCase()}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CustomerTable
+                data={a?.customers.top ?? []}
+                testId="analytics.customer_table"
+              />
             </CardContent>
           </Card>
         </div>

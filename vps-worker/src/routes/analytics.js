@@ -42,7 +42,9 @@ function dayKey(ms) {
 // Returns AnalyticsResponse:
 //   { totalOrders, totalRevenue, paidOrders, pendingOrders, shippingOrders,
 //     cancelledOrders, averageOrderValue, byRestaurant:[{restaurantId,name,orders,revenue}],
-//     byDay:[{date,orders,revenue}] }
+//     byDay:[{date,orders,revenue}],
+//     topItems:[{itemId,name,quantity,revenue}] (top 10, bán chạy nhất trong range),
+//     customers:{total,new,returning,top:[{phone,name,orderCount,totalSpent}]} }
 router.get('/analytics', (req, res, next) => {
   try {
     const db = req.app.locals.db;
@@ -104,6 +106,67 @@ router.get('/analytics', (req, res, next) => {
       revenue: r.revenue,
     }));
 
+    // topItems — món bán chạy nhất trong range, gộp từ order_items. Loại
+    // đơn đã huỷ (booking_status='cancelled') vì món đó thực tế không được
+    // chuẩn bị/giao. Sắp theo số lượng bán, top 10.
+    const topItemRows = db.prepare(
+      `SELECT oi.item_id AS itemId, oi.name AS name,
+              SUM(oi.quantity) AS quantity,
+              COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue
+       FROM order_items oi
+       JOIN orders o ON o.order_id = oi.order_id
+       WHERE o.created_at >= ? AND o.booking_status != 'cancelled'
+       GROUP BY oi.item_id, oi.name
+       ORDER BY quantity DESC
+       LIMIT 10`,
+    ).all(fromMs);
+    const topItems = topItemRows.map((r) => ({
+      itemId: r.itemId,
+      name: r.name,
+      quantity: r.quantity,
+      revenue: r.revenue,
+    }));
+
+    // customers — khách hàng thật (group theo cus_phone, không phải chi
+    // nhánh). Khách mới = lần đặt ĐẦU TIÊN của họ (xét trên TOÀN BỘ lịch sử,
+    // không chỉ trong range) rơi vào trong range này; khách quay lại = đã
+    // từng đặt trước range. topCustomers: top 10 theo tổng chi trong range.
+    const rangeCustomerRows = db.prepare(
+      `SELECT DISTINCT cus_phone FROM orders WHERE created_at >= ? AND cus_phone != ''`,
+    ).all(fromMs);
+    const rangePhones = rangeCustomerRows.map((r) => r.cus_phone);
+    let newCustomers = 0;
+    let returningCustomers = 0;
+    if (rangePhones.length > 0) {
+      const placeholders = rangePhones.map(() => '?').join(',');
+      const firstOrderRows = db.prepare(
+        `SELECT cus_phone, MIN(created_at) AS first_created_at
+         FROM orders WHERE cus_phone IN (${placeholders})
+         GROUP BY cus_phone`,
+      ).all(...rangePhones);
+      for (const row of firstOrderRows) {
+        if (row.first_created_at >= fromMs) newCustomers++;
+        else returningCustomers++;
+      }
+    }
+    const totalCustomers = rangePhones.length;
+
+    const topCustomerRows = db.prepare(
+      `SELECT cus_phone AS phone, MAX(cus_name) AS name,
+              COUNT(*) AS orderCount, COALESCE(SUM(amount),0) AS totalSpent
+       FROM orders
+       WHERE created_at >= ? AND cus_phone != ''
+       GROUP BY cus_phone
+       ORDER BY totalSpent DESC
+       LIMIT 10`,
+    ).all(fromMs);
+    const topCustomers = topCustomerRows.map((r) => ({
+      phone: r.phone,
+      name: r.name || '',
+      orderCount: r.orderCount,
+      totalSpent: r.totalSpent,
+    }));
+
     res.json({
       totalOrders,
       totalRevenue,
@@ -114,6 +177,13 @@ router.get('/analytics', (req, res, next) => {
       averageOrderValue,
       byRestaurant,
       byDay,
+      topItems,
+      customers: {
+        total: totalCustomers,
+        new: newCustomers,
+        returning: returningCustomers,
+        top: topCustomers,
+      },
     });
   } catch (e) { next(e); }
 });

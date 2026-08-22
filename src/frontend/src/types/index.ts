@@ -130,6 +130,28 @@ export interface AnalyticsResponse {
     orders: number;
     revenue: number;
   }>;
+  // Món bán chạy nhất trong khoảng thời gian, top 10 theo số lượng. Loại
+  // đơn đã huỷ (booking_status='cancelled').
+  topItems: Array<{
+    itemId: string;
+    name: string;
+    quantity: number;
+    revenue: number;
+  }>;
+  // Khách hàng thật (group theo SĐT, không phải chi nhánh). new = lần đặt
+  // đầu tiên của họ (trên toàn bộ lịch sử) rơi vào trong khoảng này;
+  // returning = đã từng đặt trước đó. top: top 10 theo tổng chi trong range.
+  customers: {
+    total: number;
+    new: number;
+    returning: number;
+    top: Array<{
+      phone: string;
+      name: string;
+      orderCount: number;
+      totalSpent: number;
+    }>;
+  };
 }
 
 // Processed dish image — client-side canvas output stored directly on the
