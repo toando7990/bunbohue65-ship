@@ -27,17 +27,8 @@ export function RestaurantSelect({
   onChange,
   disabled,
 }: RestaurantSelectProps) {
-  const selected = restaurants?.find((r) => r.restaurantId === value);
-
   return (
     <div className="flex flex-col gap-1.5" data-ocid="restaurant_select.panel">
-      <label
-        htmlFor="restaurant-select-trigger"
-        className="text-sm font-medium text-foreground"
-      >
-        Chọn nhà hàng
-      </label>
-
       {isLoading ? (
         <Skeleton
           className="h-11 w-full rounded-md"
@@ -82,16 +73,6 @@ export function RestaurantSelect({
           </SelectContent>
         </Select>
       )}
-
-      {selected ? (
-        <p
-          className="flex items-start gap-1 text-xs text-muted-foreground"
-          data-ocid="restaurant_select.selected_address"
-        >
-          <MapPin className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 break-words">{selected.address}</span>
-        </p>
-      ) : null}
     </div>
   );
 }

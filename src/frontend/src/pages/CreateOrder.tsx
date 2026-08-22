@@ -388,10 +388,6 @@ export default function CreateOrder() {
         data-ocid="create_order.page"
       >
         <header className="mb-6 flex flex-col gap-1.5">
-          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[oklch(var(--bbh-gold))]">
-            <UtensilsCrossed className="h-3.5 w-3.5" aria-hidden="true" />
-            Bún Bò Huế 65
-          </span>
           <h1
             className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
             data-ocid="create_order.title"
