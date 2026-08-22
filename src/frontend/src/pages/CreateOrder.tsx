@@ -31,7 +31,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useIsStoreOpen, useMenus, useRestaurants } from "@/hooks/useQueries";
-import { cn } from "@/lib/utils";
+import { cn, imageBytesToDataUrl } from "@/lib/utils";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import {
   create as vpsCreate,
@@ -46,9 +46,10 @@ import {
   Receipt,
   ShoppingCart,
   Sparkles,
+  UtensilsCrossed,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 function formatVnd(value: number): string {
@@ -66,6 +67,39 @@ const EMPTY_CUSTOMER: CustomerFormValues = {
   cusTaxCode: "",
   receiverEmail: "",
 };
+
+// Ảnh thu nhỏ cho từng dòng trong giỏ hàng — giúp khách nhận diện món nhanh
+// hơn khi xem lại giỏ trước khi đặt. Món dụng cụ (không có ảnh) hiện icon mặc định.
+function CartLineThumbnail({ item }: { item: MenuItem }) {
+  const imageUrl = useMemo(() => imageBytesToDataUrl(item.image), [item.image]);
+
+  useEffect(() => {
+    return () => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
+    };
+  }, [imageUrl]);
+
+  return (
+    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md bg-muted">
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+          <UtensilsCrossed className="h-4 w-4" aria-hidden="true" />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CreateOrder() {
   const navigate = useNavigate();
@@ -154,52 +188,58 @@ export default function CreateOrder() {
   const customerErrors: CustomerFormErrors = touched
     ? validateCustomerForm(customer, { hideAddress: true })
     : {};
-  function handleQuantityChange(itemId: string, delta: number) {
-    // Chưa chọn nhà hàng → chặn thêm món, nhắc khách chọn nhà hàng trước (bước 1).
-    if (delta > 0 && !restaurantId) {
-      toast.error("Vui lòng chọn nhà hàng trước khi thêm món.");
-      document
-        .querySelector('[data-ocid="create_order.restaurant_card"]')
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
+  // useCallback: giữ tham chiếu hàm ổn định giữa các lần render để MenuPicker/
+  // MenuCard (React.memo) không phải re-render toàn bộ danh sách món mỗi khi
+  // component cha render lại (ví dụ khi gõ vào ô thông tin khách hàng).
+  const handleQuantityChange = useCallback(
+    (itemId: string, delta: number) => {
+      // Chưa chọn nhà hàng → chặn thêm món, nhắc khách chọn nhà hàng trước (bước 1).
+      if (delta > 0 && !restaurantId) {
+        toast.error("Vui lòng chọn nhà hàng trước khi thêm món.");
+        document
+          .querySelector('[data-ocid="create_order.restaurant_card"]')
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
 
-    const prevQty = cart[itemId] ?? 0;
+      const prevQty = cart[itemId] ?? 0;
 
-    setCart((prev) => {
-      const next = Math.max(0, (prev[itemId] ?? 0) + delta);
-      const copy = { ...prev };
-      if (next === 0) delete copy[itemId];
-      else copy[itemId] = next;
-      return copy;
-    });
+      setCart((prev) => {
+        const next = Math.max(0, (prev[itemId] ?? 0) + delta);
+        const copy = { ...prev };
+        if (next === 0) delete copy[itemId];
+        else copy[itemId] = next;
+        return copy;
+      });
 
-    // Mỗi lần thêm MÓN CHÍNH mới (chưa có trong giỏ trước đó) → gợi ý món phụ.
-    // Lặp lại cho từng món chính khác nhau, không giới hạn 1 lần/phiên.
-    if (delta > 0 && prevQty === 0 && menu) {
-      const addedItem = menu.find((m) => m.itemId === itemId);
-      if (addedItem?.category === "Món chính") {
-        const suggestions = menu
-          .filter(
-            (m) =>
-              m.visible &&
-              m.category === "Món phụ" &&
-              (cart[m.itemId] ?? 0) === 0,
-          )
-          .slice(0, 2);
-        if (suggestions.length > 0) {
-          setUpsellItems(suggestions);
+      // Mỗi lần thêm MÓN CHÍNH mới (chưa có trong giỏ trước đó) → gợi ý món phụ.
+      // Lặp lại cho từng món chính khác nhau, không giới hạn 1 lần/phiên.
+      if (delta > 0 && prevQty === 0 && menu) {
+        const addedItem = menu.find((m) => m.itemId === itemId);
+        if (addedItem?.category === "Món chính") {
+          const suggestions = menu
+            .filter(
+              (m) =>
+                m.visible &&
+                m.category === "Món phụ" &&
+                (cart[m.itemId] ?? 0) === 0,
+            )
+            .slice(0, 2);
+          if (suggestions.length > 0) {
+            setUpsellItems(suggestions);
+          }
         }
       }
-    }
-  }
+    },
+    [restaurantId, cart, menu],
+  );
 
-  function handleCustomerChange<K extends keyof CustomerFormValues>(
-    field: K,
-    value: string,
-  ) {
-    setCustomer((prev) => ({ ...prev, [field]: value }));
-  }
+  const handleCustomerChange = useCallback(
+    <K extends keyof CustomerFormValues>(field: K, value: string) => {
+      setCustomer((prev) => ({ ...prev, [field]: value }));
+    },
+    [],
+  );
 
   // Tự động điền thông tin khách từ email đã xác thực.
   // Khi mở app: đọc email đã xác thực (localStorage) → điền sẵn ô email nhận
@@ -233,21 +273,24 @@ export default function CreateOrder() {
     };
   }, []);
 
-  function handleRestaurantChange(id: string) {
-    if (
-      restaurantId &&
-      id !== restaurantId &&
-      itemCount > 0 &&
-      !window.confirm(
-        "Đổi nhà hàng sẽ xoá các món đã chọn trong giỏ hàng. Tiếp tục?",
-      )
-    ) {
-      return;
-    }
-    setRestaurantId(id);
-    setCart({});
-    setUpsellItems([]);
-  }
+  const handleRestaurantChange = useCallback(
+    (id: string) => {
+      if (
+        restaurantId &&
+        id !== restaurantId &&
+        itemCount > 0 &&
+        !window.confirm(
+          "Đổi nhà hàng sẽ xoá các món đã chọn trong giỏ hàng. Tiếp tục?",
+        )
+      ) {
+        return;
+      }
+      setRestaurantId(id);
+      setCart({});
+      setUpsellItems([]);
+    },
+    [restaurantId, itemCount],
+  );
 
   async function handleSubmit() {
     setTouched(true);
@@ -331,7 +374,11 @@ export default function CreateOrder() {
         className="mx-auto w-full max-w-2xl px-4 py-6 pb-28 md:px-6 md:py-10"
         data-ocid="create_order.page"
       >
-        <header className="mb-6 flex flex-col gap-1">
+        <header className="mb-6 flex flex-col gap-1.5">
+          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[oklch(var(--bbh-gold))]">
+            <UtensilsCrossed className="h-3.5 w-3.5" aria-hidden="true" />
+            Bún Bò Huế 65
+          </span>
           <h1
             className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
             data-ocid="create_order.title"
@@ -518,8 +565,9 @@ export default function CreateOrder() {
                       return (
                         <li
                           key={l.item.itemId}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm"
+                          className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm"
                         >
+                          <CartLineThumbnail item={l.item} />
                           <div className="min-w-0 flex-1">
                             <p className="line-clamp-1 font-medium">
                               {l.item.name}

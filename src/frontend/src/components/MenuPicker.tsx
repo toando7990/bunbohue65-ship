@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, imageBytesToDataUrl } from "@/lib/utils";
 import type { MenuItem } from "@/types";
-import { Minus, Plus, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Minus, Plus, Search, UtensilsCrossed } from "lucide-react";
+import { memo, useEffect, useMemo, useState } from "react";
 
 export interface CartLine {
   itemId: string;
@@ -34,7 +34,7 @@ function formatVnd(value: bigint): string {
   }).format(Number(value));
 }
 
-function MenuCard({
+const MenuCard = memo(function MenuCard({
   item,
   quantity,
   onQuantityChange,
@@ -60,26 +60,36 @@ function MenuCard({
   return (
     <article
       className={cn(
-        "flex gap-3 rounded-lg border border-border bg-card p-3 transition-smooth",
-        quantity > 0 && "border-primary/60 ring-1 ring-primary/30",
+        "flex gap-3 rounded-xl border border-border bg-card p-3 shadow-xs transition-smooth animate-fade-rise",
+        quantity > 0 &&
+          "border-primary/60 bg-primary/[0.03] ring-1 ring-primary/30 shadow-sm",
       )}
       data-ocid={`menu_picker.item.${index}`}
     >
-      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted sm:h-24 sm:w-24">
+      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-28 sm:w-28">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={item.name}
             loading="lazy"
+            decoding="async"
+            width={112}
+            height={112}
             className="h-full w-full object-cover"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-            Ảnh
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-gradient-subtle text-muted-foreground">
+            <UtensilsCrossed className="h-6 w-6" aria-hidden="true" />
+            <span className="text-[10px]">Chưa có ảnh</span>
           </div>
+        )}
+        {quantity > 0 && (
+          <span className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 font-mono text-[11px] font-bold text-primary-foreground shadow-xs">
+            {quantity}
+          </span>
         )}
       </div>
 
@@ -92,60 +102,66 @@ function MenuCard({
             {item.unitName || "phần"}
           </span>
         </div>
-        <p className="font-mono text-sm font-medium text-primary">
+        <p className="font-mono text-base font-bold text-primary">
           {formatVnd(item.price)}
         </p>
+        <span className="text-[11px] text-muted-foreground">
+          Đã gồm VAT {Number(item.vatRate)}%
+        </span>
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-          <span className="text-xs text-muted-foreground">
-            VAT {Number(item.vatRate)}%
-          </span>
-          <div className="flex items-center gap-1.5">
+        <div className="mt-auto flex items-center justify-end pt-1">
+          {quantity <= 0 ? (
             <Button
               type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              aria-label={`Giảm số lượng ${item.name}`}
-              data-ocid={`menu_picker.decrease_button.${index}`}
-              onClick={() => onQuantityChange(item.itemId, -1)}
-              disabled={disabled || quantity <= 0}
-            >
-              <Minus className="h-3.5 w-3.5" aria-hidden="true" />
-            </Button>
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={quantity}
-              onChange={(e) => {
-                const v = Number.parseInt(e.target.value, 10);
-                if (Number.isFinite(v) && v >= 0) {
-                  onQuantityChange(item.itemId, v - quantity);
-                }
-              }}
-              aria-label={`Số lượng ${item.name}`}
-              data-ocid={`menu_picker.quantity_input.${index}`}
-              className="h-8 w-14 px-2 text-center font-mono text-sm"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              aria-label={`Tăng số lượng ${item.name}`}
+              size="sm"
+              className="h-11 min-w-[88px] gap-1.5 rounded-full bg-gradient-primary px-4 text-primary-foreground"
+              aria-label={`Thêm ${item.name}`}
               data-ocid={`menu_picker.increase_button.${index}`}
               onClick={() => onQuantityChange(item.itemId, 1)}
               disabled={disabled}
             >
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Thêm
             </Button>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-11 w-11 shrink-0 rounded-full"
+                aria-label={`Giảm số lượng ${item.name}`}
+                data-ocid={`menu_picker.decrease_button.${index}`}
+                onClick={() => onQuantityChange(item.itemId, -1)}
+                disabled={disabled}
+              >
+                <Minus className="h-4 w-4" aria-hidden="true" />
+              </Button>
+              <span
+                className="w-5 text-center font-mono text-base font-semibold"
+                data-ocid={`menu_picker.quantity_value.${index}`}
+              >
+                {quantity}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-11 w-11 shrink-0 rounded-full border-primary/40 text-primary"
+                aria-label={`Tăng số lượng ${item.name}`}
+                data-ocid={`menu_picker.increase_button.${index}`}
+                onClick={() => onQuantityChange(item.itemId, 1)}
+                disabled={disabled}
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </article>
   );
-}
+});
 
 export function MenuPicker({
   menu,
@@ -192,7 +208,7 @@ export function MenuPicker({
         data-ocid="menu_picker.loading_state"
       >
         {Array.from({ length: 4 }, (_, i) => `skel-${i}`).map((id) => (
-          <Skeleton key={id} className="h-28 w-full rounded-lg" />
+          <Skeleton key={id} className="h-32 w-full rounded-xl" />
         ))}
       </div>
     );
@@ -229,7 +245,7 @@ export function MenuPicker({
             placeholder="Tìm món ăn…"
             aria-label="Tìm món ăn"
             data-ocid="menu_picker.search_input"
-            className="h-10 pl-9"
+            className="h-11 rounded-full pl-9"
           />
         </div>
       </div>
