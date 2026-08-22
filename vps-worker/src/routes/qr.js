@@ -20,6 +20,7 @@
 const express = require('express');
 const tingee = require('../lib/tingee');
 const canister = require('../lib/canister');
+const { normalizePickupCode } = require('../lib/pickup-code');
 const { rateLimit } = require('../middleware/rate-limit');
 
 const router = express.Router();
@@ -67,19 +68,50 @@ function classifyTingeeError(err) {
 }
 
 // POST /order/:id/qr
+// Body: { pickupCode?: string } — mã 6 ký tự khách báo cho tài xế, tài xế
+// đọc cho nhân viên quán khi đến lấy hàng.
+//
+// Endpoint này dùng CHUNG cho 2 luồng khác nhau (payment mode admin cấu
+// hình — xem AdminPanel "Chế độ thanh toán"):
+//   - "driver" mode: nhân viên quán bấm "Thanh toán" trên "Hàng đợi thanh
+//     toán" (PaymentQueue/QRDisplay). Luồng này LUÔN gửi kèm pickupCode.
+//   - "customer" mode: chính khách tự bấm "Thanh toán" trên thẻ đơn của họ
+//     (QrPayment/OrderCard) để tự thanh toán — không có khái niệm "tài xế
+//     chưa đến", nên luồng này KHÔNG gửi pickupCode.
+// → Chỉ kiểm tra pickupCode khi request THỰC SỰ CÓ gửi field này lên (tức
+// đến từ luồng "driver" mode); nếu không gửi (luồng "customer" mode) thì bỏ
+// qua bước kiểm tra hoàn toàn, giữ nguyên hành vi cũ. Đơn cũ tạo trước khi
+// có tính năng này (pickup_code rỗng) cũng được bỏ qua bước kiểm tra.
 router.post('/order/:id/qr', async (req, res, next) => {
   try {
     const db = req.app.locals.db;
     const orderId = req.params.id;
     const nowSec = Math.floor(Date.now() / 1000);
+    const rawSubmittedCode = (req.body || {}).pickupCode;
+    const codeWasProvided =
+      rawSubmittedCode !== undefined &&
+      rawSubmittedCode !== null &&
+      String(rawSubmittedCode).trim() !== '';
+    const submittedCode = normalizePickupCode(rawSubmittedCode);
 
     const row = db.prepare(
       `SELECT order_id, amount, tingee_qr_id, tingee_qr_account, tingee_bill_id,
-              tingee_qr_code, expire_at
+              tingee_qr_code, expire_at, pickup_code
        FROM orders WHERE order_id = ?`,
     ).get(orderId);
     if (!row) {
       return res.status(404).json({ ok: false, retryable: false, message: 'Không tìm thấy đơn hàng.' });
+    }
+
+    // Cổng "Mã nhận hàng" — chỉ áp dụng khi caller có gửi pickupCode (luồng
+    // "Hàng đợi thanh toán"). Bắt buộc trước mọi hành động bên dưới, kể cả
+    // nhánh idempotent trả QR còn hạn.
+    if (codeWasProvided && row.pickup_code && row.pickup_code !== submittedCode) {
+      return res.status(401).json({
+        ok: false,
+        retryable: true,
+        message: 'Mã nhận hàng không đúng. Vui lòng hỏi lại tài xế và nhập lại.',
+      });
     }
 
     // Idempotency: QR còn hạn (now < expire_at) → trả QR hiện có, không tạo

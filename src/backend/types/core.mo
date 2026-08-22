@@ -64,6 +64,14 @@ module {
     cusAddress : Text;
     cusTaxCode : Text;
     receiverEmail : Text;
+    // Mã 6 ký tự (chữ hoa + số, loại bỏ ký tự dễ nhầm 0/O 1/I), sinh ngẫu
+    // nhiên phía VPS lúc tạo đơn. Khách xem/copy trong "Theo dõi đơn" và tự
+    // báo cho tài xế (gọi điện, nhắn tin...) — tài xế đọc mã này cho nhân
+    // viên quán khi đến lấy hàng, thay cho việc nhân viên tự bấm "Thanh
+    // toán" mà không chắc tài xế đã thực sự có mặt. listPendingPaymentOrders
+    // (Hàng đợi thanh toán) PHẢI ẩn field này khỏi mọi caller không phải
+    // admin — xem core-api.mo.
+    pickupCode : Text;
     items : [OrderItem];
     amount : Nat;
     goodsAmount : Nat;

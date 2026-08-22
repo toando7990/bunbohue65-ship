@@ -85,13 +85,17 @@ mixin (
   // mixins/core-api.mo but is renamed to avoid a duplicate-definition
   // collision when both mixins are included in the same actor block in
   // main.mo. cusName and cusPhone are preserved so drivers can identify
-  // customers at pickup; all non-PII fields are preserved.
+  // customers at pickup; all non-PII fields are preserved. pickupCode is
+  // also blanked here for defense-in-depth (payment already happened by the
+  // time an order reaches this queue, but there is no reason a non-admin
+  // pickup device needs it either).
   func sanitizePiiLocal(o : CoreTypes.Order) : CoreTypes.Order {
     {
       o with
       cusAddress = "";
       cusTaxCode = "";
       receiverEmail = "";
+      pickupCode = "";
     };
   };
 };

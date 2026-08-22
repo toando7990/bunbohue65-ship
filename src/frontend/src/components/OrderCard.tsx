@@ -5,9 +5,21 @@
 
 import { StatusBadge } from "@/components/StatusBadge";
 import { useRestaurants } from "@/hooks/useQueries";
-import type { BookingStatus, Order, PaymentStatus } from "@/types";
+import { PaymentStatus } from "@/types";
+import type {
+  BookingStatus,
+  Order,
+  PaymentStatus as PaymentStatusType,
+} from "@/types";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, Copy, MapPin, Receipt } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Copy,
+  KeyRound,
+  MapPin,
+  Receipt,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -152,9 +164,38 @@ export function OrderCard({ order, index }: OrderCardProps) {
           </div>
         )}
 
+        {/* Mã nhận hàng — khách tự báo cho tài xế (gọi điện, nhắn tin...),
+            tài xế đọc lại cho nhân viên quán khi đến lấy hàng để xác nhận
+            thanh toán. Chỉ hiện khi đơn còn cần thanh toán — hết tác dụng
+            sau khi đã #paid nên ẩn đi cho gọn. */}
+        {order.pickupCode && order.paymentStatus !== PaymentStatus.paid && (
+          <div className="mt-3 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2">
+            <KeyRound
+              className="h-4 w-4 shrink-0 text-primary"
+              aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] text-muted-foreground">
+                Mã nhận hàng — báo tài xế khi đến lấy hàng
+              </p>
+              <p
+                className="font-mono text-base font-bold tracking-[0.2em] text-foreground"
+                data-ocid={`order.card.${index}.pickup_code`}
+              >
+                {order.pickupCode}
+              </p>
+            </div>
+            <CopyButton
+              value={order.pickupCode}
+              label="mã nhận hàng"
+              ocid={`order.card.${index}.copy_pickup_code_button`}
+            />
+          </div>
+        )}
+
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <StatusBadge status={order.bookingStatus as BookingStatus} />
-          <StatusBadge status={order.paymentStatus as PaymentStatus} />
+          <StatusBadge status={order.paymentStatus as PaymentStatusType} />
         </div>
 
         <ul className="mt-3 divide-y divide-border border-t border-border">

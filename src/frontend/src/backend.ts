@@ -251,6 +251,7 @@ export interface Order {
     updatedAt: bigint;
     bookingStatus: BookingStatus;
     receiverEmail: string;
+    pickupCode: string;
     expireAt?: bigint;
     pdfUrl: string;
     tingeeQrId: string;
@@ -354,7 +355,7 @@ export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
-    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, hmac: string): Promise<Result>;
+    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, hmac: string): Promise<Result>;
     deleteItem(itemId: string): Promise<Result_3>;
     deleteRestaurant(restaurantId: string): Promise<Result_3>;
     execute(qJson: string): Promise<Result__1>;
@@ -540,17 +541,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async createOrder(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: Array<OrderItem>, arg8: bigint, arg9: bigint, arg10: bigint, arg11: bigint, arg12: string, arg13: string, arg14: string, arg15: string, arg16: string): Promise<Result> {
+    async createOrder(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: Array<OrderItem>, arg8: bigint, arg9: bigint, arg10: bigint, arg11: bigint, arg12: string, arg13: string, arg14: string, arg15: string, arg16: string, arg17: string): Promise<Result> {
         if (this.processError) {
             try {
-                const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16);
+                const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17);
                 return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16);
+            const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17);
             return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -1267,6 +1268,7 @@ function from_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uin
     updatedAt: bigint;
     bookingStatus: _BookingStatus;
     receiverEmail: string;
+    pickupCode: string;
     expireAt: [] | [bigint];
     pdfUrl: string;
     tingeeQrId: string;
@@ -1294,6 +1296,7 @@ function from_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uin
     updatedAt: bigint;
     bookingStatus: BookingStatus;
     receiverEmail: string;
+    pickupCode: string;
     expireAt?: bigint;
     pdfUrl: string;
     tingeeQrId: string;
@@ -1322,6 +1325,7 @@ function from_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uin
         updatedAt: value.updatedAt,
         bookingStatus: from_candid_BookingStatus_n23(_uploadFile, _downloadFile, value.bookingStatus),
         receiverEmail: value.receiverEmail,
+        pickupCode: value.pickupCode,
         expireAt: record_opt_to_undefined(from_candid_opt_n25(_uploadFile, _downloadFile, value.expireAt)),
         pdfUrl: value.pdfUrl,
         tingeeQrId: value.tingeeQrId,

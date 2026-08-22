@@ -11,7 +11,7 @@ import { useGetOrder, useRestaurants } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
 import { getInvoice } from "@/lib/vps-client";
 import type { Order, OrderStatus } from "@/types";
-import { BookingStatus, InvoiceStatus, type PaymentStatus } from "@/types";
+import { BookingStatus, InvoiceStatus, PaymentStatus } from "@/types";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   AlertCircle,
@@ -22,6 +22,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  KeyRound,
   Loader2,
   MapPin,
   RefreshCw,
@@ -390,6 +391,33 @@ function OrderStatusView({
           </p>
 
           <div className="mt-4 space-y-4">
+            {/* Mã nhận hàng — báo cho tài xế bằng cách của bạn (gọi điện,
+                nhắn tin...); tài xế đọc lại cho nhân viên quán khi đến lấy
+                hàng để xác nhận thanh toán. Ẩn sau khi đã thanh toán xong. */}
+            {order.pickupCode && payment !== PaymentStatus.paid && (
+              <div className="flex items-start justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 p-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <KeyRound
+                      className="h-3.5 w-3.5 shrink-0 text-primary"
+                      aria-hidden="true"
+                    />
+                    Mã nhận hàng — báo tài xế khi đến lấy hàng
+                  </p>
+                  <p
+                    className="mt-1 font-mono text-lg font-bold tracking-[0.2em] text-foreground"
+                    data-ocid="order_tracker.pickup_code"
+                  >
+                    {order.pickupCode}
+                  </p>
+                </div>
+                <CopyButton
+                  value={order.pickupCode}
+                  label="Sao chép mã nhận hàng"
+                />
+              </div>
+            )}
+
             {/* Địa chỉ nhà hàng */}
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

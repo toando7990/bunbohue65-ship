@@ -27,10 +27,11 @@ mixin (
   // --- Orders (VPS push, HMAC-verified; not public to end users) ---
   // createOrder is invoked by the VPS worker with an HMAC over
   // orderId|restaurantId|amount|goodsAmount. The HMAC payload MUST NOT change
-  // when adding the new tingeeQrCode parameter — tingeeQrCode is placed AFTER
+  // when adding new parameters — tingeeQrCode and pickupCode are placed AFTER
   // sharedLink and BEFORE hmac so the existing HMAC computation is untouched.
   // On success a new Order is created with bookingStatus=#confirmed,
-  // paymentStatus=#unpaid, invoiceStatus=#none, and tingeeQrCode stored as-is.
+  // paymentStatus=#unpaid, invoiceStatus=#none, and tingeeQrCode/pickupCode
+  // stored as-is.
   public shared func createOrder(
     orderId : Text,
     restaurantId : Text,
@@ -48,9 +49,10 @@ mixin (
     tingeeQrId : Text,
     sharedLink : Text,
     tingeeQrCode : Text,
+    pickupCode : Text,
     hmac : Text,
   ) : async Result.Result<CoreTypes.Order, Text> {
-    // Canonical HMAC payload — UNCHANGED by the tingeeQrCode addition.
+    // Canonical HMAC payload — UNCHANGED by the tingeeQrCode/pickupCode additions.
     let payload : HmacTypes.Payload = orderId # "|" # restaurantId # "|" # amount.toText() # "|" # goodsAmount.toText();
     if (not HmacLib.verifyHmac(state.secretState.vpsSecret, state.secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
@@ -67,6 +69,7 @@ mixin (
       cusAddress;
       cusTaxCode;
       receiverEmail;
+      pickupCode;
       items;
       amount;
       goodsAmount;
@@ -133,9 +136,11 @@ mixin (
   };
 
   // List pending-payment orders for a restaurant. Admin sees the full records
-  // WITH PII; non-admin/anonymous callers (the driver DriverPaymentScreen flow)
-  // get the records with PII fields blanked so the flow keeps working without
-  // leaking customer PII.
+  // WITH PII. Non-admin/anonymous callers (the staff/driver PaymentQueue
+  // device flow) get PII blanked AND pickupCode blanked — the whole point of
+  // pickupCode is that the "Hàng đợi thanh toán" screen must NOT be able to
+  // read it (staff must get it verbally from whoever is physically picking up
+  // the order), so it is stripped server-side here, not just hidden in the UI.
   public shared ({ caller }) func listPendingPaymentOrders(
     restaurantId : Text,
   ) : async [CoreTypes.Order] {
@@ -143,7 +148,7 @@ mixin (
     if (AccessControl.isAdmin(accessControlState, caller)) {
       raw;
     } else {
-      raw.map(func(o : CoreTypes.Order) : CoreTypes.Order = sanitizePii(o));
+      raw.map(func(o : CoreTypes.Order) : CoreTypes.Order = hidePickupCode(sanitizePii(o)));
     };
   };
 
@@ -177,6 +182,16 @@ mixin (
       cusTaxCode = "";
       receiverEmail = "";
     };
+  };
+
+  // Blank pickupCode specifically. NOT part of sanitizePii, because
+  // listOrders/getOrder/getOrdersByEmail (the customer-facing reads) must
+  // KEEP pickupCode visible — the customer needs to see and copy it. Only
+  // listPendingPaymentOrders (the "Hàng đợi thanh toán" staff/driver-device
+  // screen) calls this, so the code can only be learned by asking whoever is
+  // physically present with the pickup, not by reading it off that screen.
+  func hidePickupCode(o : CoreTypes.Order) : CoreTypes.Order {
+    { o with pickupCode = "" };
   };
 
   // Update an existing order's QR fields (billId, qrCode, expireAt). Invoked by

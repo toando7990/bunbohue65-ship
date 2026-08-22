@@ -55,7 +55,7 @@ const ANALYTICS_API_KEY = import.meta.env.VITE_ANALYTICS_API_KEY ?? "";
 
 const DEFAULT_TIMEOUT_MS = 15000;
 
-class VpsHttpError extends Error {
+export class VpsHttpError extends Error {
   status: number;
   body: unknown;
   constructor(status: number, body: unknown, message?: string) {
@@ -182,10 +182,19 @@ export async function getInvoice(orderId: string): Promise<InvoiceResponse> {
 // (now < expireAt) the VPS returns it unchanged (reused=true) without creating
 // a new Tingee bill. The frontend never polls getDynamicQrStatus — it only
 // polls the canister getOrderStatus for payment state.
-export async function requestQr(orderId: string): Promise<RequestQrResponse> {
+//
+// pickupCode: chỉ truyền khi gọi từ luồng "Hàng đợi thanh toán" (nhân viên
+// quán nhập mã tài xế đọc cho nghe) — VPS chỉ kiểm tra khi field này CÓ mặt
+// trong request, nên bỏ trống (undefined) giữ nguyên hành vi tự thanh toán
+// của khách (QrPayment/OrderCard) như trước, không cần nhập mã.
+export async function requestQr(
+  orderId: string,
+  pickupCode?: string,
+): Promise<RequestQrResponse> {
   return vpsFetch<RequestQrResponse>({
     method: "POST",
     path: `/order/${encodeURIComponent(orderId)}/qr`,
+    body: pickupCode !== undefined ? { pickupCode } : undefined,
   });
 }
 

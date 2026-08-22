@@ -77,6 +77,7 @@ export interface Order {
   'updatedAt' : bigint,
   'bookingStatus' : BookingStatus,
   'receiverEmail' : string,
+  'pickupCode' : string,
   'expireAt' : [] | [bigint],
   'pdfUrl' : string,
   'tingeeQrId' : string,

@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS orders (
   shared_link         TEXT NOT NULL DEFAULT '',
   invoice_id          TEXT NOT NULL DEFAULT '',
   pdf_url             TEXT NOT NULL DEFAULT '',        -- link PDF hóa đơn từ Bkav (CmdType 816)
+  pickup_code         TEXT NOT NULL DEFAULT '',        -- mã 6 ký tự khách báo tài xế đọc cho quán khi thanh toán
   booking_status      TEXT NOT NULL DEFAULT 'confirmed',  -- pending|confirmed|shipping|completed|cancelled
   payment_status      TEXT NOT NULL DEFAULT 'unpaid',     -- unpaid|paid|refunded|expired
   invoice_status      TEXT NOT NULL DEFAULT 'none',      -- none|invoiced|failed
@@ -157,6 +158,16 @@ function initSchema(db) {
   // bill Tingee mới (tránh code=1001 rate limit).
   if (!colNames.has('expire_at')) {
     db.exec("ALTER TABLE orders ADD COLUMN expire_at INTEGER");
+  }
+  // pickup_code: mã 6 ký tự (chữ hoa + số, không có 0/O 1/I) sinh lúc tạo
+  // đơn. Khách xem trong "Theo dõi đơn", tự báo tài xế bằng ngoài luồng
+  // (gọi điện, nhắn tin...). Tài xế đọc mã này cho nhân viên quán khi đến
+  // lấy hàng — POST /order/:id/qr yêu cầu khớp mã này trước khi tạo QR
+  // Tingee, để nhân viên không tự bấm "Thanh toán" khi tài xế chưa thực sự
+  // có mặt. KHÔNG bao giờ trả field này qua listPendingPaymentOrders phía
+  // canister (xem core-api.mo hidePickupCode).
+  if (!colNames.has('pickup_code')) {
+    db.exec("ALTER TABLE orders ADD COLUMN pickup_code TEXT NOT NULL DEFAULT ''");
   }
 }
 

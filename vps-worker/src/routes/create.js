@@ -17,6 +17,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const canister = require('../lib/canister');
+const { generatePickupCode } = require('../lib/pickup-code');
 const { rateLimit } = require('../middleware/rate-limit');
 
 const router = express.Router();
@@ -36,6 +37,9 @@ router.post('/order/create', async (req, res, next) => {
     } = body;
     const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const now = Date.now();
+    // Mã 6 ký tự khách xem trong "Theo dõi đơn" và tự báo cho tài xế —
+    // xem lib/pickup-code.js. Sinh 1 lần lúc tạo đơn, không đổi sau đó.
+    const pickupCode = generatePickupCode();
 
     // Validate required fields.
     if (!restaurantId || !cusName || !cusPhone || !Array.isArray(items) || items.length === 0) {
@@ -68,16 +72,17 @@ router.post('/order/create', async (req, res, next) => {
       INSERT INTO orders (order_id, restaurant_id, cus_name, cus_phone, cus_address, cus_tax_code,
         receiver_email, amount, goods_amount, shipping_fee, tax_total,
         ahamove_order_id, tingee_qr_id, tingee_qr_account, tingee_bill_id, tingee_qr_code, shared_link,
-        booking_status, payment_status, invoice_status, canister_synced, created_at, updated_at)
+        pickup_code, booking_status, payment_status, invoice_status, canister_synced, created_at, updated_at)
       VALUES (@orderId, @restaurantId, @cusName, @cusPhone, @cusAddress, @cusTaxCode,
         @receiverEmail, @amount, @goodsAmount, @shippingFee, @taxTotal,
         @ahamoveOrderId, @tingeeQrId, @tingeeQrAccount, @tingeeBillId, @tingeeQrCode, @sharedLink,
-        @bookingStatus, 'unpaid', 'none', 0, @now, @now)
+        @pickupCode, @bookingStatus, 'unpaid', 'none', 0, @now, @now)
     `);
     insertOrder.run({
       orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
       receiverEmail: receiverEmail || '', amount, goodsAmount, shippingFee, taxTotal,
-      ahamoveOrderId, tingeeQrId, tingeeQrAccount, tingeeBillId, tingeeQrCode, sharedLink, bookingStatus, now,
+      ahamoveOrderId, tingeeQrId, tingeeQrAccount, tingeeBillId, tingeeQrCode, sharedLink,
+      pickupCode, bookingStatus, now,
     });
     const insertItem = db.prepare(`
       INSERT INTO order_items (order_id, item_id, name, price, quantity, unit_name, vat_rate)
@@ -115,7 +120,7 @@ router.post('/order/create', async (req, res, next) => {
       const result = await canister.createOrder({
         orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
         receiverEmail: receiverEmail || '', items, amount, goodsAmount, shippingFee, taxTotal,
-        ahamoveOrderId, tingeeQrId, sharedLink, tingeeQrCode,
+        ahamoveOrderId, tingeeQrId, sharedLink, tingeeQrCode, pickupCode,
       });
       if (result?.ok) {
         db.prepare(`UPDATE orders SET canister_synced = 1, updated_at = ? WHERE order_id = ?`)

@@ -205,6 +205,7 @@ export interface Order {
     updatedAt: bigint;
     bookingStatus: BookingStatus;
     receiverEmail: string;
+    pickupCode: string;
     expireAt?: bigint;
     pdfUrl: string;
     tingeeQrId: string;
@@ -305,7 +306,7 @@ export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
-    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, hmac: string): Promise<Result>;
+    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, hmac: string): Promise<Result>;
     deleteItem(itemId: string): Promise<Result_3>;
     deleteRestaurant(restaurantId: string): Promise<Result_3>;
     execute(qJson: string): Promise<Result__1>;

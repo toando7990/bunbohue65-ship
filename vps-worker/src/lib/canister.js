@@ -48,6 +48,7 @@ const IDL_FACTORY = ({ IDL }) => {
     cusAddress: IDL.Text,
     cusTaxCode: IDL.Text,
     receiverEmail: IDL.Text,
+    pickupCode: IDL.Text,
     items: IDL.Vec(OrderItem),
     amount: IDL.Nat,
     goodsAmount: IDL.Nat,
@@ -90,7 +91,7 @@ const IDL_FACTORY = ({ IDL }) => {
     createOrder: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text,
        IDL.Vec(OrderItem), IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat,
-       IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+       IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [ResultOrder], [],
     ),
     updateStatus: IDL.Func(
@@ -153,7 +154,8 @@ async function createOrder(order) {
     })),
     BigInt(amountInt), BigInt(goodsAmountInt),
     BigInt(shippingFeeInt), BigInt(taxTotalInt),
-    order.ahamoveOrderId, order.tingeeQrId, order.sharedLink, order.tingeeQrCode, hmacSig,
+    order.ahamoveOrderId, order.tingeeQrId, order.sharedLink, order.tingeeQrCode,
+    order.pickupCode || '', hmacSig,
   );
   return result; // { ok } | { err }
 }

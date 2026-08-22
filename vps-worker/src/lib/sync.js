@@ -78,6 +78,7 @@ function startRetryQueue(db) {
             shippingFee: row.shipping_fee, taxTotal: row.tax_total,
             ahamoveOrderId: row.ahamove_order_id, tingeeQrId: row.tingee_qr_id,
             sharedLink: row.shared_link, tingeeQrCode: row.tingee_qr_code,
+            pickupCode: row.pickup_code,
           });
           if (result?.ok) {
             db.prepare(`UPDATE orders SET canister_synced = 1, updated_at = ? WHERE order_id = ?`)
