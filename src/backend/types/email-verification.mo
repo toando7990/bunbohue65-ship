@@ -18,7 +18,9 @@ module {
     codeHash : Blob;
     // Expiry timestamp (nanoseconds since epoch). OTPs are valid for 15 min.
     expiresAt : Int;
-    // Number of codes sent to this email so far. Anti-spam: capped at 3.
+    // Number of codes sent to this email so far — kept for observability
+    // only; sending is not rate-limited (customers can always request a
+    // fresh code).
     sendCount : Nat;
     // True once the email has been successfully verified.
     verified : Bool;
@@ -29,7 +31,7 @@ module {
 
   // Result of sendVerificationCode. #ok when a fresh OTP was generated and the
   // transactional email was dispatched; #err carries a clear message (e.g. the
-  // anti-spam rate limit was exceeded).
+  // email dispatch itself failed). Sending is not rate-limited.
   public type SendCodeResult = {
     #ok;
     #err : Text;

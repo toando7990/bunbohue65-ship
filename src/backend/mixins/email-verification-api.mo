@@ -10,9 +10,9 @@ import EmailVerificationTypes "../types/email-verification";
 // generated code is passed to the email client; only its hash is persisted.
 mixin (state : EmailVerificationLib.State) {
   // Generate a 6-digit OTP for `email`, store it (hashed) with a 15-minute
-  // expiry, enforce the max-3-sends anti-spam cap, and send the code via the
-  // transactional email extension. Returns #ok on success or #err when the
-  // rate limit is exceeded or the email dispatch fails.
+  // expiry, and send the code via the transactional email extension. Sending
+  // is not rate-limited — customers can always request a fresh code.
+  // Returns #ok on success or #err when the email dispatch fails.
   public shared func sendVerificationCode(email : EmailVerificationTypes.Email) : async EmailVerificationTypes.SendCodeResult {
     let code = EmailVerificationLib.generateCode();
     switch (EmailVerificationLib.sendVerificationCode(state, email, code)) {

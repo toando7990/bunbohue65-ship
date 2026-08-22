@@ -343,6 +343,8 @@ export function useSetStoreHours() {
 }
 
 // Whether the store is currently open (drives the waiting/closed screen).
+// Polls every 30s so the closed screen automatically unlocks the moment the
+// store's opening time passes, without the customer needing to refresh.
 export function useIsStoreOpen() {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
@@ -351,5 +353,6 @@ export function useIsStoreOpen() {
     enabled: !!actor && !isFetching,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 }

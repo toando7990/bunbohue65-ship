@@ -47,17 +47,15 @@ module {
     Sha256.fromBlob(#sha256, code.encodeUtf8());
   };
 
-  // Issue a new OTP for `email`: enforce the 3-send anti-spam cap, store the
-  // given `code`'s hash with a 15-minute expiry, and increment the send count.
-  // Returns #err("...") when the rate limit is exceeded.
+  // Issue a new OTP for `email`: store the given `code`'s hash with a
+  // 15-minute expiry and increment the send count (kept for observability
+  // only — sending is not capped, so customers can always request a fresh
+  // code, e.g. if an earlier email was lost or delayed).
   public func sendVerificationCode(state : State, email : Email, code : Text) : SendCodeResult {
     let normalized = email.toLower();
     let prevCount = switch (state.get(normalized)) {
       case (?record) record.sendCount;
       case null 0;
-    };
-    if (prevCount >= 3) {
-      return #err("Đã đạt giới hạn 3 lần gửi mã xác nhận cho email này. Vui lòng thử lại sau.");
     };
     let record : OtpRecord = {
       email = normalized;

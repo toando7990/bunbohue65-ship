@@ -30,7 +30,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useIsStoreOpen, useMenus, useRestaurants } from "@/hooks/useQueries";
+import { useOpenCountdown } from "@/hooks/useOpenCountdown";
+import {
+  useGetStoreHours,
+  useIsStoreOpen,
+  useMenus,
+  useRestaurants,
+} from "@/hooks/useQueries";
 import { cn, imageBytesToDataUrl } from "@/lib/utils";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import {
@@ -108,6 +114,13 @@ export default function CreateOrder() {
   // đóng → chặn đặt đơn và hiện màn hình chờ thay vì cho phép chọn món.
   const { data: storeOpen } = useIsStoreOpen();
   const storeClosed = storeOpen === false;
+  const { data: storeHours } = useGetStoreHours();
+  const openHourNum = storeHours ? Number(storeHours.openHour) : undefined;
+  const openMinuteNum = storeHours ? Number(storeHours.openMinute) : undefined;
+  const { formatted: countdownText } = useOpenCountdown(
+    storeClosed ? openHourNum : undefined,
+    storeClosed ? openMinuteNum : undefined,
+  );
 
   const [restaurantId, setRestaurantId] = useState<string>("");
   // Menu dùng chung cho toàn bộ chuỗi nhà hàng — hiện ngay từ đầu, không phụ thuộc
@@ -393,19 +406,42 @@ export default function CreateOrder() {
 
         {storeClosed ? (
           <div
-            className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-primary/5 px-6 py-12 text-center"
+            className="flex flex-col items-center gap-5 rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-sm"
             data-ocid="create_order.closed_state"
           >
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary animate-pulse-soft">
               <Clock className="h-7 w-7" aria-hidden="true" />
             </span>
-            <h2 className="font-display text-xl font-bold text-foreground">
-              Cửa hàng đang đóng
-            </h2>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              Hiện tại ngoài giờ mở cửa nên bạn chưa thể đặt món. Vui lòng quay
-              lại trong giờ hoạt động của cửa hàng để đặt hàng.
-            </p>
+            <div>
+              <h2 className="font-display text-xl font-bold text-foreground">
+                Cửa hàng đang đóng
+              </h2>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                Hiện tại ngoài giờ mở cửa nên bạn chưa thể đặt món. Trang sẽ tự
+                mở khoá ngay khi đến giờ hoạt động.
+              </p>
+            </div>
+
+            {openHourNum !== undefined && openMinuteNum !== undefined && (
+              <div
+                className="flex flex-col items-center gap-2 rounded-2xl bg-secondary/60 px-6 py-5"
+                data-ocid="create_order.closed_countdown"
+              >
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Mở cửa sau
+                </span>
+                <span className="font-mono text-4xl font-bold tabular-nums text-[oklch(var(--bbh-gold))]">
+                  {countdownText}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Giờ mở cửa hằng ngày:{" "}
+                  <span className="font-medium text-foreground">
+                    {String(openHourNum).padStart(2, "0")}:
+                    {String(openMinuteNum).padStart(2, "0")}
+                  </span>
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <>
