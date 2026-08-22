@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Truck,
   UtensilsCrossed,
+  Video,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
@@ -22,6 +23,7 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { to: "/", label: "Đặt món", icon: UtensilsCrossed },
   { to: "/track", label: "Theo dõi đơn", icon: Truck },
+  { to: "/grab-guide", label: "Hướng dẫn đặt Grab giao hàng", icon: Video },
 ];
 const ADMIN_NAV: NavItem[] = [
   { to: "/admin", label: "Quản lý", icon: ShieldCheck, adminOnly: true },

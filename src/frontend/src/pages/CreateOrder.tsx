@@ -427,8 +427,8 @@ export default function CreateOrder() {
             Đặt món
           </h1>
           <p className="text-sm text-muted-foreground">
-            Chọn nhà hàng, chọn món, nhập tên + SĐT — đặt đơn rồi thanh toán QR
-            và tự đặt Grab Express nhận hàng.
+            Chọn nhà hàng, chọn món, nhập tên + SĐT — đặt đơn và tự đặt tài xế
+            nhận hàng.
           </p>
         </header>
 
