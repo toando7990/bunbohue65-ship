@@ -1,8 +1,8 @@
 // AnalyticsDashboard — trang báo cáo doanh thu/đơn/khách từ VPS analytics API.
 // Gọi getAnalytics(range) trực tiếp tới VPS (admin-gated, X-API-Key tự attach).
-// UI tiếng Việt: Báo cáo, Doanh thu, Đơn hàng, Khách hàng, Tổng doanh thu, Tổng đơn, Tổng khách.
+// UI tiếng Việt: Báo cáo, Doanh thu, Đơn hàng, Chi nhánh, Tổng doanh thu, Tổng đơn, Chi nhánh hoạt động.
 
-import { CustomersTable } from "@/components/CustomersTable";
+import { BranchTable } from "@/components/BranchTable";
 import { OrdersChart } from "@/components/OrdersChart";
 import { RevenueChart } from "@/components/RevenueChart";
 import { StatCard } from "@/components/StatCard";
@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRestaurants } from "@/hooks/useQueries";
 import { getAnalytics } from "@/lib/vps-client";
 import type { AnalyticsResponse } from "@/types";
 import { useQuery } from "@tanstack/react-query";
@@ -27,9 +28,9 @@ import {
   Banknote,
   Package,
   ShoppingCart,
+  Store,
   TrendingUp,
   Truck,
-  Users,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -61,6 +62,10 @@ export function AnalyticsDashboard() {
     queryFn: () => getAnalytics(range),
     retry: 1,
   });
+  // Danh sách nhà hàng thật (canister getRestaurants) — dùng để đối chiếu
+  // tên + địa chỉ chi nhánh thật, vì AnalyticsResponse.byRestaurant.name của
+  // VPS chỉ là restaurantId lặp lại (VPS SQLite không có bảng restaurants).
+  const { data: restaurants } = useRestaurants();
 
   const a = data as AnalyticsResponse | undefined;
 
@@ -74,14 +79,21 @@ export function AnalyticsDashboard() {
       ].filter((d) => d.count > 0)
     : [];
 
-  // byDay → revenue chart; byRestaurant → customers table.
+  // byDay → revenue chart; byRestaurant → bảng doanh thu theo chi nhánh
+  // (chuỗi Bún Bò Huế 65 có nhiều cửa hàng, KHÔNG phải dữ liệu khách hàng).
   const revenueData = a?.byDay ?? [];
-  const customersData = (a?.byRestaurant ?? []).map((r) => ({
-    cusName: r.name,
-    cusPhone: r.restaurantId,
-    orderCount: r.orders,
-    totalSpent: r.revenue,
-  }));
+  const branchData = (a?.byRestaurant ?? []).map((r) => {
+    const restaurant = restaurants?.find(
+      (x) => x.restaurantId === r.restaurantId,
+    );
+    return {
+      restaurantId: r.restaurantId,
+      name: restaurant?.name || r.name,
+      address: restaurant?.address,
+      orderCount: r.orders,
+      totalRevenue: r.revenue,
+    };
+  });
 
   return (
     <section
@@ -185,12 +197,12 @@ export function AnalyticsDashboard() {
               testId="analytics.stat.total_orders"
             />
             <StatCard
-              label="Tổng khách"
+              label="Chi nhánh hoạt động"
               value={formatNumber(a?.byRestaurant?.length ?? 0)}
-              icon={Users}
+              icon={Store}
               tone="success"
-              hint="Số nhà hàng hoạt động"
-              testId="analytics.stat.total_customers"
+              hint="Có đơn trong khoảng thời gian này"
+              testId="analytics.stat.active_branches"
             />
             <StatCard
               label="Đang giao"
@@ -248,22 +260,19 @@ export function AnalyticsDashboard() {
             </Card>
           </div>
 
-          {/* Customers table */}
-          <Card data-ocid="analytics.customers_card">
+          {/* Bảng doanh thu theo chi nhánh */}
+          <Card data-ocid="analytics.branches_card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display">
-                <Users className="h-4 w-4 text-primary" aria-hidden="true" />
-                Khách hàng
+                <Store className="h-4 w-4 text-primary" aria-hidden="true" />
+                Chi nhánh
               </CardTitle>
               <CardDescription>
-                Danh sách nhà hàng theo số đơn và tổng chi.
+                Doanh thu và số đơn theo từng cửa hàng trong chuỗi.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <CustomersTable
-                data={customersData}
-                testId="analytics.customers_table"
-              />
+              <BranchTable data={branchData} testId="analytics.branch_table" />
             </CardContent>
           </Card>
         </div>
