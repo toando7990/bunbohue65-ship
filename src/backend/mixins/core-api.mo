@@ -2,6 +2,7 @@ import Result "mo:core/Result";
 import Nat "mo:core/Nat";
 import Int "mo:core/Int";
 import Time "mo:core/Time";
+import Text "mo:core/Text";
 import AccessControl "mo:caffeineai-authorization/access-control";
 import CoreTypes "../types/core";
 import CoreLib "../lib/core";
@@ -120,6 +121,25 @@ mixin (
           #ok(sanitizePii(o));
         };
       };
+    };
+  };
+
+  // List orders whose receiverEmail matches `email` (case-insensitive exact
+  // match), for the customer-facing "Lịch sử đặt đơn" (order history) tab.
+  // Uses the verified email from EmailVerificationDialog so lookup works on
+  // any device — unlike /track (OrderList), which only remembers orders
+  // placed from the same browser via localStorage. Same PII-blanking rule as
+  // listOrders/getOrder: admin sees full records, non-admin/anonymous callers
+  // get PII-blanked records (cusAddress, cusTaxCode, receiverEmail cleared).
+  public shared ({ caller }) func getOrdersByEmail(email : Text) : async [CoreTypes.Order] {
+    let normalized = email.toLower();
+    let raw = CoreLib.listOrders(state).filter(
+      func(o : CoreTypes.Order) : Bool = o.receiverEmail.toLower() == normalized
+    );
+    if (AccessControl.isAdmin(accessControlState, caller)) {
+      raw;
+    } else {
+      raw.map(func(o : CoreTypes.Order) : CoreTypes.Order = sanitizePii(o));
     };
   };
 

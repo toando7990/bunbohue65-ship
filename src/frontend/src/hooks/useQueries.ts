@@ -14,6 +14,7 @@ import {
   getCanisterIdText as getCanisterIdFn,
   getMenuForRestaurant as getMenuForRestaurantFn,
   getOrder as getOrderFn,
+  getOrdersByEmail as getOrdersByEmailFn,
   getPaymentMode as getPaymentModeFn,
   getStoreHours as getStoreHoursFn,
   isCallerAdmin as isCallerAdminFn,
@@ -46,6 +47,19 @@ export function useOrders() {
     queryKey: ["orders"],
     queryFn: () => (actor ? listOrdersFn(actor) : Promise.resolve([])),
     enabled: !!actor && !isFetching,
+  });
+}
+
+// Lịch sử đặt đơn — tra cứu theo email đã xác thực. Chỉ chạy khi có email
+// (đã trim + lowercase phía gọi); hoạt động trên mọi thiết bị vì lọc ở
+// canister thay vì dựa vào localStorage như useOrders/OrderList.
+export function useOrdersByEmail(email: string | null) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["ordersByEmail", email],
+    queryFn: () =>
+      actor && email ? getOrdersByEmailFn(actor, email) : Promise.resolve([]),
+    enabled: !!actor && !isFetching && !!email,
   });
 }
 

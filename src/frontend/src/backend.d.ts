@@ -334,6 +334,7 @@ export interface backendInterface {
     listDevicesByRole(role: DeviceRole): Promise<Array<Device>>;
     listMenus(): Promise<Array<MenuItem>>;
     listOrders(): Promise<Array<Order>>;
+    getOrdersByEmail(email: string): Promise<Array<Order>>;
     listPaidOrdersForPickup(): Promise<Array<Order>>;
     listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
     listRestaurants(): Promise<Array<Restaurant>>;

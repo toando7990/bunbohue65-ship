@@ -849,6 +849,20 @@ export class Backend implements backendInterface {
             return from_candid_vec_n63(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getOrdersByEmail(arg0: string): Promise<Array<Order>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getOrdersByEmail(arg0);
+                return from_candid_vec_n63(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getOrdersByEmail(arg0);
+            return from_candid_vec_n63(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async listPaidOrdersForPickup(): Promise<Array<Order>> {
         if (this.processError) {
             try {

@@ -11,6 +11,7 @@ import { DeviceManager } from "@/pages/DeviceManager";
 import { DriverPaymentScreen } from "@/pages/DriverPaymentScreen";
 import GrabGuide from "@/pages/GrabGuide";
 import { MenuManager } from "@/pages/MenuManager";
+import OrderHistory from "@/pages/OrderHistory";
 import OrderList from "@/pages/OrderList";
 import OrderTracker from "@/pages/OrderTracker";
 import RestaurantManager from "@/pages/RestaurantManager";
@@ -111,6 +112,12 @@ const trackIndexRoute = createRoute({
   component: () => <OrderList />,
 });
 
+const historyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/history",
+  component: () => <OrderHistory />,
+});
+
 const grabGuideRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/grab-guide",
@@ -182,6 +189,7 @@ const router = createRouter({
     indexRoute,
     trackIndexRoute,
     trackRoute,
+    historyRoute,
     grabGuideRoute,
     driverRoute,
     adminRoute,

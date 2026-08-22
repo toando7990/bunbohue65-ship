@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  History,
   type LucideIcon,
   ShieldCheck,
   Truck,
@@ -23,6 +24,7 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { to: "/", label: "Đặt món", icon: UtensilsCrossed },
   { to: "/track", label: "Theo dõi đơn", icon: Truck },
+  { to: "/history", label: "Lịch sử đặt đơn", icon: History },
   { to: "/grab-guide", label: "Hướng dẫn đặt Grab giao hàng", icon: Video },
 ];
 const ADMIN_NAV: NavItem[] = [

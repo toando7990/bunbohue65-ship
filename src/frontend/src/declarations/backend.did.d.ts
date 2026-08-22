@@ -247,6 +247,7 @@ export interface _SERVICE {
   'listDevicesByRole' : ActorMethod<[DeviceRole], Array<Device>>,
   'listMenus' : ActorMethod<[], Array<MenuItem>>,
   'listOrders' : ActorMethod<[], Array<Order>>,
+  'getOrdersByEmail' : ActorMethod<[string], Array<Order>>,
   'listPaidOrdersForPickup' : ActorMethod<[], Array<Order>>,
   'listPendingPaymentOrders' : ActorMethod<[string], Array<Order>>,
   'listRestaurants' : ActorMethod<[], Array<Restaurant>>,

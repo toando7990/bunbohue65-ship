@@ -37,6 +37,16 @@ export async function listOrders(actor: Backend): Promise<Order[]> {
   return actor.listOrders();
 }
 
+// Lịch sử đặt đơn — tra cứu theo email đã xác thực (khớp không phân biệt hoa
+// thường), hoạt động trên mọi thiết bị (không phụ thuộc localStorage như
+// OrderList). Lọc phía canister, chỉ trả về các đơn khớp email.
+export async function getOrdersByEmail(
+  actor: Backend,
+  email: string,
+): Promise<Order[]> {
+  return actor.getOrdersByEmail(email);
+}
+
 export async function getOrder(
   actor: Backend,
   orderId: string,
