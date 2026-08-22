@@ -19,6 +19,7 @@ import {
   type CustomerFormValues,
   validateCustomerForm,
 } from "@/components/CustomerForm";
+import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
 import { MenuPicker } from "@/components/MenuPicker";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { useOpenCountdown } from "@/hooks/useOpenCountdown";
 import {
   useGetStoreHours,
@@ -130,6 +132,11 @@ export default function CreateOrder() {
   const [customer, setCustomer] = useState<CustomerFormValues>(EMPTY_CUSTOMER);
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Xác thực email đúng lúc bấm "Đặt món" (không còn chặn cả trang) — xem
+  // EmailVerificationDialog. isVerified true nếu máy này đã từng xác thực
+  // (localStorage), bất kể phiên hiện tại có mở lại trang hay không.
+  const { isVerified } = useEmailVerification();
+  const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
   // Gợi ý gọi thêm — hiện 1 lần khi khách thêm món đầu tiên vào giỏ.
@@ -199,7 +206,10 @@ export default function CreateOrder() {
   );
 
   const customerErrors: CustomerFormErrors = touched
-    ? validateCustomerForm(customer, { hideAddress: true })
+    ? validateCustomerForm(customer, {
+        hideAddress: true,
+        emailLocked: !isVerified,
+      })
     : {};
   // useCallback: giữ tham chiếu hàm ổn định giữa các lần render để MenuPicker/
   // MenuCard (React.memo) không phải re-render toàn bộ danh sách món mỗi khi
@@ -307,7 +317,10 @@ export default function CreateOrder() {
 
   async function handleSubmit() {
     setTouched(true);
-    const errs = validateCustomerForm(customer, { hideAddress: true });
+    const errs = validateCustomerForm(customer, {
+      hideAddress: true,
+      emailLocked: !isVerified,
+    });
     if (Object.keys(errs).length > 0) {
       toast.error("Vui lòng kiểm tra thông tin khách hàng.");
       return;
@@ -324,6 +337,25 @@ export default function CreateOrder() {
       return;
     }
 
+    // Máy này chưa từng xác thực email → dừng lại, mở hộp thoại xác thực
+    // thay vì đặt đơn ngay. performSubmit() sẽ được gọi lại sau khi
+    // EmailVerificationDialog xác thực xong (xem onVerified bên dưới) —
+    // form/giỏ hàng vẫn giữ nguyên, khách không cần bấm "Đặt món" lần 2.
+    if (!isVerified) {
+      setVerifyDialogOpen(true);
+      return;
+    }
+
+    await performSubmit();
+  }
+
+  // Phần đặt đơn thực sự — tách riêng khỏi handleSubmit để có thể gọi lại
+  // tự động ngay sau khi khách xác thực email lần đầu (từ
+  // EmailVerificationDialog.onVerified), không bắt khách bấm "Đặt món" lại.
+  // overrideEmail: dùng khi gọi ngay sau setCustomer(...) trong cùng 1 lượt
+  // xử lý sự kiện — setState không cập nhật đồng bộ nên `customer.receiverEmail`
+  // ở đây vẫn là giá trị CŨ (rỗng) nếu không truyền email trực tiếp vào đây.
+  async function performSubmit(overrideEmail?: string) {
     setSubmitting(true);
     try {
       const payload: CreateOrderPayload = {
@@ -333,7 +365,7 @@ export default function CreateOrder() {
         cusPhone: customer.cusPhone.trim(),
         cusAddress: customer.cusAddress.trim(),
         cusTaxCode: customer.cusTaxCode.trim(),
-        receiverEmail: customer.receiverEmail.trim(),
+        receiverEmail: (overrideEmail ?? customer.receiverEmail).trim(),
         items: displayCartLines.map((l) => ({
           itemId: l.item.itemId,
           name: l.item.name,
@@ -658,6 +690,7 @@ export default function CreateOrder() {
                       onChange={handleCustomerChange}
                       disabled={submitting}
                       hideAddress
+                      emailLocked={!isVerified}
                     />
                   </div>
 
@@ -710,6 +743,16 @@ export default function CreateOrder() {
           </>
         )}
       </section>
+
+      <EmailVerificationDialog
+        open={verifyDialogOpen}
+        onOpenChange={setVerifyDialogOpen}
+        onVerified={(email) => {
+          setCustomer((prev) => ({ ...prev, receiverEmail: email }));
+          setVerifyDialogOpen(false);
+          void performSubmit(email);
+        }}
+      />
     </div>
   );
 }

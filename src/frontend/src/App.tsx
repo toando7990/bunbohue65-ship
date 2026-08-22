@@ -1,6 +1,5 @@
 // TanStack Router with Vietnamese routes. Admin routes gated by II auth + admin role.
 
-import { EmailVerificationGate } from "@/components/EmailVerificationGate";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Layout } from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
@@ -93,11 +92,10 @@ const rootRoute = createRootRouteWithContext()({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: () => (
-    <EmailVerificationGate>
-      <CreateOrder />
-    </EmailVerificationGate>
-  ),
+  // Không còn bọc EmailVerificationGate ở đây — khách vào thẳng menu, chỉ bị
+  // yêu cầu xác thực email đúng lúc bấm "Đặt món" lần đầu (xem
+  // EmailVerificationDialog trong CreateOrder.tsx).
+  component: () => <CreateOrder />,
 });
 
 const trackRoute = createRoute({

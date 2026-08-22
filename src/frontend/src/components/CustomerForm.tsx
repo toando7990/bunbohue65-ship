@@ -29,6 +29,13 @@ interface CustomerFormProps {
   // Dùng cho luồng "khách tự thanh toán" (paymentMode='customer') — khách
   // không cần nhập địa chỉ vì tự đặt Grab Express để nhận hàng.
   hideAddress?: boolean;
+  // Khi true: máy này CHƯA từng xác thực email nào — khoá ô "Email nhận
+  // hoá đơn" (không cho gõ tay), vì giá trị sẽ được gán tự động từ email
+  // khách xác thực trong EmailVerificationDialog lúc bấm "Đặt món", tránh
+  // bắt khách nhập email 2 lần (1 lần ở đây, 1 lần trong hộp thoại xác
+  // thực). Khi máy đã từng xác thực, ô này mở khoá bình thường — khách có
+  // thể sửa sang email khác tự do, không cần xác thực lại (xem CreateOrder.tsx).
+  emailLocked?: boolean;
 }
 
 // Vietnamese phone: 10 digits starting 0 (mobile), or 11 for some landlines.
@@ -38,7 +45,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateCustomerForm(
   v: CustomerFormValues,
-  options: { hideAddress?: boolean } = {},
+  options: { hideAddress?: boolean; emailLocked?: boolean } = {},
 ): CustomerFormErrors {
   const errors: CustomerFormErrors = {};
   if (!v.cusName.trim()) errors.cusName = "Vui lòng nhập tên khách hàng.";
@@ -67,7 +74,10 @@ export function validateCustomerForm(
   }
 
   // Skip email validation when hideAddress (customer mode) — field is hidden.
-  if (!options.hideAddress) {
+  // Also skip when emailLocked (chưa xác thực) — ô bị khoá rỗng, giá trị sẽ
+  // được gán sau khi khách xác thực trong EmailVerificationDialog, không
+  // phải lỗi nhập liệu của khách.
+  if (!options.hideAddress && !options.emailLocked) {
     if (!v.receiverEmail.trim())
       errors.receiverEmail = "Vui lòng nhập email nhận hoá đơn.";
     else if (!EMAIL_RE.test(v.receiverEmail.trim()))
@@ -119,6 +129,7 @@ export function CustomerForm({
   onChange,
   disabled,
   hideAddress,
+  emailLocked,
 }: CustomerFormProps) {
   const inputClass = (hasError?: string) =>
     cn(
@@ -224,6 +235,11 @@ export function CustomerForm({
           id="receiver_email"
           label="Email nhận hoá đơn"
           error={errors.receiverEmail}
+          hint={
+            emailLocked
+              ? "Sẽ tự động điền sau khi bạn xác thực email lúc đặt đơn."
+              : undefined
+          }
           className="col-span-3 sm:col-span-1"
         >
           <Input
@@ -233,8 +249,10 @@ export function CustomerForm({
             inputMode="email"
             value={values.receiverEmail}
             onChange={(e) => onChange("receiverEmail", e.target.value)}
-            placeholder="khach@example.com"
-            disabled={disabled}
+            placeholder={
+              emailLocked ? "Xác thực lúc bấm Đặt món" : "khach@example.com"
+            }
+            disabled={disabled || emailLocked}
             aria-invalid={!!errors.receiverEmail}
             data-ocid="customer_form.receiver_email_input"
             className={inputClass(errors.receiverEmail)}
