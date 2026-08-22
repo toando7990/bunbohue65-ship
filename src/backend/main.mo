@@ -342,6 +342,7 @@ actor Main {
           cusAddress = "";
           cusTaxCode = "";
           receiverEmail = "";
+          pickupCode = "";
           items = [];
           amount = 0;
           goodsAmount = 0;
@@ -370,6 +371,7 @@ actor Main {
         .payload("cusAddress", func(o : CoreTypes.Order) : Text = o.cusAddress)
         .payload("cusTaxCode", func(o : CoreTypes.Order) : Text = o.cusTaxCode)
         .payload("receiverEmail", func(o : CoreTypes.Order) : Text = o.receiverEmail)
+        .payload("pickupCode", func(o : CoreTypes.Order) : Text = o.pickupCode)
         .payload("amount", func(o : CoreTypes.Order) : Nat = o.amount)
         .payload("goodsAmount", func(o : CoreTypes.Order) : Nat = o.goodsAmount)
         .payload("shippingFee", func(o : CoreTypes.Order) : Nat = o.shippingFee)
