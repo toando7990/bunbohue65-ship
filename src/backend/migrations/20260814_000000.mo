@@ -1,4 +1,5 @@
 import Map "mo:core/Map";
+import Array "mo:core/Array";
 import Principal "mo:core/Principal";
 
 // Stable upgrade: MenuItem thay `imageUrl : Text` (đường dẫn ảnh trên VPS)
@@ -148,7 +149,7 @@ module {
           unitName = item.unitName;
           vatRate = item.vatRate;
           category = item.category;
-          image = Blob.fromArray([]);
+          image = Array.toBlob([]);
           visible = item.visible;
         };
       },

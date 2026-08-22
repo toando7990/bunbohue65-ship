@@ -31,6 +31,7 @@ export const mockBackend: backendInterface = {
   getMenu: async () => [],
   getMenuForRestaurant: async () => [],
   getOrder: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  getOrdersByEmail: async () => [],
   getOrderStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   getPaymentMode: async () => "driver",
   getRestaurants: async () => [],

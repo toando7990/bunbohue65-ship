@@ -23,8 +23,6 @@ import StoreHoursConfigApi "mixins/store-hours-config-api";
 
 import CoreLib "lib/core";
 import CoreTypes "types/core";
-import DevicesLib "lib/devices";
-import MenuLib "lib/menu";
 import MenuSeedLib "lib/menu-seed";
 import SecretLib "lib/secret";
 import SecretTypes "types/secret";

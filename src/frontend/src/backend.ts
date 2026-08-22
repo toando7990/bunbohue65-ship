@@ -371,6 +371,7 @@ export interface backendInterface {
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
     getOrder(orderId: string): Promise<Result>;
+    getOrdersByEmail(email: string): Promise<Array<Order>>;
     getOrderStatus(orderId: string): Promise<Result_5>;
     getPaymentMode(): Promise<string>;
     getRestaurants(): Promise<Array<Restaurant>>;
