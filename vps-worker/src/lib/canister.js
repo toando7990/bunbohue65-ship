@@ -40,6 +40,26 @@ const IDL_FACTORY = ({ IDL }) => {
     unitName: IDL.Text,
     vatRate: IDL.Nat,
   });
+  // 3 kiểu trạng thái định nghĩa RIÊNG thành hằng số trước, dùng lại ở cả
+  // Order/OrderStatus record LẪN chữ ký IDL.Func bên dưới — KHÔNG truy cập
+  // qua Order.bookingStatus/Order.paymentStatus/Order.invoiceStatus (property
+  // access trên instance IDL.Record không được đảm bảo trả về type field,
+  // phụ thuộc chi tiết triển khai nội bộ của thư viện — đã từng "hoạt động
+  // tình cờ" rồi vỡ sau 1 lần nâng cấp @icp-sdk/core, khiến updateStatus/
+  // updatePaymentStatus/updateInvoiceStatus nhận `undefined` làm kiểu tham
+  // số, gây lỗi "Cannot read properties of undefined (reading
+  // 'buildTypeTable')" ngay khi encode request — im lặng không cập nhật
+  // được trạng thái thanh toán dù Tingee đã xác nhận tiền về).
+  const BookingStatus = IDL.Variant({
+    pending: IDL.Null, confirmed: IDL.Null, shipping: IDL.Null,
+    pickedUp: IDL.Null, completed: IDL.Null, cancelled: IDL.Null,
+  });
+  const PaymentStatus = IDL.Variant({
+    unpaid: IDL.Null, paid: IDL.Null, refunded: IDL.Null, expired: IDL.Null,
+  });
+  const InvoiceStatus = IDL.Variant({
+    none: IDL.Null, invoiced: IDL.Null, failed: IDL.Null,
+  });
   const Order = IDL.Record({
     orderId: IDL.Text,
     restaurantId: IDL.Text,
@@ -54,16 +74,9 @@ const IDL_FACTORY = ({ IDL }) => {
     goodsAmount: IDL.Nat,
     shippingFee: IDL.Nat,
     taxTotal: IDL.Nat,
-    bookingStatus: IDL.Variant({
-      pending: IDL.Null, confirmed: IDL.Null, shipping: IDL.Null,
-      pickedUp: IDL.Null, completed: IDL.Null, cancelled: IDL.Null,
-    }),
-    paymentStatus: IDL.Variant({
-      unpaid: IDL.Null, paid: IDL.Null, refunded: IDL.Null, expired: IDL.Null,
-    }),
-    invoiceStatus: IDL.Variant({
-      none: IDL.Null, invoiced: IDL.Null, failed: IDL.Null,
-    }),
+    bookingStatus: BookingStatus,
+    paymentStatus: PaymentStatus,
+    invoiceStatus: InvoiceStatus,
     ahamoveOrderId: IDL.Text,
     tingeeQrId: IDL.Text,
     sharedLink: IDL.Text,
@@ -77,9 +90,9 @@ const IDL_FACTORY = ({ IDL }) => {
     updatedAt: IDL.Int,
   });
   const OrderStatus = IDL.Record({
-    bookingStatus: Order.bookingStatus,
-    paymentStatus: Order.paymentStatus,
-    invoiceStatus: Order.invoiceStatus,
+    bookingStatus: BookingStatus,
+    paymentStatus: PaymentStatus,
+    invoiceStatus: InvoiceStatus,
     tingeeQrId: IDL.Text,
     sharedLink: IDL.Text,
     invoiceId: IDL.Text,
@@ -95,13 +108,13 @@ const IDL_FACTORY = ({ IDL }) => {
       [ResultOrder], [],
     ),
     updateStatus: IDL.Func(
-      [IDL.Text, Order.bookingStatus, IDL.Text], [ResultOrder], [],
+      [IDL.Text, BookingStatus, IDL.Text], [ResultOrder], [],
     ),
     updatePaymentStatus: IDL.Func(
-      [IDL.Text, Order.paymentStatus, IDL.Text], [ResultOrder], [],
+      [IDL.Text, PaymentStatus, IDL.Text], [ResultOrder], [],
     ),
     updateInvoiceStatus: IDL.Func(
-      [IDL.Text, Order.invoiceStatus, IDL.Text, IDL.Text, IDL.Text], [ResultOrder], [],
+      [IDL.Text, InvoiceStatus, IDL.Text, IDL.Text, IDL.Text], [ResultOrder], [],
     ),
     updateOrderQr: IDL.Func(
       [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text), IDL.Opt(IDL.Nat64), IDL.Text], [ResultOrder], [],
