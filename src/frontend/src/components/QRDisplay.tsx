@@ -254,7 +254,7 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
                 {formatVnd(order.amount - order.shippingFee)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Tiền hàng (không gồm phí ship — phí ship thuộc về Ahamove)
+                Tiền hàng (không gồm phí ship)
               </p>
             </div>
             {/* QR container — dark, high contrast per design preview */}
