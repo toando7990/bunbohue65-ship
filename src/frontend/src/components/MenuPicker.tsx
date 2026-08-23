@@ -1,12 +1,11 @@
-// MenuPicker — grid/list món với ảnh (imageUrl), tên, giá, số lượng +/-, category filter.
-// Mobile-first responsive. Tiếng Việt. Giá VND (bigint → number cho hiển thị).
+// MenuPicker — lưới 2 cột kiểu Grab: ảnh vuông + nút "+" nổi góc phải, tên,
+// giá bên dưới. Mobile-first. Tiếng Việt. Giá VND (bigint → number hiển thị).
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, imageBytesToDataUrl } from "@/lib/utils";
 import type { MenuItem } from "@/types";
-import { Minus, Plus, Search, UtensilsCrossed } from "lucide-react";
+import { Plus, Search, UtensilsCrossed } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
 export interface CartLine {
@@ -22,9 +21,20 @@ interface MenuPickerProps {
   disabled?: boolean;
   /** Khi truyền vào: chỉ hiển thị món thuộc danh mục này, ẩn hẳn tab lọc danh mục. */
   fixedCategory?: string;
+  /**
+   * Khi true: bỏ qua fixedCategory, hiển thị TẤT CẢ món theo thứ tự cố định
+   * Món chính → Món phụ → Đồ uống → Tráng miệng, mỗi nhóm sắp xếp giá thấp
+   * đến cao. Danh mục "Khác" (món dụng cụ tự động thêm) luôn bị loại khỏi
+   * danh sách này — không phải món khách tự chọn tay.
+   */
+  groupByCategory?: boolean;
 }
 
 const ALL_CATEGORY = "Tất cả";
+
+// Thứ tự nhóm cố định cho chế độ groupByCategory — khớp CATEGORY_OPTIONS
+// trong MenuItemForm.tsx, trừ "Khác" (món dụng cụ, không cho khách tự chọn).
+const CATEGORY_ORDER = ["Món chính", "Món phụ", "Đồ uống", "Tráng miệng"];
 
 function formatVnd(value: bigint): string {
   return new Intl.NumberFormat("vi-VN", {
@@ -59,22 +69,16 @@ const MenuCard = memo(function MenuCard({
 
   return (
     <article
-      className={cn(
-        "flex gap-3 rounded-xl border border-border bg-card p-3 shadow-xs transition-smooth animate-fade-rise",
-        quantity > 0 &&
-          "border-primary/60 bg-primary/[0.03] ring-1 ring-primary/30 shadow-sm",
-      )}
+      className="flex flex-col gap-2 animate-fade-rise"
       data-ocid={`menu_picker.item.${index}`}
     >
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-28 sm:w-28">
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={item.name}
             loading="lazy"
             decoding="async"
-            width={112}
-            height={112}
             className="h-full w-full object-cover"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = "none";
@@ -82,82 +86,45 @@ const MenuCard = memo(function MenuCard({
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-gradient-subtle text-muted-foreground">
-            <UtensilsCrossed className="h-6 w-6" aria-hidden="true" />
-            <span className="text-[10px]">Chưa có ảnh</span>
+            <UtensilsCrossed className="h-7 w-7" aria-hidden="true" />
+            <span className="text-[11px]">Chưa có ảnh</span>
           </div>
         )}
+
+        {/* Huy hiệu số lượng — chỉ hiện khi đã thêm vào giỏ. Điều chỉnh số
+            lượng (giảm/xoá) thực hiện trong giỏ hàng, không phải trên thẻ này. */}
         {quantity > 0 && (
-          <span className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 font-mono text-[11px] font-bold text-primary-foreground shadow-xs">
+          <span
+            className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-foreground/80 px-1.5 font-mono text-xs font-bold text-background shadow-sm"
+            data-ocid={`menu_picker.quantity_badge.${index}`}
+          >
             {quantity}
           </span>
         )}
+
+        {/* Nút "+" nổi góc phải — mỗi lần bấm thêm 1 (kiểu Grab). */}
+        <button
+          type="button"
+          onClick={() => onQuantityChange(item.itemId, 1)}
+          disabled={disabled}
+          aria-label={`Thêm ${item.name}`}
+          data-ocid={`menu_picker.increase_button.${index}`}
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Plus className="h-5 w-5" aria-hidden="true" strokeWidth={2.5} />
+        </button>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex items-start justify-between gap-2">
-          <h4 className="line-clamp-2 text-sm font-semibold text-foreground">
-            {item.name}
-          </h4>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            {item.unitName || "phần"}
-          </span>
-        </div>
-        <p className="font-mono text-base font-bold text-primary">
+      <div className="min-w-0">
+        <h4 className="line-clamp-2 text-sm font-medium leading-snug text-foreground">
+          {item.name}
+        </h4>
+        <p className="mt-1 font-mono text-sm font-bold text-foreground">
           {formatVnd(item.price)}
         </p>
-        <span className="text-[11px] text-muted-foreground">
+        <p className="text-[11px] text-muted-foreground">
           Đã gồm VAT {Number(item.vatRate)}%
-        </span>
-
-        <div className="mt-auto flex items-center justify-end pt-1">
-          {quantity <= 0 ? (
-            <Button
-              type="button"
-              size="sm"
-              className="h-11 min-w-[88px] gap-1.5 rounded-full bg-gradient-primary px-4 text-primary-foreground"
-              aria-label={`Thêm ${item.name}`}
-              data-ocid={`menu_picker.increase_button.${index}`}
-              onClick={() => onQuantityChange(item.itemId, 1)}
-              disabled={disabled}
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Thêm
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-11 w-11 shrink-0 rounded-full"
-                aria-label={`Giảm số lượng ${item.name}`}
-                data-ocid={`menu_picker.decrease_button.${index}`}
-                onClick={() => onQuantityChange(item.itemId, -1)}
-                disabled={disabled}
-              >
-                <Minus className="h-4 w-4" aria-hidden="true" />
-              </Button>
-              <span
-                className="w-5 text-center font-mono text-base font-semibold"
-                data-ocid={`menu_picker.quantity_value.${index}`}
-              >
-                {quantity}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-11 w-11 shrink-0 rounded-full border-primary/40 text-primary"
-                aria-label={`Tăng số lượng ${item.name}`}
-                data-ocid={`menu_picker.increase_button.${index}`}
-                onClick={() => onQuantityChange(item.itemId, 1)}
-                disabled={disabled}
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </div>
-          )}
-        </div>
+        </p>
       </div>
     </article>
   );
@@ -170,11 +137,13 @@ export function MenuPicker({
   onQuantityChange,
   disabled,
   fixedCategory,
+  groupByCategory,
 }: MenuPickerProps) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>(ALL_CATEGORY);
-  // Khi có fixedCategory (trang đặt hàng chỉ muốn hiện "Món chính"), dùng thẳng
+  // Khi có fixedCategory (ví dụ app quầy chỉ muốn hiện "Món chính"), dùng thẳng
   // giá trị này để lọc, bỏ qua state tab (tab cũng bị ẩn ở JSX bên dưới).
+  // groupByCategory (trang đặt món khách) bỏ qua cả hai, xem renderGrouped bên dưới.
   const effectiveCategory = fixedCategory ?? category;
 
   const categories = useMemo(() => {
@@ -186,6 +155,8 @@ export function MenuPicker({
     return [ALL_CATEGORY, ...Array.from(set)];
   }, [menu]);
 
+  // Danh sách đã lọc theo tab/fixedCategory + tìm kiếm — dùng khi KHÔNG ở chế
+  // độ groupByCategory.
   const filtered = useMemo(() => {
     if (!menu) return [];
     return menu.filter((m) => {
@@ -201,14 +172,34 @@ export function MenuPicker({
       return true;
     });
   }, [menu, effectiveCategory, query]);
+
+  // Nhóm theo CATEGORY_ORDER, mỗi nhóm sắp giá tăng dần — dùng khi
+  // groupByCategory=true. Vẫn áp dụng tìm kiếm; nhóm không có món khớp thì
+  // không render tiêu đề (tự động ẩn).
+  const groupedSections = useMemo(() => {
+    if (!menu || !groupByCategory) return [];
+    const q = query.trim().toLowerCase();
+    return CATEGORY_ORDER.map((cat) => {
+      const items = menu
+        .filter(
+          (m) =>
+            m.visible &&
+            m.category === cat &&
+            (!q || m.name.toLowerCase().includes(q)),
+        )
+        .sort((a, b) => Number(a.price) - Number(b.price));
+      return { category: cat, items };
+    }).filter((s) => s.items.length > 0);
+  }, [menu, groupByCategory, query]);
+
   if (isLoading) {
     return (
       <div
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+        className="grid grid-cols-2 gap-x-3 gap-y-4"
         data-ocid="menu_picker.loading_state"
       >
         {Array.from({ length: 4 }, (_, i) => `skel-${i}`).map((id) => (
-          <Skeleton key={id} className="h-32 w-full rounded-xl" />
+          <Skeleton key={id} className="aspect-square w-full rounded-xl" />
         ))}
       </div>
     );
@@ -250,7 +241,7 @@ export function MenuPicker({
         </div>
       </div>
 
-      {!fixedCategory && (
+      {!fixedCategory && !groupByCategory && (
         <div
           className="flex flex-wrap gap-1.5"
           role="tablist"
@@ -280,7 +271,50 @@ export function MenuPicker({
           })}
         </div>
       )}
-      {filtered.length === 0 ? (
+
+      {groupByCategory ? (
+        groupedSections.length === 0 ? (
+          <div
+            className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-8 text-center"
+            data-ocid="menu_picker.no_results_state"
+          >
+            <p className="text-sm font-medium text-foreground">
+              Không tìm thấy món phù hợp
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Thử thay đổi từ khoá tìm kiếm.
+            </p>
+          </div>
+        ) : (
+          <div
+            className="flex flex-col gap-5"
+            data-ocid="menu_picker.grouped_list"
+          >
+            {groupedSections.map((section) => (
+              <div key={section.category}>
+                <h3
+                  className="mb-2.5 font-display text-base font-bold text-foreground"
+                  data-ocid={`menu_picker.category_heading.${section.category}`}
+                >
+                  {section.category}
+                </h3>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+                  {section.items.map((item, idx) => (
+                    <MenuCard
+                      key={item.itemId}
+                      item={item}
+                      index={idx}
+                      quantity={cart[item.itemId] ?? 0}
+                      onQuantityChange={onQuantityChange}
+                      disabled={disabled}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : filtered.length === 0 ? (
         <div
           className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-8 text-center"
           data-ocid="menu_picker.no_results_state"
@@ -293,7 +327,7 @@ export function MenuPicker({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4">
           {filtered.map((item, idx) => (
             <MenuCard
               key={item.itemId}

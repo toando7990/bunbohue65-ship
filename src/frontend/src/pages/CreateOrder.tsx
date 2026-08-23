@@ -481,7 +481,7 @@ export default function CreateOrder() {
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                       1
                     </span>
-                    Chọn nhà hàng
+                    Chọn nhà hàng gần với bạn
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -524,7 +524,7 @@ export default function CreateOrder() {
                     cart={cart}
                     onQuantityChange={handleQuantityChange}
                     disabled={submitting}
-                    fixedCategory="Món chính"
+                    groupByCategory
                   />
                 </CardContent>
               </Card>

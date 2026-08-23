@@ -99,6 +99,11 @@ export function Layout({ children }: { children: ReactNode }) {
             data-ocid="nav.brand_link"
             className="flex items-center gap-2"
           >
+            <img
+              src="/assets/images/logo-mark.png"
+              alt="Bún Bò Huế 65"
+              className="h-9 w-9 shrink-0 rounded-full object-contain md:h-10 md:w-10"
+            />
             <span className="font-display text-lg font-bold tracking-tight text-primary md:text-xl">
               Bún Bò Huế 65
             </span>
@@ -165,22 +170,9 @@ export function Layout({ children }: { children: ReactNode }) {
         className="border-t border-border bg-muted/40 px-4 py-4 md:px-6"
         data-ocid="page.footer"
       >
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">
-          <p>
-            © {new Date().getFullYear()} Bún Bò Huế 65 Ship. Xây dựng với
-            caffeine.ai
-          </p>
-          <a
-            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(
-              typeof window !== "undefined" ? window.location.hostname : "",
-            )}`}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-foreground"
-            data-ocid="footer.caffeine_link"
-          >
-            caffeine.ai
-          </a>
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-1 text-center text-xs text-muted-foreground">
+          <p>© 2026 CÔNG TY TNHH THỰC PHẨM GIA KHÁNH - GIA KHÁNH FOODS</p>
+          <p>69 đường Láng, P. Đống Đa, Tp. Hà nội.</p>
         </div>
       </footer>
     </div>
