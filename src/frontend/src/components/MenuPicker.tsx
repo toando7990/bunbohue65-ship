@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, imageBytesToDataUrl } from "@/lib/utils";
 import type { MenuItem } from "@/types";
-import { Plus, Search, UtensilsCrossed } from "lucide-react";
+import { Minus, Plus, Search, UtensilsCrossed } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
 export interface CartLine {
@@ -72,7 +72,12 @@ const MenuCard = memo(function MenuCard({
       className="flex flex-col gap-2 animate-fade-rise"
       data-ocid={`menu_picker.item.${index}`}
     >
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted">
+      <div
+        className={cn(
+          "relative aspect-square w-full overflow-hidden rounded-xl bg-muted",
+          quantity > 0 && "ring-2 ring-accent",
+        )}
+      >
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -91,28 +96,54 @@ const MenuCard = memo(function MenuCard({
           </div>
         )}
 
-        {/* Huy hiệu số lượng — chỉ hiện khi đã thêm vào giỏ. Điều chỉnh số
-            lượng (giảm/xoá) thực hiện trong giỏ hàng, không phải trên thẻ này. */}
-        {quantity > 0 && (
-          <span
-            className="absolute left-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-foreground/80 px-1.5 font-mono text-xs font-bold text-background shadow-sm"
-            data-ocid={`menu_picker.quantity_badge.${index}`}
+        {quantity <= 0 ? (
+          /* Chưa chọn — nút "+" tròn nổi góc phải (kiểu Grab), bấm là thêm. */
+          <button
+            type="button"
+            onClick={() => onQuantityChange(item.itemId, 1)}
+            disabled={disabled}
+            aria-label={`Thêm ${item.name}`}
+            data-ocid={`menu_picker.increase_button.${index}`}
+            className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {quantity}
-          </span>
+            <Plus className="h-5 w-5" aria-hidden="true" strokeWidth={2.5} />
+          </button>
+        ) : (
+          /* Đã chọn — viên nang -/số lượng/+ nổi góc phải, đổi số lượng ngay
+             trên thẻ, không cần mở giỏ hàng. Nền accent (xanh lá) để phân biệt
+             rõ với nút "+" (đỏ) lúc chưa chọn. */
+          <div
+            className="absolute right-2 top-2 flex items-center overflow-hidden rounded-full bg-accent text-accent-foreground shadow-md"
+            data-ocid={`menu_picker.stepper.${index}`}
+          >
+            <button
+              type="button"
+              onClick={() => onQuantityChange(item.itemId, -1)}
+              disabled={disabled}
+              aria-label={`Giảm số lượng ${item.name}`}
+              data-ocid={`menu_picker.decrease_button.${index}`}
+              className="flex h-8 w-8 items-center justify-center transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Minus className="h-4 w-4" aria-hidden="true" strokeWidth={2.5} />
+            </button>
+            <span
+              className="min-w-[1.1rem] text-center font-mono text-sm font-bold"
+              data-ocid={`menu_picker.quantity_value.${index}`}
+            >
+              {quantity}
+            </span>
+            <button
+              type="button"
+              onClick={() => onQuantityChange(item.itemId, 1)}
+              disabled={disabled}
+              aria-label={`Thêm ${item.name}`}
+              data-ocid={`menu_picker.increase_button.${index}`}
+              className="flex h-8 w-8 items-center justify-center transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" strokeWidth={2.5} />
+            </button>
+          </div>
         )}
-
-        {/* Nút "+" nổi góc phải — mỗi lần bấm thêm 1 (kiểu Grab). */}
-        <button
-          type="button"
-          onClick={() => onQuantityChange(item.itemId, 1)}
-          disabled={disabled}
-          aria-label={`Thêm ${item.name}`}
-          data-ocid={`menu_picker.increase_button.${index}`}
-          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Plus className="h-5 w-5" aria-hidden="true" strokeWidth={2.5} />
-        </button>
       </div>
 
       <div className="min-w-0">

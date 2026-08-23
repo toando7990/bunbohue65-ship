@@ -247,7 +247,7 @@ export default function CreateOrder() {
                 m.category === "Món phụ" &&
                 (cart[m.itemId] ?? 0) === 0,
             )
-            .slice(0, 2);
+            .slice(0, 5);
           if (suggestions.length > 0) {
             setUpsellItems(suggestions);
           }
@@ -550,33 +550,36 @@ export default function CreateOrder() {
                     <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
-                <div className="flex gap-2">
+                <div
+                  className="flex gap-2 overflow-x-auto pb-0.5"
+                  data-ocid="create_order.upsell_scroll"
+                >
                   {upsellItems.map((m) => (
                     <div
                       key={m.itemId}
-                      className="flex flex-1 items-center justify-between gap-2 rounded-lg bg-secondary p-2"
+                      className="flex w-28 shrink-0 flex-col gap-1.5 rounded-lg bg-secondary p-2"
                     >
-                      <div className="min-w-0">
-                        <p className="line-clamp-1 text-xs font-semibold">
-                          {m.name}
-                        </p>
+                      <p className="line-clamp-2 text-xs font-semibold leading-snug">
+                        {m.name}
+                      </p>
+                      <div className="mt-auto flex items-center justify-between gap-1">
                         <p className="text-[11px] text-muted-foreground">
                           {formatVnd(Number(m.price))}
                         </p>
+                        <button
+                          type="button"
+                          aria-label={`Thêm ${m.name}`}
+                          onClick={() => {
+                            handleQuantityChange(m.itemId, 1);
+                            setUpsellItems((prev) =>
+                              prev.filter((x) => x.itemId !== m.itemId),
+                            );
+                          }}
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
+                        >
+                          +
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        aria-label={`Thêm ${m.name}`}
-                        onClick={() => {
-                          handleQuantityChange(m.itemId, 1);
-                          setUpsellItems((prev) =>
-                            prev.filter((x) => x.itemId !== m.itemId),
-                          );
-                        }}
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
-                      >
-                        +
-                      </button>
                     </div>
                   ))}
                 </div>
