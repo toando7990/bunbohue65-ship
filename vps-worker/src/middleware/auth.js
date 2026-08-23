@@ -5,6 +5,17 @@
 //   Header: X-API-Key: <ANALYTICS_API_KEY>
 //   Header: X-Signature: HMAC-SHA256(ANALYTICS_API_KEY, body) hex
 // (HMAC optional cho GET — chỉ verify X-API-Key.)
+//
+// QUAN TRỌNG: web app "Báo cáo" (/admin/analytics) KHÔNG dùng khoá này —
+// trang đó đã được bảo vệ đúng cách bởi AdminGate phía frontend (Internet
+// Identity + vai trò admin trên canister, xem App.tsx adminAnalyticsRoute).
+// Nếu ANALYTICS_API_KEY được set ở đây, web app sẽ LUÔN bị 401 khi tải báo
+// cáo, vì Caffeine build frontend chỉ nạp 5 "platform keys" cố định qua
+// env.json — không có cơ chế tiêm secret tuỳ ý lúc build (không có
+// VITE_.env thật), nên phía frontend không có cách nào set đúng khoá này.
+// CHỈ set ANALYTICS_API_KEY nếu bạn cần gọi /analytics trực tiếp từ nơi
+// khác ngoài web app (ví dụ script/báo cáo riêng) — không phải để bảo vệ
+// trang web app, trang đó đã được bảo vệ bởi AdminGate rồi.
 // ============================================================
 
 const crypto = require('crypto');

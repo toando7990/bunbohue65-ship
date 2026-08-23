@@ -49,10 +49,6 @@ function getVpsUrl(): string {
   return PROD_FALLBACK_URL;
 }
 
-// Analytics endpoints require X-API-Key — sourced from VITE_ANALYTICS_API_KEY (admin-only).
-// In production this is set per-deployment; placeholder kept for local dev.
-const ANALYTICS_API_KEY = import.meta.env.VITE_ANALYTICS_API_KEY ?? "";
-
 const DEFAULT_TIMEOUT_MS = 15000;
 
 export class VpsHttpError extends Error {
@@ -106,10 +102,6 @@ async function vpsFetch<T>(options: FetchOptions): Promise<T> {
   const finalHeaders: Record<string, string> = { ...headers };
   if (!isFormData) {
     finalHeaders["Content-Type"] = "application/json";
-  }
-  // Analytics routes are admin-gated — attach X-API-Key only when present.
-  if (path.startsWith("/analytics") && ANALYTICS_API_KEY) {
-    finalHeaders["X-API-Key"] = ANALYTICS_API_KEY;
   }
 
   const init: RequestInit = {
@@ -242,33 +234,22 @@ export async function emailInvoice(orderId: string): Promise<InvoiceResponse> {
   });
 }
 
-// Analytics — admin-gated, requires X-API-Key header.
-//
-// 401 handling: when VPS has ANALYTICS_API_KEY set but the frontend is missing
-// VITE_ANALYTICS_API_KEY (or the value mismatches), the VPS auth middleware
-// returns 401 with `{ error: 'Invalid or missing X-API-Key' }`. Rather than
-// surfacing that raw transport error to admins, we translate it into a clear
-// Vietnamese configuration hint so the admin knows exactly what to fix.
-// Other errors (network, timeout, 5xx) propagate with their extracted message.
+// Analytics — quyền truy cập thật sự nằm ở AdminGate (Internet Identity +
+// vai trò admin trên canister, xem App.tsx adminAnalyticsRoute), không phải
+// ở tầng VPS. Route /analytics phía VPS KHÔNG được đặt X-API-Key bắt buộc:
+// Caffeine build frontend chỉ nạp 5 "platform keys" cố định qua env.json,
+// không có cơ chế tiêm secret tuỳ ý lúc build (không có VITE_.env thật) —
+// nên 1 khoá API kiểu VITE_ANALYTICS_API_KEY sẽ KHÔNG BAO GIỜ set được đúng
+// trong môi trường Caffeine. Nếu VPS admin tự set ANALYTICS_API_KEY trong
+// .env cho mục đích khác (gọi API trực tiếp từ nơi khác), route này sẽ đòi
+// hỏi header đó và app web sẽ luôn bị 401 — xem middleware/auth.js (VPS).
 export async function getAnalytics(
   range: "7d" | "30d" | "90d" = "30d",
 ): Promise<AnalyticsResponse> {
-  try {
-    return await vpsFetch<AnalyticsResponse>({
-      method: "GET",
-      path: `/analytics?range=${encodeURIComponent(range)}`,
-    });
-  } catch (err) {
-    if (err instanceof VpsHttpError && err.status === 401) {
-      // Distinguish "no key configured on frontend" from "key mismatched" so
-      // the admin gets an actionable message either way.
-      const detail = !ANALYTICS_API_KEY
-        ? "Analytics chưa cấu hình API key trên frontend (thiếu biến VITE_ANALYTICS_API_KEY). Vui lòng liên hệ quản trị viên để thiết lập."
-        : "API key analytics không hợp lệ hoặc không khớp với VPS. Vui lòng kiểm tra lại VITE_ANALYTICS_API_KEY.";
-      throw new VpsHttpError(err.status, err.body, detail);
-    }
-    throw err;
-  }
+  return vpsFetch<AnalyticsResponse>({
+    method: "GET",
+    path: `/analytics?range=${encodeURIComponent(range)}`,
+  });
 }
 
 // Exported base URL as a string. Resolved lazily via getVpsUrl() so the same
