@@ -19,12 +19,30 @@ interface NavItem {
   label: string;
   icon: LucideIcon;
   adminOnly?: boolean;
+  // Đường dẫn (prefix) mà mục nav này bị ẩn — dùng cho thiết bị nhân viên
+  // (ví dụ /driver) không cần thấy các mục dành cho khách hàng.
+  hideOnPrefixes?: string[];
 }
 
 const PRIMARY_NAV: NavItem[] = [
-  { to: "/", label: "Đặt món", icon: UtensilsCrossed },
-  { to: "/track", label: "Theo dõi đơn", icon: Truck },
-  { to: "/history", label: "Lịch sử đặt đơn", icon: History },
+  {
+    to: "/",
+    label: "Đặt món",
+    icon: UtensilsCrossed,
+    hideOnPrefixes: ["/driver"],
+  },
+  {
+    to: "/track",
+    label: "Theo dõi đơn",
+    icon: Truck,
+    hideOnPrefixes: ["/driver"],
+  },
+  {
+    to: "/history",
+    label: "Lịch sử đặt đơn",
+    icon: History,
+    hideOnPrefixes: ["/driver"],
+  },
   { to: "/grab-guide", label: "Hướng dẫn đặt Grab giao hàng", icon: Video },
 ];
 const ADMIN_NAV: NavItem[] = [
@@ -83,8 +101,15 @@ export function Layout({ children }: { children: ReactNode }) {
   const { isAuthenticated, isAdmin } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const showAdmin = isAuthenticated && isAdmin;
+  const router = useRouterState();
 
   const visibleAdminNav = showAdminNav();
+  // Lọc mục nav theo route hiện tại — ví dụ /driver (thiết bị nhân viên
+  // thanh toán) không cần thấy "Đặt món"/"Theo dõi đơn"/"Lịch sử đặt đơn".
+  const visiblePrimaryNav = PRIMARY_NAV.filter(
+    (item) =>
+      !item.hideOnPrefixes?.some((p) => router.location.pathname.startsWith(p)),
+  );
 
   function showAdminNav() {
     return ADMIN_NAV;
@@ -117,7 +142,7 @@ export function Layout({ children }: { children: ReactNode }) {
             data-ocid="nav.desktop"
             aria-label="Điều hướng chính"
           >
-            {PRIMARY_NAV.map((item) => (
+            {visiblePrimaryNav.map((item) => (
               <NavLink key={item.to} item={item} />
             ))}
             {showAdmin &&
@@ -143,7 +168,7 @@ export function Layout({ children }: { children: ReactNode }) {
             data-ocid="nav.mobile"
             aria-label="Điều hướng di động"
           >
-            {PRIMARY_NAV.map((item) => (
+            {visiblePrimaryNav.map((item) => (
               <NavLink
                 key={item.to}
                 item={item}
