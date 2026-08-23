@@ -1,28 +1,90 @@
 // OrderHistory — tra cứu lịch sử đơn hàng theo email ĐÃ XÁC THỰC trên máy
 // này (từ EmailVerificationDialog lúc đặt món). KHÔNG cho nhập email tuỳ ý —
-// chỉ tra đúng email mà thiết bị này đã chứng minh kiểm soát qua OTP, tránh
-// việc bất kỳ ai gõ email người khác vào cũng xem được lịch sử đơn của họ.
+// chỉ tra đúng email mà thiết bị này đã chứng minh kiểm soát qua OTP.
 //
-// Khác với /track (OrderList): OrderList chỉ nhớ đơn đã đặt TỪ TRÌNH DUYỆT
-// NÀY qua localStorage bbh_my_orders. Trang này gọi getOrdersByEmail() — lọc
-// PHÍA CANISTER theo receiverEmail, nên hoạt động trên mọi thiết bị ĐÃ TỪNG
-// xác thực email đó, không phụ thuộc localStorage bbh_my_orders.
+// Nguồn dữ liệu: VPS GET /orders/history?email= — trả đơn TRƯỚC ngày hôm
+// nay, sắp mới nhất lên đầu. KHÔNG dùng canister getOrdersByEmail() vì
+// canister chủ động xoá đơn từ ngày hôm trước trở về trước mỗi lần đọc/ghi
+// (pruneOldOrders, xem lib/core.mo) — canister chỉ giữ đơn TRONG NGÀY. Đơn
+// trong ngày hôm nay xem ở "Theo dõi đơn" (/track, canister qua
+// localStorage) — 2 tab không trùng dữ liệu, không có khoảng trống.
+//
+// VPS không trả pickupCode/cusAddress/cusTaxCode cho endpoint này (tối giản
+// PII) — OrderCard được truyền hidePickupCode + disableDetailLink vì mã
+// nhận hàng của đơn cũ đã hết hạn và /track/:orderId cũng không tra được
+// đơn đã bị canister xoá.
 
 import { OrderCard } from "@/components/OrderCard";
-import { useOrdersByEmail } from "@/hooks/useQueries";
 import { getVerifiedEmail } from "@/lib/verification-storage";
+import { getOrderHistory } from "@/lib/vps-client";
+import type {
+  BookingStatus,
+  Order,
+  PaymentStatus,
+  VpsHistoryOrder,
+} from "@/types";
+import { InvoiceStatus } from "@/types";
+import { useQuery } from "@tanstack/react-query";
 import { History, Mail } from "lucide-react";
 
 function normalizeEmail(v: string): string {
   return v.trim().toLowerCase();
 }
 
+// VPS trả dữ liệu tối giản (number/string thuần) — chuyển sang shape Order
+// mà OrderCard cần (bigint, enum). Các field canister-only không có ở VPS
+// (pickupCode, cusAddress, cusTaxCode, receiverEmail, qrCode, billId...) đặt
+// giá trị rỗng/mặc định — OrderCard không hiển thị chúng khi hidePickupCode/
+// disableDetailLink=true.
+function toOrder(h: VpsHistoryOrder): Order {
+  const createdAtNs = BigInt(h.createdAt) * 1_000_000n;
+  return {
+    orderId: h.orderId,
+    restaurantId: h.restaurantId,
+    cusName: h.cusName,
+    cusPhone: h.cusPhone,
+    cusAddress: "",
+    cusTaxCode: "",
+    receiverEmail: "",
+    pickupCode: "",
+    items: h.items.map((it) => ({
+      itemId: it.itemId,
+      name: it.name,
+      price: BigInt(it.price),
+      quantity: BigInt(it.quantity),
+      unitName: it.unitName,
+      vatRate: 0n,
+    })),
+    amount: BigInt(h.amount),
+    goodsAmount: BigInt(h.amount),
+    shippingFee: 0n,
+    taxTotal: 0n,
+    bookingStatus: h.bookingStatus as BookingStatus,
+    paymentStatus: h.paymentStatus as PaymentStatus,
+    invoiceStatus: InvoiceStatus.none,
+    ahamoveOrderId: "",
+    tingeeQrId: "",
+    sharedLink: "",
+    tingeeQrCode: "",
+    invoiceId: "",
+    pdfUrl: "",
+    createdAt: createdAtNs,
+    updatedAt: createdAtNs,
+  };
+}
+
 export default function OrderHistory() {
   const verified = getVerifiedEmail();
   const searchedEmail = verified ? normalizeEmail(verified.email) : null;
 
-  const { data, isLoading, isError, refetch } = useOrdersByEmail(searchedEmail);
-  const results = data ?? [];
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["orderHistory", searchedEmail],
+    queryFn: () =>
+      searchedEmail ? getOrderHistory(searchedEmail) : Promise.resolve([]),
+    enabled: !!searchedEmail,
+  });
+
+  const results = (data ?? []).map(toOrder);
 
   return (
     <section
@@ -39,8 +101,8 @@ export default function OrderHistory() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {searchedEmail
-            ? `Các đơn hàng đã đặt bằng email ${searchedEmail} (email đã xác thực trên thiết bị này).`
-            : "Tra cứu lại các đơn hàng đã đặt bằng email đã xác thực trên thiết bị này."}
+            ? `Các đơn hàng trước hôm nay đã đặt bằng email ${searchedEmail}. Đơn hôm nay xem ở "Theo dõi đơn".`
+            : "Tra cứu lại các đơn hàng trước hôm nay đã đặt bằng email đã xác thực trên thiết bị này."}
         </p>
       </header>
 
@@ -90,10 +152,11 @@ export default function OrderHistory() {
             aria-hidden="true"
           />
           <h2 className="mt-4 font-display text-lg font-semibold">
-            Chưa có đơn hàng nào
+            Chưa có đơn hàng nào trước hôm nay
           </h2>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Đơn hàng bạn đặt tiếp theo sẽ xuất hiện tại đây.
+            Đơn hàng bạn đặt hôm nay xem ở "Theo dõi đơn". Đơn của những ngày
+            trước sẽ xuất hiện tại đây.
           </p>
         </div>
       ) : (
@@ -109,7 +172,13 @@ export default function OrderHistory() {
             data-ocid="order_history.grid"
           >
             {results.map((order, i) => (
-              <OrderCard key={order.orderId} order={order} index={i + 1} />
+              <OrderCard
+                key={order.orderId}
+                order={order}
+                index={i + 1}
+                hidePickupCode
+                disableDetailLink
+              />
             ))}
           </div>
         </>

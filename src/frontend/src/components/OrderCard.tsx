@@ -88,9 +88,25 @@ export interface OrderCardProps {
   order: Order;
   /** Index trong list (1-based) cho deterministic marker. */
   index: number;
+  /**
+   * Khi true: ẩn khối "Mã nhận hàng" dù đơn chưa thanh toán. Dùng cho danh
+   * sách lịch sử (đơn trước ngày hôm nay) — mã đã hết hạn, không còn ý nghĩa.
+   */
+  hidePickupCode?: boolean;
+  /**
+   * Khi true: bỏ liên kết "Xem chi tiết" tới /track/:orderId — thẻ vẫn hiển
+   * thị đầy đủ nhưng không bấm được. Dùng cho lịch sử vì canister đã xoá đơn
+   * cũ (pruneOldOrders), /track/:orderId sẽ báo không tìm thấy nếu bấm vào.
+   */
+  disableDetailLink?: boolean;
 }
 
-export function OrderCard({ order, index }: OrderCardProps) {
+export function OrderCard({
+  order,
+  index,
+  hidePickupCode,
+  disableDetailLink,
+}: OrderCardProps) {
   // Tra cứu địa chỉ nhà hàng theo restaurantId để hiển thị + copy.
   const { data: restaurants } = useRestaurants();
   const restaurant = restaurants?.find(
@@ -98,77 +114,72 @@ export function OrderCard({ order, index }: OrderCardProps) {
   );
   const restaurantAddress = restaurant?.address ?? "";
 
-  return (
-    <div
-      data-ocid={`order.card.${index}`}
-      className="flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-smooth hover:border-primary/40 hover:shadow-md"
-    >
-      <Link
-        to="/track/$orderId"
-        params={{ orderId: order.orderId }}
-        className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <Receipt
-                className="h-4 w-4 shrink-0 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <span
-                className="truncate font-mono text-xs text-muted-foreground"
-                title={order.orderId}
-              >
-                {shortOrderId(order.orderId)}
-              </span>
-            </div>
-            <h3 className="mt-1 truncate font-display text-base font-semibold text-foreground">
-              {order.cusName || "Khách vãng lai"}
-            </h3>
-            {order.cusPhone && (
-              <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                {order.cusPhone}
-              </p>
-            )}
-          </div>
-          <div className="flex items-start gap-1.5">
-            <div className="text-right">
-              <p className="font-display text-base font-semibold text-foreground">
-                {formatVnd(order.amount)}
-              </p>
-              <p className="text-xs text-muted-foreground">Tổng cộng</p>
-            </div>
-            <CopyButton
-              value={formatVnd(order.amount)}
-              label="tổng tiền"
-              ocid={`order.card.${index}.copy_amount_button`}
-            />
-          </div>
-        </div>
-
-        {/* Địa chỉ nhà hàng — copy để dán vào app ngoài */}
-        {restaurantAddress && (
-          <div className="mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2">
-            <MapPin
+  const content = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Receipt
               className="h-4 w-4 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
-            <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-              {restaurantAddress}
+            <span
+              className="truncate font-mono text-xs text-muted-foreground"
+              title={order.orderId}
+            >
+              {shortOrderId(order.orderId)}
             </span>
-            <CopyButton
-              value={restaurantAddress}
-              label="địa chỉ nhà hàng"
-              ocid={`order.card.${index}.copy_address_button`}
-            />
           </div>
-        )}
+          <h3 className="mt-1 truncate font-display text-base font-semibold text-foreground">
+            {order.cusName || "Khách vãng lai"}
+          </h3>
+          {order.cusPhone && (
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">
+              {order.cusPhone}
+            </p>
+          )}
+        </div>
+        <div className="flex items-start gap-1.5">
+          <div className="text-right">
+            <p className="font-display text-base font-semibold text-foreground">
+              {formatVnd(order.amount)}
+            </p>
+            <p className="text-xs text-muted-foreground">Tổng cộng</p>
+          </div>
+          <CopyButton
+            value={formatVnd(order.amount)}
+            label="tổng tiền"
+            ocid={`order.card.${index}.copy_amount_button`}
+          />
+        </div>
+      </div>
 
-        {/* Mã nhận hàng — khách tự báo cho tài xế (gọi điện, nhắn tin...),
-            tài xế đọc lại cho nhân viên quán khi đến lấy hàng để xác nhận
-            thanh toán. Chỉ hiện khi đơn còn cần thanh toán — hết tác dụng
-            sau khi đã #paid nên ẩn đi cho gọn. */}
-        {order.pickupCode && order.paymentStatus !== PaymentStatus.paid && (
+      {/* Địa chỉ nhà hàng — copy để dán vào app ngoài */}
+      {restaurantAddress && (
+        <div className="mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2">
+          <MapPin
+            className="h-4 w-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+            {restaurantAddress}
+          </span>
+          <CopyButton
+            value={restaurantAddress}
+            label="địa chỉ nhà hàng"
+            ocid={`order.card.${index}.copy_address_button`}
+          />
+        </div>
+      )}
+
+      {/* Mã nhận hàng — khách tự báo cho tài xế (gọi điện, nhắn tin...),
+          tài xế đọc lại cho nhân viên quán khi đến lấy hàng để xác nhận
+          thanh toán. Chỉ hiện khi đơn còn cần thanh toán — hết tác dụng
+          sau khi đã #paid nên ẩn đi cho gọn. Luôn ẩn khi hidePickupCode
+          (danh sách lịch sử — mã của đơn cũ chắc chắn đã hết hạn). */}
+      {!hidePickupCode &&
+        order.pickupCode &&
+        order.paymentStatus !== PaymentStatus.paid && (
           <div className="mt-3 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2">
             <KeyRound
               className="h-4 w-4 shrink-0 text-primary"
@@ -193,31 +204,32 @@ export function OrderCard({ order, index }: OrderCardProps) {
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <StatusBadge status={order.bookingStatus as BookingStatus} />
-          <StatusBadge status={order.paymentStatus as PaymentStatusType} />
-        </div>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <StatusBadge status={order.bookingStatus as BookingStatus} />
+        <StatusBadge status={order.paymentStatus as PaymentStatusType} />
+      </div>
 
-        <ul className="mt-3 divide-y divide-border border-t border-border">
-          {order.items.map((item, i) => (
-            <li
-              key={item.itemId || i}
-              data-ocid={`order.card.${index}.item.${i + 1}`}
-              className="flex items-baseline justify-between gap-3 py-2 text-sm"
-            >
-              <span className="min-w-0 flex-1 truncate text-foreground">
-                {item.name}
-                <span className="ml-1.5 text-muted-foreground">
-                  × {Number(item.quantity)}
-                </span>
+      <ul className="mt-3 divide-y divide-border border-t border-border">
+        {order.items.map((item, i) => (
+          <li
+            key={item.itemId || i}
+            data-ocid={`order.card.${index}.item.${i + 1}`}
+            className="flex items-baseline justify-between gap-3 py-2 text-sm"
+          >
+            <span className="min-w-0 flex-1 truncate text-foreground">
+              {item.name}
+              <span className="ml-1.5 text-muted-foreground">
+                × {Number(item.quantity)}
               </span>
-              <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                {formatUnitPrice(item.price, item.unitName)}
-              </span>
-            </li>
-          ))}
-        </ul>
+            </span>
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">
+              {formatUnitPrice(item.price, item.unitName)}
+            </span>
+          </li>
+        ))}
+      </ul>
 
+      {!disableDetailLink && (
         <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
           <span className="text-xs text-muted-foreground">
             {order.items.length} mặt hàng
@@ -227,7 +239,31 @@ export function OrderCard({ order, index }: OrderCardProps) {
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </span>
         </div>
-      </Link>
+      )}
+      {disableDetailLink && (
+        <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
+          {order.items.length} mặt hàng
+        </p>
+      )}
+    </>
+  );
+
+  return (
+    <div
+      data-ocid={`order.card.${index}`}
+      className="flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-smooth hover:border-primary/40 hover:shadow-md"
+    >
+      {disableDetailLink ? (
+        <div className="block">{content}</div>
+      ) : (
+        <Link
+          to="/track/$orderId"
+          params={{ orderId: order.orderId }}
+          className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          {content}
+        </Link>
+      )}
     </div>
   );
 }

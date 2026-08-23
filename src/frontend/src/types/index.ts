@@ -174,3 +174,25 @@ export interface Customer {
 // 'driver' (default): the driver pays the order, then settles with the house.
 // 'customer': the customer pays the driver directly at pickup.
 export type PaymentMode = "driver" | "customer";
+
+// VPS order-history record — GET /orders/history?email= trả về đơn TRƯỚC
+// ngày hôm nay (canister chỉ giữ đơn trong ngày, xem routes/order-history.js
+// VPS). Field tối giản, PHẦN NÀY KHÔNG có pickupCode/cusAddress/cusTaxCode/
+// receiverEmail — VPS không trả các field này cho endpoint lịch sử.
+export interface VpsHistoryOrder {
+  orderId: string;
+  restaurantId: string;
+  cusName: string;
+  cusPhone: string;
+  amount: number;
+  bookingStatus: string;
+  paymentStatus: string;
+  createdAt: number;
+  items: Array<{
+    itemId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    unitName: string;
+  }>;
+}

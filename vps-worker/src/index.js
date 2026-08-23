@@ -29,6 +29,7 @@ const invoiceRoutes = require('./routes/invoice');
 const analyticsRoutes = require('./routes/analytics');
 const uploadRoutes = require('./routes/upload');
 const customersRoutes = require('./routes/customers');
+const orderHistoryRoutes = require('./routes/order-history');
 
 const cronJobs = [];
 
@@ -67,6 +68,7 @@ app.use('/', webhooksRoutes);
 app.use('/', invoiceRoutes);
 app.use('/', uploadRoutes);
 app.use('/', customersRoutes);
+app.use('/', orderHistoryRoutes);
 app.use('/', analyticsRoutes);
 
 // Error handler

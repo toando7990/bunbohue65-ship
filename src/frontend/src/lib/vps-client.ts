@@ -12,6 +12,7 @@ import type {
   QuoteRequest,
   QuoteResponse,
   RequestQrResponse,
+  VpsHistoryOrder,
 } from "@/types";
 
 // VPS base URL resolution.
@@ -224,6 +225,18 @@ export async function getCustomer(email: string): Promise<Customer | null> {
     }
     throw err;
   }
+}
+
+// Lịch sử đặt đơn — VPS trả đơn TRƯỚC ngày hôm nay (canister chỉ giữ đơn
+// trong ngày, xem routes/order-history.js). Đã sắp mới nhất lên đầu.
+export async function getOrderHistory(
+  email: string,
+): Promise<VpsHistoryOrder[]> {
+  const res = await vpsFetch<{ ok: boolean; orders: VpsHistoryOrder[] }>({
+    method: "GET",
+    path: `/orders/history?email=${encodeURIComponent(email)}`,
+  });
+  return res.orders;
 }
 
 // Email invoice to customer — VPS triggers Bkav email send.
