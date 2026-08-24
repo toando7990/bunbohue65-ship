@@ -11,6 +11,12 @@ import { toast } from "sonner";
 
 interface ActivationFormProps {
   onActivated: (restaurantId: string, deviceId: string) => void;
+  // Vai trò thiết bị mong đợi — mặc định 'driver' để không đổi hành vi cũ ở
+  // DriverPaymentScreen. Truyền 'cashier' cho CounterOrder (app quầy).
+  expectedRole?: DeviceRole;
+  // Nhãn tiếng Việt của expectedRole, dùng trong thông báo lỗi khi nhập nhầm
+  // mã của vai trò khác.
+  expectedRoleLabel?: string;
 }
 
 // Sinh deviceId ổn định per browser để canister nhận diện lại thiết bị đã active.
@@ -29,7 +35,11 @@ function getDeviceId(): string {
   }
 }
 
-export function ActivationForm({ onActivated }: ActivationFormProps) {
+export function ActivationForm({
+  onActivated,
+  expectedRole = DeviceRole.driver,
+  expectedRoleLabel = "tài xế",
+}: ActivationFormProps) {
   const { actor } = useCanister();
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -46,9 +56,9 @@ export function ActivationForm({ onActivated }: ActivationFormProps) {
     try {
       const deviceId = getDeviceId();
       const device = await activateDevice(actor, normalized, deviceId);
-      if (device.role !== DeviceRole.driver) {
+      if (device.role !== expectedRole) {
         setError(
-          "Mã này không dành cho thiết bị tài xế. Vui lòng dùng mã vai trò 'driver'.",
+          `Mã này không dành cho thiết bị ${expectedRoleLabel}. Vui lòng dùng đúng mã vai trò.`,
         );
         return;
       }

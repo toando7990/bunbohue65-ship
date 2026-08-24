@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminPanel } from "@/pages/AdminPanel";
 import { AnalyticsDashboard } from "@/pages/AnalyticsDashboard";
+import CounterOrder from "@/pages/CounterOrder";
 import CreateOrder from "@/pages/CreateOrder";
 import { DeviceManager } from "@/pages/DeviceManager";
 import { DriverPaymentScreen } from "@/pages/DriverPaymentScreen";
@@ -130,6 +131,12 @@ const driverRoute = createRoute({
   component: () => <DriverPaymentScreen />,
 });
 
+const counterRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/counter",
+  component: () => <CounterOrder />,
+});
+
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
@@ -192,6 +199,7 @@ const router = createRouter({
     historyRoute,
     grabGuideRoute,
     driverRoute,
+    counterRoute,
     adminRoute,
     adminDevicesRoute,
     adminMenuRoute,
