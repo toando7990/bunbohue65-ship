@@ -1,0 +1,53 @@
+# Build app quầy (Electron) cho macOS + Windows tự động — sandbox của Claude
+# chạy Linux nên không build ra file cài đặt .dmg/.exe cuối cùng được. Chạy
+# workflow này trên GitHub (miễn phí cho repo public, có hạn mức phút miễn
+# phí cho repo private) để build trên đúng máy macOS/Windows thật.
+#
+# Cách chạy: vào tab "Actions" trên GitHub → chọn "Build Desktop Counter App"
+# → "Run workflow" → chọn nhánh main → Run. Sau khi chạy xong (vài phút),
+# vào lại lần chạy đó, mục "Artifacts" ở cuối trang sẽ có file .dmg (macOS)
+# và .exe (Windows) để tải về.
+#
+# Cũng tự chạy khi push tag dạng "desktop-v*" (ví dụ desktop-v1.0.0).
+name: Build Desktop Counter App
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "desktop-v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            script: build:mac
+          - os: windows-latest
+            script: build:win
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: src/desktop-counter
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run ${{ matrix.script }}
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: bunbohue65-desktop-counter-${{ matrix.os }}
+          path: |
+            src/desktop-counter/dist/*.dmg
+            src/desktop-counter/dist/*.exe
+          if-no-files-found: error
