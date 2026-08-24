@@ -154,12 +154,15 @@ export default function CounterOrder() {
   }
 
   const customerErrors: CustomerFormErrors = touched
-    ? validateCustomerForm(customer, { hideAddress: true })
+    ? validateCustomerForm(customer, { hideAddress: true, hideEmail: true })
     : {};
 
   async function handleSubmit() {
     setTouched(true);
-    const errs = validateCustomerForm(customer, { hideAddress: true });
+    const errs = validateCustomerForm(customer, {
+      hideAddress: true,
+      hideEmail: true,
+    });
     if (Object.keys(errs).length > 0) {
       toast.error("Vui lòng nhập tên và số điện thoại khách.");
       return;
@@ -295,6 +298,7 @@ export default function CounterOrder() {
               }
               disabled={submitting}
               hideAddress
+              hideEmail
             />
           </CardContent>
         </Card>

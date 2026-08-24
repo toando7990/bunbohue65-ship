@@ -1,5 +1,10 @@
 // CustomerForm — form nhập cusName, cusPhone, cusAddress, cusTaxCode, receiverEmail.
 // Validation tiếng Việt. Mobile-first. Controlled, không submit ở đây (parent owns submit).
+//
+// receiverEmail KHÔNG còn gắn với xác thực OTP — chỉ là 1 trường thông tin
+// khách tự gõ như tên/SĐT, không xác thực gì ở bước đặt món. Việc xác thực
+// email (OTP) chuyển hẳn sang "Lịch sử đặt đơn" (OrderHistory.tsx) — chỉ khi
+// khách muốn TRA CỨU LẠI lịch sử mới cần xác thực, đặt đơn thì không.
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,17 +30,16 @@ interface CustomerFormProps {
     value: string,
   ) => void;
   disabled?: boolean;
-  // Khi true: ẩn trường địa chỉ giao hàng và bỏ qua validate địa chỉ.
-  // Dùng cho luồng "khách tự thanh toán" (paymentMode='customer') — khách
-  // không cần nhập địa chỉ vì tự đặt Grab Express để nhận hàng.
+  // Khi true: ẩn trường địa chỉ giao hàng + mã số thuế, bỏ qua validate 2
+  // trường đó. Dùng cho luồng "khách tự thanh toán" (paymentMode='customer')
+  // — khách không cần nhập địa chỉ vì tự đặt Grab Express để nhận hàng.
+  // KHÔNG còn ảnh hưởng tới receiverEmail — email hiện độc lập, luôn hiện
+  // (trừ khi hideEmail=true riêng).
   hideAddress?: boolean;
-  // Khi true: máy này CHƯA từng xác thực email nào — khoá ô "Email nhận
-  // hoá đơn" (không cho gõ tay), vì giá trị sẽ được gán tự động từ email
-  // khách xác thực trong EmailVerificationDialog lúc bấm "Đặt món", tránh
-  // bắt khách nhập email 2 lần (1 lần ở đây, 1 lần trong hộp thoại xác
-  // thực). Khi máy đã từng xác thực, ô này mở khoá bình thường — khách có
-  // thể sửa sang email khác tự do, không cần xác thực lại (xem CreateOrder.tsx).
-  emailLocked?: boolean;
+  // Khi true: ẩn hẳn ô email (dùng cho ngữ cảnh không cần thu thập email,
+  // ví dụ app quầy CounterOrder.tsx — khách đứng tại chỗ, không cần hoá đơn
+  // điện tử gửi email).
+  hideEmail?: boolean;
 }
 
 // Vietnamese phone: 10 digits starting 0 (mobile), or 11 for some landlines.
@@ -45,7 +49,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateCustomerForm(
   v: CustomerFormValues,
-  options: { hideAddress?: boolean; emailLocked?: boolean } = {},
+  options: { hideAddress?: boolean; hideEmail?: boolean } = {},
 ): CustomerFormErrors {
   const errors: CustomerFormErrors = {};
   if (!v.cusName.trim()) errors.cusName = "Vui lòng nhập tên khách hàng.";
@@ -73,11 +77,8 @@ export function validateCustomerForm(
     errors.cusTaxCode = "Mã số thuế không hợp lệ (10 hoặc 14 số).";
   }
 
-  // Skip email validation when hideAddress (customer mode) — field is hidden.
-  // Also skip when emailLocked (chưa xác thực) — ô bị khoá rỗng, giá trị sẽ
-  // được gán sau khi khách xác thực trong EmailVerificationDialog, không
-  // phải lỗi nhập liệu của khách.
-  if (!options.hideAddress && !options.emailLocked) {
+  // Email không còn gắn với hideAddress — chỉ bỏ qua khi hideEmail (ô ẩn hẳn).
+  if (!options.hideEmail) {
     if (!v.receiverEmail.trim())
       errors.receiverEmail = "Vui lòng nhập email nhận hoá đơn.";
     else if (!EMAIL_RE.test(v.receiverEmail.trim()))
@@ -129,7 +130,7 @@ export function CustomerForm({
   onChange,
   disabled,
   hideAddress,
-  emailLocked,
+  hideEmail,
 }: CustomerFormProps) {
   const inputClass = (hasError?: string) =>
     cn(
@@ -230,16 +231,12 @@ export function CustomerForm({
         </Field>
       )}
 
-      {!hideAddress && (
+      {!hideEmail && (
         <Field
           id="receiver_email"
           label="Email nhận hoá đơn"
           error={errors.receiverEmail}
-          hint={
-            emailLocked
-              ? "Sẽ tự động điền sau khi bạn xác thực email lúc đặt đơn."
-              : undefined
-          }
+          hint="Dùng để tra cứu lại đơn ở 'Lịch sử đặt đơn' sau này."
           className="col-span-3 sm:col-span-1"
         >
           <Input
@@ -249,10 +246,8 @@ export function CustomerForm({
             inputMode="email"
             value={values.receiverEmail}
             onChange={(e) => onChange("receiverEmail", e.target.value)}
-            placeholder={
-              emailLocked ? "Xác thực lúc bấm Đặt món" : "khach@example.com"
-            }
-            disabled={disabled || emailLocked}
+            placeholder="khach@example.com"
+            disabled={disabled}
             aria-invalid={!!errors.receiverEmail}
             data-ocid="customer_form.receiver_email_input"
             className={inputClass(errors.receiverEmail)}
