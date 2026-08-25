@@ -18,63 +18,15 @@
 
 import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
 import { OrderCard } from "@/components/OrderCard";
+import { toOrder } from "@/lib/order-mapping";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import { getOrderHistory } from "@/lib/vps-client";
-import type {
-  BookingStatus,
-  Order,
-  PaymentStatus,
-  VpsHistoryOrder,
-} from "@/types";
-import { InvoiceStatus } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { History, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 function normalizeEmail(v: string): string {
   return v.trim().toLowerCase();
-}
-
-// VPS trả dữ liệu tối giản (number/string thuần) — chuyển sang shape Order
-// mà OrderCard cần (bigint, enum). Các field canister-only không có ở VPS
-// (pickupCode, cusAddress, cusTaxCode, receiverEmail, qrCode, billId...) đặt
-// giá trị rỗng/mặc định — OrderCard không hiển thị chúng khi hidePickupCode/
-// disableDetailLink=true.
-function toOrder(h: VpsHistoryOrder): Order {
-  const createdAtNs = BigInt(h.createdAt) * 1_000_000n;
-  return {
-    orderId: h.orderId,
-    restaurantId: h.restaurantId,
-    cusName: h.cusName,
-    cusPhone: h.cusPhone,
-    cusAddress: "",
-    cusTaxCode: "",
-    receiverEmail: "",
-    pickupCode: "",
-    items: h.items.map((it) => ({
-      itemId: it.itemId,
-      name: it.name,
-      price: BigInt(it.price),
-      quantity: BigInt(it.quantity),
-      unitName: it.unitName,
-      vatRate: 0n,
-    })),
-    amount: BigInt(h.amount),
-    goodsAmount: BigInt(h.amount),
-    shippingFee: 0n,
-    taxTotal: 0n,
-    bookingStatus: h.bookingStatus as BookingStatus,
-    paymentStatus: h.paymentStatus as PaymentStatus,
-    invoiceStatus: InvoiceStatus.none,
-    ahamoveOrderId: "",
-    tingeeQrId: "",
-    sharedLink: "",
-    tingeeQrCode: "",
-    invoiceId: "",
-    pdfUrl: "",
-    createdAt: createdAtNs,
-    updatedAt: createdAtNs,
-  };
 }
 
 export default function OrderHistory() {

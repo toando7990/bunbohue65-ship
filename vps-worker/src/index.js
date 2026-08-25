@@ -30,6 +30,7 @@ const analyticsRoutes = require('./routes/analytics');
 const uploadRoutes = require('./routes/upload');
 const customersRoutes = require('./routes/customers');
 const orderHistoryRoutes = require('./routes/order-history');
+const restaurantHistoryRoutes = require('./routes/restaurant-history');
 
 const cronJobs = [];
 
@@ -69,6 +70,7 @@ app.use('/', invoiceRoutes);
 app.use('/', uploadRoutes);
 app.use('/', customersRoutes);
 app.use('/', orderHistoryRoutes);
+app.use('/', restaurantHistoryRoutes);
 app.use('/', analyticsRoutes);
 
 // Error handler

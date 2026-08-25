@@ -12,7 +12,9 @@ import type {
   QuoteRequest,
   QuoteResponse,
   RequestQrResponse,
+  RestaurantHistoryPeriod,
   VpsHistoryOrder,
+  VpsRestaurantHistory,
 } from "@/types";
 
 // VPS base URL resolution.
@@ -237,6 +239,19 @@ export async function getOrderHistory(
     path: `/orders/history?email=${encodeURIComponent(email)}`,
   });
   return res.orders;
+}
+
+// Lịch sử đơn hàng theo nhà hàng — dùng cho tab "Lịch sử đơn hàng" trên
+// /driver. period: 'today' | 'week' (tuần này, Thứ 2 - hiện tại) | 'month'
+// (tháng này, ngày 1 - hiện tại).
+export async function getRestaurantHistory(
+  restaurantId: string,
+  period: RestaurantHistoryPeriod,
+): Promise<VpsRestaurantHistory> {
+  return vpsFetch<VpsRestaurantHistory>({
+    method: "GET",
+    path: `/orders/restaurant-history?restaurantId=${encodeURIComponent(restaurantId)}&period=${period}`,
+  });
 }
 
 // Email invoice to customer — VPS triggers Bkav email send.

@@ -196,3 +196,14 @@ export interface VpsHistoryOrder {
     unitName: string;
   }>;
 }
+
+// VPS restaurant-history record — GET /orders/restaurant-history?restaurantId=&period=
+// Dùng cho tab "Lịch sử đơn hàng" trên /driver. orders: TẤT CẢ đơn trong
+// khoảng (mọi trạng thái). totalPaidAmount: CHỈ cộng đơn đã thanh toán.
+export interface VpsRestaurantHistory {
+  totalOrders: number;
+  totalPaidAmount: number;
+  orders: VpsHistoryOrder[];
+}
+
+export type RestaurantHistoryPeriod = "today" | "week" | "month";

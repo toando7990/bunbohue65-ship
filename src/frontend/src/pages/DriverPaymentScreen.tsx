@@ -5,10 +5,11 @@
 
 import type { Order } from "@/backend";
 import { ActivationForm } from "@/components/ActivationForm";
+import { DriverOrderHistory } from "@/components/DriverOrderHistory";
 import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
 import { usePendingOrders } from "@/hooks/usePendingOrders";
-import { Smartphone } from "lucide-react";
+import { History, ListOrdered, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -45,6 +46,7 @@ export function DriverPaymentScreen() {
   );
   const [deviceName, setDeviceName] = useState<string>(stored?.name ?? "");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+  const [activeTab, setActiveTab] = useState<"queue" | "history">("queue");
 
   const ordersQuery = usePendingOrders(restaurantId ?? undefined);
 
@@ -113,15 +115,58 @@ export function DriverPaymentScreen() {
         </div>
       </div>
 
+      {/* Thanh tab: Hàng đợi thanh toán / Lịch sử đơn hàng */}
+      <div
+        className="border-b border-border bg-card px-4 md:px-6"
+        data-ocid="driver.tabs"
+      >
+        <div className="mx-auto flex w-full max-w-2xl gap-1">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "queue"}
+            onClick={() => setActiveTab("queue")}
+            data-ocid="driver.tab.queue"
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-smooth ${
+              activeTab === "queue"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ListOrdered className="h-4 w-4" aria-hidden="true" />
+            Hàng đợi thanh toán
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "history"}
+            onClick={() => setActiveTab("history")}
+            data-ocid="driver.tab.history"
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-smooth ${
+              activeTab === "history"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <History className="h-4 w-4" aria-hidden="true" />
+            Lịch sử đơn hàng
+          </button>
+        </div>
+      </div>
+
       {/* Bước 2: hàng đợi thanh toán — tài xế quét QR động Tingee thanh toán */}
       <div className="flex-1">
-        <PaymentQueue
-          orders={ordersQuery.data ?? []}
-          isLoading={ordersQuery.isLoading}
-          isError={ordersQuery.isError}
-          onPay={handlePay}
-          payingOrderId={activeOrder?.orderId ?? null}
-        />
+        {activeTab === "queue" ? (
+          <PaymentQueue
+            orders={ordersQuery.data ?? []}
+            isLoading={ordersQuery.isLoading}
+            isError={ordersQuery.isError}
+            onPay={handlePay}
+            payingOrderId={activeOrder?.orderId ?? null}
+          />
+        ) : (
+          <DriverOrderHistory restaurantId={restaurantId} />
+        )}
       </div>
 
       {/* Bước 3: QR full screen overlay — hoạt động mọi lúc */}
