@@ -20,7 +20,6 @@ import {
   Clock,
   Copy,
   Download,
-  ExternalLink,
   FileText,
   KeyRound,
   Loader2,
@@ -343,7 +342,6 @@ function OrderStatusView({
   const invoice = status.invoiceStatus as InvoiceStatus;
   const isCancelled = booking === BookingStatus.cancelled;
   const currentStep = stepIndex(booking);
-  const hasSharedLink = !!status.sharedLink;
   // Chỉ bật nút khi hoá đơn ĐÃ phát hành thành công — trạng thái 'failed'
   // trước đây cũng bật nút này, nhưng bấm vào chắc chắn báo lỗi vì chưa hề
   // có invoice_id/PDF nào tồn tại.
@@ -547,35 +545,6 @@ function OrderStatusView({
       >
         <h2 className="font-display text-lg font-semibold">Hành động</h2>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          {/* Theo dõi hành trình — mở Ahamove shared_link */}
-          <a
-            href={hasSharedLink ? status.sharedLink : undefined}
-            target="_blank"
-            rel="noreferrer"
-            aria-disabled={!hasSharedLink}
-            data-ocid="order_tracker.track_link"
-            className={cn(
-              "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-smooth",
-              hasSharedLink
-                ? "bg-primary text-primary-foreground hover:opacity-90"
-                : "cursor-not-allowed bg-muted text-muted-foreground",
-            )}
-            onClick={(e) => {
-              if (!hasSharedLink) e.preventDefault();
-            }}
-          >
-            <MapPin className="h-4 w-4" aria-hidden="true" />
-            Theo dõi hành trình
-            {hasSharedLink && (
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
-          </a>
-          {!hasSharedLink && (
-            <p className="text-xs text-muted-foreground sm:self-center">
-              Chưa có liên kết theo dõi Ahamove.
-            </p>
-          )}
-
           {/* Tải hoá đơn — VPS /order/:id/invoice */}
           <button
             type="button"

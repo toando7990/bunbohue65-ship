@@ -137,6 +137,7 @@ export function DriverOrderHistory({
               index={i + 1}
               hidePickupCode
               disableDetailLink
+              compactRestaurantInfo
             />
           ))}
         </div>

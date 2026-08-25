@@ -100,6 +100,13 @@ export interface OrderCardProps {
    * cũ (pruneOldOrders), /track/:orderId sẽ báo không tìm thấy nếu bấm vào.
    */
   disableDetailLink?: boolean;
+  /**
+   * Khi true: bỏ 2 khối riêng "Địa chỉ nhà hàng"/"SĐT liên hệ" (chiếm nhiều
+   * chỗ), thay bằng hiển thị gọn — địa chỉ nằm dưới mã đơn (chữ nhỏ), SĐT
+   * liên hệ nằm bên phải cùng hàng với tên khách. Dùng cho "Lịch sử đơn
+   * hàng" trên /driver — danh sách dài, cần gọn để xem nhiều đơn cùng lúc.
+   */
+  compactRestaurantInfo?: boolean;
 }
 
 export function OrderCard({
@@ -107,6 +114,7 @@ export function OrderCard({
   index,
   hidePickupCode,
   disableDetailLink,
+  compactRestaurantInfo,
 }: OrderCardProps) {
   // Tra cứu địa chỉ nhà hàng theo restaurantId để hiển thị + copy.
   const { data: restaurants } = useRestaurants();
@@ -143,9 +151,22 @@ export function OrderCard({
               {shortOrderId(order.orderId)}
             </span>
           </div>
-          <h3 className="mt-1 truncate font-display text-base font-semibold text-foreground">
-            {order.cusName || "Khách vãng lai"}
-          </h3>
+          {compactRestaurantInfo && restaurantAddress && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
+              <span className="truncate">{restaurantAddress}</span>
+            </p>
+          )}
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <h3 className="min-w-0 truncate font-display text-base font-semibold text-foreground">
+              {order.cusName || "Khách vãng lai"}
+            </h3>
+            {compactRestaurantInfo && contactPhone && (
+              <span className="shrink-0 text-sm text-muted-foreground">
+                {contactPhone}
+              </span>
+            )}
+          </div>
           {order.cusPhone && (
             <p className="mt-0.5 truncate text-sm text-muted-foreground">
               {order.cusPhone}
@@ -167,8 +188,9 @@ export function OrderCard({
         </div>
       </div>
 
-      {/* Địa chỉ nhà hàng — copy để dán vào app ngoài */}
-      {restaurantAddress && (
+      {/* Địa chỉ nhà hàng — copy để dán vào app ngoài. Ẩn khi
+          compactRestaurantInfo (đã hiện gọn dưới mã đơn ở trên). */}
+      {!compactRestaurantInfo && restaurantAddress && (
         <div className="mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2">
           <MapPin
             className="h-4 w-4 shrink-0 text-muted-foreground"
@@ -186,8 +208,9 @@ export function OrderCard({
       )}
 
       {/* SĐT liên hệ — ưu tiên nhân viên đang trực (thiết bị active gần
-          nhất), fallback SĐT chung của quán nếu chưa có thiết bị nào. */}
-      {contactPhone && (
+          nhất), fallback SĐT chung của quán nếu chưa có thiết bị nào. Ẩn khi
+          compactRestaurantInfo (đã hiện gọn cùng hàng tên khách ở trên). */}
+      {!compactRestaurantInfo && contactPhone && (
         <div className="mt-2 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2">
           <Phone
             className="h-4 w-4 shrink-0 text-muted-foreground"
