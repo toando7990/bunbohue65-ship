@@ -28,10 +28,13 @@ const axios = require('axios');
 
 const PARTNER_GUID = process.env.BKAV_PARTNER_GUID || '';
 const PARTNER_TOKEN = process.env.BKAV_PARTNER_TOKEN || '';
-// Domain proxy giải mã — dùng lại domain API chính đã có SSL sẵn
-// (proxy.bunbohue65.com), chỉ thêm route /bkav-prod, /bkav-demo,
-// /bkav-health vào Nginx hiện có (xem vps-worker/bkav-proxy/README.md).
-const PROXY_BASE_URL = process.env.BKAV_PROXY_URL || 'https://proxy.bunbohue65.com';
+// Domain proxy giải mã — MẶC ĐỊNH gọi thẳng nội bộ qua localhost, KHÔNG qua
+// Nginx/domain công khai. vps-worker và bkav-proxy chạy CÙNG 1 máy VPS —
+// không có lý do đi vòng qua Internet rồi quay lại, và tránh mọi xung đột
+// với các route Nginx khác đã có sẵn trên domain proxy.bunbohue65.com (đang
+// phục vụ nhiều dịch vụ khác: AhaMove cổng 3002, Sepay, webhook Tingee...).
+// Đổi qua biến môi trường nếu sau này bkav-proxy chạy trên máy khác.
+const PROXY_BASE_URL = process.env.BKAV_PROXY_URL || 'http://127.0.0.1:3000';
 // true → gọi Bkav DEMO (wsdemo.ehoadon.vn qua proxy /bkav-demo), mặc định
 // false (production, ws.ehoadon.vn qua proxy /bkav-prod). Đổi qua biến môi
 // trường khi cần test, KHÔNG sửa code.
