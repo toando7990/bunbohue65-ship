@@ -8,10 +8,9 @@
 // Returns CreateOrderResponse (camelCase):
 //   { orderId, ok, error? }
 //
-// 1. Tạo Ahamove order (nếu chưa có ahamoveOrderId từ frontend).
-// 2. Tingee generate-dynamic-qr.
-// 3. Lưu SQLite (orders + order_items).
-// 4. Push canister createOrder (HMAC). Nếu fail → retry queue (sync.js).
+// 1. Lưu SQLite (orders + order_items) — khách tự đặt tài xế qua app ngoài,
+//    không tạo đơn AhaMove (đã gỡ hoàn toàn — xem lib/canister.js, webhooks.js).
+// 2. Push canister createOrder (HMAC). Nếu fail → retry queue (sync.js).
 // ============================================================
 
 const express = require('express');

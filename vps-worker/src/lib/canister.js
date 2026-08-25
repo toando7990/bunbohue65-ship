@@ -247,9 +247,9 @@ async function getMenuForRestaurant(restaurantId) {
   return await actor.getMenuForRestaurant(restaurantId);
 }
 
-// getPaymentMode — query. Trả 'driver' | 'customer'. Routes/create.js dùng
-// để quyết định có gọi Ahamove createOrder hay không. Default 'driver' nếu
-// canister trả giá trị bất thường.
+// getPaymentMode — query. Trả 'driver' | 'customer'. Dùng để hiển thị đúng
+// luồng thanh toán (khách tự đặt tài xế qua app ngoài, không qua AhaMove).
+// Default 'driver' nếu canister trả giá trị bất thường.
 async function getPaymentMode() {
   const actor = getActor();
   return await actor.getPaymentMode();

@@ -55,7 +55,7 @@ function isToday(ns: bigint): boolean {
 }
 
 // Mốc tính thời gian chờ: createdAt (thời điểm đặt đơn) — dùng làm mốc gần đúng
-// cho "tài xế nhận đơn", vì Ahamove thường tìm tài xế gần như ngay lập tức.
+// cho "tài xế nhận đơn" (khách tự đặt tài xế qua app ngoài như Grab).
 const OVERDUE_MINUTES = 60;
 
 function elapsedMinutes(createdAt: bigint): number {
@@ -231,8 +231,9 @@ export function PaymentQueue({
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    {/* Chỉ hiện tiền hàng — không gồm phí ship (thuộc về Ahamove,
-                        không phải khoản quán nhận từ tài xế). Khớp với số trên màn QR. */}
+                    {/* Chỉ hiện tiền hàng — không gồm phí ship (khách tự trả
+                        tài xế bên ngoài, không phải khoản quán nhận). Khớp
+                        với số trên màn QR. */}
                     <span className="font-display text-xl font-bold text-primary">
                       {formatVnd(order.amount - order.shippingFee)}
                     </span>

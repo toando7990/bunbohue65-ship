@@ -1,15 +1,19 @@
 // ============================================================
-// routes/webhooks.js — Ahamove + Tingee webhooks + backup poll
+// routes/webhooks.js — Tingee webhook + backup poll
 // ============================================================
-// POST /webhook/ahamove + /webhook/tingee (rate-limit + verify signature)
-// → map status → push canister. Backup poll Ahamove 10s + Tingee 5s.
+// POST /webhook/tingee (rate-limit + verify signature) → ack only (poll là
+// nguồn trạng thái thanh toán duy nhất). Backup poll Tingee 5s.
 // Sau paid → Tingee delete-dynamic-qr.
+//
+// AhaMove ĐÃ GỠ HOÀN TOÀN (khách tự đặt tài xế bằng app ngoài — quote.js/
+// create.js không còn tạo đơn AhaMove từ trước) — xoá luôn webhook +
+// backup poll AhaMove vì không còn tác dụng, chỉ gây lỗi 401 lặp vô hạn
+// cho các đơn test cũ còn sót ahamove_order_id.
 // ============================================================
 
 const express = require('express');
 const crypto = require('crypto');
 const cron = require('node-cron');
-const ahamove = require('../lib/ahamove');
 const tingee = require('../lib/tingee'); // { generateDynamicQr, deleteDynamicQr, getDynamicQrStatus, BASE_URL }
 const canister = require('../lib/canister');
 const { rateLimit } = require('../middleware/rate-limit');
@@ -27,15 +31,8 @@ router.use(rateLimit({ windowMs: 60000, max: 60, message: 'Too many webhook call
 // khi secret chưa set để dễ test, nhưng vẫn log warning.
 // ------------------------------------------------------------
 const IS_PROD = process.env.NODE_ENV === 'production';
-const AHAMOVE_WEBHOOK_SECRET =
-  process.env.AHAMOVE_WEBHOOK_SECRET || process.env.AHAMOVE_API_KEY;
 const TINGEE_SECRET = process.env.TINGEE_SECRET;
 
-if (!AHAMOVE_WEBHOOK_SECRET) {
-  console.warn(
-    '[webhooks] AHAMOVE_WEBHOOK_SECRET (or AHAMOVE_API_KEY) missing — Ahamove webhook verification will fail in production'
-  );
-}
 if (!TINGEE_SECRET) {
   console.warn(
     '[webhooks] TINGEE_SECRET missing — Tingee webhook verification will fail in production'
@@ -49,35 +46,6 @@ function safeEqualHex(a, b) {
   const bBuf = Buffer.from(String(b), 'utf8');
   if (aBuf.length !== bBuf.length) return false;
   return crypto.timingSafeEqual(aBuf, bBuf);
-}
-
-// verifyAhamoveWebhook: verify X-Ahamove-Signature header.
-// Signature = HMAC-SHA256(rawBody, secret), hex lowercase.
-function verifyAhamoveWebhook(req, res, next) {
-  const sig = req.get('X-Ahamove-Signature');
-  if (!sig) {
-    if (!IS_PROD && !AHAMOVE_WEBHOOK_SECRET) {
-      console.warn('[webhook/ahamove] skip signature verification (dev, no secret)');
-      return next();
-    }
-    return res.status(401).json({ error: 'missing X-Ahamove-Signature' });
-  }
-  if (!AHAMOVE_WEBHOOK_SECRET) {
-    if (!IS_PROD) {
-      console.warn('[webhook/ahamove] skip signature verification (dev, no secret)');
-      return next();
-    }
-    return res.status(500).json({ error: 'webhook secret not configured' });
-  }
-  const rawBody = req.rawBody || '';
-  const expected = crypto
-    .createHmac('sha256', AHAMOVE_WEBHOOK_SECRET)
-    .update(rawBody, 'utf8')
-    .digest('hex');
-  if (!safeEqualHex(sig, expected)) {
-    return res.status(401).json({ error: 'invalid signature' });
-  }
-  next();
 }
 
 // verifyTingeeWebhook: verify X-Tingee-Signature header.
@@ -113,92 +81,6 @@ function verifyTingeeWebhook(req, res, next) {
   next();
 }
 
-// POST /webhook/ahamove — body: { order_id, status, ... }
-router.post('/webhook/ahamove', verifyAhamoveWebhook, async (req, res, next) => {
-  try {
-    const db = req.app.locals.db;
-    const { order_id: ahamoveOrderId, status } = req.body || {};
-    if (!ahamoveOrderId) return res.status(400).json({ error: 'order_id required' });
-
-    db.prepare(`INSERT INTO ahamove_logs (order_id, ahamove_order_id, action, response_body, created_at) VALUES (?, ?, 'webhook', ?, ?)`)
-      .run(ahamoveOrderId, ahamoveOrderId, JSON.stringify(req.body), Date.now());
-
-    const row = db.prepare(`SELECT order_id FROM orders WHERE ahamove_order_id = ?`).get(ahamoveOrderId);
-    if (!row) return res.status(404).json({ error: 'order not found' });
-
-    const bookingStatus = ahamove.mapAhamoveStatus(status);
-    if (bookingStatus) {
-      try {
-        await canister.updateStatus(row.order_id, bookingStatus);
-        db.prepare(`UPDATE orders SET booking_status = ?, updated_at = ? WHERE order_id = ?`)
-          .run(bookingStatus, Date.now(), row.order_id);
-      } catch (e) {
-        console.error('[webhook/ahamove] canister updateStatus error:', e.message);
-      }
-    }
-    res.json({ ok: true });
-  } catch (e) {
-    next(e);
-  }
-});
-
-// POST /webhook/ahamove/cancel — body: { orderId, comment }
-// Manual cancel trigger: call ahamove.cancelOrder(ahamoveOrderId, comment),
-// map CANCELLED → 'cancelled' via mapAhamoveStatus, push canister.updateStatus.
-// Logs to ahamove_logs with action='cancel'.
-router.post('/webhook/ahamove/cancel', verifyAhamoveWebhook, async (req, res, next) => {
-  try {
-    const db = req.app.locals.db;
-    const { orderId, comment } = req.body || {};
-    if (!orderId) return res.status(400).json({ error: 'orderId required' });
-
-    const row = db.prepare(
-      `SELECT order_id, ahamove_order_id, booking_status FROM orders WHERE order_id = ?`,
-    ).get(orderId);
-    if (!row) return res.status(404).json({ error: 'order not found' });
-    if (!row.ahamove_order_id) return res.status(400).json({ error: 'order has no ahamove_order_id' });
-
-    const cancelComment = comment || 'Cancelled by operator';
-    let cancelResp = {};
-    let cancelErr = null;
-    try {
-      cancelResp = await ahamove.cancelOrder(row.ahamove_order_id, cancelComment);
-    } catch (e) {
-      cancelErr = e;
-    }
-
-    db.prepare(
-      `INSERT INTO ahamove_logs (order_id, ahamove_order_id, action, request_body, response_body, error, created_at)
-       VALUES (?, ?, 'cancel', ?, ?, ?, ?)`,
-    ).run(
-      row.order_id,
-      row.ahamove_order_id,
-      JSON.stringify({ comment: cancelComment }),
-      JSON.stringify(cancelResp),
-      cancelErr ? cancelErr.message : null,
-      Date.now(),
-    );
-
-    if (cancelErr) {
-      console.error('[webhook/ahamove/cancel] cancelOrder error:', cancelErr.message);
-      return res.status(502).json({ ok: false, error: `Ahamove cancel failed: ${cancelErr.message}` });
-    }
-
-    // On success ({} response) → map CANCELLED → 'cancelled' and push canister.
-    const bookingStatus = ahamove.mapAhamoveStatus('CANCELLED');
-    try {
-      await canister.updateStatus(row.order_id, bookingStatus);
-      db.prepare(`UPDATE orders SET booking_status = ?, updated_at = ? WHERE order_id = ?`)
-        .run(bookingStatus, Date.now(), row.order_id);
-    } catch (e) {
-      console.error('[webhook/ahamove/cancel] canister updateStatus error:', e.message);
-    }
-    res.json({ ok: true, bookingStatus });
-  } catch (e) {
-    next(e);
-  }
-});
-
 // POST /webhook/tingee — body: { qr_id, status, ... }
 // KHÔNG còn dùng để xác định trạng thái thanh toán. get-status-dynamic-qr
 // (startTingeePoll) là nguồn trạng thái DUY NHẤT. Route này chỉ log và ack.
@@ -222,40 +104,6 @@ router.post('/webhook/tingee', verifyTingeeWebhook, async (req, res, next) => {
 // ============================================================
 // Backup poll (cron) — bù webhooks bị miss
 // ============================================================
-
-// Poll Ahamove 10s: các order chưa completed/cancelled.
-function startAhamovePoll(db) {
-  const task = cron.schedule('*/10 * * * * *', async () => {
-    if (shutdown.shuttingDown) return;
-    try {
-      const rows = db.prepare(
-        `SELECT order_id, ahamove_order_id, booking_status FROM orders
-         WHERE ahamove_order_id != '' AND booking_status NOT IN ('completed', 'cancelled')`,
-      ).all();
-      for (const row of rows) {
-        try {
-          const info = await ahamove.getOrderDetail(row.ahamove_order_id);
-          const newStatus = ahamove.mapAhamoveStatus(info.status);
-          // Log poll to ahamove_logs with action='get_status'.
-          db.prepare(
-            `INSERT INTO ahamove_logs (order_id, ahamove_order_id, action, response_body, status_code, created_at)
-             VALUES (?, ?, 'get_status', ?, ?, ?)`,
-          ).run(row.order_id, row.ahamove_order_id, JSON.stringify(info), 200, Date.now());
-          if (newStatus && newStatus !== row.booking_status) {
-            await canister.updateStatus(row.order_id, newStatus);
-            db.prepare(`UPDATE orders SET booking_status = ?, updated_at = ? WHERE order_id = ?`)
-              .run(newStatus, Date.now(), row.order_id);
-          }
-        } catch (e) {
-          console.error('[poll/ahamove] error:', row.order_id, e.message);
-        }
-      }
-    } catch (e) {
-      console.error('[poll/ahamove] fatal:', e.message);
-    }
-  });
-  return task;
-}
 
 // Poll Tingee 5s — get-status-dynamic-qr là nguồn trạng thái thanh toán DUY NHẤT.
 // Cửa sổ poll khóa theo expire_at của QR (thời điểm QR hết hạn), KHÔNG theo
@@ -344,5 +192,4 @@ function startTingeePoll(db) {
 }
 
 module.exports = router;
-module.exports.startAhamovePoll = startAhamovePoll;
 module.exports.startTingeePoll = startTingeePoll;

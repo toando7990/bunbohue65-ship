@@ -4,7 +4,7 @@
 // - Express + CORS + /health
 // - Mount routes: quote, create, webhooks, invoice, analytics, upload
 // - Cron jobs: backup daily, reconciliation 5min, retry 30s,
-//   poll Ahamove 10s, poll Tingee 5s, invoice 1min
+//   poll Tingee 5s, invoice 1min
 // - Static /uploads
 // ============================================================
 
@@ -102,9 +102,6 @@ cronJobs.push(startReconciliation(db));
 
 // Auto-cancel đơn unpaid hết hạn 1 phút (khớp expiry QR 15 phút)
 cronJobs.push(startUnpaidExpiry(db));
-
-// Poll Ahamove 10s (backup cho webhook)
-cronJobs.push(webhooksRoutes.startAhamovePoll(db));
 
 // Poll Tingee 5s (backup cho webhook)
 cronJobs.push(webhooksRoutes.startTingeePoll(db));
