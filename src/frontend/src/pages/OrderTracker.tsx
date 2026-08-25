@@ -344,8 +344,10 @@ function OrderStatusView({
   const isCancelled = booking === BookingStatus.cancelled;
   const currentStep = stepIndex(booking);
   const hasSharedLink = !!status.sharedLink;
-  const canDownloadInvoice =
-    invoice === InvoiceStatus.invoiced || invoice === InvoiceStatus.failed;
+  // Chỉ bật nút khi hoá đơn ĐÃ phát hành thành công — trạng thái 'failed'
+  // trước đây cũng bật nút này, nhưng bấm vào chắc chắn báo lỗi vì chưa hề
+  // có invoice_id/PDF nào tồn tại.
+  const canDownloadInvoice = invoice === InvoiceStatus.invoiced;
 
   return (
     <div className="mt-6 space-y-6">

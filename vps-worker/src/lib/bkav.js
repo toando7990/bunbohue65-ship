@@ -12,9 +12,6 @@
 
 const axios = require('axios');
 const xml2js = require('xml2js');
-const crypto = require('crypto');
-
-const shutdown = require('./shutdown');
 
 const ENDPOINT = process.env.BKAV_ENDPOINT || 'https://ws.ehoadon.vn/WSPublicEhoadon.asmx/ExecCommand';
 // Base URL host phục vụ file PDF eHoadon (KHÔNG phải SOAP ExecCommand endpoint).
@@ -261,168 +258,13 @@ async function callBkav(command, jsonPayload, config) {
 }
 
 // ------------------------------------------------------------
-// sendCallbackToCanister — POST invoice result tới canister callback.
-// ------------------------------------------------------------
-// URL: https://<canisterId>.raw.icp0.io/invoice-callback
-// HMAC-SHA256 signature trong header X-Invoice-Signature.
-// callbackSecret từ process.env.INVOICE_CALLBACK_SECRET.
-// canisterId từ process.env.CANISTER_ID.
-// ------------------------------------------------------------
-async function sendCallbackToCanister(invoiceResult, config) {
-  config = config || {};
-  const canisterId = config.canisterId || process.env.CANISTER_ID;
-  const callbackSecret = config.callbackSecret || process.env.INVOICE_CALLBACK_SECRET;
-
-  if (!canisterId || !callbackSecret) {
-    throw new Error('sendCallbackToCanister: canisterId or callbackSecret missing');
-  }
-
-  const callbackUrl = `https://${canisterId}.raw.icp0.io/invoice-callback`;
-  const body = JSON.stringify(invoiceResult);
-  const signature = crypto.createHmac('sha256', callbackSecret).update(body).digest('hex');
-
-  await axios.post(callbackUrl, body, {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Invoice-Signature': signature,
-    },
-    timeout: 15000,
-  });
-}
-
-// ------------------------------------------------------------
-// processInvoice — Retry loop + callback cho 1 invoice.
-// ------------------------------------------------------------
-// MAX_RETRIES=3, RETRY_DELAY_MS=5000.
-// Thành công: gửi callback { status: 'issued', invoiceNo, ... }.
-// Thất bại cuối: gửi callback { status: 'error', error, attempt }.
-// ------------------------------------------------------------
-async function processInvoice(invoice, config) {
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY_MS = 5000;
-
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const payload = buildJsonPayload(invoice, config);
-      const result = await callBkav('CreateInvoice', payload, config);
-      if (result.success) {
-        const callbackResult = {
-          orderId: invoice.orderId,
-          status: 'issued',
-          invoiceNo: result.invoiceNo,
-          invoiceDate: result.invoiceDate,
-          maCQT: result.maCQT,
-          maTraCuu: result.maTraCuu,
-        };
-        await sendCallbackToCanister(callbackResult, config);
-        return callbackResult;
-      }
-      throw new Error(result.error || 'Bkav returned failure');
-    } catch (err) {
-      if (attempt < MAX_RETRIES) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-        continue;
-      }
-      // Final failure — gửi error callback (không throw nếu callback fail).
-      await sendCallbackToCanister({
-        orderId: invoice.orderId,
-        status: 'error',
-        error: err.message,
-        attempt,
-      }, config).catch(() => {});
-      throw err;
-    }
-  }
-}
-
-// ------------------------------------------------------------
-// pollAndProcess — Poll pending invoices + process each.
-// ------------------------------------------------------------
-// Được schedule bởi node-cron (index.js), KHÔNG thay thế cron setup.
-// Flow:
-//   1. Check shutdown.shuttingDown → return early
-//   2. Query canister getPendingInvoices → list invoices
-//   3. Dedup against in-flight Set (module-level)
-//   4. Query canister getInvoiceWorkerConfig → { prodInvoiceSerial, ... }
-//   5. Cho mỗi pending invoice (không in-flight): mark in-flight,
-//      processInvoice, remove khỏi set
-//
-// NOTE: getPendingInvoices + getInvoiceWorkerConfig chưa expose trên
-// canister (P2-2 quote.js task). Stub trả empty/default để function
-// structurally complete, không crash. Khi canister expose, thay stub
-// bằng canister.js helper call.
-// ------------------------------------------------------------
-const inFlightOrderIds = new Set();
-
-async function pollAndProcess(config) {
-  config = config || {};
-
-  // Shutdown flag — không start work mới khi đang tắt.
-  if (shutdown.shuttingDown) return;
-
-  // TODO(P2-2): thay stub bằng canister.getPendingInvoices() khi expose.
-  // Stub: trả empty array — function structurally complete, không crash.
-  let pendingInvoices = [];
-  try {
-    pendingInvoices = await getPendingInvoicesStub();
-  } catch (err) {
-    console.error('[bkav] pollAndProcess: getPendingInvoices failed:', err.message);
-    return;
-  }
-
-  if (!pendingInvoices || pendingInvoices.length === 0) return;
-
-  // TODO(P2-2): thay stub bằng canister.getInvoiceWorkerConfig() khi expose.
-  let workerConfig = config;
-  try {
-    const cfg = await getInvoiceWorkerConfigStub();
-    workerConfig = { ...config, ...cfg };
-  } catch (err) {
-    console.error('[bkav] pollAndProcess: getInvoiceWorkerConfig failed:', err.message);
-    // Dùng config truyền vào (fallback).
-  }
-
-  // Process song song mỗi invoice (dedup in-flight).
-  const tasks = pendingInvoices
-    .filter((inv) => {
-      const id = String(inv.orderId);
-      if (inFlightOrderIds.has(id)) return false;
-      inFlightOrderIds.add(id);
-      return true;
-    })
-    .map(async (inv) => {
-      try {
-        return await processInvoice(inv, workerConfig);
-      } finally {
-        inFlightOrderIds.delete(String(inv.orderId));
-      }
-    });
-
-  await Promise.allSettled(tasks);
-}
-
-// Stub: getPendingInvoices — trả empty array cho đến khi canister expose.
-// TODO(P2-2): thay bằng canister.getPendingInvoices() call.
-async function getPendingInvoicesStub() {
-  return [];
-}
-
-// Stub: getInvoiceWorkerConfig — trả default config cho đến khi expose.
-// TODO(P2-2): thay bằng canister.getInvoiceWorkerConfig() call.
-async function getInvoiceWorkerConfigStub() {
-  return {
-    prodInvoiceSerial: process.env.BKAV_PROD_INVOICE_SERIAL || '',
-    canisterId: process.env.CANISTER_ID,
-    callbackSecret: process.env.INVOICE_CALLBACK_SECRET,
-  };
-}
-
-// ------------------------------------------------------------
 // createInvoice — CmdType 100 JSON qua buildJsonPayload.
 // ------------------------------------------------------------
 // Backward compat: giữ signature cũ (cusName, cusTaxCode, cusAddress,
 // amount, goodsAmount, taxTotal) — buildJsonPayload map tự động.
-// Trả { invoiceNo, invoiceDate, maCQT, maTraCuu, raw }.
+// Trả { invoiceNo, invoiceDate, maCQT, maTraCuu, error, errorCode, raw }.
+// error/errorCode chỉ có giá trị khi Bkav báo thất bại (invoiceNo rỗng) —
+// giữ lại để caller ghi log rõ nguyên nhân thay vì chỉ biết "rỗng".
 // ------------------------------------------------------------
 async function createInvoice(invoice, config) {
   config = config || {};
@@ -433,17 +275,18 @@ async function createInvoice(invoice, config) {
     invoiceDate: result.invoiceDate,
     maCQT: result.maCQT,
     maTraCuu: result.maTraCuu,
+    error: result.error,
+    errorCode: result.errorCode,
     raw: result.raw,
   };
 }
 
 // GetInvoicePDF — trả link download PDF.
-async function getInvoicePdf(invoiceId) {
-  const xmlData = `<GetInvoicePDF><InvoiceID>${escapeXml(invoiceId)}</InvoiceID></GetInvoicePDF>`;
-  const result = await execCommand('GetInvoicePDF', xmlData);
-  const pdfUrl = result?.InvoicePDF?.Url || result?.Url || result?.url || '';
-  return { pdf_url: pdfUrl, raw: result };
-}
+// getInvoicePdf (CmdType GetInvoicePDF theo InvoiceID) — ĐÃ XOÁ, không còn
+// nơi nào dùng. Toàn bộ endpoint khách hàng đã chuyển sang getInvoicePdf816
+// (theo orderId, đáng tin cậy hơn — cron đã tự chứng minh hoạt động ổn định
+// từ trước, trong khi API theo InvoiceID gần như không bao giờ hoạt động vì
+// invoice_id hiếm khi có giá trị đúng trước khi sửa lỗi invoiceNo).
 
 // ------------------------------------------------------------
 // getInvoicePdf816 — Lấy PDF theo orderId qua CmdType 816.
@@ -544,7 +387,6 @@ async function getInvoicePdf816(orderId) {
 module.exports = {
   // Existing exports (giữ nguyên).
   createInvoice,
-  getInvoicePdf,
   getInvoicePdf816,
   execCommand,
   ENDPOINT,
@@ -553,7 +395,4 @@ module.exports = {
   buildJsonPayload,
   callBkav,
   parseBkavResponse,
-  sendCallbackToCanister,
-  processInvoice,
-  pollAndProcess,
 };
