@@ -47,6 +47,7 @@ import type { CreateOrderPayload, MenuItem, Restaurant } from "@/types";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Clock,
+  ExternalLink,
   Loader2,
   Package,
   Receipt,
@@ -56,6 +57,19 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+// Link gian hàng GrabFood/ShopeeFood — dùng cho 2 nút "Đặt qua GrabFood"/
+// "Đặt qua ShopeeFood" ở đầu trang chủ. Bún Bò Huế 65 có nhiều cơ sở (10+)
+// tại Hà Nội, mỗi cơ sở có trang riêng trên GrabFood/ShopeeFood — 2 link
+// dưới đây là bản TÌM ĐƯỢC qua tra cứu công khai (chưa xác nhận bởi chủ
+// quán): GrabFood trỏ tới đúng 1 chi nhánh (65 Đường Láng, chi nhánh duy
+// nhất tìm được trên GrabFood); ShopeeFood trỏ tới trang tổng hợp liệt kê
+// nhiều chi nhánh tại Hà Nội (phù hợp hơn vì có nhiều cơ sở).
+// ĐỔI LẠI 2 GIÁ TRỊ NÀY nếu chủ quán cung cấp link chính xác hơn từ tài
+// khoản GrabMerchant/ShopeeFood Merchant.
+const GRABFOOD_URL =
+  "https://food.grab.com/vn/vi/restaurant/b%C3%BAn-b%C3%B2-hu%E1%BA%BF-65-%C4%91%C6%B0%E1%BB%9Dng-l%C3%A1ng-delivery/VNGFVN00000388";
+const SHOPEEFOOD_URL = "https://shopeefood.vn/ha-noi/bun-bo-hue-65";
 import { toast } from "sonner";
 
 function formatVnd(value: number): string {
@@ -398,6 +412,31 @@ export default function CreateOrder() {
             Chọn nhà hàng, chọn món, nhập tên + SĐT — đặt đơn và tự đặt tài xế
             nhận hàng.
           </p>
+          {/* Nút điều hướng sang GrabFood/ShopeeFood — giúp khách quen dùng
+              app giao đồ ăn tìm đúng gian hàng, đồng thời giúp Google hiểu
+              website này là nguồn gốc của các gian hàng trên app. */}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <a
+              href={GRABFOOD_URL}
+              target="_blank"
+              rel="noreferrer"
+              data-ocid="create_order.grabfood_badge"
+              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-[#00B14F]/30 bg-[#00B14F]/10 px-3.5 text-sm font-semibold text-[#00B14F] transition-smooth hover:bg-[#00B14F]/15"
+            >
+              Đặt qua GrabFood
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
+            <a
+              href={SHOPEEFOOD_URL}
+              target="_blank"
+              rel="noreferrer"
+              data-ocid="create_order.shopeefood_badge"
+              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-[#EE4D2D]/30 bg-[#EE4D2D]/10 px-3.5 text-sm font-semibold text-[#EE4D2D] transition-smooth hover:bg-[#EE4D2D]/15"
+            >
+              Đặt qua ShopeeFood
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
+          </div>
         </header>
 
         {storeClosed ? (
