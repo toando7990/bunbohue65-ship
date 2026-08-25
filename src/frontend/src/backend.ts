@@ -269,6 +269,8 @@ export interface Device {
     role: DeviceRole;
     restaurantId: string;
     deviceId: string;
+    name: string;
+    phone: string;
 }
 export interface MenuItem {
     itemId: string;
@@ -349,7 +351,7 @@ export interface backendInterface {
     _initialize_access_control(): Promise<void>;
     _internet_identity_sign_in_finish(): Promise<Result_7>;
     _internet_identity_sign_in_start(): Promise<Uint8Array>;
-    activateDevice(code: string, deviceId: DeviceId): Promise<Result_4>;
+    activateDevice(code: string, deviceId: DeviceId, name: string, phone: string): Promise<Result_4>;
     addItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array): Promise<Result_2>;
     addRestaurant(restaurantId: string, name: string, address: string, phone: string): Promise<Result_1>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
@@ -458,17 +460,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async activateDevice(arg0: string, arg1: DeviceId): Promise<Result_4> {
+    async activateDevice(arg0: string, arg1: DeviceId, arg2: string, arg3: string): Promise<Result_4> {
         if (this.processError) {
             try {
-                const result = await this.actor.activateDevice(arg0, arg1);
+                const result = await this.actor.activateDevice(arg0, arg1, arg2, arg3);
                 return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.activateDevice(arg0, arg1);
+            const result = await this.actor.activateDevice(arg0, arg1, arg2, arg3);
             return from_candid_Result_4_n5(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -1497,19 +1499,25 @@ function from_candid_record_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint
     role: _DeviceRole;
     restaurantId: string;
     deviceId: string;
+    name: string;
+    phone: string;
 }): {
     active: boolean;
     activatedAt: bigint;
     role: DeviceRole;
     restaurantId: string;
     deviceId: string;
+    name: string;
+    phone: string;
 } {
     return {
         active: value.active,
         activatedAt: value.activatedAt,
         role: from_candid_DeviceRole_n9(_uploadFile, _downloadFile, value.role),
         restaurantId: value.restaurantId,
-        deviceId: value.deviceId
+        deviceId: value.deviceId,
+        name: value.name,
+        phone: value.phone
     };
 }
 function from_candid_variant_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

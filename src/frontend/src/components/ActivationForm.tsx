@@ -10,7 +10,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 interface ActivationFormProps {
-  onActivated: (restaurantId: string, deviceId: string) => void;
+  onActivated: (restaurantId: string, deviceId: string, name: string) => void;
   // Vai trò thiết bị mong đợi — mặc định 'driver' để không đổi hành vi cũ ở
   // DriverPaymentScreen. Truyền 'cashier' cho CounterOrder (app quầy).
   expectedRole?: DeviceRole;
@@ -35,6 +35,35 @@ function getDeviceId(): string {
   }
 }
 
+// Vietnamese phone: 10 digits starting 0 (mobile), or 11 for some landlines.
+// Khớp PHONE_RE trong CustomerForm.tsx.
+const PHONE_RE = /^0\d{9,10}$/;
+
+// Ghi nhớ tên/SĐT nhân viên trên máy này để tự điền lại nếu kích hoạt lại
+// (ví dụ đổi thiết bị nhưng cùng nhân viên) — chỉ tiện lợi, không phải dữ
+// liệu nghiệp vụ, canister mới là nguồn sự thật cho Device.name/phone.
+const STAFF_INFO_KEY = "bb65.staffInfo";
+function loadStaffInfo(): { name: string; phone: string } {
+  try {
+    const raw = localStorage.getItem(STAFF_INFO_KEY);
+    if (!raw) return { name: "", phone: "" };
+    const parsed = JSON.parse(raw);
+    return {
+      name: typeof parsed?.name === "string" ? parsed.name : "",
+      phone: typeof parsed?.phone === "string" ? parsed.phone : "",
+    };
+  } catch {
+    return { name: "", phone: "" };
+  }
+}
+function saveStaffInfo(name: string, phone: string) {
+  try {
+    localStorage.setItem(STAFF_INFO_KEY, JSON.stringify({ name, phone }));
+  } catch {
+    // bỏ qua nếu localStorage không khả dụng
+  }
+}
+
 export function ActivationForm({
   onActivated,
   expectedRole = DeviceRole.driver,
@@ -42,11 +71,16 @@ export function ActivationForm({
 }: ActivationFormProps) {
   const { actor } = useCanister();
   const [code, setCode] = useState("");
+  const staffInfo = useState(loadStaffInfo)[0];
+  const [staffName, setStaffName] = useState(staffInfo.name);
+  const [staffPhone, setStaffPhone] = useState(staffInfo.phone);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const normalized = code.trim().toUpperCase();
-  const isValid = normalized.length === 6;
+  const nameValid = staffName.trim().length >= 2;
+  const phoneValid = PHONE_RE.test(staffPhone.trim());
+  const isValid = normalized.length === 6 && nameValid && phoneValid;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,7 +89,15 @@ export function ActivationForm({
     setError(null);
     try {
       const deviceId = getDeviceId();
-      const device = await activateDevice(actor, normalized, deviceId);
+      const name = staffName.trim();
+      const phone = staffPhone.trim();
+      const device = await activateDevice(
+        actor,
+        normalized,
+        deviceId,
+        name,
+        phone,
+      );
       if (device.role !== expectedRole) {
         setError(
           `Mã này không dành cho thiết bị ${expectedRoleLabel}. Vui lòng dùng đúng mã vai trò.`,
@@ -66,8 +108,9 @@ export function ActivationForm({
         setError("Thiết bị chưa được kích hoạt. Vui lòng thử lại.");
         return;
       }
+      saveStaffInfo(name, phone);
       toast.success("Kích hoạt thiết bị thành công");
-      onActivated(device.restaurantId, device.deviceId);
+      onActivated(device.restaurantId, device.deviceId, name);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/expir|hết hạn|expired/i.test(msg)) {
@@ -110,6 +153,58 @@ export function ActivationForm({
         className="flex flex-col gap-5"
         data-ocid="activation.form"
       >
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="staff-name"
+            className="text-sm font-semibold text-foreground"
+          >
+            Tên của bạn
+          </label>
+          <input
+            id="staff-name"
+            type="text"
+            autoComplete="name"
+            value={staffName}
+            onChange={(e) => {
+              setStaffName(e.target.value);
+              setError(null);
+            }}
+            disabled={submitting}
+            placeholder="Nguyễn Văn A"
+            aria-label="Tên nhân viên"
+            data-ocid="activation.staff_name_input"
+            className="min-h-[44px] w-full rounded-lg border border-input bg-card px-3 py-2 text-base text-foreground shadow-sm outline-none transition-smooth focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="staff-phone"
+            className="text-sm font-semibold text-foreground"
+          >
+            Số điện thoại của bạn
+          </label>
+          <input
+            id="staff-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            value={staffPhone}
+            onChange={(e) => {
+              setStaffPhone(e.target.value);
+              setError(null);
+            }}
+            disabled={submitting}
+            placeholder="0912345678"
+            aria-label="Số điện thoại nhân viên"
+            data-ocid="activation.staff_phone_input"
+            className="min-h-[44px] w-full rounded-lg border border-input bg-card px-3 py-2 text-base text-foreground shadow-sm outline-none transition-smooth focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
+          />
+          <p className="text-xs text-muted-foreground">
+            Khách sẽ thấy số này trên thẻ đơn hàng để liên hệ khi cần.
+          </p>
+        </div>
+
         <div className="flex flex-col gap-2">
           <label
             htmlFor="activation-code"

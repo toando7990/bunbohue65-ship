@@ -23,6 +23,8 @@ export interface Device {
   'role' : DeviceRole,
   'restaurantId' : string,
   'deviceId' : string,
+  'name' : string,
+  'phone' : string,
 }
 export interface DeviceEntry { 'device' : Device, 'deviceId' : string }
 export type DeviceId = string;
@@ -189,7 +191,7 @@ export interface _SERVICE {
   '_initialize_access_control' : ActorMethod<[], undefined>,
   '_internet_identity_sign_in_finish' : ActorMethod<[], Result_7>,
   '_internet_identity_sign_in_start' : ActorMethod<[], Uint8Array>,
-  'activateDevice' : ActorMethod<[string, DeviceId], Result_4>,
+  'activateDevice' : ActorMethod<[string, DeviceId, string, string], Result_4>,
   'addItem' : ActorMethod<
     [string, string, bigint, string, bigint, string, Uint8Array],
     Result_2

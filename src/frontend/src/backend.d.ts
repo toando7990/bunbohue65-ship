@@ -223,6 +223,8 @@ export interface Device {
     role: DeviceRole;
     restaurantId: string;
     deviceId: string;
+    name: string;
+    phone: string;
 }
 export interface MenuItem {
     itemId: string;
@@ -300,7 +302,7 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
-    activateDevice(code: string, deviceId: DeviceId): Promise<Result_4>;
+    activateDevice(code: string, deviceId: DeviceId, name: string, phone: string): Promise<Result_4>;
     addItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array): Promise<Result_2>;
     addRestaurant(restaurantId: string, name: string, address: string, phone: string): Promise<Result_1>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;

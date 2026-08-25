@@ -27,9 +27,14 @@ mixin (
   };
 
   // Consume a valid pending activation and register a device. Public (no admin).
+  // name/phone: nhân viên tự nhập điện thoại cá nhân của họ lúc kích hoạt —
+  // hiển thị thay cho mã thiết bị trong UI, và SĐT dùng cho khách liên hệ
+  // trên thẻ đơn (xem OrderCard.tsx).
   public shared ({ caller }) func activateDevice(
     code : Text,
     deviceId : Common.DeviceId,
+    name : Text,
+    phone : Text,
   ) : async Result.Result<Devices.Device, Text> {
     ignore caller;
     DevicesLib.activateDevice(
@@ -37,6 +42,8 @@ mixin (
       devices,
       code,
       deviceId,
+      name,
+      phone,
       Int.abs(Time.now()),
     );
   };

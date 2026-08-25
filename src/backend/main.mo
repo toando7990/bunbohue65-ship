@@ -405,6 +405,8 @@ actor Main {
           deviceId = "";
           restaurantId = "";
           role = #admin;
+          name = "";
+          phone = "";
           activatedAt = 0;
           active = false;
         },

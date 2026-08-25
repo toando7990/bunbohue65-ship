@@ -244,9 +244,14 @@ export function useActivateDevice() {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
-    mutationFn: (args: { code: string; deviceId: string }) => {
+    mutationFn: (args: {
+      code: string;
+      deviceId: string;
+      name: string;
+      phone: string;
+    }) => {
       if (!actor) throw new Error("Actor not ready");
-      return activateDeviceFn(actor, args.code, args.deviceId);
+      return activateDeviceFn(actor, args.code, args.deviceId, args.name, args.phone);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] }),
   });

@@ -17,12 +17,15 @@ const DRIVER_STORAGE_KEY = "bbh_driver_activation";
 function loadStoredActivation(): {
   restaurantId: string;
   deviceId: string;
+  name: string;
 } | null {
   try {
     const raw = localStorage.getItem(DRIVER_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (parsed?.restaurantId && parsed?.deviceId) return parsed;
+    if (parsed?.restaurantId && parsed?.deviceId) {
+      return { ...parsed, name: parsed.name ?? "" };
+    }
     return null;
   } catch {
     return null;
@@ -40,17 +43,19 @@ export function DriverPaymentScreen() {
   const [deviceId, setDeviceId] = useState<string | null>(
     stored?.deviceId ?? null,
   );
+  const [deviceName, setDeviceName] = useState<string>(stored?.name ?? "");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
 
   const ordersQuery = usePendingOrders(restaurantId ?? undefined);
 
-  function handleActivated(restId: string, devId: string) {
+  function handleActivated(restId: string, devId: string, name: string) {
     setRestaurantId(restId);
     setDeviceId(devId);
+    setDeviceName(name);
     try {
       localStorage.setItem(
         DRIVER_STORAGE_KEY,
-        JSON.stringify({ restaurantId: restId, deviceId: devId }),
+        JSON.stringify({ restaurantId: restId, deviceId: devId, name }),
       );
     } catch {
       // localStorage không khả dụng (chế độ ẩn danh...) — vẫn hoạt động bình thường
@@ -98,7 +103,7 @@ export function DriverPaymentScreen() {
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
-                Thiết bị đã kích hoạt
+                {deviceName || "Thiết bị đã kích hoạt"}
               </p>
               <p className="truncate font-mono text-xs text-muted-foreground">
                 {deviceId}

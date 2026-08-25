@@ -96,8 +96,10 @@ export async function activateDevice(
   actor: Backend,
   code: string,
   deviceId: string,
+  name: string,
+  phone: string,
 ): Promise<Device> {
-  return unwrap(await actor.activateDevice(code, deviceId));
+  return unwrap(await actor.activateDevice(code, deviceId, name, phone));
 }
 
 export async function revokeDevice(

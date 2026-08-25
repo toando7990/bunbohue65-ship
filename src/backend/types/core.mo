@@ -111,6 +111,13 @@ module {
     deviceId : Text;
     restaurantId : Text;
     role : DeviceRole;
+    // Tên nhân viên đang dùng thiết bị + SĐT liên hệ trực tiếp của họ — khách
+    // xem SĐT này trên thẻ đơn ("Theo dõi đơn") thay vì chỉ có địa chỉ nhà
+    // hàng. Do NHÂN VIÊN tự nhập lúc kích hoạt thiết bị (điện thoại cá nhân
+    // của họ), không phải admin nhập trước. Thiết bị kích hoạt trước tính
+    // năng này có 2 field rỗng — frontend fallback về Restaurant.phone.
+    name : Text;
+    phone : Text;
     activatedAt : Int;
     active : Bool;
   };

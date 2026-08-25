@@ -99,6 +99,8 @@ module {
     devicesStore : DevicesStore,
     code : Text,
     deviceId : Common.DeviceId,
+    name : Text,
+    phone : Text,
     now : Common.Timestamp,
   ) : Result.Result<Device, Text> {
     switch (pendingStore.get(code)) {
@@ -113,6 +115,8 @@ module {
             deviceId;
             restaurantId = a.restaurantId;
             role = a.role;
+            name;
+            phone;
             activatedAt = now;
             active = true;
           };

@@ -4,7 +4,7 @@
 // Card là <div> bọc ngoài để tránh thẻ tương tác lồng nhau (Link chứa button).
 
 import { StatusBadge } from "@/components/StatusBadge";
-import { useRestaurants } from "@/hooks/useQueries";
+import { useDevicesByRestaurant, useRestaurants } from "@/hooks/useQueries";
 import { PaymentStatus } from "@/types";
 import type {
   BookingStatus,
@@ -18,6 +18,7 @@ import {
   Copy,
   KeyRound,
   MapPin,
+  Phone,
   Receipt,
 } from "lucide-react";
 import { useState } from "react";
@@ -114,6 +115,18 @@ export function OrderCard({
   );
   const restaurantAddress = restaurant?.address ?? "";
 
+  // SĐT liên hệ cho khách — ưu tiên SĐT nhân viên của thiết bị kích hoạt
+  // GẦN NHẤT tại nhà hàng này (nhân viên đang trực thực tế), vì 1 nhà hàng
+  // có thể có nhiều thiết bị active cùng lúc. Nếu nhà hàng chưa có thiết bị
+  // nào active (hoặc thiết bị active chưa nhập SĐT — thiết bị cũ trước khi
+  // có tính năng này), fallback về Restaurant.phone (số chung của quán, đã
+  // có sẵn từ trước, luôn có giá trị).
+  const { data: devices } = useDevicesByRestaurant(order.restaurantId);
+  const latestActiveDevice = devices
+    ?.filter((d) => d.active && d.phone)
+    .sort((a, b) => Number(b.activatedAt - a.activatedAt))[0];
+  const contactPhone = latestActiveDevice?.phone || restaurant?.phone || "";
+
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -168,6 +181,25 @@ export function OrderCard({
             value={restaurantAddress}
             label="địa chỉ nhà hàng"
             ocid={`order.card.${index}.copy_address_button`}
+          />
+        </div>
+      )}
+
+      {/* SĐT liên hệ — ưu tiên nhân viên đang trực (thiết bị active gần
+          nhất), fallback SĐT chung của quán nếu chưa có thiết bị nào. */}
+      {contactPhone && (
+        <div className="mt-2 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2">
+          <Phone
+            className="h-4 w-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+            {contactPhone}
+          </span>
+          <CopyButton
+            value={contactPhone}
+            label="số điện thoại liên hệ"
+            ocid={`order.card.${index}.copy_phone_button`}
           />
         </div>
       )}

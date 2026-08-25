@@ -89,7 +89,8 @@ export function DeviceTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/40">
-            <TableHead className="pl-3">Mã thiết bị</TableHead>
+            <TableHead className="pl-3">Nhân viên</TableHead>
+            <TableHead>SĐT</TableHead>
             <TableHead>Nhà hàng</TableHead>
             <TableHead>Vai trò</TableHead>
             <TableHead>Kích hoạt lúc</TableHead>
@@ -106,12 +107,18 @@ export function DeviceTable({
                 data-ocid={`device.table.row.${index}`}
               >
                 <TableCell className="pl-3">
+                  <p className="text-sm font-medium text-foreground">
+                    {device.name || "Chưa có tên"}
+                  </p>
                   <span
-                    className="font-mono text-xs text-foreground"
+                    className="font-mono text-xs text-muted-foreground"
                     title={device.deviceId}
                   >
                     {truncateId(device.deviceId)}
                   </span>
+                </TableCell>
+                <TableCell className="text-sm text-foreground">
+                  {device.phone || "—"}
                 </TableCell>
                 <TableCell className="text-sm text-foreground">
                   {device.restaurantId || "—"}

@@ -42,6 +42,8 @@ export const Device = IDL.Record({
   'role' : DeviceRole,
   'restaurantId' : IDL.Text,
   'deviceId' : IDL.Text,
+  'name' : IDL.Text,
+  'phone' : IDL.Text,
 });
 export const Result_4 = IDL.Variant({ 'ok' : Device, 'err' : IDL.Text });
 export const MenuItem = IDL.Record({
@@ -208,7 +210,7 @@ export const idlService = IDL.Service({
   '_initialize_access_control' : IDL.Func([], [], []),
   '_internet_identity_sign_in_finish' : IDL.Func([], [Result_7], []),
   '_internet_identity_sign_in_start' : IDL.Func([], [IDL.Vec(IDL.Nat8)], []),
-  'activateDevice' : IDL.Func([IDL.Text, DeviceId], [Result_4], []),
+  'activateDevice' : IDL.Func([IDL.Text, DeviceId, IDL.Text, IDL.Text], [Result_4], []),
   'addItem' : IDL.Func(
       [
         IDL.Text,
@@ -388,6 +390,8 @@ export const idlFactory = ({ IDL }) => {
     'role' : DeviceRole,
     'restaurantId' : IDL.Text,
     'deviceId' : IDL.Text,
+    'name' : IDL.Text,
+    'phone' : IDL.Text,
   });
   const Result_4 = IDL.Variant({ 'ok' : Device, 'err' : IDL.Text });
   const MenuItem = IDL.Record({
@@ -545,7 +549,7 @@ export const idlFactory = ({ IDL }) => {
     '_initialize_access_control' : IDL.Func([], [], []),
     '_internet_identity_sign_in_finish' : IDL.Func([], [Result_7], []),
     '_internet_identity_sign_in_start' : IDL.Func([], [IDL.Vec(IDL.Nat8)], []),
-    'activateDevice' : IDL.Func([IDL.Text, DeviceId], [Result_4], []),
+    'activateDevice' : IDL.Func([IDL.Text, DeviceId, IDL.Text, IDL.Text], [Result_4], []),
     'addItem' : IDL.Func(
         [
           IDL.Text,
