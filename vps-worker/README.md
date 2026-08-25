@@ -87,7 +87,8 @@ nano .env
 - `VPS_SECRET` phải khớp với secret trên canister (admin rotate qua canister `rotateVpsSecret`).
 - `IC_HOST`: production = `https://icp-api.io`, local dev = `http://127.0.0.1:4943`.
 - `TINGEE_BASE_URL`: default `https://open-api.tingee.vn`, có thể override qua env.
-- `BKAV_COMMAND_LIST`: placeholder, cần tra cứu docs để confirm.
+- `BKAV_PROXY_URL`: mặc định `https://proxy.bunbohue65.com` — domain proxy giải mã đã có, xem `vps-worker/bkav-proxy/README.md` để triển khai.
+- `BKAV_USE_DEMO`: `true` để gọi Bkav DEMO (test), mặc định production.
 
 ### 4. Tạo thư mục data + uploads
 
@@ -489,10 +490,14 @@ Tingee trả `code=91 'Request expired'` khi `x-request-timestamp` nằm **trong
 
 > **Lưu ý `.env`:** `AHAMOVE_PHONE` là biến môi trường bắt buộc, phải được set thủ công trong file `.env` (file `.env.example` không được commit trong repo).
 
-## TODO (cần tra cứu docs)
+## Bkav eHoadon — kiến trúc thật (đã xác nhận, xem vps-worker/bkav-proxy/)
 
-- `BKAV_COMMAND_LIST`: placeholder `CreateInvoice,GetInvoicePDF` — cần confirm.
-- Bkav SOAP envelope shape + XML payload schema: placeholder — cần verify.
+- Bkav SOAP envelope shape + XML payload schema: đã xác nhận đúng theo
+  tài liệu chính thức (FAQ_WebServices_Bkav.docx) + đối chiếu 1 bản tham
+  khảo từng chạy được. Gửi JSON (không phải XML) qua bkav-proxy giải mã
+  riêng — xem `vps-worker/bkav-proxy/README.md` để triển khai proxy.
+- Đã kiểm tra bằng test end-to-end mô phỏng đầy đủ chuỗi mã hoá/giải mã
+  AES-256-CBC + gzip (không chỉ đọc code) — xác nhận chạy đúng.
 
 ## Webhook signature verification (đã implement)
 

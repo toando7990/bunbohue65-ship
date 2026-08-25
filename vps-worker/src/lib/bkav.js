@@ -1,92 +1,192 @@
 // ============================================================
-// lib/bkav.js — Bkav eHoadon SOAP/XML client
+// lib/bkav.js — Bkav eHoadon client (qua bkav-proxy giải mã riêng)
 // ============================================================
-// Endpoint: https://ws.ehoadon.vn/WSPublicEhoadon.asmx/ExecCommand
-// Methods: CreateInvoice (CmdType 100, khi completed + paid),
-//          GetInvoicePDF (CmdType 816, theo PartnerInvoiceStringID).
+// LỊCH SỬ QUAN TRỌNG: bản trước đây của file này tự gửi SOAP XML thẳng tới
+// Bkav với field <PartnerGuid>/<PartnerToken>/<Command>/<XmlData> — SAI hoàn
+// toàn so với tài liệu chính thức Bkav (FAQ_WebServices_Bkav.docx, người
+// dùng cung cấp). Đối chiếu tài liệu + 1 bản tham khảo từng chạy được (repo
+// toando7990/bunbohue65, bkav-worker/bkav-worker.js + setup-bkav-proxy.sh),
+// phát hiện quy trình THẬT bắt buộc:
 //
-// Architecture: direct SOAP/axios (buildEnvelope + execCommand).
-// CmdType 100 JSON payload (buildJsonPayload) được Base64-encode
-// và gửi làm XmlData CDATA trong SOAP envelope hiện có.
+//   Gửi:  JSON → Base64 → gửi kèm partnerGUID + partnerToken
+//   Nhận: Bkav trả SOAP XML chứa <ExecCommandResult> =
+//         Base64(AES-256-CBC(gzip(XML))) — PHẢI giải mã bằng khoá lấy từ
+//         PartnerToken (cấu trúc "Base64(Key):Base64(IV)") mới đọc được.
+//
+// Việc giải mã AES-256-CBC + gunzip được tách sang 1 service riêng
+// (vps-worker/bkav-proxy/server.js, chạy trên VPS qua domain
+// proxy.bunbohue65.com có sẵn) — file này chỉ gọi HTTP JSON vào proxy đó,
+// không tự làm crypto.
+//
+// PHÁT HIỆN THÊM: bản tham khảo có 1 lỗ hổng — không gửi header X-BKAV-KEY
+// khi gọi proxy, khiến proxy không giải mã được (rất có thể là lý do bản đó
+// chỉ thành công 1 phần, thất bại phần lớn). Đã sửa trong file này —
+// LUÔN tính và gửi X-BKAV-KEY từ PARTNER_TOKEN mỗi request.
 // ============================================================
 
 const axios = require('axios');
-const xml2js = require('xml2js');
 
-const ENDPOINT = process.env.BKAV_ENDPOINT || 'https://ws.ehoadon.vn/WSPublicEhoadon.asmx/ExecCommand';
-// Base URL host phục vụ file PDF eHoadon (KHÔNG phải SOAP ExecCommand endpoint).
-// MessLog từ response 816 là path tương đối (vd: /Invoice_View_Demo/C2/3T/...pdf),
-// cần ghép với PDF host này để có URL download đầy đủ.
+const PARTNER_GUID = process.env.BKAV_PARTNER_GUID || '';
+const PARTNER_TOKEN = process.env.BKAV_PARTNER_TOKEN || '';
+// Domain proxy giải mã — dùng lại domain API chính đã có SSL sẵn
+// (proxy.bunbohue65.com), chỉ thêm route /bkav-prod, /bkav-demo,
+// /bkav-health vào Nginx hiện có (xem vps-worker/bkav-proxy/README.md).
+const PROXY_BASE_URL = process.env.BKAV_PROXY_URL || 'https://proxy.bunbohue65.com';
+// true → gọi Bkav DEMO (wsdemo.ehoadon.vn qua proxy /bkav-demo), mặc định
+// false (production, ws.ehoadon.vn qua proxy /bkav-prod). Đổi qua biến môi
+// trường khi cần test, KHÔNG sửa code.
+const USE_DEMO = String(process.env.BKAV_USE_DEMO || '').toLowerCase() === 'true';
+// Base URL host phục vụ file PDF eHoadon (KHÔNG phải endpoint SOAP).
+// MessLog từ response 816 là path tương đối (vd: /Invoice_View_Demo/C2/3T/...pdf).
 const PDF_BASE_URL = process.env.BKAV_PDF_BASE_URL || 'https://stg-ehoadon.vn';
-const PARTNER_GUID = process.env.BKAV_PARTNER_GUID;
-const PARTNER_TOKEN = process.env.BKAV_PARTNER_TOKEN;
-
-// Command list — Command string param trong SOAP ExecCommand.
-// cmdType (100/816) nằm INSIDE JSON payload, không phải Command string.
-const COMMANDS = (process.env.BKAV_COMMAND_LIST || 'CreateInvoice,GetInvoicePDF').split(',').map((s) => s.trim());
 
 if (!PARTNER_GUID || !PARTNER_TOKEN) {
   console.warn('[bkav] BKAV_PARTNER_GUID/TOKEN missing — invoicing will fail');
+} else if (!PARTNER_TOKEN.includes(':')) {
+  // PartnerToken PHẢI có cấu trúc "Base64(Key):Base64(IV)" theo tài liệu
+  // Bkav — cảnh báo sớm nếu định dạng rõ ràng sai, tránh lỗi mã hoá khó hiểu
+  // ở tận bước gọi API.
+  console.warn('[bkav] BKAV_PARTNER_TOKEN không đúng định dạng "Key:IV" (thiếu dấu :) — kiểm tra lại giá trị từ Bkav.');
 }
 
-// Build SOAP envelope cho ExecCommand.
-// Bkav eHoadon dùng pattern: ExecCommand(partnerGuid, partnerToken, command, xmlData).
-function buildEnvelope(command, xmlData) {
-  return `<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-               xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-               xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <ExecCommand xmlns="http://tempuri.org/">
-      <PartnerGuid>${escapeXml(PARTNER_GUID || '')}</PartnerGuid>
-      <PartnerToken>${escapeXml(PARTNER_TOKEN || '')}</PartnerToken>
-      <Command>${escapeXml(command)}</Command>
-      <XmlData><![CDATA[${xmlData}]]></XmlData>
-    </ExecCommand>
-  </soap:Body>
-</soap:Envelope>`;
+// Tách PartnerToken thành cặp Key:IV (Base64) — dùng để tính header
+// X-BKAV-KEY gửi cho bkav-proxy giải mã phản hồi. Theo tài liệu:
+// "Partner Token có cấu trúc: (Key đã được EncodeBase64):(IV đã được EncodeBase64)".
+function splitPartnerToken() {
+  const idx = PARTNER_TOKEN.indexOf(':');
+  if (idx <= 0) return { keyBase64: '', ivBase64: '' };
+  return {
+    keyBase64: PARTNER_TOKEN.slice(0, idx),
+    ivBase64: PARTNER_TOKEN.slice(idx + 1),
+  };
 }
 
-function escapeXml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
+// ------------------------------------------------------------
+// callBkavViaProxy — Gửi CmdType bất kỳ qua bkav-proxy, trả kết quả đã parse.
+// ------------------------------------------------------------
+// jsonPayload: object CmdType (100 cho tạo hoá đơn, 816 cho lấy PDF...).
+// config.useDemo (tuỳ chọn): override USE_DEMO cho riêng lần gọi này.
+// ------------------------------------------------------------
+async function callBkavViaProxy(jsonPayload, config) {
+  config = config || {};
+  const useDemo = config.useDemo ?? USE_DEMO;
+  const proxyPath = useDemo ? '/bkav-demo' : '/bkav-prod';
+  const proxyUrl = `${PROXY_BASE_URL.replace(/\/$/, '')}${proxyPath}`;
 
-// Gọi SOAP ExecCommand, parse response XML → JSON.
-async function execCommand(command, xmlData) {
-  if (!COMMANDS.includes(command)) {
-    throw new Error(`Unknown Bkav command: ${command}. Update BKAV_COMMAND_LIST.`);
-  }
-  const envelope = buildEnvelope(command, xmlData);
-  const res = await axios.post(ENDPOINT, envelope, {
+  const commandData = Buffer.from(JSON.stringify(jsonPayload), 'utf8').toString('base64');
+  const httpBody = {
+    partnerGUID: PARTNER_GUID,
+    partnerToken: PARTNER_TOKEN,
+    CommandData: commandData,
+  };
+
+  const { keyBase64, ivBase64 } = splitPartnerToken();
+
+  const res = await axios.post(proxyUrl, httpBody, {
     headers: {
-      'Content-Type': 'text/xml; charset=utf-8',
-      'SOAPAction': '"http://tempuri.org/ExecCommand"',
+      'Content-Type': 'application/json',
+      // Khoá giải mã cho bkav-proxy — proxy KHÔNG lưu lại, chỉ dùng đúng
+      // request này rồi bỏ. Đây chính là header bản tham khảo THIẾU.
+      'X-BKAV-KEY': `${keyBase64}:${ivBase64}`,
     },
-    timeout: 30000,
+    timeout: 35000, // proxy tự có timeout 30s gọi Bkav, dư thêm biên độ.
+    // Response từ proxy luôn là text/xml (kể cả khi giải mã thất bại, proxy
+    // trả nguyên văn để debug) — không để axios tự parse JSON.
+    responseType: 'text',
+    transformResponse: [(data) => data],
   });
-  const parsed = await parseSoapResponse(res.data);
-  return parsed;
+
+  return parseProxyResponse(res.data);
 }
 
-// Parse SOAP response → extract ExecCommandResult inner XML → JSON.
-async function parseSoapResponse(xml) {
-  const parser = new xml2js.Parser({ explicitArray: false, ignoreAttrs: true });
-  const result = await parser.parseStringPromise(xml);
-  const body = result?.['soap:Envelope']?.['soap:Body'] || result?.Envelope?.Body;
-  const execResult = body?.ExecCommandResponse?.ExecCommandResult;
-  if (!execResult) throw new Error('Bkav: missing ExecCommandResult in SOAP response');
-  // Inner content thường là XML string → parse tiếp.
-  try {
-    const inner = await parser.parseStringPromise(execResult);
-    return inner;
-  } catch {
-    return { raw: execResult };
+// ------------------------------------------------------------
+// parseProxyResponse — Parse phản hồi ĐÃ QUA bkav-proxy (đã giải mã, hoặc
+// nguyên văn nếu proxy không giải mã được).
+// ------------------------------------------------------------
+// 3 dạng có thể gặp:
+//   1. '<R><E>FAULT:...</E></R>' — SOAP Fault đã chuẩn hoá bởi proxy.
+//   2. '<R><E>PROXY_ERROR</E></R>' — proxy không gọi được Bkav.
+//   3. XML đã giải mã, chứa <ExecCommandResult>Base64(JSON)</ExecCommandResult>
+//      HOẶC (dự phòng, nếu cấu trúc thực tế khác) chính nó đã là JSON string
+//      trực tiếp — thử cả 2 cách, ưu tiên cách 1 (khớp bản tham khảo).
+// LUÔN trả field `raw` chứa toàn bộ nội dung gốc — không bao giờ mất dấu
+// vết, dù parse thành công hay thất bại (bài học từ lỗi invoiceId trước đây).
+// ------------------------------------------------------------
+function parseProxyResponse(bodyText) {
+  const text = String(bodyText || '').trim();
+
+  const faultMatch = text.match(/^<R><E>FAULT:([\s\S]*?)<\/E><\/R>$/);
+  if (faultMatch) {
+    return { success: false, error: `SOAP fault: ${faultMatch[1]}`, errorCode: 'SOAP_FAULT', raw: text };
   }
+  if (text === '<R><E>PROXY_ERROR</E></R>') {
+    return { success: false, error: 'bkav-proxy không gọi được Bkav (lỗi mạng/timeout)', errorCode: 'PROXY_ERROR', raw: text };
+  }
+  if (!text) {
+    return { success: false, error: 'BKAV trả về phản hồi rỗng', errorCode: 'EMPTY_RESPONSE', raw: text };
+  }
+
+  // Cách 1: tìm <ExecCommandResult>Base64(JSON)</ExecCommandResult> —
+  // khớp cấu trúc bản tham khảo mong đợi sau khi proxy giải mã 1 lớp.
+  const execMatch = text.match(/<(?:[^:>]+:)?ExecCommandResult[^>]*>([\s\S]*?)<\/(?:[^:>]+:)?ExecCommandResult>/i);
+  let json = null;
+  if (execMatch) {
+    const inner = execMatch[1].trim();
+    try {
+      json = JSON.parse(Buffer.from(inner, 'base64').toString('utf8'));
+    } catch {
+      try {
+        json = JSON.parse(inner); // Có thể đã là JSON thô, không Base64.
+      } catch {
+        json = null;
+      }
+    }
+  }
+
+  // Cách 2 (dự phòng): nội dung đã là JSON trực tiếp, không có wrapper
+  // ExecCommandResult (trường hợp cấu trúc thực tế đơn giản hơn dự kiến).
+  if (!json) {
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = null;
+    }
+  }
+
+  if (!json) {
+    return { success: false, error: 'Không parse được phản hồi Bkav (không phải XML/JSON hợp lệ)', errorCode: 'PARSE_FAILED', raw: text };
+  }
+
+  // Bkav response shape: { Status, Object (JSON string hoặc mảng), Code, isOk, isError }
+  const success = json.Status === 0 || json.isOk === true;
+  let invoiceNo = '';
+  let invoiceDate = '';
+  let maCQT = '';
+  let maTraCuu = '';
+
+  if (success && json.Object) {
+    try {
+      const inner = typeof json.Object === 'string' ? JSON.parse(json.Object) : json.Object;
+      const first = Array.isArray(inner) ? inner[0] : inner;
+      invoiceNo = String(first?.InvoiceNo ?? first?.invoiceNo ?? '');
+      invoiceDate = String(first?.InvoiceDate ?? first?.invoiceDate ?? '');
+      maCQT = String(first?.MaCQT ?? first?.maCQT ?? '');
+      maTraCuu = String(first?.MaTraCuu ?? first?.maTraCuu ?? first?.TransactionID ?? '');
+    } catch {
+      // Object parse fail — vẫn trả success nhưng fields trống, raw giữ nguyên để debug.
+    }
+  }
+
+  return {
+    success,
+    invoiceNo,
+    invoiceDate,
+    maCQT,
+    maTraCuu,
+    error: success ? '' : String(json.MessLog || json.Message || json.ErrorMessage || 'bkav_failure'),
+    errorCode: json.Code ?? json.Status ?? '',
+    raw: json,
+  };
 }
 
 // ------------------------------------------------------------
@@ -107,12 +207,11 @@ async function parseSoapResponse(xml) {
 function buildJsonPayload(invoice, config) {
   config = config || {};
 
-  // Backward compat: map field cũ → field mới.
   const buyerName = invoice.buyerName || invoice.cusName || '';
   const buyerTaxCode = invoice.buyerTaxCode || invoice.cusTaxCode || '';
   const buyerAddress = invoice.buyerAddress || invoice.cusAddress || '';
 
-  const dateStr = new Date().toISOString().replace(/\.\d{3}Z$/, ''); // ISO datetime without ms/Z
+  const dateStr = new Date().toISOString().replace(/\.\d{3}Z$/, ''); // ISO datetime không ms/Z
   const isRetail = invoice.isRetailInvoice !== false; // default true
 
   const taxRateMap = { 0: 1, 5: 2, 10: 3, 8: 4 };
@@ -146,17 +245,20 @@ function buildJsonPayload(invoice, config) {
         signedDate: '0001-01-01T00:00:00',
         typeCreateInvoice: 0,
       },
-      listInvoiceDetailsWS: (invoice.items || []).map((it) => ({
-        itemTypeID: 0,
-        itemName: it.name,
-        unitName: it.unitName || '',
-        qty: it.quantity,
-        price: it.price,
-        amount: it.quantity * it.price,
-        taxRateID: taxRateID,
-        taxAmount: it.quantity * it.price * (invoice.taxRate / 100),
-        isDiscount: false,
-      })),
+      listInvoiceDetailsWS: (invoice.items || []).map((it) => {
+        const amount = it.quantity * it.price;
+        return {
+          itemTypeID: 0,
+          itemName: it.name,
+          unitName: it.unitName || '',
+          qty: it.quantity,
+          price: it.price,
+          amount,
+          taxRateID,
+          taxAmount: Math.round(amount * (invoice.taxRate / 100)),
+          isDiscount: false,
+        };
+      }),
       partnerInvoiceID: 0,
       partnerInvoiceStringID: String(invoice.orderId),
     }],
@@ -164,112 +266,17 @@ function buildJsonPayload(invoice, config) {
 }
 
 // ------------------------------------------------------------
-// parseBkavResponse — Parse SOAP XML response → structured result.
-// ------------------------------------------------------------
-// Extract <ExecCommandResult> content (Base64-encoded JSON), decode,
-// return { success, invoiceNo, invoiceDate, maCQT, maTraCuu, error, errorCode }.
-// On parse failure: return { success: false, error: 'parse_failed', raw }.
-//
-// Dùng xml2js (đã có sẵn, consistent với getInvoicePdf816).
-// ------------------------------------------------------------
-async function parseBkavResponse(soapXml) {
-  let execResult;
-  try {
-    const parser = new xml2js.Parser({ explicitArray: false, ignoreAttrs: true });
-    const parsed = await parser.parseStringPromise(soapXml);
-    const body = parsed?.['soap:Envelope']?.['soap:Body'] || parsed?.Envelope?.Body;
-    execResult = body?.ExecCommandResponse?.ExecCommandResult;
-  } catch (err) {
-    return { success: false, error: 'parse_failed', raw: soapXml };
-  }
-
-  if (!execResult) {
-    return { success: false, error: 'missing_ExecCommandResult', raw: soapXml };
-  }
-
-  // execResult là Base64-encoded JSON → decode + JSON.parse.
-  let json;
-  try {
-    const decoded = Buffer.from(execResult, 'base64').toString('utf8');
-    json = JSON.parse(decoded);
-  } catch (err) {
-    // Có thể execResult đã là JSON string (không Base64) — thử parse trực tiếp.
-    try {
-      json = JSON.parse(execResult);
-    } catch (err2) {
-      return { success: false, error: 'decode_failed', raw: soapXml };
-    }
-  }
-
-  // Bkav response shape: { Status, Object (JSON string), Code, isOk, isError }
-  // Object là JSON string → parse tiếp để lấy invoice fields.
-  const success = json.Status === 0 || json.isOk === true;
-  let invoiceNo = '';
-  let invoiceDate = '';
-  let maCQT = '';
-  let maTraCuu = '';
-
-  if (success && json.Object) {
-    try {
-      const inner = typeof json.Object === 'string'
-        ? JSON.parse(json.Object)
-        : json.Object;
-      const first = Array.isArray(inner) ? inner[0] : inner;
-      invoiceNo = String(first?.InvoiceNo || first?.invoiceNo || '');
-      invoiceDate = String(first?.InvoiceDate || first?.invoiceDate || '');
-      maCQT = String(first?.MaCQT || first?.maCQT || '');
-      maTraCuu = String(first?.MaTraCuu || first?.maTraCuu || first?.TransactionID || '');
-    } catch (err) {
-      // Object parse fail — vẫn trả success nhưng fields trống.
-    }
-  }
-
-  return {
-    success,
-    invoiceNo,
-    invoiceDate,
-    maCQT,
-    maTraCuu,
-    error: success ? '' : (json.MessLog || json.Message || 'bkav_failure'),
-    errorCode: json.Code ?? '',
-    raw: json,
-  };
-}
-
-// ------------------------------------------------------------
-// callBkav — Wrapper: buildJsonPayload → Base64 → SOAP → parse.
-// ------------------------------------------------------------
-// Kết hợp buildEnvelope + axios + parseBkavResponse. Trả về
-// structured result thay vì raw response như execCommand.
-// ------------------------------------------------------------
-async function callBkav(command, jsonPayload, config) {
-  config = config || {};
-  const jsonStr = JSON.stringify(jsonPayload);
-  const commandData = Buffer.from(jsonStr, 'utf8').toString('base64');
-  const envelope = buildEnvelope(command, commandData);
-  const res = await axios.post(ENDPOINT, envelope, {
-    headers: {
-      'Content-Type': 'text/xml; charset=utf-8',
-      'SOAPAction': '"http://tempuri.org/ExecCommand"',
-    },
-    timeout: 30000,
-  });
-  return await parseBkavResponse(res.data);
-}
-
-// ------------------------------------------------------------
-// createInvoice — CmdType 100 JSON qua buildJsonPayload.
+// createInvoice — CmdType 100 qua bkav-proxy.
 // ------------------------------------------------------------
 // Backward compat: giữ signature cũ (cusName, cusTaxCode, cusAddress,
 // amount, goodsAmount, taxTotal) — buildJsonPayload map tự động.
 // Trả { invoiceNo, invoiceDate, maCQT, maTraCuu, error, errorCode, raw }.
-// error/errorCode chỉ có giá trị khi Bkav báo thất bại (invoiceNo rỗng) —
-// giữ lại để caller ghi log rõ nguyên nhân thay vì chỉ biết "rỗng".
+// error/errorCode chỉ có giá trị khi Bkav báo thất bại (invoiceNo rỗng).
 // ------------------------------------------------------------
 async function createInvoice(invoice, config) {
   config = config || {};
   const payload = buildJsonPayload(invoice, config);
-  const result = await callBkav('CreateInvoice', payload, config);
+  const result = await callBkavViaProxy(payload, config);
   return {
     invoiceNo: result.invoiceNo,
     invoiceDate: result.invoiceDate,
@@ -281,118 +288,55 @@ async function createInvoice(invoice, config) {
   };
 }
 
-// GetInvoicePDF — trả link download PDF.
-// getInvoicePdf (CmdType GetInvoicePDF theo InvoiceID) — ĐÃ XOÁ, không còn
-// nơi nào dùng. Toàn bộ endpoint khách hàng đã chuyển sang getInvoicePdf816
-// (theo orderId, đáng tin cậy hơn — cron đã tự chứng minh hoạt động ổn định
-// từ trước, trong khi API theo InvoiceID gần như không bao giờ hoạt động vì
-// invoice_id hiếm khi có giá trị đúng trước khi sửa lỗi invoiceNo).
-
 // ------------------------------------------------------------
-// getInvoicePdf816 — Lấy PDF theo orderId qua CmdType 816.
+// getInvoicePdf816 — Lấy PDF theo orderId qua CmdType 816, qua bkav-proxy.
 // ------------------------------------------------------------
-// Khác với getInvoicePdf (CmdType GetInvoicePDF theo invoiceId),
-// hàm này dùng CmdType 816 để tra PDF theo PartnerInvoiceStringID
-// (orderId trên hệ thống của mình).
-//
 // Request JSON (CmdType 816):
-//   { CmdType: 816,
-//     CommandObject: [{ PartnerInvoiceID: 0,
-//                        PartnerInvoiceStringID: String(orderId) }] }
+//   { cmdType: 816,
+//     commandObject: [{ partnerInvoiceID: 0,
+//                        partnerInvoiceStringID: String(orderId) }] }
 //
-// Response 816 có shape:
-//   { Status, Object (JSON string), Code, isOk, isError }
-// Trong đó `Object` là JSON string, parse tiếp sẽ ra mảng,
-// phần tử [0].MessLog là path PDF trên server Bkav, ví dụ:
-//   /Invoice_View_Demo/C2/3T/C23TYY-00000007-X301O9JT62-CK.pdf
+// Response (sau khi callBkavViaProxy parse): raw.Object là JSON string,
+// parse tiếp sẽ ra mảng, phần tử [0].MessLog là path PDF trên server Bkav,
+// ví dụ: /Invoice_View_Demo/C2/3T/C23TYY-00000007-X301O9JT62-CK.pdf
 //
-// Ghép MessLog với ENDPOINT base URL Bkav để có pdf_url đầy đủ.
-// Trả { pdf_url } khi thành công, hoặc null khi isError/isOk=false.
-//
-// Lưu ý: KHÔNG sửa buildJsonPayload (chỉ dành cho CmdType 100),
-// KHÔNG sửa parseBkavResponse/parseSoapResponse hiện có.
+// Ghép MessLog với PDF_BASE_URL để có pdf_url đầy đủ.
+// Trả { pdf_url } khi thành công, hoặc null khi không có MessLog.
 // ------------------------------------------------------------
-async function getInvoicePdf816(orderId) {
-  // Request JSON riêng cho 816 — không dùng buildJsonPayload (CmdType 100).
-  const requestJson = {
-    CmdType: 816,
-    CommandObject: [
-      {
-        PartnerInvoiceID: 0,
-        PartnerInvoiceStringID: String(orderId),
-      },
-    ],
+async function getInvoicePdf816(orderId, config) {
+  const payload = {
+    cmdType: 816,
+    commandObject: [{
+      partnerInvoiceID: 0,
+      partnerInvoiceStringID: String(orderId),
+    }],
   };
 
-  // Gọi Bkav SOAP trực tiếp qua axios — không qua proxy :3000.
-  const envelope = buildEnvelope('GetInvoicePDF', JSON.stringify(requestJson));
-  const res = await axios.post(ENDPOINT, envelope, {
-    headers: {
-      'Content-Type': 'text/xml; charset=utf-8',
-      'SOAPAction': '"http://tempuri.org/ExecCommand"',
-    },
-    timeout: 30000,
-  });
+  const result = await callBkavViaProxy(payload, config);
+  if (!result.success) return null;
 
-  // Parse SOAP response → ExecCommandResult inner XML → JSON.
-  const parser = new xml2js.Parser({ explicitArray: false, ignoreAttrs: true });
-  const soapParsed = await parser.parseStringPromise(res.data);
-  const body = soapParsed?.['soap:Envelope']?.['soap:Body'] || soapParsed?.Envelope?.Body;
-  const execResult = body?.ExecCommandResponse?.ExecCommandResult;
-  if (!execResult) {
-    throw new Error('Bkav 816: missing ExecCommandResult in SOAP response');
-  }
+  const rawObject = result.raw?.Object;
+  if (!rawObject) return null;
 
-  // Parse 2 lớp JSON cho 816 (riêng, không dùng parseBkavResponse hiện có).
-  // Lớp 1: JSON.parse(execResult) → { Status, Object, Code, isOk, isError }
-  // Lớp 2: JSON.parse(response.Object) → mảng, [0].MessLog là path PDF.
-  let response;
-  try {
-    response = JSON.parse(execResult);
-  } catch (err) {
-    throw new Error(`Bkav 816: response không phải JSON hợp lệ — ${err.message}`);
-  }
-
-  // Kiểm tra trạng thái lỗi từ Bkav.
-  if (response?.isError || response?.isOk === false) {
-    return null;
-  }
-
-  // Object là JSON string → parse tiếp để lấy MessLog (path PDF).
   let innerArray;
   try {
-    innerArray = JSON.parse(response?.Object || '[]');
+    innerArray = typeof rawObject === 'string' ? JSON.parse(rawObject) : rawObject;
   } catch (err) {
     throw new Error(`Bkav 816: Object không phải JSON hợp lệ — ${err.message}`);
   }
 
-  const messLog = innerArray?.[0]?.MessLog;
-  if (!messLog) {
-    // Không có path PDF trong response.
-    return null;
-  }
+  const messLog = (Array.isArray(innerArray) ? innerArray[0] : innerArray)?.MessLog;
+  if (!messLog) return null;
 
-  // Ghép MessLog với PDF host (KHÔNG phải SOAP ExecCommand endpoint),
-  // xử lý slash khi nối:
-  //   - PDF_BASE_URL có thể kết thúc bằng / hoặc không → strip / ở cuối.
-  //   - MessLog có thể bắt đầu bằng / hoặc không → strip / ở đầu.
-  // Kết quả luôn có đúng 1 slash giữa base và path.
   const base = PDF_BASE_URL.replace(/\/$/, '');
   const path = String(messLog).replace(/^\//, '');
-  const pdfUrl = `${base}/${path}`;
-
-  return { pdf_url: pdfUrl };
+  return { pdf_url: `${base}/${path}` };
 }
 
 module.exports = {
-  // Existing exports (giữ nguyên).
   createInvoice,
   getInvoicePdf816,
-  execCommand,
-  ENDPOINT,
-  COMMANDS,
-  // New exports.
   buildJsonPayload,
-  callBkav,
-  parseBkavResponse,
+  callBkavViaProxy,
+  parseProxyResponse,
 };
