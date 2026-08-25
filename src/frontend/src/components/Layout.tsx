@@ -196,6 +196,12 @@ export function Layout({ children }: { children: ReactNode }) {
         data-ocid="page.footer"
       >
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-1 text-center text-xs text-muted-foreground">
+          <p className="max-w-2xl">
+            Bún Bò Huế 65 chuẩn vị Huế, giao tận nơi tại Hà Nội — đặt trực tiếp
+            tại đây hoặc tìm "bún bò huế 65 grabfood", "bún bò huế 65
+            shopeefood" trên app giao đồ ăn. Đang tìm bún bò huế gần đây? Bún Bò
+            Huế 65 có 10 cơ sở tại Hà Nội.
+          </p>
           <p>© 2026 CÔNG TY TNHH THỰC PHẨM GIA KHÁNH - GIA KHÁNH FOODS</p>
           <p>69 đường Láng, P. Đống Đa, Tp. Hà nội.</p>
         </div>
