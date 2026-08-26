@@ -323,7 +323,7 @@ export interface backendInterface {
     getCanisterIdText(): Promise<string>;
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
-    getItemImage(itemId: string): Promise<Uint8Array | undefined>;
+    getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_5>;
     getPaymentMode(): Promise<string>;

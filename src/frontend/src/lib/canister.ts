@@ -213,11 +213,11 @@ export async function getMenuForRestaurant(
 
 // Ảnh món ăn lấy RIÊNG theo itemId — listMenus()/getMenu()/getMenuForRestaurant()
 // không còn kèm ảnh (tránh vượt giới hạn kích thước phản hồi IC 3MB khi
-// catalogue nhiều món). undefined nếu món không có ảnh hoặc không tìm thấy.
+// catalogue nhiều món). null nếu món không có ảnh hoặc không tìm thấy.
 export async function getItemImage(
   actor: Backend,
   itemId: string,
-): Promise<Uint8Array | undefined> {
+): Promise<Uint8Array | null> {
   return actor.getItemImage(itemId);
 }
 

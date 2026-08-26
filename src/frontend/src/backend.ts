@@ -372,7 +372,7 @@ export interface backendInterface {
     getCanisterIdText(): Promise<string>;
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
-    getItemImage(itemId: string): Promise<Uint8Array | undefined>;
+    getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrdersByEmail(email: string): Promise<Array<Order>>;
     getOrderStatus(orderId: string): Promise<Result_5>;
@@ -672,18 +672,18 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getItemImage(arg0: string): Promise<Uint8Array | undefined> {
+    async getItemImage(arg0: string): Promise<Uint8Array | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getItemImage(arg0);
-                return result.length > 0 ? result[0] : undefined;
+                return result.length > 0 ? result[0] : null;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getItemImage(arg0);
-            return result.length > 0 ? result[0] : undefined;
+            return result.length > 0 ? result[0] : null;
         }
     }
     async getOrder(arg0: string): Promise<Result> {
