@@ -323,6 +323,7 @@ export interface backendInterface {
     getCanisterIdText(): Promise<string>;
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
+    getItemImage(itemId: string): Promise<Uint8Array | undefined>;
     getOrder(orderId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_5>;
     getPaymentMode(): Promise<string>;
@@ -360,6 +361,7 @@ export interface backendInterface {
     snapshotUpgradeState(): Promise<Uint8Array>;
     updateInvoiceStatus(orderId: OrderId, invoiceStatus: InvoiceStatus, invoiceId: string, pdfUrl: string, hmac: Hmac): Promise<Result>;
     updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array, visible: boolean): Promise<Result_2>;
+    setItemVisible(itemId: string, visible: boolean): Promise<Result_2>;
     updateOrderQr(orderId: string, qrCode: string | null, billId: string | null, expireAt: bigint | null, hmac: string): Promise<Result>;
     updatePaymentStatus(orderId: OrderId, paymentStatus: PaymentStatus, hmac: Hmac): Promise<Result>;
     updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_1>;

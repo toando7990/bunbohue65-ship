@@ -52,6 +52,20 @@ mixin (
     MenuLib.updateItem(menus, itemId, name, price, unitName, vatRate, category, image, visible);
   };
 
+  // Admin only. Bật/tắt hiển thị món — CHỈ đổi field visible, KHÔNG đụng tới
+  // ảnh hay các field khác. Tách riêng khỏi updateItem để UI bật/tắt hiển thị
+  // (MenuItemTable.tsx) không cần tải lại ảnh gốc trước rồi gửi lại — tránh
+  // rủi ro vô tình gửi ảnh rỗng đè lên ảnh thật.
+  public shared ({ caller }) func setItemVisible(
+    itemId : Text,
+    visible : Bool,
+  ) : async Result.Result<CoreTypes.MenuItem, Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Admin only");
+    };
+    MenuLib.setItemVisible(menus, itemId, visible);
+  };
+
   // Admin only. Delete a MenuItem. Returns success.
   public shared ({ caller }) func deleteItem(itemId : Text) : async Result.Result<(), Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
@@ -60,14 +74,24 @@ mixin (
     MenuLib.deleteItem(menus, itemId);
   };
 
-  // Return all menu items (visible + hidden) for admin.
+  // Return all menu items (visible + hidden) for admin. Ảnh luôn rỗng — lấy
+  // riêng qua getItemImage(itemId) để tránh vượt giới hạn kích thước phản
+  // hồi IC (3MB) khi catalogue có nhiều món/ảnh.
   public query func listMenus() : async [CoreTypes.MenuItem] {
     MenuLib.listMenus(menus);
   };
 
-  // Return only visible menu items for frontend customers.
+  // Return only visible menu items for frontend customers. Ảnh luôn rỗng —
+  // lấy riêng qua getItemImage(itemId).
   public query func getMenu() : async [CoreTypes.MenuItem] {
     MenuLib.getMenu(menus);
+  };
+
+  // Trả về ảnh (Blob) của ĐÚNG 1 món theo itemId. Public — khách hàng browse
+  // menu cũng cần gọi được, không chỉ admin. Mỗi lần gọi chỉ 1 ảnh, không
+  // bao giờ vượt giới hạn kích thước phản hồi IC dù catalogue phình to.
+  public query func getItemImage(itemId : Text) : async ?Blob {
+    MenuLib.getItemImage(menus, itemId);
   };
 
   // Admin only. Create a new Restaurant with visible=true. Returns the created restaurant.
@@ -127,7 +151,8 @@ mixin (
     MenuLib.setRestaurantPriceOverride(overrides, restaurantId, itemId, price);
   };
 
-  // Return visible menu items with price overrides applied for a specific restaurant.
+  // Return visible menu items with price overrides applied for a specific
+  // restaurant. Ảnh luôn rỗng — lấy riêng qua getItemImage(itemId).
   public query func getMenuForRestaurant(restaurantId : Text) : async [CoreTypes.MenuItem] {
     MenuLib.getMenuForRestaurant(menus, overrides, restaurantId);
   };

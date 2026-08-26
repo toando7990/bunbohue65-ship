@@ -3,6 +3,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useItemImage } from "@/hooks/useQueries";
 import { cn, imageBytesToDataUrl } from "@/lib/utils";
 import type { MenuItem } from "@/types";
 import { Minus, Plus, Search, UtensilsCrossed } from "lucide-react";
@@ -57,8 +58,10 @@ const MenuCard = memo(function MenuCard({
   disabled?: boolean;
   index: number;
 }) {
-  // Cache one object URL per card so re-renders don't leak new URLs each time.
-  const imageUrl = useMemo(() => imageBytesToDataUrl(item.image), [item.image]);
+  // Ảnh lấy RIÊNG qua getItemImage(itemId) — listMenus()/getMenuForRestaurant()
+  // không còn kèm ảnh (tránh vượt giới hạn kích thước phản hồi IC 3MB).
+  const { data: imageBytes } = useItemImage(item.itemId);
+  const imageUrl = useMemo(() => imageBytesToDataUrl(imageBytes), [imageBytes]);
 
   // Revoke the cached object URL when the card unmounts.
   useEffect(() => {

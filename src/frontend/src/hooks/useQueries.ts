@@ -12,6 +12,7 @@ import {
   deleteRestaurant as deleteRestaurantFn,
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
+  getItemImage as getItemImageFn,
   getMenuForRestaurant as getMenuForRestaurantFn,
   getOrder as getOrderFn,
   getOrdersByEmail as getOrdersByEmailFn,
@@ -25,6 +26,7 @@ import {
   listRestaurants as listRestaurantsFn,
   markPickedUp as markPickedUpFn,
   revokeDevice as revokeDeviceFn,
+  setItemVisible as setItemVisibleFn,
   setRestaurantPriceOverride as setOverrideFn,
   setPaymentMode as setPaymentModeFn,
   setStoreHours as setStoreHoursFn,
@@ -117,6 +119,23 @@ export function useMenuForRestaurant(restaurantId: string | undefined) {
   });
 }
 
+// Ảnh món ăn lấy RIÊNG theo itemId (listMenus()/getMenuForRestaurant() không
+// còn kèm ảnh — tránh vượt giới hạn kích thước phản hồi IC 3MB). staleTime
+// dài vì ảnh món hiếm khi đổi — tránh gọi lại canister mỗi lần component
+// remount (mỗi thẻ món trong danh sách đều dùng hook này).
+export function useItemImage(itemId: string | undefined) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["itemImage", itemId],
+    queryFn: () =>
+      actor && itemId
+        ? getItemImageFn(actor, itemId)
+        : Promise.resolve(undefined),
+    enabled: !!actor && !isFetching && !!itemId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useUpdateItem() {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
@@ -124,6 +143,24 @@ export function useUpdateItem() {
     mutationFn: (item: Parameters<typeof updateItemFn>[1]) => {
       if (!actor) throw new Error("Actor not ready");
       return updateItemFn(actor, item);
+    },
+    onSuccess: (_data, item) => {
+      qc.invalidateQueries({ queryKey: ["menus"] });
+      qc.invalidateQueries({ queryKey: ["itemImage", item.itemId] });
+    },
+  });
+}
+
+// Bật/tắt hiển thị món — CHỈ đổi field visible, KHÔNG đụng tới ảnh. Dùng cho
+// MenuItemTable.tsx thay vì useUpdateItem() để tránh gửi nhầm ảnh rỗng đè
+// lên ảnh thật (item.image từ danh sách giờ luôn rỗng — xem useItemImage).
+export function useSetItemVisible() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args: { itemId: string; visible: boolean }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return setItemVisibleFn(actor, args.itemId, args.visible);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["menus"] }),
   });
@@ -251,7 +288,13 @@ export function useActivateDevice() {
       phone: string;
     }) => {
       if (!actor) throw new Error("Actor not ready");
-      return activateDeviceFn(actor, args.code, args.deviceId, args.name, args.phone);
+      return activateDeviceFn(
+        actor,
+        args.code,
+        args.deviceId,
+        args.name,
+        args.phone,
+      );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] }),
   });

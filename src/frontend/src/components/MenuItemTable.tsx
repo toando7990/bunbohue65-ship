@@ -1,6 +1,7 @@
 // MenuItemTable — bảng món: name, price (formatVND), unitName, vatRate,
-// category, image (thumbnail từ canister bytes), visible toggle (useUpdateItem),
-// nút Sửa/Xóa (AlertDialog confirm, useDeleteItem). UI tiếng Việt.
+// category, image (thumbnail lấy riêng qua useItemImage), visible toggle
+// (useSetItemVisible), nút Sửa/Xóa (AlertDialog confirm, useDeleteItem).
+// UI tiếng Việt.
 
 import type { MenuItem } from "@/backend";
 import {
@@ -23,7 +24,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useDeleteItem, useUpdateItem } from "@/hooks/useQueries";
+import {
+  useDeleteItem,
+  useItemImage,
+  useSetItemVisible,
+} from "@/hooks/useQueries";
 import { imageBytesToDataUrl } from "@/lib/utils";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -49,45 +54,34 @@ export interface MenuItemTableProps {
   onEdit?: (item: MenuItem) => void;
 }
 
-export function MenuItemTable({
-  items,
-  isLoading = false,
-  isError = false,
-  emptyMessage = "Chưa có món nào. Bấm “Thêm món” để tạo món đầu tiên.",
+// 1 dòng bảng — tách riêng để gọi useItemImage(itemId) độc lập cho từng món
+// (ảnh giờ lấy riêng qua canister, không còn nằm sẵn trong item.image).
+function MenuItemRow({
+  item,
+  index,
   onEdit,
-}: MenuItemTableProps) {
-  const updateMutation = useUpdateItem();
-  const deleteMutation = useDeleteItem();
-  const [pendingDelete, setPendingDelete] = useState<MenuItem | null>(null);
+  onDelete,
+}: {
+  item: MenuItem;
+  index: number;
+  onEdit?: (item: MenuItem) => void;
+  onDelete: (item: MenuItem) => void;
+}) {
+  const { data: imageBytes } = useItemImage(item.itemId);
+  const imageUrl = useMemo(() => imageBytesToDataUrl(imageBytes), [imageBytes]);
 
-  // Cache one object URL per item so list renders don't leak new URLs each time.
-  const imageUrls = useMemo(() => {
-    const map = new Map<string, string | null>();
-    for (const item of items) {
-      map.set(item.itemId, imageBytesToDataUrl(item.image));
-    }
-    return map;
-  }, [items]);
-
-  // Revoke all cached object URLs when the list changes or the table unmounts.
   useEffect(() => {
     return () => {
-      for (const url of imageUrls.values()) {
-        if (url) URL.revokeObjectURL(url);
-      }
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
     };
-  }, [imageUrls]);
+  }, [imageUrl]);
 
-  async function handleToggleVisible(item: MenuItem, next: boolean) {
+  const setVisibleMutation = useSetItemVisible();
+
+  async function handleToggleVisible(next: boolean) {
     try {
-      await updateMutation.mutateAsync({
+      await setVisibleMutation.mutateAsync({
         itemId: item.itemId,
-        name: item.name,
-        price: item.price,
-        unitName: item.unitName,
-        vatRate: item.vatRate,
-        category: item.category,
-        image: item.image,
         visible: next,
       });
       toast.success(next ? "Đã hiển thị món." : "Đã ẩn món.");
@@ -97,6 +91,90 @@ export function MenuItemTable({
       toast.error(message);
     }
   }
+
+  return (
+    <TableRow data-ocid={`menu.table.row.${index}`}>
+      <TableCell className="pl-3">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={item.name}
+            loading="lazy"
+            className="h-10 w-10 rounded-md border border-border object-cover"
+            data-ocid={`menu.table.thumb.${index}`}
+          />
+        ) : (
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-[10px] text-muted-foreground"
+            data-ocid={`menu.table.thumb_placeholder.${index}`}
+          >
+            Không ảnh
+          </div>
+        )}
+      </TableCell>
+      <TableCell className="max-w-[200px] truncate text-sm font-medium text-foreground">
+        <span title={item.name}>{item.name}</span>
+      </TableCell>
+      <TableCell className="text-right font-mono text-sm text-foreground">
+        {formatVnd(item.price)}
+      </TableCell>
+      <TableCell className="text-sm text-muted-foreground">
+        {item.unitName || "—"}
+      </TableCell>
+      <TableCell className="text-right font-mono text-sm text-muted-foreground">
+        {String(item.vatRate)}%
+      </TableCell>
+      <TableCell className="text-sm text-muted-foreground">
+        {item.category || "—"}
+      </TableCell>
+      <TableCell className="text-center">
+        <Switch
+          checked={item.visible}
+          disabled={setVisibleMutation.isPending}
+          onCheckedChange={handleToggleVisible}
+          data-ocid={`menu.table.visible_toggle.${index}`}
+          aria-label={`Bật/tắt hiển thị món ${item.name}`}
+        />
+      </TableCell>
+      <TableCell className="pr-3 text-right">
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => onEdit?.(item)}
+            disabled={!onEdit}
+            data-ocid={`menu.table.edit_button.${index}`}
+            aria-label={`Sửa món ${item.name}`}
+          >
+            <Pencil className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete(item)}
+            data-ocid={`menu.table.delete_button.${index}`}
+            aria-label={`Xóa món ${item.name}`}
+            className="text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+export function MenuItemTable({
+  items,
+  isLoading = false,
+  isError = false,
+  emptyMessage = "Chưa có món nào. Bấm “Thêm món” để tạo món đầu tiên.",
+  onEdit,
+}: MenuItemTableProps) {
+  const deleteMutation = useDeleteItem();
+  const [pendingDelete, setPendingDelete] = useState<MenuItem | null>(null);
 
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
@@ -167,88 +245,15 @@ export function MenuItemTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map((item, index) => {
-              const isToggling =
-                updateMutation.isPending &&
-                updateMutation.variables?.itemId === item.itemId;
-              return (
-                <TableRow
-                  key={item.itemId}
-                  data-ocid={`menu.table.row.${index}`}
-                >
-                  <TableCell className="pl-3">
-                    {imageUrls.get(item.itemId) ? (
-                      <img
-                        src={imageUrls.get(item.itemId) ?? undefined}
-                        alt={item.name}
-                        loading="lazy"
-                        className="h-10 w-10 rounded-md border border-border object-cover"
-                        data-ocid={`menu.table.thumb.${index}`}
-                      />
-                    ) : (
-                      <div
-                        className="flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-[10px] text-muted-foreground"
-                        data-ocid={`menu.table.thumb_placeholder.${index}`}
-                      >
-                        Không ảnh
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="max-w-[200px] truncate text-sm font-medium text-foreground">
-                    <span title={item.name}>{item.name}</span>
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm text-foreground">
-                    {formatVnd(item.price)}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {item.unitName || "—"}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm text-muted-foreground">
-                    {String(item.vatRate)}%
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {item.category || "—"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Switch
-                      checked={item.visible}
-                      disabled={isToggling}
-                      onCheckedChange={(next) =>
-                        handleToggleVisible(item, next)
-                      }
-                      data-ocid={`menu.table.visible_toggle.${index}`}
-                      aria-label={`Bật/tắt hiển thị món ${item.name}`}
-                    />
-                  </TableCell>
-                  <TableCell className="pr-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit?.(item)}
-                        disabled={!onEdit}
-                        data-ocid={`menu.table.edit_button.${index}`}
-                        aria-label={`Sửa món ${item.name}`}
-                      >
-                        <Pencil className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setPendingDelete(item)}
-                        data-ocid={`menu.table.delete_button.${index}`}
-                        aria-label={`Xóa món ${item.name}`}
-                        className="text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {items.map((item, index) => (
+              <MenuItemRow
+                key={item.itemId}
+                item={item}
+                index={index}
+                onEdit={onEdit}
+                onDelete={setPendingDelete}
+              />
+            ))}
           </TableBody>
         </Table>
       </div>

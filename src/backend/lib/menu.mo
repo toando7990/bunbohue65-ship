@@ -79,16 +79,23 @@ module {
     #ok;
   };
 
-  // Return all menu items (visible + hidden) for admin.
+  // Return all menu items (visible + hidden) for admin — ẢNH LUÔN RỖNG (xem
+  // getItemImage bên dưới). Lý do: response chứa TOÀN BỘ ảnh của mọi món đã
+  // vượt giới hạn kích thước phản hồi IC (3MB/3,145,728 byte) khi số món +
+  // dung lượng ảnh tích luỹ đủ lớn — lỗi "application payload size ... cannot
+  // be larger than 3145728", sập hẳn tính năng xem menu cho MỌI khách hàng.
+  // Ảnh giờ lấy riêng qua getItemImage(itemId) — mỗi lần gọi chỉ 1 ảnh, không
+  // bao giờ chạm giới hạn dù catalogue phình to tới đâu.
   public func listMenus(menus : Menus) : [Types.MenuItem] {
-    menus.toArray().map(func((_id : Text, i : Types.MenuItem)) : Types.MenuItem = i);
+    menus.toArray().map(func((_id : Text, i : Types.MenuItem)) : Types.MenuItem = { i with image = "" : Blob });
   };
 
-  // Return only visible menu items for frontend customers.
+  // Return only visible menu items for frontend customers. Ảnh rỗng — lý do
+  // giống listMenus ở trên.
   public func getMenu(menus : Menus) : [Types.MenuItem] {
     menus.toArray()
       .filter(func((_id : Text, i : Types.MenuItem)) : Bool { i.visible })
-      .map(func((_id : Text, i : Types.MenuItem)) : Types.MenuItem = i);
+      .map(func((_id : Text, i : Types.MenuItem)) : Types.MenuItem = { i with image = "" : Blob });
   };
 
   // Create a new Restaurant with visible=true and store it in restaurants.
@@ -179,7 +186,9 @@ module {
     #ok;
   };
 
-  // Return visible menu items with price overrides applied for a specific restaurant.
+  // Return visible menu items with price overrides applied for a specific
+  // restaurant. Ảnh rỗng — lý do giống listMenus (giới hạn kích thước phản
+  // hồi IC 3MB) — lấy riêng qua getItemImage(itemId).
   public func getMenuForRestaurant(
     menus : Menus,
     overrides : Overrides,
@@ -188,7 +197,7 @@ module {
     menus.toArray()
       .filter(func((_id : Text, i : Types.MenuItem)) : Bool { i.visible })
       .map(func((_id : Text, i : Types.MenuItem)) : Types.MenuItem {
-        switch (overrides.get(restaurantId)) {
+        let priced = switch (overrides.get(restaurantId)) {
           case null { i };
           case (?inner) {
             switch (inner.get(i.itemId)) {
@@ -197,6 +206,38 @@ module {
             };
           };
         };
+        { priced with image = "" : Blob };
       });
+  };
+
+  // Trả về ảnh (Blob) của ĐÚNG 1 món theo itemId — mỗi lần gọi 1 ảnh duy
+  // nhất, không bao giờ vượt giới hạn kích thước phản hồi IC dù catalogue có
+  // bao nhiêu món. null nếu không tìm thấy item hoặc item không có ảnh.
+  public func getItemImage(menus : Menus, itemId : Text) : ?Blob {
+    switch (menus.get(itemId)) {
+      case null { null };
+      case (?item) {
+        if (item.image.size() == 0) { null } else { ?item.image };
+      };
+    };
+  };
+
+  // Bật/tắt hiển thị món CHỈ đổi field visible, KHÔNG đụng tới các field
+  // khác (đặc biệt là image) — tách riêng khỏi updateItem để tránh rủi ro
+  // ghi đè nhầm ảnh thật bằng giá trị rỗng khi caller không có sẵn ảnh gốc
+  // trong tay (ví dụ MenuItemTable.tsx bật/tắt hiển thị không tải lại ảnh).
+  public func setItemVisible(
+    menus : Menus,
+    itemId : Text,
+    visible : Bool,
+  ) : Result.Result<Types.MenuItem, Text> {
+    switch (menus.get(itemId)) {
+      case null { #err("Not found") };
+      case (?item) {
+        let updated : Types.MenuItem = { item with visible };
+        menus.add(itemId, updated);
+        #ok(updated);
+      };
+    };
   };
 };

@@ -178,6 +178,17 @@ export async function updateItem(
   );
 }
 
+// Bật/tắt hiển thị món CHỈ đổi field visible, KHÔNG đụng tới ảnh — dùng cho
+// MenuItemTable.tsx thay vì updateItem() để tránh gửi nhầm ảnh rỗng (item.image
+// từ listMenus() giờ luôn rỗng, xem getItemImage) đè lên ảnh thật đã lưu.
+export async function setItemVisible(
+  actor: Backend,
+  itemId: string,
+  visible: boolean,
+): Promise<MenuItem> {
+  return unwrap(await actor.setItemVisible(itemId, visible));
+}
+
 export async function deleteItem(
   actor: Backend,
   itemId: string,
@@ -198,6 +209,16 @@ export async function getMenuForRestaurant(
   restaurantId: string,
 ): Promise<MenuItem[]> {
   return actor.getMenuForRestaurant(restaurantId);
+}
+
+// Ảnh món ăn lấy RIÊNG theo itemId — listMenus()/getMenu()/getMenuForRestaurant()
+// không còn kèm ảnh (tránh vượt giới hạn kích thước phản hồi IC 3MB khi
+// catalogue nhiều món). undefined nếu món không có ảnh hoặc không tìm thấy.
+export async function getItemImage(
+  actor: Backend,
+  itemId: string,
+): Promise<Uint8Array | undefined> {
+  return actor.getItemImage(itemId);
 }
 
 // ---- Restaurants ----

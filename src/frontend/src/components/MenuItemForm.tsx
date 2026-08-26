@@ -1,5 +1,6 @@
 // MenuItemForm — form thêm/sửa món. Fields: name, price (BigInt VND),
-// unitName, vatRate (BigInt %), category, image (ProcessedImage via ImageUpload),
+// unitName, vatRate (BigInt %), category, image (ProcessedImage via ImageUpload,
+// ảnh khi sửa món lấy riêng qua useItemImage — xem bên dưới),
 // visible (toggle, update only). Nút Lưu gọi useAddItem (create) hoặc
 // useUpdateItem (edit). UI tiếng Việt.
 
@@ -16,11 +17,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useAddItem, useUpdateItem } from "@/hooks/useQueries";
+import { useAddItem, useItemImage, useUpdateItem } from "@/hooks/useQueries";
 import { imageBytesToDataUrl } from "@/lib/utils";
 import type { ProcessedImage } from "@/types";
 import { Loader2, Save } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const VAT_OPTIONS = [
@@ -90,16 +91,28 @@ export function MenuItemForm({ item, onSaved, onCancel }: MenuItemFormProps) {
   const [category, setCategory] = useState<string>(
     item?.category ?? CATEGORY_OPTIONS[0],
   );
-  const [image, setImage] = useState<ProcessedImage | null>(() =>
-    item?.image && item.image.length > 0
-      ? {
-          bytes: item.image,
-          dataUrl: imageBytesToDataUrl(item.image) ?? "",
-          sizeBytes: item.image.length,
-        }
-      : null,
-  );
+  const [image, setImage] = useState<ProcessedImage | null>(null);
   const [visible, setVisible] = useState<boolean>(item?.visible ?? true);
+
+  // Ảnh của món đang sửa lấy RIÊNG qua getItemImage(itemId) — item.image từ
+  // danh sách menu luôn rỗng (tránh vượt giới hạn kích thước phản hồi IC
+  // 3MB). Chỉ điền vào state MỘT LẦN khi tải xong — không ghi đè ảnh mới
+  // admin vừa chọn nếu query load lại sau đó (ví dụ do cache invalidate).
+  const { data: fetchedImageBytes, isFetched: imageFetched } = useItemImage(
+    item?.itemId,
+  );
+  const [imageInitFromFetch, setImageInitFromFetch] = useState(false);
+  useEffect(() => {
+    if (!isEdit || imageFetched === false || imageInitFromFetch) return;
+    if (fetchedImageBytes && fetchedImageBytes.length > 0) {
+      setImage({
+        bytes: fetchedImageBytes,
+        dataUrl: imageBytesToDataUrl(fetchedImageBytes) ?? "",
+        sizeBytes: fetchedImageBytes.length,
+      });
+    }
+    setImageInitFromFetch(true);
+  }, [isEdit, imageFetched, imageInitFromFetch, fetchedImageBytes]);
 
   const canSubmit =
     name.trim().length > 0 &&

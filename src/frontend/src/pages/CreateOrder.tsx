@@ -34,6 +34,7 @@ import { useOpenCountdown } from "@/hooks/useOpenCountdown";
 import {
   useGetStoreHours,
   useIsStoreOpen,
+  useItemImage,
   useMenus,
   useRestaurants,
 } from "@/hooks/useQueries";
@@ -90,8 +91,11 @@ const EMPTY_CUSTOMER: CustomerFormValues = {
 
 // Ảnh thu nhỏ cho từng dòng trong giỏ hàng — giúp khách nhận diện món nhanh
 // hơn khi xem lại giỏ trước khi đặt. Món dụng cụ (không có ảnh) hiện icon mặc định.
+// Ảnh lấy RIÊNG qua getItemImage(itemId) — item.image từ danh sách menu luôn
+// rỗng (tránh vượt giới hạn kích thước phản hồi IC 3MB).
 function CartLineThumbnail({ item }: { item: MenuItem }) {
-  const imageUrl = useMemo(() => imageBytesToDataUrl(item.image), [item.image]);
+  const { data: imageBytes } = useItemImage(item.itemId);
+  const imageUrl = useMemo(() => imageBytesToDataUrl(imageBytes), [imageBytes]);
 
   useEffect(() => {
     return () => {

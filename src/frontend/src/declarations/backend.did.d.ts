@@ -236,6 +236,7 @@ export interface _SERVICE {
   'getCanisterIdText' : ActorMethod<[], string>,
   'getMenu' : ActorMethod<[], Array<MenuItem>>,
   'getMenuForRestaurant' : ActorMethod<[string], Array<MenuItem>>,
+  'getItemImage' : ActorMethod<[string], [] | [Uint8Array]>,
   'getOrder' : ActorMethod<[string], Result>,
   'getOrderStatus' : ActorMethod<[string], Result_5>,
   'getPaymentMode' : ActorMethod<[], string>,
@@ -276,6 +277,7 @@ export interface _SERVICE {
     [string, string, bigint, string, bigint, string, Uint8Array, boolean],
     Result_2
   >,
+  'setItemVisible' : ActorMethod<[string, boolean], Result_2>,
   'updateOrderQr' : ActorMethod<
     [string, [] | [string], [] | [string], [] | [bigint], string],
     Result

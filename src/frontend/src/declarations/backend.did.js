@@ -268,6 +268,7 @@ export const idlService = IDL.Service({
   'getCanisterIdText' : IDL.Func([], [IDL.Text], ['query']),
   'getMenu' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
   'getMenuForRestaurant' : IDL.Func([IDL.Text], [IDL.Vec(MenuItem)], ['query']),
+  'getItemImage' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Vec(IDL.Nat8))], ['query']),
   'getOrder' : IDL.Func([IDL.Text], [Result], []),
   'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
   'getPaymentMode' : IDL.Func([], [IDL.Text], ['query']),
@@ -328,6 +329,7 @@ export const idlService = IDL.Service({
       [Result_2],
       [],
     ),
+  'setItemVisible' : IDL.Func([IDL.Text, IDL.Bool], [Result_2], []),
   'updateOrderQr' : IDL.Func(
       [
         IDL.Text,
@@ -611,6 +613,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(MenuItem)],
         ['query'],
       ),
+    'getItemImage' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(IDL.Vec(IDL.Nat8))],
+        ['query'],
+      ),
     'getOrder' : IDL.Func([IDL.Text], [Result], []),
     'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
     'getPaymentMode' : IDL.Func([], [IDL.Text], ['query']),
@@ -671,6 +678,7 @@ export const idlFactory = ({ IDL }) => {
         [Result_2],
         [],
       ),
+    'setItemVisible' : IDL.Func([IDL.Text, IDL.Bool], [Result_2], []),
     'updateOrderQr' : IDL.Func(
         [
           IDL.Text,

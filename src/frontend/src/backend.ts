@@ -372,6 +372,7 @@ export interface backendInterface {
     getCanisterIdText(): Promise<string>;
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
+    getItemImage(itemId: string): Promise<Uint8Array | undefined>;
     getOrder(orderId: string): Promise<Result>;
     getOrdersByEmail(email: string): Promise<Array<Order>>;
     getOrderStatus(orderId: string): Promise<Result_5>;
@@ -409,6 +410,7 @@ export interface backendInterface {
     snapshotUpgradeState(): Promise<Uint8Array>;
     updateInvoiceStatus(orderId: OrderId, invoiceStatus: InvoiceStatus, invoiceId: string, pdfUrl: string, hmac: Hmac): Promise<Result>;
     updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array, visible: boolean): Promise<Result_2>;
+    setItemVisible(itemId: string, visible: boolean): Promise<Result_2>;
     updateOrderQr(orderId: string, qrCode: string | null, billId: string | null, expireAt: bigint | null, hmac: string): Promise<Result>;
     updatePaymentStatus(orderId: OrderId, paymentStatus: PaymentStatus, hmac: Hmac): Promise<Result>;
     updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_1>;
@@ -668,6 +670,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getMenuForRestaurant(arg0);
             return result;
+        }
+    }
+    async getItemImage(arg0: string): Promise<Uint8Array | undefined> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getItemImage(arg0);
+                return result.length > 0 ? result[0] : undefined;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getItemImage(arg0);
+            return result.length > 0 ? result[0] : undefined;
         }
     }
     async getOrder(arg0: string): Promise<Result> {
@@ -1107,6 +1123,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.updateItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async setItemVisible(arg0: string, arg1: boolean): Promise<Result_2> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setItemVisible(arg0, arg1);
+                return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setItemVisible(arg0, arg1);
             return from_candid_Result_2_n11(this._uploadFile, this._downloadFile, result);
         }
     }
