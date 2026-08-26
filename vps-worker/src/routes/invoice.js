@@ -46,6 +46,36 @@ function startInvoiceCron(db) {
           // hành hoá đơn CÔNG TY (buyerName/buyerTaxCode/buyerAddress thật);
           // không nhập → hoá đơn bán lẻ "Bán cho người tiêu dùng" như cũ.
           const hasTaxCode = !!(row.cus_tax_code && row.cus_tax_code.trim());
+
+          // Hoá đơn công ty: tra cứu MST qua CmdType 904 TRƯỚC khi phát hành
+          // — lấy tên + địa chỉ CHÍNH THỨC đã đăng ký với cơ quan thuế, dùng
+          // để phát hành hoá đơn thay vì tên/địa chỉ khách tự gõ lúc đặt món
+          // (dễ gõ sai/viết tắt, dễ bị từ chối vì sai lệch hồ sơ thuế).
+          // KHÔNG đổi dữ liệu đơn hàng gốc (orders.cus_name/cus_address giữ
+          // nguyên) — chỉ ảnh hưởng tới nội dung gửi Bkav lúc phát hành.
+          // Tra cứu thất bại (MST không hợp lệ/không tìm thấy) → fallback về
+          // tên/địa chỉ khách tự gõ, KHÔNG chặn việc phát hành hoá đơn.
+          let buyerName;
+          let buyerAddress;
+          if (hasTaxCode) {
+            try {
+              const lookup = await bkav.lookupTaxCode(row.cus_tax_code, { prodInvoiceSerial: PROD_INVOICE_SERIAL });
+              db.prepare(`INSERT INTO bkav_logs (order_id, command, response_xml, created_at) VALUES (?, 'LookupTaxCode', ?, ?)`)
+                .run(row.order_id, JSON.stringify(lookup.raw), Date.now());
+              if (lookup.found && lookup.name) {
+                buyerName = lookup.name;
+                buyerAddress = lookup.address || row.cus_address;
+                console.log(`[invoice/cron] LookupTaxCode OK cho ${row.order_id}: ${lookup.name}`);
+              } else {
+                console.warn(`[invoice/cron] LookupTaxCode không tìm thấy MST ${row.cus_tax_code} (đơn ${row.order_id}) — dùng tên/địa chỉ khách tự gõ`);
+              }
+            } catch (e) {
+              console.warn(`[invoice/cron] LookupTaxCode lỗi cho ${row.order_id}: ${e.message} — dùng tên/địa chỉ khách tự gõ`);
+              db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'LookupTaxCode', ?, ?)`)
+                .run(row.order_id, e.message, Date.now());
+            }
+          }
+
           const inv = await bkav.createInvoice(
             {
               orderId: row.order_id, cusName: row.cus_name, cusTaxCode: row.cus_tax_code,
@@ -53,6 +83,10 @@ function startInvoiceCron(db) {
               goodsAmount: row.goods_amount, taxTotal: row.tax_total,
               receiverEmail: row.receiver_email,
               isRetailInvoice: !hasTaxCode,
+              // Ghi đè bằng dữ liệu tra cứu MST nếu có — undefined thì
+              // buildJsonPayload() tự fallback về cusName/cusAddress.
+              buyerName,
+              buyerAddress,
             },
             { prodInvoiceSerial: PROD_INVOICE_SERIAL },
           );

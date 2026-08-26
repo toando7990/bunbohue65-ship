@@ -269,6 +269,46 @@ function buildJsonPayload(invoice, config) {
 }
 
 // ------------------------------------------------------------
+// lookupTaxCode — CmdType 904, qua bkav-proxy (cùng kênh đã sửa/test).
+// ------------------------------------------------------------
+// Tra cứu thông tin doanh nghiệp chính thức bằng MST (đã đăng ký với cơ
+// quan thuế). Request đặc biệt: CommandObject là CHUỖI (MST), không phải
+// object/array như CmdType 100 — callBkavViaProxy() vẫn dùng được nguyên
+// vẹn vì chỉ JSON.stringify toàn bộ payload, không quan tâm hình dạng
+// commandObject bên trong.
+//
+// Trả { found: true, name, address, status, raw } khi tra cứu thành công
+// (isOk=true), hoặc { found: false, raw } khi MST không hợp lệ/không tìm
+// thấy — KHÔNG throw lỗi trong trường hợp này (caller tự quyết định
+// fallback, không chặn luồng phát hành hoá đơn).
+// ------------------------------------------------------------
+async function lookupTaxCode(taxCode, config) {
+  const payload = { cmdType: 904, commandObject: String(taxCode) };
+  const result = await callBkavViaProxy(payload, config);
+  if (!result.success) {
+    return { found: false, raw: result.raw };
+  }
+  // Object có thể là chuỗi JSON (giống CmdType 100) hoặc object thuần —
+  // xử lý cả 2 khả năng, giống pattern đã dùng trong parseProxyResponse().
+  const rawObject = result.raw?.Object;
+  let obj = {};
+  if (rawObject) {
+    try {
+      obj = typeof rawObject === 'string' ? JSON.parse(rawObject) : rawObject;
+    } catch {
+      obj = {};
+    }
+  }
+  return {
+    found: true,
+    name: obj.TenChinhThuc || '',
+    address: obj.DiaChiGiaoDichChinh || obj.DiaChiGiaoDichPhu || '',
+    status: obj.TrangThaiHoatDong || '',
+    raw: result.raw,
+  };
+}
+
+// ------------------------------------------------------------
 // createInvoice — CmdType 100 qua bkav-proxy.
 // ------------------------------------------------------------
 // Backward compat: giữ signature cũ (cusName, cusTaxCode, cusAddress,
@@ -339,6 +379,7 @@ async function getInvoicePdf816(orderId, config) {
 module.exports = {
   createInvoice,
   getInvoicePdf816,
+  lookupTaxCode,
   buildJsonPayload,
   callBkavViaProxy,
   parseProxyResponse,
