@@ -15,6 +15,7 @@ import { MenuManager } from "@/pages/MenuManager";
 import OrderHistory from "@/pages/OrderHistory";
 import OrderList from "@/pages/OrderList";
 import OrderTracker from "@/pages/OrderTracker";
+import OrderingPartners from "@/pages/OrderingPartners";
 import RestaurantManager from "@/pages/RestaurantManager";
 import {
   Outlet,
@@ -125,6 +126,12 @@ const grabGuideRoute = createRoute({
   component: () => <GrabGuide />,
 });
 
+const orderingPartnersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/ordering-partners",
+  component: () => <OrderingPartners />,
+});
+
 const driverRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/driver",
@@ -198,6 +205,7 @@ const router = createRouter({
     trackRoute,
     historyRoute,
     grabGuideRoute,
+    orderingPartnersRoute,
     driverRoute,
     counterRoute,
     adminRoute,

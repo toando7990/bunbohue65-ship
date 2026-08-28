@@ -59,18 +59,39 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-// Link gian hàng GrabFood/ShopeeFood — dùng cho 2 nút "Đặt qua GrabFood"/
-// "Đặt qua ShopeeFood" ở đầu trang chủ. Bún Bò Huế 65 có nhiều cơ sở (10+)
-// tại Hà Nội, mỗi cơ sở có trang riêng trên GrabFood/ShopeeFood — 2 link
-// dưới đây là bản TÌM ĐƯỢC qua tra cứu công khai (chưa xác nhận bởi chủ
-// quán): GrabFood trỏ tới đúng 1 chi nhánh (65 Đường Láng, chi nhánh duy
-// nhất tìm được trên GrabFood); ShopeeFood trỏ tới trang tổng hợp liệt kê
-// nhiều chi nhánh tại Hà Nội (phù hợp hơn vì có nhiều cơ sở).
-// ĐỔI LẠI 2 GIÁ TRỊ NÀY nếu chủ quán cung cấp link chính xác hơn từ tài
-// khoản GrabMerchant/ShopeeFood Merchant.
-const GRABFOOD_URL =
-  "https://food.grab.com/vn/vi/restaurant/b%C3%BAn-b%C3%B2-hu%E1%BA%BF-65-%C4%91%C6%B0%E1%BB%9Dng-l%C3%A1ng-delivery/VNGFVN00000388";
-const SHOPEEFOOD_URL = "https://shopeefood.vn/ha-noi/bun-bo-hue-65";
+// 4 dịch vụ giao hàng khách tự chọn để đặt tài xế — hệ thống không đặt hộ,
+// chỉ dẫn link tiện cho khách. Màu gần đúng theo nhận diện thương hiệu công khai.
+const DELIVERY_SERVICES: {
+  slug: string;
+  name: string;
+  url: string;
+  color: string;
+}[] = [
+  {
+    slug: "grab",
+    name: "Grab giao hàng",
+    url: "https://www.grab.com/vn/express/",
+    color: "#00B14F",
+  },
+  {
+    slug: "xanhsm",
+    name: "Xanh SM giao hàng",
+    url: "https://www.greensm.com/vn-vi/green-express",
+    color: "#00A99D",
+  },
+  {
+    slug: "be",
+    name: "Be giao hàng",
+    url: "https://be.com.vn/khach-hang-ca-nhan/dich-vu-giao-hang/",
+    color: "#FFC800",
+  },
+  {
+    slug: "ahamove",
+    name: "Ahamove giao hàng",
+    url: "https://ahamove.com/service/aha-delivery",
+    color: "#F26522",
+  },
+];
 import { toast } from "sonner";
 
 function formatVnd(value: number): string {
@@ -135,6 +156,10 @@ export default function CreateOrder() {
   const { data: storeHours } = useGetStoreHours();
   const openHourNum = storeHours ? Number(storeHours.openHour) : undefined;
   const openMinuteNum = storeHours ? Number(storeHours.openMinute) : undefined;
+  const closeHourNum = storeHours ? Number(storeHours.closeHour) : undefined;
+  const closeMinuteNum = storeHours
+    ? Number(storeHours.closeMinute)
+    : undefined;
   const { formatted: countdownText } = useOpenCountdown(
     storeClosed ? openHourNum : undefined,
     storeClosed ? openMinuteNum : undefined,
@@ -324,6 +349,10 @@ export default function CreateOrder() {
   );
 
   async function handleSubmit() {
+    if (storeClosed) {
+      toast.error("Ngoài giờ mở cửa — vui lòng quay lại sau.");
+      return;
+    }
     setTouched(true);
     const errs = validateCustomerForm(customer, { hideAddress: true });
     if (Object.keys(errs).length > 0) {
@@ -405,356 +434,350 @@ export default function CreateOrder() {
         className="mx-auto w-full max-w-2xl px-4 py-6 pb-28 md:px-6 md:py-10"
         data-ocid="create_order.page"
       >
-        <header className="mb-6 flex flex-col gap-1.5">
+        <header className="mb-6 flex flex-col gap-3">
           <h1
             className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
             data-ocid="create_order.title"
           >
             Đặt món
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Chọn nhà hàng, chọn món, nhập tên + SĐT — đặt đơn và tự đặt tài xế
-            nhận hàng.
-          </p>
-          {/* Nút điều hướng sang GrabFood/ShopeeFood — giúp khách quen dùng
-              app giao đồ ăn tìm đúng gian hàng, đồng thời giúp Google hiểu
-              website này là nguồn gốc của các gian hàng trên app. */}
-          <div className="mt-2 flex flex-wrap gap-2">
-            <a
-              href={GRABFOOD_URL}
-              target="_blank"
-              rel="noreferrer"
-              data-ocid="create_order.grabfood_badge"
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-[#00B14F]/30 bg-[#00B14F]/10 px-3.5 text-sm font-semibold text-[#00B14F] transition-smooth hover:bg-[#00B14F]/15"
+
+          {/* Giờ mở cửa + trạng thái — thay cho dòng mô tả cũ. */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
+            {openHourNum !== undefined && closeHourNum !== undefined && (
+              <span
+                className="inline-flex items-center gap-1.5 text-muted-foreground"
+                data-ocid="create_order.hours_display"
+              >
+                <Clock className="h-4 w-4" aria-hidden="true" />
+                Giờ mở cửa: {String(openHourNum).padStart(2, "0")}:
+                {String(openMinuteNum).padStart(2, "0")} -{" "}
+                {String(closeHourNum).padStart(2, "0")}:
+                {String(closeMinuteNum).padStart(2, "0")} hằng ngày
+              </span>
+            )}
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 font-semibold",
+                storeClosed ? "text-destructive" : "text-success",
+              )}
+              data-ocid="create_order.status_badge"
             >
-              Đặt qua GrabFood
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-            </a>
-            <a
-              href={SHOPEEFOOD_URL}
-              target="_blank"
-              rel="noreferrer"
-              data-ocid="create_order.shopeefood_badge"
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-[#EE4D2D]/30 bg-[#EE4D2D]/10 px-3.5 text-sm font-semibold text-[#EE4D2D] transition-smooth hover:bg-[#EE4D2D]/15"
-            >
-              Đặt qua ShopeeFood
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-            </a>
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  storeClosed ? "bg-destructive" : "bg-success",
+                )}
+                aria-hidden="true"
+              />
+              {storeClosed ? "Đang đóng cửa" : "Đang mở cửa"}
+            </span>
+          </div>
+
+          {/* Dịch vụ giao hàng — khách tự chọn app để đặt tài xế nhận hàng,
+              hệ thống không đặt hộ. */}
+          <div>
+            <p className="mb-1.5 text-sm text-muted-foreground">
+              Bạn tự chọn dịch vụ giao hàng:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {DELIVERY_SERVICES.map((service) => (
+                <a
+                  key={service.slug}
+                  href={service.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-ocid={`create_order.delivery_badge.${service.slug}`}
+                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-smooth"
+                  style={{
+                    borderColor: `${service.color}4d`,
+                    backgroundColor: `${service.color}1a`,
+                    color: service.color,
+                  }}
+                >
+                  {service.name}
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                </a>
+              ))}
+            </div>
           </div>
         </header>
 
-        {storeClosed ? (
-          <div
-            className="flex flex-col items-center gap-5 rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-sm"
-            data-ocid="create_order.closed_state"
-          >
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary animate-pulse-soft">
-              <Clock className="h-7 w-7" aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="font-display text-xl font-bold text-foreground">
-                Cửa hàng đang đóng
-              </h2>
-              <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-                Hiện tại ngoài giờ mở cửa nên bạn chưa thể đặt món. Trang sẽ tự
-                mở khoá ngay khi đến giờ hoạt động.
-              </p>
-            </div>
-
-            {openHourNum !== undefined && openMinuteNum !== undefined && (
-              <div
-                className="flex flex-col items-center gap-2 rounded-2xl bg-secondary/60 px-6 py-5"
-                data-ocid="create_order.closed_countdown"
-              >
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Mở cửa sau
+        <div className="flex flex-col gap-6">
+          {/* Step 1: Restaurant */}
+          <Card data-ocid="create_order.restaurant_card">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  1
                 </span>
-                <span className="font-mono text-4xl font-bold tabular-nums text-[oklch(var(--bbh-gold))]">
-                  {countdownText}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Giờ mở cửa hằng ngày:{" "}
-                  <span className="font-medium text-foreground">
-                    {String(openHourNum).padStart(2, "0")}:
-                    {String(openMinuteNum).padStart(2, "0")}
-                  </span>
-                </span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="flex flex-col gap-6">
-              {/* Step 1: Restaurant */}
-              <Card data-ocid="create_order.restaurant_card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                      1
-                    </span>
-                    Chọn nhà hàng gần với bạn
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <RestaurantSelect
-                    restaurants={restaurants}
-                    isLoading={restaurantsLoading}
-                    value={restaurantId}
-                    onChange={handleRestaurantChange}
-                  />
-                </CardContent>
-              </Card>
+                Chọn nhà hàng gần với bạn
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RestaurantSelect
+                restaurants={restaurants}
+                isLoading={restaurantsLoading}
+                value={restaurantId}
+                onChange={handleRestaurantChange}
+              />
+            </CardContent>
+          </Card>
 
-              {/* Step 2: Menu — hiện ngay, chỉ chặn lúc thêm món nếu chưa chọn nhà hàng */}
-              <Card data-ocid="create_order.menu_card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                      2
-                    </span>
-                    Chọn món
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!restaurantId && (
-                    <div
-                      className="mb-3 flex items-center gap-2 rounded-lg border border-dashed border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground"
-                      data-ocid="create_order.menu_hint"
-                    >
-                      <Package
-                        className="h-4 w-4 shrink-0"
-                        aria-hidden="true"
-                      />
-                      Xem menu thoải mái — chỉ cần chọn nhà hàng ở bước 1 trước
-                      khi thêm món vào giỏ.
-                    </div>
-                  )}
-                  <MenuPicker
-                    menu={menu}
-                    isLoading={menuLoading}
-                    cart={cart}
-                    onQuantityChange={handleQuantityChange}
-                    disabled={submitting}
-                    groupByCategory
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Gợi ý gọi thêm */}
-            {upsellItems.length > 0 && (
-              <div
-                className="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise"
-                data-ocid="create_order.upsell_strip"
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-[oklch(var(--bbh-gold))]">
-                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                    Gọi thêm cho tròn vị?
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Đóng gợi ý"
-                    onClick={() => setUpsellItems([])}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </div>
+          {/* Step 2: Menu — hiện ngay, chỉ chặn lúc thêm món nếu chưa chọn nhà hàng */}
+          <Card data-ocid="create_order.menu_card">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  2
+                </span>
+                Chọn món
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!restaurantId && (
                 <div
-                  className="flex gap-2 overflow-x-auto pb-0.5"
-                  data-ocid="create_order.upsell_scroll"
+                  className="mb-3 flex items-center gap-2 rounded-lg border border-dashed border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground"
+                  data-ocid="create_order.menu_hint"
                 >
-                  {upsellItems.map((m) => (
-                    <div
-                      key={m.itemId}
-                      className="flex w-28 shrink-0 flex-col gap-1.5 rounded-lg bg-secondary p-2"
-                    >
-                      <p className="line-clamp-2 text-xs font-semibold leading-snug">
-                        {m.name}
-                      </p>
-                      <div className="mt-auto flex items-center justify-between gap-1">
-                        <p className="text-[11px] text-muted-foreground">
-                          {formatVnd(Number(m.price))}
-                        </p>
-                        <button
-                          type="button"
-                          aria-label={`Thêm ${m.name}`}
-                          onClick={() => {
-                            handleQuantityChange(m.itemId, 1);
-                            setUpsellItems((prev) =>
-                              prev.filter((x) => x.itemId !== m.itemId),
-                            );
-                          }}
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                  <Package className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  Xem menu thoải mái — chỉ cần chọn nhà hàng ở bước 1 trước khi
+                  thêm món vào giỏ.
                 </div>
-              </div>
-            )}
+              )}
+              <MenuPicker
+                menu={menu}
+                isLoading={menuLoading}
+                cart={cart}
+                onQuantityChange={handleQuantityChange}
+                disabled={submitting}
+                groupByCategory
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-            {/* Thanh giỏ hàng nổi */}
-            {itemCount > 0 && (
+        {/* Gợi ý gọi thêm */}
+        {upsellItems.length > 0 && (
+          <div
+            className="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise"
+            data-ocid="create_order.upsell_strip"
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-[oklch(var(--bbh-gold))]">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                Gọi thêm cho tròn vị?
+              </span>
               <button
                 type="button"
-                onClick={() => setCartOpen(true)}
-                className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-gradient-primary px-5 py-4 text-primary-foreground shadow-elevated"
-                data-ocid="create_order.open_cart_button"
+                aria-label="Đóng gợi ý"
+                onClick={() => setUpsellItems([])}
+                className="text-muted-foreground hover:text-foreground"
               >
-                <span className="flex flex-col items-start">
-                  <span className="text-xs opacity-90">{itemCount} món</span>
-                  <span className="font-display text-base font-bold">
-                    {formatVnd(totalAmount)}
-                  </span>
-                </span>
-                <span className="flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold">
-                  <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-                  Xem giỏ hàng
-                </span>
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
-            )}
-
-            {/* Bottom sheet: giỏ hàng + thông tin khách + đặt đơn */}
-            <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-              <SheetContent
-                side="bottom"
-                className="bbh-order-theme flex max-h-[92vh] flex-col overflow-y-auto rounded-t-2xl bg-background text-foreground"
-                data-ocid="create_order.cart_sheet"
-              >
-                <SheetHeader>
-                  <SheetTitle className="font-display">
-                    Giỏ hàng của bạn
-                  </SheetTitle>
-                </SheetHeader>
-
-                <div className="flex flex-col gap-4 pb-4">
-                  <ul
-                    className="flex flex-col gap-2"
-                    data-ocid="create_order.cart_lines"
-                  >
-                    {displayCartLines.map((l) => {
-                      const isUtensil =
-                        !!utensilLine &&
-                        l.item.itemId === utensilLine.item.itemId;
-                      return (
-                        <li
-                          key={l.item.itemId}
-                          className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm"
-                        >
-                          <CartLineThumbnail item={l.item} />
-                          <div className="min-w-0 flex-1">
-                            <p className="line-clamp-1 font-medium">
-                              {l.item.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatVnd(Number(l.item.price))} × {l.quantity}
-                            </p>
-                          </div>
-                          {isUtensil ? (
-                            // Dòng dụng cụ là trạng thái DERIVED — số lượng tự
-                            // đồng bộ theo món chính, không chỉnh sửa trực tiếp.
-                            <span className="shrink-0 text-xs text-muted-foreground">
-                              Tự động
-                            </span>
-                          ) : (
-                            <div className="flex items-center gap-1.5">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-11 w-11"
-                                onClick={() =>
-                                  handleQuantityChange(l.item.itemId, -1)
-                                }
-                              >
-                                −
-                              </Button>
-                              <span className="w-6 text-center font-mono">
-                                {l.quantity}
-                              </span>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-11 w-11"
-                                onClick={() =>
-                                  handleQuantityChange(l.item.itemId, 1)
-                                }
-                              >
-                                +
-                              </Button>
-                            </div>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-
-                  <div>
-                    <h3 className="mb-2 text-sm font-semibold">
-                      Thông tin khách hàng
-                    </h3>
-                    <CustomerForm
-                      values={customer}
-                      errors={customerErrors}
-                      onChange={handleCustomerChange}
-                      disabled={submitting}
-                      hideAddress
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-sm font-semibold">
-                      <Receipt className="h-4 w-4" aria-hidden="true" />
-                      Tổng tiền
-                    </span>
-                    <span className="font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]">
-                      {formatVnd(totalAmount)}
-                    </span>
-                  </div>
-
-                  <div className="sticky bottom-0 -mx-6 border-t border-border bg-background px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-                    <Button
+            </div>
+            <div
+              className="flex gap-2 overflow-x-auto pb-0.5"
+              data-ocid="create_order.upsell_scroll"
+            >
+              {upsellItems.map((m) => (
+                <div
+                  key={m.itemId}
+                  className="flex w-28 shrink-0 flex-col gap-1.5 rounded-lg bg-secondary p-2"
+                >
+                  <p className="line-clamp-2 text-xs font-semibold leading-snug">
+                    {m.name}
+                  </p>
+                  <div className="mt-auto flex items-center justify-between gap-1">
+                    <p className="text-[11px] text-muted-foreground">
+                      {formatVnd(Number(m.price))}
+                    </p>
+                    <button
                       type="button"
-                      className="min-h-[48px] w-full bg-gradient-primary text-primary-foreground"
-                      onClick={handleSubmit}
-                      disabled={
-                        submitting ||
-                        cartLines.length === 0 ||
-                        Object.keys(customerErrors).length > 0
-                      }
-                      data-ocid="create_order.submit_button"
+                      aria-label={`Thêm ${m.name}`}
+                      onClick={() => {
+                        handleQuantityChange(m.itemId, 1);
+                        setUpsellItems((prev) =>
+                          prev.filter((x) => x.itemId !== m.itemId),
+                        );
+                      }}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
                     >
-                      {submitting ? (
-                        <>
-                          <Loader2
-                            className="h-4 w-4 animate-spin"
-                            aria-hidden="true"
-                          />
-                          Đang đặt đơn…
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          />
-                          Đặt đơn · {formatVnd(totalAmount)}
-                        </>
-                      )}
-                    </Button>
+                      +
+                    </button>
                   </div>
                 </div>
-              </SheetContent>
-            </Sheet>
-          </>
+              ))}
+            </div>
+          </div>
         )}
+
+        {/* Thanh giỏ hàng nổi */}
+        {itemCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-gradient-primary px-5 py-4 text-primary-foreground shadow-elevated"
+            data-ocid="create_order.open_cart_button"
+          >
+            <span className="flex flex-col items-start">
+              <span className="text-xs opacity-90">{itemCount} món</span>
+              <span className="font-display text-base font-bold">
+                {formatVnd(totalAmount)}
+              </span>
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold">
+              <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+              Xem giỏ hàng
+            </span>
+          </button>
+        )}
+
+        {/* Bottom sheet: giỏ hàng + thông tin khách + đặt đơn */}
+        <Sheet open={cartOpen} onOpenChange={setCartOpen}>
+          <SheetContent
+            side="bottom"
+            className="bbh-order-theme flex max-h-[92vh] flex-col overflow-y-auto rounded-t-2xl bg-background text-foreground"
+            data-ocid="create_order.cart_sheet"
+          >
+            <SheetHeader>
+              <SheetTitle className="font-display">Giỏ hàng của bạn</SheetTitle>
+            </SheetHeader>
+
+            <div className="flex flex-col gap-4 pb-4">
+              <ul
+                className="flex flex-col gap-2"
+                data-ocid="create_order.cart_lines"
+              >
+                {displayCartLines.map((l) => {
+                  const isUtensil =
+                    !!utensilLine && l.item.itemId === utensilLine.item.itemId;
+                  return (
+                    <li
+                      key={l.item.itemId}
+                      className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm"
+                    >
+                      <CartLineThumbnail item={l.item} />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 font-medium">
+                          {l.item.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatVnd(Number(l.item.price))} × {l.quantity}
+                        </p>
+                      </div>
+                      {isUtensil ? (
+                        // Dòng dụng cụ là trạng thái DERIVED — số lượng tự
+                        // đồng bộ theo món chính, không chỉnh sửa trực tiếp.
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          Tự động
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-11 w-11"
+                            onClick={() =>
+                              handleQuantityChange(l.item.itemId, -1)
+                            }
+                          >
+                            −
+                          </Button>
+                          <span className="w-6 text-center font-mono">
+                            {l.quantity}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-11 w-11"
+                            onClick={() =>
+                              handleQuantityChange(l.item.itemId, 1)
+                            }
+                          >
+                            +
+                          </Button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <div>
+                <h3 className="mb-2 text-sm font-semibold">
+                  Thông tin khách hàng
+                </h3>
+                <CustomerForm
+                  values={customer}
+                  errors={customerErrors}
+                  onChange={handleCustomerChange}
+                  disabled={submitting}
+                  hideAddress
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                  <Receipt className="h-4 w-4" aria-hidden="true" />
+                  Tổng tiền
+                </span>
+                <span className="font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]">
+                  {formatVnd(totalAmount)}
+                </span>
+              </div>
+
+              <div className="sticky bottom-0 -mx-6 border-t border-border bg-background px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+                {storeClosed && (
+                  <p
+                    className="mb-2 text-center text-sm font-medium text-destructive"
+                    data-ocid="create_order.closed_notice"
+                  >
+                    Ngoài giờ mở cửa — mở lại sau{" "}
+                    <span className="font-mono font-bold">{countdownText}</span>
+                  </p>
+                )}
+                <Button
+                  type="button"
+                  className="min-h-[48px] w-full bg-gradient-primary text-primary-foreground"
+                  onClick={handleSubmit}
+                  disabled={
+                    submitting ||
+                    storeClosed ||
+                    cartLines.length === 0 ||
+                    Object.keys(customerErrors).length > 0
+                  }
+                  data-ocid="create_order.submit_button"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                      Đang đặt đơn…
+                    </>
+                  ) : storeClosed ? (
+                    <>
+                      <Clock className="h-4 w-4" aria-hidden="true" />
+                      Ngoài giờ mở cửa
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                      Đặt đơn · {formatVnd(totalAmount)}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </section>
     </div>
   );

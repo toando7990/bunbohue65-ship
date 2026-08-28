@@ -7,7 +7,9 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   History,
   type LucideIcon,
+  Phone,
   ShieldCheck,
+  Store,
   Truck,
   UtensilsCrossed,
   Video,
@@ -44,6 +46,7 @@ const PRIMARY_NAV: NavItem[] = [
     hideOnPrefixes: ["/driver"],
   },
   { to: "/grab-guide", label: "Hướng dẫn đặt Grab giao hàng", icon: Video },
+  { to: "/ordering-partners", label: "Đối tác đặt món", icon: Store },
 ];
 const ADMIN_NAV: NavItem[] = [
   { to: "/admin", label: "Quản lý", icon: ShieldCheck, adminOnly: true },
@@ -195,13 +198,15 @@ export function Layout({ children }: { children: ReactNode }) {
         className="border-t border-border bg-muted/40 px-4 py-4 md:px-6"
         data-ocid="page.footer"
       >
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-1 text-center text-xs text-muted-foreground">
-          <p className="max-w-2xl">
-            Bún Bò Huế 65 chuẩn vị Huế, giao tận nơi tại Hà Nội — đặt trực tiếp
-            tại đây hoặc tìm "bún bò huế 65 grabfood", "bún bò huế 65
-            shopeefood" trên app giao đồ ăn. Đang tìm bún bò huế gần đây? Bún Bò
-            Huế 65 có 10 cơ sở tại Hà Nội.
-          </p>
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-1.5 text-center text-xs text-muted-foreground">
+          <a
+            href="tel:0838656865"
+            data-ocid="page.footer.phone_link"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-smooth hover:opacity-80"
+          >
+            <Phone className="h-4 w-4" aria-hidden="true" />
+            0838 656 865
+          </a>
           <p>© 2026 CÔNG TY TNHH THỰC PHẨM GIA KHÁNH - GIA KHÁNH FOODS</p>
           <p>69 đường Láng, P. Đống Đa, Tp. Hà nội.</p>
         </div>
