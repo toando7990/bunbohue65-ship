@@ -38,7 +38,7 @@ import {
   useMenus,
   useRestaurants,
 } from "@/hooks/useQueries";
-import { cn, imageBytesToDataUrl } from "@/lib/utils";
+import { imageBytesToDataUrl } from "@/lib/utils";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import {
   create as vpsCreate,
@@ -47,8 +47,8 @@ import {
 import type { CreateOrderPayload, MenuItem, Restaurant } from "@/types";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  Bike,
   Clock,
-  ExternalLink,
   Loader2,
   Package,
   Receipt,
@@ -64,30 +64,35 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const DELIVERY_SERVICES: {
   slug: string;
   name: string;
+  short: string;
   url: string;
   color: string;
 }[] = [
   {
     slug: "grab",
     name: "Grab giao hàng",
+    short: "Gr",
     url: "https://www.grab.com/vn/express/",
     color: "#00B14F",
   },
   {
     slug: "xanhsm",
     name: "Xanh SM giao hàng",
+    short: "SM",
     url: "https://www.greensm.com/vn-vi/green-express",
     color: "#00A99D",
   },
   {
     slug: "be",
     name: "Be giao hàng",
+    short: "Be",
     url: "https://be.com.vn/khach-hang-ca-nhan/dich-vu-giao-hang/",
     color: "#FFC800",
   },
   {
     slug: "ahamove",
     name: "Ahamove giao hàng",
+    short: "Aha",
     url: "https://ahamove.com/service/aha-delivery",
     color: "#F26522",
   },
@@ -156,10 +161,6 @@ export default function CreateOrder() {
   const { data: storeHours } = useGetStoreHours();
   const openHourNum = storeHours ? Number(storeHours.openHour) : undefined;
   const openMinuteNum = storeHours ? Number(storeHours.openMinute) : undefined;
-  const closeHourNum = storeHours ? Number(storeHours.closeHour) : undefined;
-  const closeMinuteNum = storeHours
-    ? Number(storeHours.closeMinute)
-    : undefined;
   const { formatted: countdownText } = useOpenCountdown(
     storeClosed ? openHourNum : undefined,
     storeClosed ? openMinuteNum : undefined,
@@ -442,44 +443,19 @@ export default function CreateOrder() {
             Đặt món
           </h1>
 
-          {/* Giờ mở cửa + trạng thái — thay cho dòng mô tả cũ. */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
-            {openHourNum !== undefined && closeHourNum !== undefined && (
-              <span
-                className="inline-flex items-center gap-1.5 text-muted-foreground"
-                data-ocid="create_order.hours_display"
-              >
-                <Clock className="h-4 w-4" aria-hidden="true" />
-                Giờ mở cửa: {String(openHourNum).padStart(2, "0")}:
-                {String(openMinuteNum).padStart(2, "0")} -{" "}
-                {String(closeHourNum).padStart(2, "0")}:
-                {String(closeMinuteNum).padStart(2, "0")} hằng ngày
-              </span>
-            )}
+          {/* Dịch vụ giao hàng — biểu tượng xe máy đại diện "giao hàng" +
+              4 huy hiệu app cùng hàng bên phải, khách tự chọn để đặt tài xế
+              nhận hàng, hệ thống không đặt hộ. Huy hiệu dùng chữ viết tắt
+              (không phải logo ảnh thật — sandbox không tải được file ảnh từ
+              trang ngoài; thay bằng logo thật nếu có file upload). */}
+          <div className="flex items-center gap-2.5">
             <span
-              className={cn(
-                "inline-flex items-center gap-1.5 font-semibold",
-                storeClosed ? "text-destructive" : "text-success",
-              )}
-              data-ocid="create_order.status_badge"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
+              aria-label="Dịch vụ giao hàng"
+              data-ocid="create_order.delivery_icon"
             >
-              <span
-                className={cn(
-                  "h-2 w-2 rounded-full",
-                  storeClosed ? "bg-destructive" : "bg-success",
-                )}
-                aria-hidden="true"
-              />
-              {storeClosed ? "Đang đóng cửa" : "Đang mở cửa"}
+              <Bike className="h-5 w-5" aria-hidden="true" />
             </span>
-          </div>
-
-          {/* Dịch vụ giao hàng — khách tự chọn app để đặt tài xế nhận hàng,
-              hệ thống không đặt hộ. */}
-          <div>
-            <p className="mb-1.5 text-sm text-muted-foreground">
-              Bạn tự chọn dịch vụ giao hàng:
-            </p>
             <div className="flex flex-wrap gap-2">
               {DELIVERY_SERVICES.map((service) => (
                 <a
@@ -487,16 +463,16 @@ export default function CreateOrder() {
                   href={service.url}
                   target="_blank"
                   rel="noreferrer"
+                  title={service.name}
+                  aria-label={service.name}
                   data-ocid={`create_order.delivery_badge.${service.slug}`}
-                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-smooth"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-smooth"
                   style={{
-                    borderColor: `${service.color}4d`,
-                    backgroundColor: `${service.color}1a`,
+                    backgroundColor: `${service.color}26`,
                     color: service.color,
                   }}
                 >
-                  {service.name}
-                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  {service.short}
                 </a>
               ))}
             </div>

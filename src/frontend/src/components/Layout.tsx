@@ -2,9 +2,11 @@
 // Header: bg-card border-b shadow-subtle. Main: bg-background. Footer: bg-muted/40 border-t.
 
 import { useAuth } from "@/hooks/useAuth";
+import { useGetStoreHours, useIsStoreOpen } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  Clock,
   History,
   type LucideIcon,
   Phone,
@@ -100,6 +102,49 @@ function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
   );
 }
 
+function StoreHoursBar() {
+  const { data: storeOpen } = useIsStoreOpen();
+  const { data: storeHours } = useGetStoreHours();
+  if (storeOpen === undefined || !storeHours) return null;
+
+  const storeClosed = storeOpen === false;
+  const pad = (n: bigint) => String(Number(n)).padStart(2, "0");
+
+  return (
+    <div
+      className="border-t border-border bg-muted/30 px-4 py-1.5 md:px-6"
+      data-ocid="nav.store_hours_bar"
+    >
+      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        <span
+          className="inline-flex items-center gap-1.5 text-muted-foreground"
+          data-ocid="nav.store_hours_bar.hours"
+        >
+          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+          Giờ mở cửa: {pad(storeHours.openHour)}:{pad(storeHours.openMinute)} -{" "}
+          {pad(storeHours.closeHour)}:{pad(storeHours.closeMinute)} hằng ngày
+        </span>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 font-semibold",
+            storeClosed ? "text-destructive" : "text-success",
+          )}
+          data-ocid="nav.store_hours_bar.status"
+        >
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              storeClosed ? "bg-destructive" : "bg-success",
+            )}
+            aria-hidden="true"
+          />
+          {storeClosed ? "Đang đóng cửa" : "Đang mở cửa"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   const { isAuthenticated, isAdmin } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -188,6 +233,8 @@ export function Layout({ children }: { children: ReactNode }) {
               ))}
           </nav>
         )}
+
+        <StoreHoursBar />
       </header>
 
       <main className="flex-1 bg-background" data-ocid="page.main">
