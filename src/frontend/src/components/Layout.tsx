@@ -112,12 +112,20 @@ function StoreHoursBar() {
 
   return (
     <div
-      className="border-t border-border bg-muted/30 px-4 py-1.5 md:px-6"
+      className={cn(
+        "border-t px-4 py-1.5 md:px-6",
+        storeClosed
+          ? "border-destructive/30 bg-destructive/10"
+          : "border-success/30 bg-success/10",
+      )}
       data-ocid="nav.store_hours_bar"
     >
       <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-4 gap-y-1 text-xs">
         <span
-          className="inline-flex items-center gap-1.5 text-muted-foreground"
+          className={cn(
+            "inline-flex items-center gap-1.5",
+            storeClosed ? "text-destructive" : "text-success",
+          )}
           data-ocid="nav.store_hours_bar.hours"
         >
           <Clock className="h-3.5 w-3.5" aria-hidden="true" />

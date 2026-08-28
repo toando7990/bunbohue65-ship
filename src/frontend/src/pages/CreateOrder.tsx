@@ -443,34 +443,42 @@ export default function CreateOrder() {
               cấp ảnh icon từ màn hình điện thoại, đã cắt + bo góc) cùng hàng
               bên phải, khách tự chọn để đặt tài xế nhận hàng, hệ thống
               không đặt hộ. */}
-          <div className="flex items-center gap-2.5">
-            <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
-              aria-label="Dịch vụ giao hàng"
-              data-ocid="create_order.delivery_icon"
+          <div>
+            <p
+              className="mb-1.5 text-xs text-muted-foreground"
+              data-ocid="create_order.delivery_label"
             >
-              <Bike className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {DELIVERY_SERVICES.map((service) => (
-                <a
-                  key={service.slug}
-                  href={service.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={service.name}
-                  aria-label={service.name}
-                  data-ocid={`create_order.delivery_badge.${service.slug}`}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full transition-smooth hover:opacity-80"
-                >
-                  <img
-                    src={service.logo}
-                    alt={service.name}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                </a>
-              ))}
+              Đặt tài xế qua
+            </p>
+            <div className="flex items-center gap-2.5">
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
+                aria-label="Dịch vụ giao hàng"
+                data-ocid="create_order.delivery_icon"
+              >
+                <Bike className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {DELIVERY_SERVICES.map((service) => (
+                  <a
+                    key={service.slug}
+                    href={service.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={service.name}
+                    aria-label={service.name}
+                    data-ocid={`create_order.delivery_badge.${service.slug}`}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full transition-smooth hover:opacity-80"
+                  >
+                    <img
+                      src={service.logo}
+                      alt={service.name}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         </header>
