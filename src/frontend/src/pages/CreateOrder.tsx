@@ -64,37 +64,32 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const DELIVERY_SERVICES: {
   slug: string;
   name: string;
-  short: string;
+  logo: string;
   url: string;
-  color: string;
 }[] = [
   {
     slug: "grab",
     name: "Grab giao hàng",
-    short: "Gr",
+    logo: "/assets/images/delivery/grab.png",
     url: "https://www.grab.com/vn/express/",
-    color: "#00B14F",
   },
   {
     slug: "xanhsm",
     name: "Xanh SM giao hàng",
-    short: "SM",
+    logo: "/assets/images/delivery/xanhsm.png",
     url: "https://www.greensm.com/vn-vi/green-express",
-    color: "#00A99D",
   },
   {
     slug: "be",
     name: "Be giao hàng",
-    short: "Be",
+    logo: "/assets/images/delivery/be.png",
     url: "https://be.com.vn/khach-hang-ca-nhan/dich-vu-giao-hang/",
-    color: "#FFC800",
   },
   {
     slug: "ahamove",
     name: "Ahamove giao hàng",
-    short: "Aha",
+    logo: "/assets/images/delivery/ahamove.png",
     url: "https://ahamove.com/service/aha-delivery",
-    color: "#F26522",
   },
 ];
 import { toast } from "sonner";
@@ -444,10 +439,10 @@ export default function CreateOrder() {
           </h1>
 
           {/* Dịch vụ giao hàng — biểu tượng xe máy đại diện "giao hàng" +
-              4 huy hiệu app cùng hàng bên phải, khách tự chọn để đặt tài xế
-              nhận hàng, hệ thống không đặt hộ. Huy hiệu dùng chữ viết tắt
-              (không phải logo ảnh thật — sandbox không tải được file ảnh từ
-              trang ngoài; thay bằng logo thật nếu có file upload). */}
+              4 logo app thật (Grab, Xanh SM, Be, Ahamove — người dùng cung
+              cấp ảnh icon từ màn hình điện thoại, đã cắt + bo góc) cùng hàng
+              bên phải, khách tự chọn để đặt tài xế nhận hàng, hệ thống
+              không đặt hộ. */}
           <div className="flex items-center gap-2.5">
             <span
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
@@ -466,13 +461,14 @@ export default function CreateOrder() {
                   title={service.name}
                   aria-label={service.name}
                   data-ocid={`create_order.delivery_badge.${service.slug}`}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-smooth"
-                  style={{
-                    backgroundColor: `${service.color}26`,
-                    color: service.color,
-                  }}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full transition-smooth hover:opacity-80"
                 >
-                  {service.short}
+                  <img
+                    src={service.logo}
+                    alt={service.name}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
                 </a>
               ))}
             </div>
