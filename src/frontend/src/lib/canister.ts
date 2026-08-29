@@ -345,5 +345,73 @@ export async function getCurrentPromotion(
   return actor.getCurrentPromotion();
 }
 
+// ---- Quản lý chương trình KM (admin, /admin/promotions) ----
+
+export interface PromotionInput {
+  name: string;
+  startDate: string;
+  endDate: string;
+  daysOfWeek: boolean[];
+  timeSlots: {
+    startHour: bigint;
+    startMinute: bigint;
+    durationMinutes: bigint;
+  }[];
+  dailyOrderLimit: bigint;
+  perCustomerDailyLimit: bigint;
+  tiers: { minOrderValue: bigint; discountAmount: bigint }[];
+}
+
+export async function listPromotions(actor: Backend): Promise<Promotion[]> {
+  return unwrap(await actor.listPromotions());
+}
+
+export async function createPromotion(
+  actor: Backend,
+  input: PromotionInput,
+): Promise<Promotion> {
+  return unwrap(
+    await actor.createPromotion(
+      input.name,
+      input.startDate,
+      input.endDate,
+      input.daysOfWeek,
+      input.timeSlots,
+      input.dailyOrderLimit,
+      input.perCustomerDailyLimit,
+      input.tiers,
+    ),
+  );
+}
+
+export async function updatePromotion(
+  actor: Backend,
+  code: string,
+  input: PromotionInput,
+  active: boolean,
+): Promise<Promotion> {
+  return unwrap(
+    await actor.updatePromotion(
+      code,
+      input.name,
+      input.startDate,
+      input.endDate,
+      input.daysOfWeek,
+      input.timeSlots,
+      input.dailyOrderLimit,
+      input.perCustomerDailyLimit,
+      input.tiers,
+      active,
+    ),
+  );
+}
+
+export async function deletePromotion(
+  actor: Backend,
+  code: string,
+): Promise<void> {
+  unwrap(await actor.deletePromotion(code));
+}
+
 // Re-export enums for convenience in components.
 export { BookingStatus, DeviceRole, InvoiceStatus, PaymentStatus };

@@ -9,6 +9,7 @@ import {
   Clock,
   History,
   type LucideIcon,
+  Percent,
   Phone,
   ShieldCheck,
   Store,
@@ -63,6 +64,12 @@ const ADMIN_NAV: NavItem[] = [
     to: "/admin/restaurants",
     label: "Nhà hàng",
     icon: ShieldCheck,
+    adminOnly: true,
+  },
+  {
+    to: "/admin/promotions",
+    label: "Khuyến mại",
+    icon: Percent,
     adminOnly: true,
   },
   {

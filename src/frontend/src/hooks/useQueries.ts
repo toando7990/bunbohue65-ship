@@ -8,7 +8,9 @@ import {
   addItem as addItemFn,
   addRestaurant as addRestaurantFn,
   cleanupExpiredActivations as cleanupFn,
+  createPromotion as createPromotionFn,
   deleteItem as deleteItemFn,
+  deletePromotion as deletePromotionFn,
   deleteRestaurant as deleteRestaurantFn,
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
@@ -24,6 +26,7 @@ import {
   listDevicesByRestaurant as listDevicesByRestaurantFn,
   listMenus as listMenusFn,
   listOrders as listOrdersFn,
+  listPromotions as listPromotionsFn,
   listRestaurants as listRestaurantsFn,
   markPickedUp as markPickedUpFn,
   revokeDevice as revokeDeviceFn,
@@ -33,6 +36,7 @@ import {
   setStoreHours as setStoreHoursFn,
   setVpsSecret as setVpsSecretFn,
   updateItem as updateItemFn,
+  updatePromotion as updatePromotionFn,
   updateRestaurant as updateRestaurantFn,
 } from "@/lib/canister";
 import { useActor } from "@caffeineai/core-infrastructure";
@@ -433,5 +437,65 @@ export function useCurrentPromotion() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 30000,
+  });
+}
+
+// ---- Quản lý chương trình KM (admin) ----
+
+export function usePromotions() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["promotions"],
+    queryFn: () => (actor ? listPromotionsFn(actor) : Promise.resolve([])),
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCreatePromotion() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof createPromotionFn>[1]) => {
+      if (!actor) throw new Error("Actor not ready");
+      return createPromotionFn(actor, input);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["promotions"] });
+      qc.invalidateQueries({ queryKey: ["currentPromotion"] });
+    },
+  });
+}
+
+export function useUpdatePromotion() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args: {
+      code: string;
+      input: Parameters<typeof createPromotionFn>[1];
+      active: boolean;
+    }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return updatePromotionFn(actor, args.code, args.input, args.active);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["promotions"] });
+      qc.invalidateQueries({ queryKey: ["currentPromotion"] });
+    },
+  });
+}
+
+export function useDeletePromotion() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (code: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return deletePromotionFn(actor, code);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["promotions"] });
+      qc.invalidateQueries({ queryKey: ["currentPromotion"] });
+    },
   });
 }

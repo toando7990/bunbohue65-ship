@@ -16,6 +16,7 @@ import OrderHistory from "@/pages/OrderHistory";
 import OrderList from "@/pages/OrderList";
 import OrderTracker from "@/pages/OrderTracker";
 import OrderingPartners from "@/pages/OrderingPartners";
+import PromotionManager from "@/pages/PromotionManager";
 import RestaurantManager from "@/pages/RestaurantManager";
 import {
   Outlet,
@@ -188,6 +189,16 @@ const adminRestaurantsRoute = createRoute({
   ),
 });
 
+const adminPromotionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin/promotions",
+  component: () => (
+    <AdminGate>
+      <PromotionManager />
+    </AdminGate>
+  ),
+});
+
 const adminAnalyticsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/analytics",
@@ -212,6 +223,7 @@ const router = createRouter({
     adminDevicesRoute,
     adminMenuRoute,
     adminRestaurantsRoute,
+    adminPromotionsRoute,
     adminAnalyticsRoute,
   ]),
   defaultPreload: "intent",
