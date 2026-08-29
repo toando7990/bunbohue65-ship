@@ -67,6 +67,13 @@ export type Result_2 = {
     __kind__: "err";
     err: string;
 };
+export type Result_Km = {
+    __kind__: "ok";
+    ok: bigint;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderItem {
     itemId: string;
     name: string;
@@ -372,6 +379,7 @@ export interface backendInterface {
     getCanisterIdText(): Promise<string>;
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
+    getKmUsageCount(email: string, programCode: string): Promise<bigint>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrdersByEmail(email: string): Promise<Array<Order>>;
@@ -415,9 +423,10 @@ export interface backendInterface {
     updatePaymentStatus(orderId: OrderId, paymentStatus: PaymentStatus, hmac: Hmac): Promise<Result>;
     updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_1>;
     updateStatus(orderId: OrderId, bookingStatus: BookingStatus, hmac: Hmac): Promise<Result>;
+    tryConsumeKmSlot(email: string, programCode: string, dailyLimit: bigint, hmac: string): Promise<Result_Km>;
     verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }
-import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
+import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, Result_Km as _Result_Km, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initialize_access_control(): Promise<void> {
@@ -669,6 +678,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getMenuForRestaurant(arg0);
+            return result;
+        }
+    }
+    async getKmUsageCount(arg0: string, arg1: string): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getKmUsageCount(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getKmUsageCount(arg0, arg1);
             return result;
         }
     }
@@ -1196,6 +1219,20 @@ export class Backend implements backendInterface {
             return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
         }
     }
+    async tryConsumeKmSlot(arg0: string, arg1: string, arg2: bigint, arg3: string): Promise<Result_Km> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.tryConsumeKmSlot(arg0, arg1, arg2, arg3);
+                return from_candid_Result_Km(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.tryConsumeKmSlot(arg0, arg1, arg2, arg3);
+            return from_candid_Result_Km(result);
+        }
+    }
     async verifyEmailCode(arg0: Email, arg1: string): Promise<VerifyResult> {
         if (this.processError) {
             try {
@@ -1255,6 +1292,18 @@ function from_candid_Result_1_n13(_uploadFile: (file: ExternalBlob) => Promise<U
 }
 function from_candid_Result_2_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Result_2): Result_2 {
     return from_candid_variant_n12(_uploadFile, _downloadFile, value);
+}
+// Result_Km: {ok: bigint} | {err: string} — không cần chuyển đổi giá trị
+// (bigint/string đã là dạng JS trực tiếp, không phải Blob/opt/record cần
+// biến đổi) — chỉ cần bọc lại thành dạng { __kind__, ... } frontend dùng.
+function from_candid_Result_Km(value: _Result_Km): Result_Km {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : {
+        __kind__: "err",
+        err: value.err
+    };
 }
 function from_candid_Result_3_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Result_3): Result_3 {
     return from_candid_variant_n30(_uploadFile, _downloadFile, value);

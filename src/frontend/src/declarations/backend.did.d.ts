@@ -157,6 +157,8 @@ export type Result_5 = { 'ok' : OrderStatus } |
   { 'err' : string };
 export type Result_6 = { 'ok' : PendingActivation } |
   { 'err' : string };
+export type Result_Km = { 'ok' : bigint } |
+  { 'err' : string };
 export type Result_7 = { 'ok' : null } |
   { 'err' : Error };
 export interface Result__1 { 'hasMore' : boolean, 'rows' : Array<Array<Cell>> }
@@ -236,6 +238,7 @@ export interface _SERVICE {
   'getCanisterIdText' : ActorMethod<[], string>,
   'getMenu' : ActorMethod<[], Array<MenuItem>>,
   'getMenuForRestaurant' : ActorMethod<[string], Array<MenuItem>>,
+  'getKmUsageCount' : ActorMethod<[string, string], bigint>,
   'getItemImage' : ActorMethod<[string], [] | [Uint8Array]>,
   'getOrder' : ActorMethod<[string], Result>,
   'getOrderStatus' : ActorMethod<[string], Result_5>,
@@ -288,6 +291,7 @@ export interface _SERVICE {
     Result_1
   >,
   'updateStatus' : ActorMethod<[OrderId, BookingStatus, Hmac], Result>,
+  'tryConsumeKmSlot' : ActorMethod<[string, string, bigint, string], Result_Km>,
   'verifyEmailCode' : ActorMethod<[Email, string], VerifyResult>,
 }
 export declare const idlService: IDL.ServiceClass;

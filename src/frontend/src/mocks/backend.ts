@@ -31,6 +31,7 @@ export const mockBackend: backendInterface = {
   getMenu: async () => [],
   getMenuForRestaurant: async () => [],
   getItemImage: async () => null,
+  getKmUsageCount: async () => BigInt(0),
   getOrder: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   getOrdersByEmail: async () => [],
   getOrderStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
@@ -82,6 +83,7 @@ export const mockBackend: backendInterface = {
   updatePaymentStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   updateRestaurant: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   updateStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  tryConsumeKmSlot: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   verifyEmailCode: async (_email, code) =>
     /^\d{6}$/.test(code)
       ? { __kind__: "ok", ok: null }

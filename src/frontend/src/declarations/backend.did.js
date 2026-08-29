@@ -150,6 +150,7 @@ export const PendingActivation = IDL.Record({
   'used' : IDL.Bool,
   'restaurantId' : IDL.Text,
 });
+export const Result_Km = IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text });
 export const Result_6 = IDL.Variant({
   'ok' : PendingActivation,
   'err' : IDL.Text,
@@ -268,6 +269,7 @@ export const idlService = IDL.Service({
   'getCanisterIdText' : IDL.Func([], [IDL.Text], ['query']),
   'getMenu' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
   'getMenuForRestaurant' : IDL.Func([IDL.Text], [IDL.Vec(MenuItem)], ['query']),
+  'getKmUsageCount' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], ['query']),
   'getItemImage' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Vec(IDL.Nat8))], ['query']),
   'getOrder' : IDL.Func([IDL.Text], [Result], []),
   'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
@@ -352,6 +354,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'updateStatus' : IDL.Func([OrderId, BookingStatus, Hmac], [Result], []),
+  'tryConsumeKmSlot' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Text], [Result_Km], []),
   'verifyEmailCode' : IDL.Func([Email, IDL.Text], [VerifyResult], []),
 });
 
@@ -501,6 +504,7 @@ export const idlFactory = ({ IDL }) => {
     'restaurantId' : IDL.Text,
   });
   const Result_6 = IDL.Variant({ 'ok' : PendingActivation, 'err' : IDL.Text });
+  const Result_Km = IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text });
   const OrderStatus = IDL.Record({
     'paymentStatus' : PaymentStatus,
     'tingeeQrCode' : IDL.Text,
@@ -607,6 +611,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCanisterIdText' : IDL.Func([], [IDL.Text], ['query']),
+    'getKmUsageCount' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], ['query']),
     'getMenu' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
     'getMenuForRestaurant' : IDL.Func(
         [IDL.Text],
@@ -701,6 +706,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateStatus' : IDL.Func([OrderId, BookingStatus, Hmac], [Result], []),
+    'tryConsumeKmSlot' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Text], [Result_Km], []),
     'verifyEmailCode' : IDL.Func([Email, IDL.Text], [VerifyResult], []),
   });
 };
