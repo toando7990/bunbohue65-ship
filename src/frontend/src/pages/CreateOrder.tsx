@@ -50,7 +50,6 @@ import {
   Bike,
   Clock,
   Loader2,
-  Package,
   Receipt,
   ShoppingCart,
   Sparkles,
@@ -484,47 +483,27 @@ export default function CreateOrder() {
         </header>
 
         <div className="flex flex-col gap-6">
-          {/* Step 1: Restaurant */}
-          <Card data-ocid="create_order.restaurant_card">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  1
-                </span>
-                Chọn nhà hàng gần với bạn
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RestaurantSelect
-                restaurants={restaurants}
-                isLoading={restaurantsLoading}
-                value={restaurantId}
-                onChange={handleRestaurantChange}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Step 2: Menu — hiện ngay, chỉ chặn lúc thêm món nếu chưa chọn nhà hàng */}
+          {/* Chọn nhà hàng + món gộp chung 1 thẻ — trước đây tách 2 thẻ đánh
+              số bước 1/2, gộp lại cho gọn (giải phóng không gian dọc cho
+              banner khuyến mãi phía trên). Hành vi giữ nguyên: menu hiện
+              sẵn ngay từ đầu, không phụ thuộc đã chọn nhà hàng hay chưa —
+              chỉ chặn ở bước THÊM MÓN (xem handleQuantityChange). Bỏ hẳn
+              dòng gợi ý "Xem menu thoải mái..." vì ô chọn nhà hàng giờ nằm
+              ngay phía trên menu trong cùng 1 khối, không cần giải thích
+              thêm. */}
           <Card data-ocid="create_order.menu_card">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  2
-                </span>
-                Chọn món
-              </CardTitle>
+              <CardTitle className="text-base">Chọn nhà hàng và món</CardTitle>
             </CardHeader>
             <CardContent>
-              {!restaurantId && (
-                <div
-                  className="mb-3 flex items-center gap-2 rounded-lg border border-dashed border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground"
-                  data-ocid="create_order.menu_hint"
-                >
-                  <Package className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  Xem menu thoải mái — chỉ cần chọn nhà hàng ở bước 1 trước khi
-                  thêm món vào giỏ.
-                </div>
-              )}
+              <div className="mb-4" data-ocid="create_order.restaurant_card">
+                <RestaurantSelect
+                  restaurants={restaurants}
+                  isLoading={restaurantsLoading}
+                  value={restaurantId}
+                  onChange={handleRestaurantChange}
+                />
+              </div>
               <MenuPicker
                 menu={menu}
                 isLoading={menuLoading}
