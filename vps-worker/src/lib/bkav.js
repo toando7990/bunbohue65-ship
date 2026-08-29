@@ -248,24 +248,83 @@ function buildJsonPayload(invoice, config) {
         signedDate: '0001-01-01T00:00:00',
         typeCreateInvoice: 0,
       },
-      listInvoiceDetailsWS: (invoice.items || []).map((it) => {
-        const amount = it.quantity * it.price;
-        return {
-          itemTypeID: 0,
-          itemName: it.name,
-          unitName: it.unitName || '',
-          qty: it.quantity,
-          price: it.price,
-          amount,
-          taxRateID,
-          taxAmount: Math.round(amount * (invoice.taxRate / 100)),
-          isDiscount: false,
-        };
-      }),
+      listInvoiceDetailsWS: buildInvoiceLines(invoice, taxRateID),
       partnerInvoiceID: 0,
       partnerInvoiceStringID: String(invoice.orderId),
     }],
   };
+}
+
+// ------------------------------------------------------------
+// buildInvoiceLines — danh sách dòng hàng cho hoá đơn, CÓ áp dụng chiết
+// khấu KM theo từng món nếu invoice.kmDiscountAmount > 0.
+// ------------------------------------------------------------
+// PHÁT HIỆN QUAN TRỌNG (đối chiếu với ảnh hoá đơn thật người dùng gửi):
+// it.price trong toàn hệ thống là giá ĐÃ GỒM VAT (đúng theo comment sẵn có
+// ở routes/create.js: "Giá menu đã gồm VAT") — nhưng cột "Đơn giá trước
+// chiết khấu"/"Thành tiền trước thuế" trên hoá đơn Bkav là số TRƯỚC THUẾ.
+// Đối chiếu số liệu ảnh hoá đơn thật: đơn giá hiện "41.667" (định dạng số
+// Việt Nam, dấu chấm phân cách nghìn — KHÔNG phải số thập phân) cho món có
+// giá gốc 45.000đ → 45.000/1.08 ≈ 41.667, xác nhận ĐÚNG hướng quy đổi:
+// CHIA cho (1+thuế suất/100) để ra giá trước thuế, KHÔNG CỘNG thêm như
+// code trước đây (amount=qty*price rồi taxAmount=amount*rate CỘNG THÊM —
+// SAI, sẽ khiến hoá đơn ghi tổng tiền CAO HƠN số tiền khách thực trả).
+//
+// Công thức chiết khấu (đúng theo yêu cầu, đã xác nhận qua ảnh hoá đơn):
+// Chiết khấu món = (Giá trị KM / Tổng giá trị đơn) × Tổng tiền món.
+// invoice.kmDiscountAmount ĐÃ GỒM VAT (tính theo tổng tiền đơn khách thấy)
+// — quy đổi về trước thuế TƯƠNG TỰ giá món, rồi phân bổ theo tỷ lệ ở mức
+// TRƯỚC THUẾ (tỷ lệ không đổi dù trước hay sau thuế vì mọi món dùng chung
+// 1 mức thuế suất — đã xác nhận với người dùng).
+//
+// Theo tài liệu Bkav (FAQ_WebServices_Bkav.docx, mục "chiết khấu theo từng
+// mặt hàng"): mỗi dòng hàng tự điền DiscountRate + DiscountAmount trực
+// tiếp, IsDiscount vẫn = false (khác "chiết khấu cả đơn" cần dòng riêng
+// IsDiscount=true — KHÔNG dùng cách đó ở đây).
+//
+// taxAmount tính trên phần trước thuế SAU KHI ĐÃ TRỪ chiết khấu của từng
+// món (thông lệ kế toán chuẩn — thuế GTGT áp trên giá trị chịu thuế thực
+// tế). Làm tròn VND nguyên đồng (không có phần lẻ) ở MỌI bước.
+function buildInvoiceLines(invoice, taxRateID) {
+  const items = invoice.items || [];
+  const vatDivisor = 1 + invoice.taxRate / 100;
+  const kmDiscountInclusiveVat = Number(invoice.kmDiscountAmount || 0);
+  const discountPreTax =
+    kmDiscountInclusiveVat > 0 ? kmDiscountInclusiveVat / vatDivisor : 0;
+
+  // Tổng tiền TRƯỚC THUẾ toàn đơn — mẫu số để phân bổ chiết khấu theo tỷ lệ.
+  const goodsAmountPreTax = items.reduce(
+    (s, it) => s + (it.quantity * it.price) / vatDivisor,
+    0,
+  );
+
+  return items.map((it) => {
+    const preTaxUnitPrice = it.price / vatDivisor;
+    const preTaxAmount = (it.quantity * it.price) / vatDivisor;
+    const itemDiscount =
+      discountPreTax > 0 && goodsAmountPreTax > 0
+        ? Math.round((discountPreTax / goodsAmountPreTax) * preTaxAmount)
+        : 0;
+    const taxableAmount = preTaxAmount - itemDiscount;
+    return {
+      itemTypeID: 0,
+      itemName: it.name,
+      unitName: it.unitName || '',
+      qty: it.quantity,
+      price: Math.round(preTaxUnitPrice),
+      amount: Math.round(preTaxAmount),
+      taxRateID,
+      taxAmount: Math.round(taxableAmount * (invoice.taxRate / 100)),
+      // discountRate chỉ để tham khảo/hiển thị (đúng quyết định đã chốt
+      // cho tiers — "tỷ lệ chỉ để tham khảo"), KHÔNG dùng để tính toán.
+      discountRate:
+        preTaxAmount > 0
+          ? Math.round((itemDiscount / preTaxAmount) * 10000) / 100
+          : 0,
+      discountAmount: itemDiscount,
+      isDiscount: false,
+    };
+  });
 }
 
 // ------------------------------------------------------------

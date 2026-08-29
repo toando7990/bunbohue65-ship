@@ -268,7 +268,7 @@ actor Main {
   include MenuApi(accessControlState, menus, restaurants, restaurantMenuOverrides);
   include MenuSeedApi(accessControlState, menus);
   include EmailVerificationApi(otpRecords);
-  include PromotionApi(accessControlState, kmUsage, kmDailyCount, promotions, secretState);
+  include PromotionApi(accessControlState, kmUsage, kmDailyCount, promotions, secretState, otpRecords);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
 

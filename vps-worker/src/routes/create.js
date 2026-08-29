@@ -51,14 +51,44 @@ router.post('/order/create', async (req, res, next) => {
     const goodsAmount = items.reduce((s, it) => s + Number(it.price) * Number(it.quantity), 0);
     const taxTotal = 0;
 
+    // Áp dụng KM (Hệ 1 — theo khung giờ) nếu có email — canister tự kiểm
+    // tra: đang đúng khung giờ + email đã xác thực OTP + còn hạn mức (tổng
+    // đơn/ngày, đơn/ngày/khách). Bất kỳ điều kiện nào không đạt → #err,
+    // KHÔNG chặn tạo đơn — chỉ đơn giản là không có KM (theo quyết định đã
+    // chốt). goodsAmount ở đây CHƯA trừ KM — dùng làm "tổng tiền đơn" để
+    // canister so khớp mức chiết khấu (đã gồm VAT, đúng số khách nhìn thấy
+    // lúc đặt món).
+    let kmProgramCode = '';
+    let kmDiscountAmount = 0;
+    if (receiverEmail) {
+      try {
+        const kmResult = await canister.applyPromotion(receiverEmail, goodsAmount);
+        if (kmResult?.ok) {
+          kmProgramCode = kmResult.ok.promotionCode;
+          kmDiscountAmount = Number(kmResult.ok.discountAmount);
+        }
+        // #err (không có KM đang chạy, chưa xác thực, đạt giới hạn...) —
+        // bỏ qua, không log lỗi (đây là trường hợp bình thường, không phải
+        // sự cố — hầu hết đơn sẽ #err vì không phải lúc nào cũng có KM).
+      } catch (e) {
+        console.warn('[create] applyPromotion lỗi (bỏ qua, tạo đơn không KM):', e.message);
+      }
+    }
+
+    // Tổng tiền đơn thanh toán = Tổng tiền đơn - số tiền chiết khấu (theo
+    // đúng công thức người dùng yêu cầu). kmDiscountAmount=0 nếu không có
+    // KM → amount = goodsAmount như cũ, không đổi hành vi hiện tại.
+    const amountAfterDiscount = goodsAmount - kmDiscountAmount;
+
     // Không tạo đơn Ahamove (khách tự đặt tài xế bằng app ngoài, trả phí trực tiếp bên ngoài).
     const ahamoveOrderId = frontendAhamoveOrderId || '';
     const shippingFee = 0;
     const sharedLinkFromAhamove = '';
     const bookingStatus = 'confirmed';
 
-    // QR chỉ chứa tiền hàng (đã gồm VAT, không phí ship).
-    const amount = goodsAmount;
+    // QR chỉ chứa tiền hàng (đã gồm VAT, không phí ship), ĐÃ TRỪ chiết
+    // khấu KM nếu có — đây là số tiền khách thực sự phải trả.
+    const amount = amountAfterDiscount;
 
     // KHÔNG tạo QR Tingee ở đây nữa. QR động chỉ được tạo khi khách bấm
     // 'Thanh toán' trên thẻ đơn trong 'Theo dõi đơn' (POST /order/:id/qr).
@@ -71,17 +101,17 @@ router.post('/order/create', async (req, res, next) => {
       INSERT INTO orders (order_id, restaurant_id, cus_name, cus_phone, cus_address, cus_tax_code,
         receiver_email, amount, goods_amount, shipping_fee, tax_total,
         ahamove_order_id, tingee_qr_id, tingee_qr_account, tingee_bill_id, tingee_qr_code, shared_link,
-        pickup_code, booking_status, payment_status, invoice_status, canister_synced, created_at, updated_at)
+        pickup_code, km_program_code, km_discount_amount, booking_status, payment_status, invoice_status, canister_synced, created_at, updated_at)
       VALUES (@orderId, @restaurantId, @cusName, @cusPhone, @cusAddress, @cusTaxCode,
         @receiverEmail, @amount, @goodsAmount, @shippingFee, @taxTotal,
         @ahamoveOrderId, @tingeeQrId, @tingeeQrAccount, @tingeeBillId, @tingeeQrCode, @sharedLink,
-        @pickupCode, @bookingStatus, 'unpaid', 'none', 0, @now, @now)
+        @pickupCode, @kmProgramCode, @kmDiscountAmount, @bookingStatus, 'unpaid', 'none', 0, @now, @now)
     `);
     insertOrder.run({
       orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
       receiverEmail: receiverEmail || '', amount, goodsAmount, shippingFee, taxTotal,
       ahamoveOrderId, tingeeQrId, tingeeQrAccount, tingeeBillId, tingeeQrCode, sharedLink,
-      pickupCode, bookingStatus, now,
+      pickupCode, kmProgramCode, kmDiscountAmount, bookingStatus, now,
     });
     const insertItem = db.prepare(`
       INSERT INTO order_items (order_id, item_id, name, price, quantity, unit_name, vat_rate)

@@ -127,6 +127,11 @@ const IDL_FACTORY = ({ IDL }) => {
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
     getMenuForRestaurant: IDL.Func([IDL.Text], [IDL.Vec(MenuItemRecord)], ['query']),
     getPaymentMode: IDL.Func([], [IDL.Text], ['query']),
+    applyPromotion: IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Text],
+      [IDL.Variant({ ok: IDL.Record({ promotionCode: IDL.Text, discountAmount: IDL.Nat }), err: IDL.Text })],
+      [],
+    ),
   });
 };
 
@@ -255,8 +260,23 @@ async function getPaymentMode() {
   return await actor.getPaymentMode();
 }
 
+// applyPromotion — kiểm tra + áp dụng KM (Hệ 1, theo khung giờ) lúc tạo
+// đơn. HMAC payload: email|orderAmount (Nat.toText, khớp
+// promotion-api.mo). orderAmount PHẢI là integer khi gọi (giống lý do ở
+// createOrder — HMAC sign dùng Int.toText, không decimal).
+// Trả { ok: { promotionCode, discountAmount } } | { err: text } — #err
+// (không có KM đang chạy, email chưa xác thực, đạt giới hạn...) KHÔNG
+// phải lỗi hệ thống — caller (routes/create.js) coi #err là "không áp
+// dụng KM", vẫn tạo đơn bình thường với giá gốc.
+async function applyPromotion(email, orderAmount) {
+  const actor = getActor();
+  const orderAmountInt = Math.round(Number(orderAmount));
+  const hmacSig = hmac.signApplyPromotion(VPS_SECRET, email, orderAmountInt);
+  return await actor.applyPromotion(email, BigInt(orderAmountInt), hmacSig);
+}
+
 module.exports = {
   getActor, createOrder, updateStatus, updatePaymentStatus,
   updateInvoiceStatus, updateOrderQr, markPaymentExpired, getOrderStatus, listPendingPaymentOrders, cancelOrder,
-  getMenuForRestaurant, getPaymentMode,
+  getMenuForRestaurant, getPaymentMode, applyPromotion,
 };

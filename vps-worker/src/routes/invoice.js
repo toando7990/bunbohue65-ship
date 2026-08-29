@@ -87,6 +87,11 @@ function startInvoiceCron(db) {
               // buildJsonPayload() tự fallback về cusName/cusAddress.
               buyerName,
               buyerAddress,
+              // Chiết khấu KM (Hệ 1 — theo khung giờ), nếu đơn có áp dụng.
+              // ĐÃ GỒM VAT (cùng đơn vị row.amount) — buildInvoiceLines() tự
+              // quy đổi về trước thuế + phân bổ theo từng món. 0 nếu đơn
+              // không có KM (mặc định cột, không cần kiểm tra thêm).
+              kmDiscountAmount: row.km_discount_amount,
             },
             { prodInvoiceSerial: PROD_INVOICE_SERIAL },
           );

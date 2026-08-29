@@ -7,11 +7,13 @@
 // tạo/sửa/xoá/bật-tắt, khách xem chương trình đang áp dụng (banner), VPS
 // gọi applyPromotion() lúc tạo đơn để kiểm tra + áp dụng chiết khấu.
 //
-// applyPromotion: HMAC-verified (VPS gọi) — kiểm tra khung giờ + 2 giới hạn
-// (tổng đơn/ngày toàn hệ thống, đơn/ngày/khách) TRONG 1 THAO TÁC ATOMIC,
-// tránh race condition giữa kiểm tra và ghi. Không đạt điều kiện nào →
-// #err, KHÔNG tăng bộ đếm nào cả (đơn vẫn đặt được bình thường, chỉ không
-// có KM — theo quyết định đã chốt, xử lý ở phía VPS gọi hàm này).
+// applyPromotion: HMAC-verified (VPS gọi) — bắt buộc email đã xác thực OTP
+// thật (kiểm tra qua otpRecords, không tin localStorage client), kiểm tra
+// khung giờ + 2 giới hạn (tổng đơn/ngày toàn hệ thống, đơn/ngày/khách)
+// TRONG 1 THAO TÁC ATOMIC, tránh race condition giữa kiểm tra và ghi.
+// Không đạt điều kiện nào → #err, KHÔNG tăng bộ đếm nào cả (đơn vẫn đặt
+// được bình thường, chỉ không có KM — theo quyết định đã chốt, xử lý ở
+// phía VPS gọi hàm này).
 
 import AccessControl "mo:caffeineai-authorization/access-control";
 import Result "mo:core/Result";
@@ -23,6 +25,7 @@ import SecretTypes "../types/secret";
 import PromotionTypes "../types/promotion";
 import HmacLib "../lib/hmac";
 import PromotionLib "../lib/promotion";
+import EmailVerificationLib "../lib/email-verification";
 
 mixin (
   accessControlState : AccessControl.AccessControlState,
@@ -30,6 +33,7 @@ mixin (
   kmDailyCount : PromotionTypes.KmDailyCountStore,
   promotions : PromotionTypes.PromotionStore,
   secretState : SecretTypes.SecretState,
+  otpRecords : EmailVerificationLib.State,
 ) {
   // ============================================================
   // Giai đoạn 1 — giữ nguyên
@@ -215,6 +219,12 @@ mixin (
     let payload = email # "|" # Nat.toText(orderAmount);
     if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
+    };
+    // Bắt buộc email đã xác thực OTP thật (kiểm tra qua otpRecords, KHÔNG
+    // tin vào localStorage phía client — dễ giả mạo) — theo đúng yêu cầu
+    // gốc "Khách Phải xác thực email trước khi tham dự chương trình KM".
+    if (not EmailVerificationLib.isEmailVerified(otpRecords, email)) {
+      return #err("Email chưa được xác thực");
     };
     let now = Time.now();
     var found : ?PromotionTypes.Promotion = null;

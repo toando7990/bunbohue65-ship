@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS orders (
   invoice_id          TEXT NOT NULL DEFAULT '',
   pdf_url             TEXT NOT NULL DEFAULT '',        -- link PDF hóa đơn từ Bkav (CmdType 816)
   pickup_code         TEXT NOT NULL DEFAULT '',        -- mã 6 ký tự khách báo tài xế đọc cho quán khi thanh toán
+  km_program_code     TEXT NOT NULL DEFAULT '',        -- mã chương trình KM đã áp dụng, rỗng nếu không có
+  km_discount_amount  INTEGER NOT NULL DEFAULT 0,      -- tiền chiết khấu KM (đã gồm VAT, cùng đơn vị với amount)
   booking_status      TEXT NOT NULL DEFAULT 'confirmed',  -- pending|confirmed|shipping|completed|cancelled
   payment_status      TEXT NOT NULL DEFAULT 'unpaid',     -- unpaid|paid|refunded|expired
   invoice_status      TEXT NOT NULL DEFAULT 'none',      -- none|invoiced|failed
@@ -168,6 +170,20 @@ function initSchema(db) {
   // canister (xem core-api.mo hidePickupCode).
   if (!colNames.has('pickup_code')) {
     db.exec("ALTER TABLE orders ADD COLUMN pickup_code TEXT NOT NULL DEFAULT ''");
+  }
+  // km_program_code/km_discount_amount: kết quả áp dụng KM (Hệ 1 — theo
+  // khung giờ) lúc tạo đơn, nếu có. km_discount_amount ĐÃ GỒM VAT — cùng
+  // đơn vị với orders.amount (tổng tiền khách thấy/trả), KHÔNG phải số
+  // tiền chiết khấu trước thuế trên hoá đơn Bkav (quy đổi riêng lúc phát
+  // hành hoá đơn — xem lib/bkav.js buildJsonPayload). km_program_code rỗng
+  // + km_discount_amount=0 nghĩa là đơn không có KM (ngoài khung giờ, chưa
+  // xác thực email, hoặc đã đạt giới hạn — không chặn tạo đơn, chỉ không
+  // có KM).
+  if (!colNames.has('km_program_code')) {
+    db.exec("ALTER TABLE orders ADD COLUMN km_program_code TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has('km_discount_amount')) {
+    db.exec('ALTER TABLE orders ADD COLUMN km_discount_amount INTEGER NOT NULL DEFAULT 0');
   }
 }
 

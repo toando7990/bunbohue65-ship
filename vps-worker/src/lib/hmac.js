@@ -54,6 +54,13 @@ function signMarkPaymentExpired(secret, orderId) {
   return sign(secret, `${orderId}|expired`);
 }
 
+// applyPromotion: email|orderAmount — khớp canister mixins/promotion-api.mo
+// (payload = email # "|" # Nat.toText(orderAmount)). orderAmount là tổng
+// tiền đơn ĐÃ GỒM VAT (cùng đơn vị customer nhìn thấy), trước khi trừ KM.
+function signApplyPromotion(secret, email, orderAmount) {
+  return sign(secret, `${email}|${orderAmount}`);
+}
+
 module.exports = {
   sign,
   signCreateOrder,
@@ -62,4 +69,5 @@ module.exports = {
   signUpdateInvoiceStatus,
   signUpdateOrderQr,
   signMarkPaymentExpired,
+  signApplyPromotion,
 };
