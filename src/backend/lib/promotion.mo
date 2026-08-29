@@ -47,7 +47,7 @@ module {
 
   // Khoá composite — xem giải thích ở types/promotion.mo.
   public func usageKey(email : Text, programCode : Text, now : Int) : PromotionTypes.KmUsageKey {
-    Text.toLowercase(email) # "|" # programCode # "|" # vnDateKey(now);
+    email.toLower() # "|" # programCode # "|" # vnDateKey(now);
   };
 
   // Đếm hiện tại (không sửa gì) — dùng để hiển thị "còn N lượt KM hôm nay"
