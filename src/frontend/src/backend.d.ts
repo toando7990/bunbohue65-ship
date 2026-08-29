@@ -28,6 +28,52 @@ export type Result_Km = {
     __kind__: "err";
     err: string;
 };
+export interface TimeSlot {
+    startHour: bigint;
+    startMinute: bigint;
+    durationMinutes: bigint;
+}
+export interface DiscountTier {
+    minOrderValue: bigint;
+    discountAmount: bigint;
+}
+export interface Promotion {
+    code: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    daysOfWeek: Array<boolean>;
+    timeSlots: Array<TimeSlot>;
+    dailyOrderLimit: bigint;
+    perCustomerDailyLimit: bigint;
+    tiers: Array<DiscountTier>;
+    active: boolean;
+}
+export type Result_Promo = {
+    __kind__: "ok";
+    ok: Promotion;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_PromoList = {
+    __kind__: "ok";
+    ok: Array<Promotion>;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export interface ApplyPromotionOk {
+    promotionCode: string;
+    discountAmount: bigint;
+}
+export type Result_Apply = {
+    __kind__: "ok";
+    ok: ApplyPromotionOk;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderItem {
     itemId: string;
     name: string;
@@ -331,6 +377,12 @@ export interface backendInterface {
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
     getKmUsageCount(email: string, programCode: string): Promise<bigint>;
+    createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>): Promise<Result_Promo>;
+    updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean): Promise<Result_Promo>;
+    deletePromotion(code: string): Promise<Result_3>;
+    listPromotions(): Promise<Result_PromoList>;
+    getCurrentPromotion(): Promise<Promotion | null>;
+    applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_5>;

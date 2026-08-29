@@ -96,12 +96,17 @@ actor Main {
   // Đếm lượt dùng khuyến mại (KM) trong ngày, theo (email, chương trình KM)
   // (14th stable field) — Giai đoạn 1 của hệ thống KM. Khoá composite dạng
   // "email|programCode|YYYYMMDD" (giờ VN) — xem lib/promotion.mo. Gộp cả 3
-  // khung giờ KM/ngày của cùng 1 chương trình vào chung 1 bộ đếm. Chương
-  // trình KM thật (Hệ 1/Hệ 2) là Giai đoạn 2/3 — bảng này chỉ mới có cấu
-  // trúc đếm, chưa có gì đọc/ghi tới cho tới khi Giai đoạn 2 nối logic áp
-  // dụng KM thật vào createOrder. Supplied by migrations/<ngày mới nhất>.mo
-  // với Map rỗng trên upgrade — không đổi shape các field khác, an toàn.
+  // khung giờ KM/ngày của cùng 1 chương trình vào chung 1 bộ đếm.
   let kmUsage : PromotionTypes.KmUsageStore;
+
+  // Đếm TỔNG số đơn KM/ngày TOÀN HỆ THỐNG (16th stable field) — khác
+  // kmUsage ở trên (đếm theo TỪNG KHÁCH). Khoá "programCode|YYYYMMDD".
+  // Giai đoạn 2 của hệ thống KM.
+  let kmDailyCount : PromotionTypes.KmDailyCountStore;
+
+  // Chương trình khuyến mại Hệ 1 — theo khung giờ (17th stable field). key =
+  // mã chương trình (8 ký tự ngẫu nhiên). Giai đoạn 2 của hệ thống KM.
+  let promotions : PromotionTypes.PromotionStore;
 
   // Stable shuttle for the transient `accessControlState` (line 36). The
   // access-control state is `transient let` — re-initialized empty on every
@@ -263,7 +268,7 @@ actor Main {
   include MenuApi(accessControlState, menus, restaurants, restaurantMenuOverrides);
   include MenuSeedApi(accessControlState, menus);
   include EmailVerificationApi(otpRecords);
-  include PromotionApi(kmUsage, secretState);
+  include PromotionApi(accessControlState, kmUsage, kmDailyCount, promotions, secretState);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
 

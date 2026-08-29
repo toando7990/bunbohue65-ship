@@ -74,6 +74,52 @@ export type Result_Km = {
     __kind__: "err";
     err: string;
 };
+export interface TimeSlot {
+    startHour: bigint;
+    startMinute: bigint;
+    durationMinutes: bigint;
+}
+export interface DiscountTier {
+    minOrderValue: bigint;
+    discountAmount: bigint;
+}
+export interface Promotion {
+    code: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    daysOfWeek: Array<boolean>;
+    timeSlots: Array<TimeSlot>;
+    dailyOrderLimit: bigint;
+    perCustomerDailyLimit: bigint;
+    tiers: Array<DiscountTier>;
+    active: boolean;
+}
+export type Result_Promo = {
+    __kind__: "ok";
+    ok: Promotion;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_PromoList = {
+    __kind__: "ok";
+    ok: Array<Promotion>;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export interface ApplyPromotionOk {
+    promotionCode: string;
+    discountAmount: bigint;
+}
+export type Result_Apply = {
+    __kind__: "ok";
+    ok: ApplyPromotionOk;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderItem {
     itemId: string;
     name: string;
@@ -380,6 +426,12 @@ export interface backendInterface {
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
     getKmUsageCount(email: string, programCode: string): Promise<bigint>;
+    createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>): Promise<Result_Promo>;
+    updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean): Promise<Result_Promo>;
+    deletePromotion(code: string): Promise<Result_3>;
+    listPromotions(): Promise<Result_PromoList>;
+    getCurrentPromotion(): Promise<Promotion | null>;
+    applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrdersByEmail(email: string): Promise<Array<Order>>;
@@ -426,7 +478,7 @@ export interface backendInterface {
     tryConsumeKmSlot(email: string, programCode: string, dailyLimit: bigint, hmac: string): Promise<Result_Km>;
     verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }
-import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, Result_Km as _Result_Km, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
+import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, Result_Km as _Result_Km, Result_Promo as _Result_Promo, Result_PromoList as _Result_PromoList, Result_Apply as _Result_Apply, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initialize_access_control(): Promise<void> {
@@ -693,6 +745,90 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getKmUsageCount(arg0, arg1);
             return result;
+        }
+    }
+    async createPromotion(arg0: string, arg1: string, arg2: string, arg3: Array<boolean>, arg4: Array<TimeSlot>, arg5: bigint, arg6: bigint, arg7: Array<DiscountTier>): Promise<Result_Promo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                return from_candid_Result_Promo(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            return from_candid_Result_Promo(result);
+        }
+    }
+    async updatePromotion(arg0: string, arg1: string, arg2: string, arg3: string, arg4: Array<boolean>, arg5: Array<TimeSlot>, arg6: bigint, arg7: bigint, arg8: Array<DiscountTier>, arg9: boolean): Promise<Result_Promo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                return from_candid_Result_Promo(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            return from_candid_Result_Promo(result);
+        }
+    }
+    async deletePromotion(arg0: string): Promise<Result_3> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deletePromotion(arg0);
+                return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deletePromotion(arg0);
+            return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async listPromotions(): Promise<Result_PromoList> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listPromotions();
+                return from_candid_Result_PromoList(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.listPromotions();
+            return from_candid_Result_PromoList(result);
+        }
+    }
+    async getCurrentPromotion(): Promise<Promotion | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getCurrentPromotion();
+                return result.length > 0 ? result[0] : null;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getCurrentPromotion();
+            return result.length > 0 ? result[0] : null;
+        }
+    }
+    async applyPromotion(arg0: string, arg1: bigint, arg2: string): Promise<Result_Apply> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.applyPromotion(arg0, arg1, arg2);
+                return from_candid_Result_Apply(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.applyPromotion(arg0, arg1, arg2);
+            return from_candid_Result_Apply(result);
         }
     }
     async getItemImage(arg0: string): Promise<Uint8Array | null> {
@@ -1297,6 +1433,36 @@ function from_candid_Result_2_n11(_uploadFile: (file: ExternalBlob) => Promise<U
 // (bigint/string đã là dạng JS trực tiếp, không phải Blob/opt/record cần
 // biến đổi) — chỉ cần bọc lại thành dạng { __kind__, ... } frontend dùng.
 function from_candid_Result_Km(value: _Result_Km): Result_Km {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : {
+        __kind__: "err",
+        err: value.err
+    };
+}
+// Promotion: mọi field đều Text/Nat/Bool/mảng của các kiểu đó — không có
+// Blob/opt cần biến đổi, chỉ cần bọc lại dạng { __kind__, ... } frontend
+// dùng (giống from_candid_Result_Km).
+function from_candid_Result_Promo(value: _Result_Promo): Result_Promo {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : {
+        __kind__: "err",
+        err: value.err
+    };
+}
+function from_candid_Result_PromoList(value: _Result_PromoList): Result_PromoList {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : {
+        __kind__: "err",
+        err: value.err
+    };
+}
+function from_candid_Result_Apply(value: _Result_Apply): Result_Apply {
     return "ok" in value ? {
         __kind__: "ok",
         ok: value.ok

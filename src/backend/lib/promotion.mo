@@ -2,11 +2,15 @@ import Map "mo:core/Map";
 import Int "mo:core/Int";
 import Text "mo:core/Text";
 import Result "mo:core/Result";
+import Time "mo:core/Time";
+import Nat64 "mo:core/Nat64";
+import Array "mo:core/Array";
 
 import PromotionTypes "../types/promotion";
 
-// lib/promotion.mo — Giai đoạn 1: chỉ có logic đếm/kiểm tra lượt dùng KM
-// trong ngày. Chương trình KM thật (Hệ 1/Hệ 2) là Giai đoạn 2/3.
+// lib/promotion.mo — Giai đoạn 1: đếm/kiểm tra lượt dùng KM trong ngày.
+// Giai đoạn 2 (bổ sung): chương trình KM Hệ 1 (theo khung giờ) — sinh mã,
+// kiểm tra hiệu lực (ngày/thứ/khung giờ), tính mức chiết khấu.
 module {
   // Hằng số thời gian (nanosecond) — CÙNG CÔNG THỨC với utc7DayStart() ở
   // lib/core.mo (không import trực tiếp để tránh phụ thuộc chéo module —
@@ -82,6 +86,157 @@ module {
     };
     if (current >= dailyLimit) {
       return #err("Đã đạt giới hạn khuyến mại hôm nay cho chương trình này");
+    };
+    let next = current + 1;
+    store.add(key, next);
+    #ok(next);
+  };
+
+  // ============================================================
+  // Giai đoạn 2 — chương trình KM Hệ 1 (theo khung giờ)
+  // ============================================================
+
+  // Chỉ số ngày kể từ epoch (VN, UTC+7) — dùng chung cho vnDateKey() lẫn
+  // weekdayIndex() để đảm bảo nhất quán (cùng 1 "ngày hôm nay" theo giờ VN).
+  func vnDayIndex(now : Int) : Int {
+    (now + UTC7_OFFSET_NS()) / DAY_NS();
+  };
+
+  // Thứ trong tuần theo giờ VN — 0=Chủ nhật...6=Thứ bảy. Epoch (1/1/1970) là
+  // Thứ Năm (index 4 trong quy ước này) → công thức (dayIndex + 4) % 7. ĐÃ
+  // TỰ KIỂM CHỨNG bằng Python (2026-08-30=CN, 2026-08-31=T2, 2026-08-29=T7).
+  public func weekdayIndex(now : Int) : Nat {
+    let idx = (vnDayIndex(now) + 4) % 7;
+    // dayIndex có thể âm về lý thuyết (ngày trước 1970) nhưng Time.now()
+    // luôn dương rất lớn — idx luôn nằm [0,6] trong thực tế, ép kiểu an
+    // toàn (Motoko Int % giữ dấu của số bị chia, dayIndex+4 luôn dương ở
+    // đây nên idx luôn không âm).
+    Int.abs(idx);
+  };
+
+  // Giờ:phút hiện tại theo giờ VN, dạng phút-trong-ngày [0, 1439].
+  func vnMinuteOfDay(now : Int) : Nat {
+    let shifted = now + UTC7_OFFSET_NS();
+    let dayStartNs = vnDayIndex(now) * DAY_NS();
+    let nsIntoDay = shifted - dayStartNs;
+    Int.abs(nsIntoDay / (60 * 1_000_000_000));
+  };
+
+  // Charset + PRNG xorshift64 — bản sao độc lập của lib/devices.mo
+  // (generateCode), CHỦ Ý KHÔNG import chéo module (giữ lib/promotion.mo
+  // tự chứa, đúng nguyên tắc đã áp dụng cho hằng số ngày ở trên). Thuật
+  // toán đã được chứng minh đúng trong lib/devices.mo (đang chạy production
+  // cho mã kích hoạt thiết bị) — chỉ đổi độ dài mã từ 6 sang 8 ký tự.
+  let CODE_CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  public type PrngState = { var state : Nat; var seeded : Bool };
+
+  public func newPrngState() : PrngState {
+    { var state = 0; var seeded = false };
+  };
+
+  func nextRandom(prng : PrngState) : Nat {
+    if (not prng.seeded) {
+      let now64 : Nat64 = Nat64.fromIntWrap(Time.now());
+      prng.state := Nat64.toNat(now64 | 1);
+      prng.seeded := true;
+    };
+    var x : Nat64 = Nat64.fromIntWrap(prng.state);
+    x := x ^ (x << 13);
+    x := x ^ (x >> 7);
+    x := x ^ (x << 17);
+    prng.state := x.toNat();
+    x.toNat();
+  };
+
+  // Sinh mã chương trình KM 8 ký tự chữ hoa + số ngẫu nhiên.
+  public func generatePromotionCode(prng : PrngState) : Text {
+    let charsetSize = CODE_CHARSET.size();
+    let chars = CODE_CHARSET.chars().toArray();
+    var code = "";
+    var i = 0;
+    while (i < 8) {
+      let idx = nextRandom(prng) % charsetSize;
+      code := code # chars[idx].toText();
+      i += 1;
+    };
+    code;
+  };
+
+  // Chương trình có đang trong khung giờ khuyến mại NGAY BÂY GIỜ không —
+  // kiểm tra active, khoảng ngày (so sánh chuỗi YYYYMMDD, đã zero-pad nên
+  // so sánh chuỗi = so sánh ngày), thứ trong tuần, và có khớp bất kỳ khung
+  // giờ nào trong tối đa 3 khung giờ hay không (khung giờ có thể vắt qua
+  // nửa đêm nếu startMinuteOfDay + durationMinutes > 1440 — xử lý bằng
+  // modulo, dù thực tế hiếm gặp với quán ăn).
+  public func isPromotionActiveNow(promo : PromotionTypes.Promotion, now : Int) : Bool {
+    if (not promo.active) return false;
+    let today = vnDateKey(now);
+    if (today < promo.startDate) return false;
+    if (today > promo.endDate) return false;
+    let wd = weekdayIndex(now);
+    if (wd >= promo.daysOfWeek.size() or not promo.daysOfWeek[wd]) return false;
+    let nowMin = vnMinuteOfDay(now);
+    for (slot in promo.timeSlots.vals()) {
+      let startMin = slot.startHour * 60 + slot.startMinute;
+      let endMin = startMin + slot.durationMinutes;
+      if (nowMin >= startMin and nowMin < endMin) return true;
+    };
+    false;
+  };
+
+  // Mức chiết khấu áp dụng cho tổng tiền đơn (ĐÃ GỒM VAT) — tìm mức có
+  // minOrderValue CAO NHẤT mà orderAmount vẫn đạt được (không giả định
+  // tiers đã sắp xếp sẵn, tự so sánh toàn bộ). null nếu không đạt mức nào.
+  public func findApplicableTier(
+    promo : PromotionTypes.Promotion,
+    orderAmountInclusiveVat : Nat,
+  ) : ?PromotionTypes.DiscountTier {
+    var best : ?PromotionTypes.DiscountTier = null;
+    for (tier in promo.tiers.vals()) {
+      if (orderAmountInclusiveVat >= tier.minOrderValue) {
+        switch (best) {
+          case null { best := ?tier };
+          case (?b) {
+            if (tier.minOrderValue > b.minOrderValue) { best := ?tier };
+          };
+        };
+      };
+    };
+    best;
+  };
+
+  // Khoá "programCode|YYYYMMDD" — đếm tổng đơn KM/ngày TOÀN HỆ THỐNG.
+  func dailyCountKey(programCode : Text, now : Int) : PromotionTypes.KmDailyCountKey {
+    programCode # "|" # vnDateKey(now);
+  };
+
+  public func getDailyCount(
+    store : PromotionTypes.KmDailyCountStore,
+    programCode : Text,
+    now : Int,
+  ) : Nat {
+    switch (store.get(dailyCountKey(programCode, now))) {
+      case null { 0 };
+      case (?count) { count };
+    };
+  };
+
+  // Kiểm tra + tăng bộ đếm TỔNG đơn KM/ngày (toàn hệ thống) — cùng pattern
+  // atomic với tryConsumeSlot() ở trên, nhưng KHÔNG theo từng khách.
+  public func tryConsumeDailyCount(
+    store : PromotionTypes.KmDailyCountStore,
+    programCode : Text,
+    dailyOrderLimit : Nat,
+    now : Int,
+  ) : Result.Result<Nat, Text> {
+    let key = dailyCountKey(programCode, now);
+    let current = switch (store.get(key)) {
+      case null { 0 };
+      case (?count) { count };
+    };
+    if (current >= dailyOrderLimit) {
+      return #err("Đã đạt giới hạn tổng số đơn khuyến mại hôm nay");
     };
     let next = current + 1;
     store.add(key, next);

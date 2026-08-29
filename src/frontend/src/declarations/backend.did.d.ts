@@ -159,6 +159,31 @@ export type Result_6 = { 'ok' : PendingActivation } |
   { 'err' : string };
 export type Result_Km = { 'ok' : bigint } |
   { 'err' : string };
+export interface TimeSlot {
+  'startHour' : bigint,
+  'startMinute' : bigint,
+  'durationMinutes' : bigint,
+}
+export interface DiscountTier { 'minOrderValue' : bigint, 'discountAmount' : bigint }
+export interface Promotion {
+  'code' : string,
+  'name' : string,
+  'startDate' : string,
+  'endDate' : string,
+  'daysOfWeek' : Array<boolean>,
+  'timeSlots' : Array<TimeSlot>,
+  'dailyOrderLimit' : bigint,
+  'perCustomerDailyLimit' : bigint,
+  'tiers' : Array<DiscountTier>,
+  'active' : boolean,
+}
+export type Result_Promo = { 'ok' : Promotion } |
+  { 'err' : string };
+export type Result_PromoList = { 'ok' : Array<Promotion> } |
+  { 'err' : string };
+export interface ApplyPromotionOk { 'promotionCode' : string, 'discountAmount' : bigint }
+export type Result_Apply = { 'ok' : ApplyPromotionOk } |
+  { 'err' : string };
 export type Result_7 = { 'ok' : null } |
   { 'err' : Error };
 export interface Result__1 { 'hasMore' : boolean, 'rows' : Array<Array<Cell>> }
@@ -239,6 +264,12 @@ export interface _SERVICE {
   'getMenu' : ActorMethod<[], Array<MenuItem>>,
   'getMenuForRestaurant' : ActorMethod<[string], Array<MenuItem>>,
   'getKmUsageCount' : ActorMethod<[string, string], bigint>,
+  'createPromotion' : ActorMethod<[string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>], Result_Promo>,
+  'updatePromotion' : ActorMethod<[string, string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>, boolean], Result_Promo>,
+  'deletePromotion' : ActorMethod<[string], Result_3>,
+  'listPromotions' : ActorMethod<[], Result_PromoList>,
+  'getCurrentPromotion' : ActorMethod<[], [] | [Promotion]>,
+  'applyPromotion' : ActorMethod<[string, bigint, string], Result_Apply>,
   'getItemImage' : ActorMethod<[string], [] | [Uint8Array]>,
   'getOrder' : ActorMethod<[string], Result>,
   'getOrderStatus' : ActorMethod<[string], Result_5>,
