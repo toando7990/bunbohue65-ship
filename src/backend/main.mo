@@ -18,6 +18,7 @@ import SecretApi "mixins/secret-api";
 import MenuApi "mixins/menu-api";
 import MenuSeedApi "mixins/menu-seed-api";
 import EmailVerificationApi "mixins/email-verification-api";
+import PromotionApi "mixins/promotion-api";
 import PaymentModeConfigApi "mixins/payment-mode-config-api";
 import StoreHoursConfigApi "mixins/store-hours-config-api";
 
@@ -32,7 +33,7 @@ import PaymentModeConfigLib "lib/payment-mode-config";
 import PaymentModeConfigTypes "types/payment-mode-config";
 import StoreHoursConfigLib "lib/store-hours-config";
 import StoreHoursConfigTypes "types/store-hours-config";
-
+import PromotionTypes "types/promotion";
 // Top-level Value modules so the OQL auto-derivation resolver picks them up
 // for the variant fields on the exposed entities.
 import DeviceRoleValue "types/DeviceRoleValue";
@@ -91,6 +92,16 @@ actor Main {
   // persisted back to stable storage in `system func preupgrade` — same pattern
   // as `paymentMode` / `vpsSecret` / `vpsSecretPrevious` above.
   var storeHours : StoreHoursConfigTypes.StoreHours;
+
+  // Đếm lượt dùng khuyến mại (KM) trong ngày, theo (email, chương trình KM)
+  // (14th stable field) — Giai đoạn 1 của hệ thống KM. Khoá composite dạng
+  // "email|programCode|YYYYMMDD" (giờ VN) — xem lib/promotion.mo. Gộp cả 3
+  // khung giờ KM/ngày của cùng 1 chương trình vào chung 1 bộ đếm. Chương
+  // trình KM thật (Hệ 1/Hệ 2) là Giai đoạn 2/3 — bảng này chỉ mới có cấu
+  // trúc đếm, chưa có gì đọc/ghi tới cho tới khi Giai đoạn 2 nối logic áp
+  // dụng KM thật vào createOrder. Supplied by migrations/<ngày mới nhất>.mo
+  // với Map rỗng trên upgrade — không đổi shape các field khác, an toàn.
+  let kmUsage : PromotionTypes.KmUsageStore;
 
   // Stable shuttle for the transient `accessControlState` (line 36). The
   // access-control state is `transient let` — re-initialized empty on every
@@ -252,6 +263,7 @@ actor Main {
   include MenuApi(accessControlState, menus, restaurants, restaurantMenuOverrides);
   include MenuSeedApi(accessControlState, menus);
   include EmailVerificationApi(otpRecords);
+  include PromotionApi(kmUsage, secretState);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
 
