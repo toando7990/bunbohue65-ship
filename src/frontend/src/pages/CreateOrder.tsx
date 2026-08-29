@@ -20,6 +20,7 @@ import {
   validateCustomerForm,
 } from "@/components/CustomerForm";
 import { MenuPicker } from "@/components/MenuPicker";
+import { PromotionBanner } from "@/components/PromotionBanner";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -436,6 +437,8 @@ export default function CreateOrder() {
           >
             Đặt món
           </h1>
+
+          <PromotionBanner />
 
           {/* Dịch vụ giao hàng — biểu tượng xe máy đại diện "giao hàng" +
               4 logo app thật (Grab, Xanh SM, Be, Ahamove — người dùng cung

@@ -12,6 +12,7 @@ import {
   deleteRestaurant as deleteRestaurantFn,
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
+  getCurrentPromotion as getCurrentPromotionFn,
   getItemImage as getItemImageFn,
   getMenuForRestaurant as getMenuForRestaurantFn,
   getOrder as getOrderFn,
@@ -412,6 +413,22 @@ export function useIsStoreOpen() {
   return useQuery({
     queryKey: ["storeOpen"],
     queryFn: () => (actor ? isStoreOpenFn(actor) : Promise.resolve(true)),
+    enabled: !!actor && !isFetching,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
+  });
+}
+
+// Chương trình KM đang có hiệu lực hôm nay (banner trang đặt món). Poll
+// 30s giống useIsStoreOpen — đủ để banner cập nhật khi admin vừa
+// tạo/sửa/tắt chương trình mà không cần khách tự tải lại trang.
+export function useCurrentPromotion() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["currentPromotion"],
+    queryFn: () =>
+      actor ? getCurrentPromotionFn(actor) : Promise.resolve(null),
     enabled: !!actor && !isFetching,
     refetchOnMount: true,
     refetchOnWindowFocus: true,

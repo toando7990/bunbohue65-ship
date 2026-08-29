@@ -13,6 +13,7 @@ import {
   type OrderStatus,
   PaymentStatus,
   type PendingActivation,
+  type Promotion,
   type Restaurant,
   type StoreHours,
 } from "@/backend";
@@ -332,6 +333,16 @@ export async function setStoreHours(
 
 export async function isStoreOpen(actor: Backend): Promise<boolean> {
   return actor.isStoreOpen();
+}
+
+// Chương trình KM đang có hiệu lực HÔM NAY (khớp ngày + thứ trong tuần) —
+// KHÔNG có nghĩa là đang đúng khung giờ (frontend tự tính khung giờ/đếm
+// ngược từ promotion.timeSlots, xem hooks/usePromotionCountdown.ts). null
+// nếu không có chương trình nào hợp lệ hôm nay.
+export async function getCurrentPromotion(
+  actor: Backend,
+): Promise<Promotion | null> {
+  return actor.getCurrentPromotion();
 }
 
 // Re-export enums for convenience in components.
