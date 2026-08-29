@@ -148,10 +148,12 @@ mixin (
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
     };
-    switch (promotions.remove(code)) {
-      case null { #err("Không tìm thấy chương trình khuyến mại") };
-      case (?_) { #ok(()) };
+    switch (promotions.get(code)) {
+      case null { return #err("Không tìm thấy chương trình khuyến mại") };
+      case (?_) {};
     };
+    promotions.remove(code);
+    #ok;
   };
 
   // Admin only. Liệt kê TẤT CẢ chương trình (kể cả hết hạn/tắt) để quản lý.
