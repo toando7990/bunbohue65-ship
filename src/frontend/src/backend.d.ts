@@ -114,6 +114,34 @@ export type Result_RegPromoList = {
     __kind__: "err";
     err: string;
 };
+export interface SalesTier {
+    minSales: bigint;
+    voucherValue: bigint;
+}
+export interface SalesPromo {
+    code: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    weeklyTiers: Array<SalesTier>;
+    monthlyTiers: Array<SalesTier>;
+    voucherValidDays: bigint;
+    active: boolean;
+}
+export type Result_SalesPromo = {
+    __kind__: "ok";
+    ok: SalesPromo;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_SalesPromoList = {
+    __kind__: "ok";
+    ok: Array<SalesPromo>;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderItem {
     itemId: string;
     name: string;
@@ -429,6 +457,10 @@ export interface backendInterface {
     updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean): Promise<Result_RegPromo>;
     deleteRegistrationPromo(code: string): Promise<Result_3>;
     listRegistrationPromos(): Promise<Result_RegPromoList>;
+    createSalesPromo(name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint): Promise<Result_SalesPromo>;
+    updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean): Promise<Result_SalesPromo>;
+    deleteSalesPromo(code: string): Promise<Result_3>;
+    listSalesPromos(): Promise<Result_SalesPromoList>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_5>;

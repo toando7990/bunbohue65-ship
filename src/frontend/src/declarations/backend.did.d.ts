@@ -209,6 +209,21 @@ export type Result_RegPromo = { 'ok' : RegistrationPromo } |
   { 'err' : string };
 export type Result_RegPromoList = { 'ok' : Array<RegistrationPromo> } |
   { 'err' : string };
+export interface SalesTier { 'minSales' : bigint, 'voucherValue' : bigint }
+export interface SalesPromo {
+  'code' : string,
+  'name' : string,
+  'startDate' : string,
+  'endDate' : string,
+  'weeklyTiers' : Array<SalesTier>,
+  'monthlyTiers' : Array<SalesTier>,
+  'voucherValidDays' : bigint,
+  'active' : boolean,
+}
+export type Result_SalesPromo = { 'ok' : SalesPromo } |
+  { 'err' : string };
+export type Result_SalesPromoList = { 'ok' : Array<SalesPromo> } |
+  { 'err' : string };
 export type Result_7 = { 'ok' : null } |
   { 'err' : Error };
 export interface Result__1 { 'hasMore' : boolean, 'rows' : Array<Array<Cell>> }
@@ -301,6 +316,10 @@ export interface _SERVICE {
   'updateRegistrationPromo' : ActorMethod<[string, string, string, string, bigint, bigint, boolean], Result_RegPromo>,
   'deleteRegistrationPromo' : ActorMethod<[string], Result_3>,
   'listRegistrationPromos' : ActorMethod<[], Result_RegPromoList>,
+  'createSalesPromo' : ActorMethod<[string, string, string, Array<SalesTier>, Array<SalesTier>, bigint], Result_SalesPromo>,
+  'updateSalesPromo' : ActorMethod<[string, string, string, string, Array<SalesTier>, Array<SalesTier>, bigint, boolean], Result_SalesPromo>,
+  'deleteSalesPromo' : ActorMethod<[string], Result_3>,
+  'listSalesPromos' : ActorMethod<[], Result_SalesPromoList>,
   'getItemImage' : ActorMethod<[string], [] | [Uint8Array]>,
   'getOrder' : ActorMethod<[string], Result>,
   'getOrderStatus' : ActorMethod<[string], Result_5>,
