@@ -190,6 +190,17 @@ export const Voucher = IDL.Record({
   'issuedAt' : IDL.Int,
 });
 export const Result_Voucher = IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text });
+export const RegistrationPromo = IDL.Record({
+  'code' : IDL.Text,
+  'name' : IDL.Text,
+  'startDate' : IDL.Text,
+  'endDate' : IDL.Text,
+  'voucherValue' : IDL.Nat,
+  'voucherValidDays' : IDL.Nat,
+  'active' : IDL.Bool,
+});
+export const Result_RegPromo = IDL.Variant({ 'ok' : RegistrationPromo, 'err' : IDL.Text });
+export const Result_RegPromoList = IDL.Variant({ 'ok' : IDL.Vec(RegistrationPromo), 'err' : IDL.Text });
 export const Result_6 = IDL.Variant({
   'ok' : PendingActivation,
   'err' : IDL.Text,
@@ -325,6 +336,18 @@ export const idlService = IDL.Service({
   'applyPromotion' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [Result_Apply], []),
   'applyVoucher' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Text], [Result_Voucher], []),
   'listMyVouchers' : IDL.Func([IDL.Text], [IDL.Vec(Voucher)], ['query']),
+  'createRegistrationPromo' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat],
+      [Result_RegPromo],
+      [],
+    ),
+  'updateRegistrationPromo' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool],
+      [Result_RegPromo],
+      [],
+    ),
+  'deleteRegistrationPromo' : IDL.Func([IDL.Text], [Result_3], []),
+  'listRegistrationPromos' : IDL.Func([], [Result_RegPromoList], ['query']),
   'getItemImage' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Vec(IDL.Nat8))], ['query']),
   'getOrder' : IDL.Func([IDL.Text], [Result], []),
   'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
@@ -599,6 +622,17 @@ export const idlFactory = ({ IDL }) => {
     'issuedAt' : IDL.Int,
   });
   const Result_Voucher = IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text });
+  const RegistrationPromo = IDL.Record({
+    'code' : IDL.Text,
+    'name' : IDL.Text,
+    'startDate' : IDL.Text,
+    'endDate' : IDL.Text,
+    'voucherValue' : IDL.Nat,
+    'voucherValidDays' : IDL.Nat,
+    'active' : IDL.Bool,
+  });
+  const Result_RegPromo = IDL.Variant({ 'ok' : RegistrationPromo, 'err' : IDL.Text });
+  const Result_RegPromoList = IDL.Variant({ 'ok' : IDL.Vec(RegistrationPromo), 'err' : IDL.Text });
   const OrderStatus = IDL.Record({
     'paymentStatus' : PaymentStatus,
     'tingeeQrCode' : IDL.Text,
@@ -734,6 +768,18 @@ export const idlFactory = ({ IDL }) => {
     'getOrder' : IDL.Func([IDL.Text], [Result], []),
     'applyVoucher' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Text], [Result_Voucher], []),
     'listMyVouchers' : IDL.Func([IDL.Text], [IDL.Vec(Voucher)], ['query']),
+    'createRegistrationPromo' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat],
+        [Result_RegPromo],
+        [],
+      ),
+    'updateRegistrationPromo' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool],
+        [Result_RegPromo],
+        [],
+      ),
+    'deleteRegistrationPromo' : IDL.Func([IDL.Text], [Result_3], []),
+    'listRegistrationPromos' : IDL.Func([], [Result_RegPromoList], ['query']),
     'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
     'getPaymentMode' : IDL.Func([], [IDL.Text], ['query']),
     'getRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),

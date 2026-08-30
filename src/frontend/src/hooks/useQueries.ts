@@ -9,8 +9,10 @@ import {
   addRestaurant as addRestaurantFn,
   cleanupExpiredActivations as cleanupFn,
   createPromotion as createPromotionFn,
+  createRegistrationPromo as createRegistrationPromoFn,
   deleteItem as deleteItemFn,
   deletePromotion as deletePromotionFn,
+  deleteRegistrationPromo as deleteRegistrationPromoFn,
   deleteRestaurant as deleteRestaurantFn,
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
@@ -27,6 +29,7 @@ import {
   listMenus as listMenusFn,
   listOrders as listOrdersFn,
   listPromotions as listPromotionsFn,
+  listRegistrationPromos as listRegistrationPromosFn,
   listRestaurants as listRestaurantsFn,
   markPickedUp as markPickedUpFn,
   revokeDevice as revokeDeviceFn,
@@ -37,6 +40,7 @@ import {
   setVpsSecret as setVpsSecretFn,
   updateItem as updateItemFn,
   updatePromotion as updatePromotionFn,
+  updateRegistrationPromo as updateRegistrationPromoFn,
   updateRestaurant as updateRestaurantFn,
 } from "@/lib/canister";
 import { useActor } from "@caffeineai/core-infrastructure";
@@ -496,6 +500,69 @@ export function useDeletePromotion() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });
       qc.invalidateQueries({ queryKey: ["currentPromotion"] });
+    },
+  });
+}
+
+// ---- Quản lý "Khuyến mại đăng ký" (admin) ----
+
+export function useRegistrationPromos() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["registrationPromos"],
+    queryFn: () =>
+      actor ? listRegistrationPromosFn(actor) : Promise.resolve([]),
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCreateRegistrationPromo() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof createRegistrationPromoFn>[1]) => {
+      if (!actor) throw new Error("Actor not ready");
+      return createRegistrationPromoFn(actor, input);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["registrationPromos"] });
+    },
+  });
+}
+
+export function useUpdateRegistrationPromo() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args: {
+      code: string;
+      input: Parameters<typeof createRegistrationPromoFn>[1];
+      active: boolean;
+    }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return updateRegistrationPromoFn(
+        actor,
+        args.code,
+        args.input,
+        args.active,
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["registrationPromos"] });
+    },
+  });
+}
+
+export function useDeleteRegistrationPromo() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (code: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return deleteRegistrationPromoFn(actor, code);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["registrationPromos"] });
     },
   });
 }

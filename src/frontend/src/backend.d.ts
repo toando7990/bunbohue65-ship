@@ -91,6 +91,29 @@ export type Result_Voucher = {
     __kind__: "err";
     err: string;
 };
+export interface RegistrationPromo {
+    code: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    voucherValue: bigint;
+    voucherValidDays: bigint;
+    active: boolean;
+}
+export type Result_RegPromo = {
+    __kind__: "ok";
+    ok: RegistrationPromo;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_RegPromoList = {
+    __kind__: "ok";
+    ok: Array<RegistrationPromo>;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderItem {
     itemId: string;
     name: string;
@@ -402,6 +425,10 @@ export interface backendInterface {
     applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
     applyVoucher(email: string, code: string, orderAmount: bigint, hmac: string): Promise<Result_Voucher>;
     listMyVouchers(email: string): Promise<Array<Voucher>>;
+    createRegistrationPromo(name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint): Promise<Result_RegPromo>;
+    updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean): Promise<Result_RegPromo>;
+    deleteRegistrationPromo(code: string): Promise<Result_3>;
+    listRegistrationPromos(): Promise<Result_RegPromoList>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_5>;

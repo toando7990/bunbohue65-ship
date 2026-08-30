@@ -14,6 +14,7 @@ import {
   PaymentStatus,
   type PendingActivation,
   type Promotion,
+  type RegistrationPromo,
   type Restaurant,
   type StoreHours,
 } from "@/backend";
@@ -411,6 +412,63 @@ export async function deletePromotion(
   code: string,
 ): Promise<void> {
   unwrap(await actor.deletePromotion(code));
+}
+
+// ---- Quản lý "Khuyến mại đăng ký" (admin, /admin/registration-promo) ----
+
+export interface RegistrationPromoInput {
+  name: string;
+  startDate: string;
+  endDate: string;
+  voucherValue: bigint;
+  voucherValidDays: bigint;
+}
+
+export async function listRegistrationPromos(
+  actor: Backend,
+): Promise<RegistrationPromo[]> {
+  return unwrap(await actor.listRegistrationPromos());
+}
+
+export async function createRegistrationPromo(
+  actor: Backend,
+  input: RegistrationPromoInput,
+): Promise<RegistrationPromo> {
+  return unwrap(
+    await actor.createRegistrationPromo(
+      input.name,
+      input.startDate,
+      input.endDate,
+      input.voucherValue,
+      input.voucherValidDays,
+    ),
+  );
+}
+
+export async function updateRegistrationPromo(
+  actor: Backend,
+  code: string,
+  input: RegistrationPromoInput,
+  active: boolean,
+): Promise<RegistrationPromo> {
+  return unwrap(
+    await actor.updateRegistrationPromo(
+      code,
+      input.name,
+      input.startDate,
+      input.endDate,
+      input.voucherValue,
+      input.voucherValidDays,
+      active,
+    ),
+  );
+}
+
+export async function deleteRegistrationPromo(
+  actor: Backend,
+  code: string,
+): Promise<void> {
+  unwrap(await actor.deleteRegistrationPromo(code));
 }
 
 // Re-export enums for convenience in components.

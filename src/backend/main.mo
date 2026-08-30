@@ -20,6 +20,7 @@ import MenuSeedApi "mixins/menu-seed-api";
 import EmailVerificationApi "mixins/email-verification-api";
 import PromotionApi "mixins/promotion-api";
 import VoucherApi "mixins/voucher-api";
+import RegistrationPromoApi "mixins/registration-promo-api";
 import PaymentModeConfigApi "mixins/payment-mode-config-api";
 import StoreHoursConfigApi "mixins/store-hours-config-api";
 
@@ -36,6 +37,7 @@ import StoreHoursConfigLib "lib/store-hours-config";
 import StoreHoursConfigTypes "types/store-hours-config";
 import PromotionTypes "types/promotion";
 import VoucherTypes "types/voucher";
+import RegistrationPromoTypes "types/registration-promo";
 // Top-level Value modules so the OQL auto-derivation resolver picks them up
 // for the variant fields on the exposed entities.
 import DeviceRoleValue "types/DeviceRoleValue";
@@ -115,6 +117,17 @@ actor Main {
   // (doanh số tuần/tháng), chưa có ở Giai đoạn 3b (chỉ xây cấu trúc dữ
   // liệu + hàm dùng chung).
   let vouchers : VoucherTypes.VoucherStore;
+
+  // Chương trình "Khuyến mại đăng ký" (19th stable field) — Giai đoạn 3c.
+  // key = mã chương trình (8 ký tự ngẫu nhiên).
+  let registrationPromos : RegistrationPromoTypes.RegistrationPromoStore;
+
+  // Đánh dấu email đã từng nhận thưởng đăng ký (20th stable field) — Giai
+  // đoạn 3c. key = email (lowercase), value = issuedAt. Đảm bảo mỗi khách
+  // CHỈ NHẬN 1 LẦN DUY NHẤT TRONG ĐỜI, bất kể xác thực lại email đó bao
+  // nhiêu lần hay có bao nhiêu chương trình đăng ký khác nhau theo thời
+  // gian.
+  let registrationBonusIssued : RegistrationPromoTypes.RegistrationBonusIssuedStore;
 
   // Stable shuttle for the transient `accessControlState` (line 36). The
   // access-control state is `transient let` — re-initialized empty on every
@@ -275,9 +288,10 @@ actor Main {
   include SecretApi(secretState, accessControlState);
   include MenuApi(accessControlState, menus, restaurants, restaurantMenuOverrides);
   include MenuSeedApi(accessControlState, menus);
-  include EmailVerificationApi(otpRecords);
+  include EmailVerificationApi(otpRecords, registrationPromos, registrationBonusIssued, vouchers);
   include PromotionApi(accessControlState, kmUsage, kmDailyCount, promotions, secretState, otpRecords);
   include VoucherApi(vouchers, secretState);
+  include RegistrationPromoApi(accessControlState, registrationPromos);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
 

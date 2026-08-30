@@ -137,6 +137,29 @@ export type Result_Voucher = {
     __kind__: "err";
     err: string;
 };
+export interface RegistrationPromo {
+    code: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    voucherValue: bigint;
+    voucherValidDays: bigint;
+    active: boolean;
+}
+export type Result_RegPromo = {
+    __kind__: "ok";
+    ok: RegistrationPromo;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_RegPromoList = {
+    __kind__: "ok";
+    ok: Array<RegistrationPromo>;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderItem {
     itemId: string;
     name: string;
@@ -451,6 +474,10 @@ export interface backendInterface {
     applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
     applyVoucher(email: string, code: string, orderAmount: bigint, hmac: string): Promise<Result_Voucher>;
     listMyVouchers(email: string): Promise<Array<Voucher>>;
+    createRegistrationPromo(name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint): Promise<Result_RegPromo>;
+    updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean): Promise<Result_RegPromo>;
+    deleteRegistrationPromo(code: string): Promise<Result_3>;
+    listRegistrationPromos(): Promise<Result_RegPromoList>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrdersByEmail(email: string): Promise<Array<Order>>;
@@ -497,7 +524,7 @@ export interface backendInterface {
     tryConsumeKmSlot(email: string, programCode: string, dailyLimit: bigint, hmac: string): Promise<Result_Km>;
     verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }
-import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, Result_Km as _Result_Km, Result_Promo as _Result_Promo, Result_PromoList as _Result_PromoList, Result_Apply as _Result_Apply, Result_Voucher as _Result_Voucher, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
+import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, Result_Km as _Result_Km, Result_Promo as _Result_Promo, Result_PromoList as _Result_PromoList, Result_Apply as _Result_Apply, Result_Voucher as _Result_Voucher, Result_RegPromo as _Result_RegPromo, Result_RegPromoList as _Result_RegPromoList, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initialize_access_control(): Promise<void> {
@@ -876,6 +903,62 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.listMyVouchers(arg0);
             return result;
+        }
+    }
+    async createRegistrationPromo(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: bigint): Promise<Result_RegPromo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4);
+                return from_candid_Result_RegPromo(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4);
+            return from_candid_Result_RegPromo(result);
+        }
+    }
+    async updateRegistrationPromo(arg0: string, arg1: string, arg2: string, arg3: string, arg4: bigint, arg5: bigint, arg6: boolean): Promise<Result_RegPromo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                return from_candid_Result_RegPromo(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+            return from_candid_Result_RegPromo(result);
+        }
+    }
+    async deleteRegistrationPromo(arg0: string): Promise<Result_3> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteRegistrationPromo(arg0);
+                return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteRegistrationPromo(arg0);
+            return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async listRegistrationPromos(): Promise<Result_RegPromoList> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listRegistrationPromos();
+                return from_candid_Result_RegPromoList(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.listRegistrationPromos();
+            return from_candid_Result_RegPromoList(result);
         }
     }
     async getItemImage(arg0: string): Promise<Uint8Array | null> {
@@ -1521,6 +1604,25 @@ function from_candid_Result_Apply(value: _Result_Apply): Result_Apply {
 // Voucher: mọi field đều Text/Nat/Int/Bool — không có Blob/opt cần biến
 // đổi, chỉ bọc lại dạng { __kind__, ... } (giống from_candid_Result_Km).
 function from_candid_Result_Voucher(value: _Result_Voucher): Result_Voucher {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : {
+        __kind__: "err",
+        err: value.err
+    };
+}
+// RegistrationPromo: mọi field đều Text/Nat/Bool — không cần biến đổi.
+function from_candid_Result_RegPromo(value: _Result_RegPromo): Result_RegPromo {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : {
+        __kind__: "err",
+        err: value.err
+    };
+}
+function from_candid_Result_RegPromoList(value: _Result_RegPromoList): Result_RegPromoList {
     return "ok" in value ? {
         __kind__: "ok",
         ok: value.ok

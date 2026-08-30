@@ -196,6 +196,19 @@ export interface Voucher {
 }
 export type Result_Voucher = { 'ok' : bigint } |
   { 'err' : string };
+export interface RegistrationPromo {
+  'code' : string,
+  'name' : string,
+  'startDate' : string,
+  'endDate' : string,
+  'voucherValue' : bigint,
+  'voucherValidDays' : bigint,
+  'active' : boolean,
+}
+export type Result_RegPromo = { 'ok' : RegistrationPromo } |
+  { 'err' : string };
+export type Result_RegPromoList = { 'ok' : Array<RegistrationPromo> } |
+  { 'err' : string };
 export type Result_7 = { 'ok' : null } |
   { 'err' : Error };
 export interface Result__1 { 'hasMore' : boolean, 'rows' : Array<Array<Cell>> }
@@ -284,6 +297,10 @@ export interface _SERVICE {
   'applyPromotion' : ActorMethod<[string, bigint, string], Result_Apply>,
   'applyVoucher' : ActorMethod<[string, string, bigint, string], Result_Voucher>,
   'listMyVouchers' : ActorMethod<[string], Array<Voucher>>,
+  'createRegistrationPromo' : ActorMethod<[string, string, string, bigint, bigint], Result_RegPromo>,
+  'updateRegistrationPromo' : ActorMethod<[string, string, string, string, bigint, bigint, boolean], Result_RegPromo>,
+  'deleteRegistrationPromo' : ActorMethod<[string], Result_3>,
+  'listRegistrationPromos' : ActorMethod<[], Result_RegPromoList>,
   'getItemImage' : ActorMethod<[string], [] | [Uint8Array]>,
   'getOrder' : ActorMethod<[string], Result>,
   'getOrderStatus' : ActorMethod<[string], Result_5>,
