@@ -10,10 +10,12 @@ import {
   cleanupExpiredActivations as cleanupFn,
   createPromotion as createPromotionFn,
   createRegistrationPromo as createRegistrationPromoFn,
+  createSalesPromo as createSalesPromoFn,
   deleteItem as deleteItemFn,
   deletePromotion as deletePromotionFn,
   deleteRegistrationPromo as deleteRegistrationPromoFn,
   deleteRestaurant as deleteRestaurantFn,
+  deleteSalesPromo as deleteSalesPromoFn,
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
   getCurrentPromotion as getCurrentPromotionFn,
@@ -31,6 +33,7 @@ import {
   listPromotions as listPromotionsFn,
   listRegistrationPromos as listRegistrationPromosFn,
   listRestaurants as listRestaurantsFn,
+  listSalesPromos as listSalesPromosFn,
   markPickedUp as markPickedUpFn,
   revokeDevice as revokeDeviceFn,
   setItemVisible as setItemVisibleFn,
@@ -42,6 +45,7 @@ import {
   updatePromotion as updatePromotionFn,
   updateRegistrationPromo as updateRegistrationPromoFn,
   updateRestaurant as updateRestaurantFn,
+  updateSalesPromo as updateSalesPromoFn,
 } from "@/lib/canister";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -563,6 +567,63 @@ export function useDeleteRegistrationPromo() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["registrationPromos"] });
+    },
+  });
+}
+
+// ---- Quản lý "Khuyến mại doanh số tuần/tháng" (admin) ----
+
+export function useSalesPromos() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["salesPromos"],
+    queryFn: () => (actor ? listSalesPromosFn(actor) : Promise.resolve([])),
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCreateSalesPromo() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof createSalesPromoFn>[1]) => {
+      if (!actor) throw new Error("Actor not ready");
+      return createSalesPromoFn(actor, input);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["salesPromos"] });
+    },
+  });
+}
+
+export function useUpdateSalesPromo() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args: {
+      code: string;
+      input: Parameters<typeof createSalesPromoFn>[1];
+      active: boolean;
+    }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return updateSalesPromoFn(actor, args.code, args.input, args.active);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["salesPromos"] });
+    },
+  });
+}
+
+export function useDeleteSalesPromo() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (code: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return deleteSalesPromoFn(actor, code);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["salesPromos"] });
     },
   });
 }

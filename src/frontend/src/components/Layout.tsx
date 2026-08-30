@@ -86,6 +86,12 @@ const ADMIN_NAV: NavItem[] = [
     adminOnly: true,
   },
   {
+    to: "/admin/sales-promo",
+    label: "KM doanh số",
+    icon: Percent,
+    adminOnly: true,
+  },
+  {
     to: "/admin/analytics",
     label: "Báo cáo",
     icon: ShieldCheck,

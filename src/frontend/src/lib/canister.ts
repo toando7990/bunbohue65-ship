@@ -16,6 +16,7 @@ import {
   type Promotion,
   type RegistrationPromo,
   type Restaurant,
+  type SalesPromo,
   type StoreHours,
 } from "@/backend";
 import { useActor } from "@caffeineai/core-infrastructure";
@@ -469,6 +470,64 @@ export async function deleteRegistrationPromo(
   code: string,
 ): Promise<void> {
   unwrap(await actor.deleteRegistrationPromo(code));
+}
+
+// ---- Quản lý "Khuyến mại doanh số tuần/tháng" (admin, /admin/sales-promo) ----
+
+export interface SalesPromoInput {
+  name: string;
+  startDate: string;
+  endDate: string;
+  weeklyTiers: { minSales: bigint; voucherValue: bigint }[];
+  monthlyTiers: { minSales: bigint; voucherValue: bigint }[];
+  voucherValidDays: bigint;
+}
+
+export async function listSalesPromos(actor: Backend): Promise<SalesPromo[]> {
+  return unwrap(await actor.listSalesPromos());
+}
+
+export async function createSalesPromo(
+  actor: Backend,
+  input: SalesPromoInput,
+): Promise<SalesPromo> {
+  return unwrap(
+    await actor.createSalesPromo(
+      input.name,
+      input.startDate,
+      input.endDate,
+      input.weeklyTiers,
+      input.monthlyTiers,
+      input.voucherValidDays,
+    ),
+  );
+}
+
+export async function updateSalesPromo(
+  actor: Backend,
+  code: string,
+  input: SalesPromoInput,
+  active: boolean,
+): Promise<SalesPromo> {
+  return unwrap(
+    await actor.updateSalesPromo(
+      code,
+      input.name,
+      input.startDate,
+      input.endDate,
+      input.weeklyTiers,
+      input.monthlyTiers,
+      input.voucherValidDays,
+      active,
+    ),
+  );
+}
+
+export async function deleteSalesPromo(
+  actor: Backend,
+  code: string,
+): Promise<void> {
+  unwrap(await actor.deleteSalesPromo(code));
 }
 
 // Re-export enums for convenience in components.

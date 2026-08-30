@@ -20,6 +20,7 @@ import Profile from "@/pages/Profile";
 import PromotionManager from "@/pages/PromotionManager";
 import RegistrationPromoManager from "@/pages/RegistrationPromoManager";
 import RestaurantManager from "@/pages/RestaurantManager";
+import SalesPromoManager from "@/pages/SalesPromoManager";
 import {
   Outlet,
   RouterProvider,
@@ -217,6 +218,16 @@ const adminRegistrationPromoRoute = createRoute({
   ),
 });
 
+const adminSalesPromoRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin/sales-promo",
+  component: () => (
+    <AdminGate>
+      <SalesPromoManager />
+    </AdminGate>
+  ),
+});
+
 const adminAnalyticsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/analytics",
@@ -244,6 +255,7 @@ const router = createRouter({
     adminRestaurantsRoute,
     adminPromotionsRoute,
     adminRegistrationPromoRoute,
+    adminSalesPromoRoute,
     adminAnalyticsRoute,
   ]),
   defaultPreload: "intent",
