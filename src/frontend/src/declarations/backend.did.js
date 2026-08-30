@@ -217,6 +217,7 @@ export const SalesPromo = IDL.Record({
 });
 export const Result_SalesPromo = IDL.Variant({ 'ok' : SalesPromo, 'err' : IDL.Text });
 export const Result_SalesPromoList = IDL.Variant({ 'ok' : IDL.Vec(SalesPromo), 'err' : IDL.Text });
+export const Result_IssueSalesBonus = IDL.Variant({ 'ok' : IDL.Opt(Voucher), 'err' : IDL.Text });
 export const Result_6 = IDL.Variant({
   'ok' : PendingActivation,
   'err' : IDL.Text,
@@ -376,6 +377,11 @@ export const idlService = IDL.Service({
     ),
   'deleteSalesPromo' : IDL.Func([IDL.Text], [Result_3], []),
   'listSalesPromos' : IDL.Func([], [Result_SalesPromoList], ['query']),
+  'issueSalesBonus' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+      [Result_IssueSalesBonus],
+      [],
+    ),
   'getItemImage' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Vec(IDL.Nat8))], ['query']),
   'getOrder' : IDL.Func([IDL.Text], [Result], []),
   'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
@@ -677,6 +683,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result_SalesPromo = IDL.Variant({ 'ok' : SalesPromo, 'err' : IDL.Text });
   const Result_SalesPromoList = IDL.Variant({ 'ok' : IDL.Vec(SalesPromo), 'err' : IDL.Text });
+  const Result_IssueSalesBonus = IDL.Variant({ 'ok' : IDL.Opt(Voucher), 'err' : IDL.Text });
   const OrderStatus = IDL.Record({
     'paymentStatus' : PaymentStatus,
     'tingeeQrCode' : IDL.Text,
@@ -836,6 +843,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'deleteSalesPromo' : IDL.Func([IDL.Text], [Result_3], []),
     'listSalesPromos' : IDL.Func([], [Result_SalesPromoList], ['query']),
+    'issueSalesBonus' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+        [Result_IssueSalesBonus],
+        [],
+      ),
     'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
     'getPaymentMode' : IDL.Func([], [IDL.Text], ['query']),
     'getRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),

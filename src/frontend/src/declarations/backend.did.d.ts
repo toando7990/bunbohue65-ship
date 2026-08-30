@@ -224,6 +224,8 @@ export type Result_SalesPromo = { 'ok' : SalesPromo } |
   { 'err' : string };
 export type Result_SalesPromoList = { 'ok' : Array<SalesPromo> } |
   { 'err' : string };
+export type Result_IssueSalesBonus = { 'ok' : [] | [Voucher] } |
+  { 'err' : string };
 export type Result_7 = { 'ok' : null } |
   { 'err' : Error };
 export interface Result__1 { 'hasMore' : boolean, 'rows' : Array<Array<Cell>> }
@@ -320,6 +322,7 @@ export interface _SERVICE {
   'updateSalesPromo' : ActorMethod<[string, string, string, string, Array<SalesTier>, Array<SalesTier>, bigint, boolean], Result_SalesPromo>,
   'deleteSalesPromo' : ActorMethod<[string], Result_3>,
   'listSalesPromos' : ActorMethod<[], Result_SalesPromoList>,
+  'issueSalesBonus' : ActorMethod<[string, string, string, bigint, string], Result_IssueSalesBonus>,
   'getItemImage' : ActorMethod<[string], [] | [Uint8Array]>,
   'getOrder' : ActorMethod<[string], Result>,
   'getOrderStatus' : ActorMethod<[string], Result_5>,

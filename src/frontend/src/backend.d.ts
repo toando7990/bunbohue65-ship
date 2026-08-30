@@ -142,6 +142,13 @@ export type Result_SalesPromoList = {
     __kind__: "err";
     err: string;
 };
+export type Result_IssueSalesBonus = {
+    __kind__: "ok";
+    ok: Voucher | null;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderItem {
     itemId: string;
     name: string;
@@ -461,6 +468,7 @@ export interface backendInterface {
     updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean): Promise<Result_SalesPromo>;
     deleteSalesPromo(code: string): Promise<Result_3>;
     listSalesPromos(): Promise<Result_SalesPromoList>;
+    issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: string): Promise<Result_IssueSalesBonus>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_5>;

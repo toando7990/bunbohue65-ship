@@ -188,6 +188,13 @@ export type Result_SalesPromoList = {
     __kind__: "err";
     err: string;
 };
+export type Result_IssueSalesBonus = {
+    __kind__: "ok";
+    ok: Voucher | null;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderItem {
     itemId: string;
     name: string;
@@ -510,6 +517,7 @@ export interface backendInterface {
     updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean): Promise<Result_SalesPromo>;
     deleteSalesPromo(code: string): Promise<Result_3>;
     listSalesPromos(): Promise<Result_SalesPromoList>;
+    issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: string): Promise<Result_IssueSalesBonus>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrdersByEmail(email: string): Promise<Array<Order>>;
@@ -556,7 +564,7 @@ export interface backendInterface {
     tryConsumeKmSlot(email: string, programCode: string, dailyLimit: bigint, hmac: string): Promise<Result_Km>;
     verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }
-import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, Result_Km as _Result_Km, Result_Promo as _Result_Promo, Result_PromoList as _Result_PromoList, Result_Apply as _Result_Apply, Result_Voucher as _Result_Voucher, Result_RegPromo as _Result_RegPromo, Result_RegPromoList as _Result_RegPromoList, Result_SalesPromo as _Result_SalesPromo, Result_SalesPromoList as _Result_SalesPromoList, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
+import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, Result_Km as _Result_Km, Result_Promo as _Result_Promo, Result_PromoList as _Result_PromoList, Result_Apply as _Result_Apply, Result_Voucher as _Result_Voucher, Result_RegPromo as _Result_RegPromo, Result_RegPromoList as _Result_RegPromoList, Result_SalesPromo as _Result_SalesPromo, Result_SalesPromoList as _Result_SalesPromoList, Result_IssueSalesBonus as _Result_IssueSalesBonus, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initialize_access_control(): Promise<void> {
@@ -1047,6 +1055,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.listSalesPromos();
             return from_candid_Result_SalesPromoList(result);
+        }
+    }
+    async issueSalesBonus(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string): Promise<Result_IssueSalesBonus> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.issueSalesBonus(arg0, arg1, arg2, arg3, arg4);
+                return from_candid_Result_IssueSalesBonus(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.issueSalesBonus(arg0, arg1, arg2, arg3, arg4);
+            return from_candid_Result_IssueSalesBonus(result);
         }
     }
     async getItemImage(arg0: string): Promise<Uint8Array | null> {
@@ -1734,6 +1756,17 @@ function from_candid_Result_SalesPromoList(value: _Result_SalesPromoList): Resul
     return "ok" in value ? {
         __kind__: "ok",
         ok: value.ok
+    } : {
+        __kind__: "err",
+        err: value.err
+    };
+}
+// Result_IssueSalesBonus: ok là opt Voucher ([] | [Voucher] ở mức candid
+// thô) — chuyển thành Voucher | null, giống getCurrentPromotion().
+function from_candid_Result_IssueSalesBonus(value: _Result_IssueSalesBonus): Result_IssueSalesBonus {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok.length > 0 ? value.ok[0] : null
     } : {
         __kind__: "err",
         err: value.err
