@@ -21,6 +21,7 @@ import EmailVerificationApi "mixins/email-verification-api";
 import PromotionApi "mixins/promotion-api";
 import VoucherApi "mixins/voucher-api";
 import RegistrationPromoApi "mixins/registration-promo-api";
+import SalesPromoApi "mixins/sales-promo-api";
 import PaymentModeConfigApi "mixins/payment-mode-config-api";
 import StoreHoursConfigApi "mixins/store-hours-config-api";
 
@@ -38,6 +39,7 @@ import StoreHoursConfigTypes "types/store-hours-config";
 import PromotionTypes "types/promotion";
 import VoucherTypes "types/voucher";
 import RegistrationPromoTypes "types/registration-promo";
+import SalesPromoTypes "types/sales-promo";
 // Top-level Value modules so the OQL auto-derivation resolver picks them up
 // for the variant fields on the exposed entities.
 import DeviceRoleValue "types/DeviceRoleValue";
@@ -128,6 +130,14 @@ actor Main {
   // nhiêu lần hay có bao nhiêu chương trình đăng ký khác nhau theo thời
   // gian.
   let registrationBonusIssued : RegistrationPromoTypes.RegistrationBonusIssuedStore;
+
+  // Chương trình "Khuyến mại doanh số tuần/tháng" (21st stable field) —
+  // Giai đoạn 3d. key = mã chương trình (8 ký tự ngẫu nhiên).
+  let salesPromos : SalesPromoTypes.SalesPromoStore;
+
+  // Chống phát trùng thưởng doanh số cho cùng 1 kỳ (22nd stable field) —
+  // Giai đoạn 3d. key = "email|periodType|periodKey".
+  let salesBonusIssued : SalesPromoTypes.SalesBonusIssuedStore;
 
   // Stable shuttle for the transient `accessControlState` (line 36). The
   // access-control state is `transient let` — re-initialized empty on every
@@ -292,6 +302,7 @@ actor Main {
   include PromotionApi(accessControlState, kmUsage, kmDailyCount, promotions, secretState, otpRecords);
   include VoucherApi(vouchers, secretState);
   include RegistrationPromoApi(accessControlState, registrationPromos);
+  include SalesPromoApi(accessControlState, salesPromos, salesBonusIssued, vouchers, secretState);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
 
