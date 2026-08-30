@@ -132,6 +132,17 @@ const IDL_FACTORY = ({ IDL }) => {
       [IDL.Variant({ ok: IDL.Record({ promotionCode: IDL.Text, discountAmount: IDL.Nat }), err: IDL.Text })],
       [],
     ),
+    issueSalesBonus: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+      [IDL.Variant({
+        ok: IDL.Opt(IDL.Record({
+          code: IDL.Text, programCode: IDL.Text, email: IDL.Text, value: IDL.Nat,
+          startDate: IDL.Text, endDate: IDL.Text, used: IDL.Bool, issuedAt: IDL.Int,
+        })),
+        err: IDL.Text,
+      })],
+      [],
+    ),
   });
 };
 
@@ -275,8 +286,21 @@ async function applyPromotion(email, orderAmount) {
   return await actor.applyPromotion(email, BigInt(orderAmountInt), hmacSig);
 }
 
+// issueSalesBonus — kiểm tra + phát thưởng doanh số (Giai đoạn 3d) cho 1
+// khách trong 1 kỳ (periodType: 'weekly'|'monthly'). Gọi từ
+// routes/sales-bonus-cron.js sau khi tính tổng doanh số kỳ trước. Canister
+// tự quyết định có đạt mức nào không + chống phát trùng nếu cron gọi lại
+// cho cùng 1 kỳ — trả về { ok: [voucher] | [] } (mảng rỗng = không đủ
+// điều kiện, không phải lỗi) | { err: string } (chỉ khi periodType sai).
+async function issueSalesBonus(email, periodType, periodKey, totalSales) {
+  const actor = getActor();
+  const totalSalesInt = Math.round(Number(totalSales));
+  const hmacSig = hmac.signIssueSalesBonus(VPS_SECRET, email, periodType, periodKey, totalSalesInt);
+  return await actor.issueSalesBonus(email, periodType, periodKey, BigInt(totalSalesInt), hmacSig);
+}
+
 module.exports = {
   getActor, createOrder, updateStatus, updatePaymentStatus,
   updateInvoiceStatus, updateOrderQr, markPaymentExpired, getOrderStatus, listPendingPaymentOrders, cancelOrder,
-  getMenuForRestaurant, getPaymentMode, applyPromotion,
+  getMenuForRestaurant, getPaymentMode, applyPromotion, issueSalesBonus,
 };

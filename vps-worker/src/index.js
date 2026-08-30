@@ -26,6 +26,7 @@ const createRoutes = require('./routes/create');
 const qrRoutes = require('./routes/qr');
 const webhooksRoutes = require('./routes/webhooks');
 const invoiceRoutes = require('./routes/invoice');
+const salesBonusCron = require('./routes/sales-bonus-cron');
 const analyticsRoutes = require('./routes/analytics');
 const uploadRoutes = require('./routes/upload');
 const customersRoutes = require('./routes/customers');
@@ -108,6 +109,7 @@ cronJobs.push(webhooksRoutes.startTingeePoll(db));
 
 // Invoice cron 1 phút (tạo invoice cho completed + paid)
 cronJobs.push(invoiceRoutes.startInvoiceCron(db));
+cronJobs.push(salesBonusCron.startSalesBonusCron(db));
 
 // --- Start ---
 app.listen(PORT, () => {

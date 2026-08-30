@@ -61,6 +61,13 @@ function signApplyPromotion(secret, email, orderAmount) {
   return sign(secret, `${email}|${orderAmount}`);
 }
 
+// issueSalesBonus: email|periodType|periodKey|totalSales — khớp canister
+// mixins/sales-promo-api.mo (payload = email # "|" # periodType # "|" #
+// periodKey # "|" # Nat.toText(totalSales)).
+function signIssueSalesBonus(secret, email, periodType, periodKey, totalSales) {
+  return sign(secret, `${email}|${periodType}|${periodKey}|${totalSales}`);
+}
+
 module.exports = {
   sign,
   signCreateOrder,
@@ -70,4 +77,5 @@ module.exports = {
   signUpdateOrderQr,
   signMarkPaymentExpired,
   signApplyPromotion,
+  signIssueSalesBonus,
 };
