@@ -179,6 +179,17 @@ export const ApplyPromotionOk = IDL.Record({
   'discountAmount' : IDL.Nat,
 });
 export const Result_Apply = IDL.Variant({ 'ok' : ApplyPromotionOk, 'err' : IDL.Text });
+export const Voucher = IDL.Record({
+  'code' : IDL.Text,
+  'programCode' : IDL.Text,
+  'email' : IDL.Text,
+  'value' : IDL.Nat,
+  'startDate' : IDL.Text,
+  'endDate' : IDL.Text,
+  'used' : IDL.Bool,
+  'issuedAt' : IDL.Int,
+});
+export const Result_Voucher = IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text });
 export const Result_6 = IDL.Variant({
   'ok' : PendingActivation,
   'err' : IDL.Text,
@@ -312,6 +323,8 @@ export const idlService = IDL.Service({
   'listPromotions' : IDL.Func([], [Result_PromoList], ['query']),
   'getCurrentPromotion' : IDL.Func([], [IDL.Opt(Promotion)], ['query']),
   'applyPromotion' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [Result_Apply], []),
+  'applyVoucher' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Text], [Result_Voucher], []),
+  'listMyVouchers' : IDL.Func([IDL.Text], [IDL.Vec(Voucher)], ['query']),
   'getItemImage' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Vec(IDL.Nat8))], ['query']),
   'getOrder' : IDL.Func([IDL.Text], [Result], []),
   'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
@@ -575,6 +588,17 @@ export const idlFactory = ({ IDL }) => {
     'discountAmount' : IDL.Nat,
   });
   const Result_Apply = IDL.Variant({ 'ok' : ApplyPromotionOk, 'err' : IDL.Text });
+  const Voucher = IDL.Record({
+    'code' : IDL.Text,
+    'programCode' : IDL.Text,
+    'email' : IDL.Text,
+    'value' : IDL.Nat,
+    'startDate' : IDL.Text,
+    'endDate' : IDL.Text,
+    'used' : IDL.Bool,
+    'issuedAt' : IDL.Int,
+  });
+  const Result_Voucher = IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text });
   const OrderStatus = IDL.Record({
     'paymentStatus' : PaymentStatus,
     'tingeeQrCode' : IDL.Text,
@@ -708,6 +732,8 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getOrder' : IDL.Func([IDL.Text], [Result], []),
+    'applyVoucher' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Text], [Result_Voucher], []),
+    'listMyVouchers' : IDL.Func([IDL.Text], [IDL.Vec(Voucher)], ['query']),
     'getOrderStatus' : IDL.Func([IDL.Text], [Result_5], ['query']),
     'getPaymentMode' : IDL.Func([], [IDL.Text], ['query']),
     'getRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),

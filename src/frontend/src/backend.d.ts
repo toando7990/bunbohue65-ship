@@ -74,6 +74,23 @@ export type Result_Apply = {
     __kind__: "err";
     err: string;
 };
+export interface Voucher {
+    code: string;
+    programCode: string;
+    email: string;
+    value: bigint;
+    startDate: string;
+    endDate: string;
+    used: boolean;
+    issuedAt: bigint;
+}
+export type Result_Voucher = {
+    __kind__: "ok";
+    ok: bigint;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderItem {
     itemId: string;
     name: string;
@@ -383,6 +400,8 @@ export interface backendInterface {
     listPromotions(): Promise<Result_PromoList>;
     getCurrentPromotion(): Promise<Promotion | null>;
     applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
+    applyVoucher(email: string, code: string, orderAmount: bigint, hmac: string): Promise<Result_Voucher>;
+    listMyVouchers(email: string): Promise<Array<Voucher>>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_5>;
