@@ -1,5 +1,6 @@
 // CreateOrder page — Đặt hàng.
-// Flow: chọn nhà hàng → chọn món (MenuPicker) → nhập thông tin khách (CustomerForm)
+// Flow: chọn nhà hàng → chọn món (MenuPicker) → hồ sơ khách hàng (tự điền
+//       từ "Thông tin của bạn", xem Profile.tsx — không nhập lại trong giỏ)
 //       → đặt đơn (VPS /order/create).
 // Theme: bọc trong .bbh-order-theme (sơn mài đỏ / vàng hoàng cung, xem index.css).
 // UI tiếng Việt. Mobile-first.
@@ -13,12 +14,7 @@
 // (POST /order/:id/qr). Sau khi tạo đơn thành công, chuyển khách sang
 // "Theo dõi đơn" (/track/$orderId).
 
-import {
-  CustomerForm,
-  type CustomerFormErrors,
-  type CustomerFormValues,
-  validateCustomerForm,
-} from "@/components/CustomerForm";
+import type { CustomerFormValues } from "@/components/CustomerForm";
 import { MenuPicker } from "@/components/MenuPicker";
 import { PromotionBanner } from "@/components/PromotionBanner";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
@@ -46,7 +42,7 @@ import {
   getCustomer as vpsGetCustomer,
 } from "@/lib/vps-client";
 import type { CreateOrderPayload, MenuItem, Restaurant } from "@/types";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Bike,
   Clock,
@@ -54,6 +50,7 @@ import {
   Receipt,
   ShoppingCart,
   Sparkles,
+  User,
   UtensilsCrossed,
   X,
 } from "lucide-react";
@@ -167,7 +164,6 @@ export default function CreateOrder() {
   const { data: menu, isLoading: menuLoading } = useMenus();
   const [cart, setCart] = useState<Record<string, number>>({});
   const [customer, setCustomer] = useState<CustomerFormValues>(EMPTY_CUSTOMER);
-  const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
@@ -237,9 +233,16 @@ export default function CreateOrder() {
     [displayCartLines],
   );
 
-  const customerErrors: CustomerFormErrors = touched
-    ? validateCustomerForm(customer, { hideAddress: true })
-    : {};
+  // Hồ sơ khách hàng (tên + SĐT + email đã xác thực) giờ quản lý ở
+  // "Thông tin của bạn" (/profile), KHÔNG còn nhập trực tiếp trong giỏ
+  // hàng — customer state vẫn tự điền qua useEffect bên dưới (không đổi),
+  // chỉ đổi cách HIỂN THỊ: đầy đủ thì hiện tóm tắt (chỉ đọc) + link "Sửa",
+  // thiếu thì chặn đặt đơn + link sang /profile để hoàn thành.
+  const profileComplete = Boolean(
+    customer.receiverEmail.trim() &&
+      customer.cusName.trim() &&
+      customer.cusPhone.trim(),
+  );
   // useCallback: giữ tham chiếu hàm ổn định giữa các lần render để MenuPicker/
   // MenuCard (React.memo) không phải re-render toàn bộ danh sách món mỗi khi
   // component cha render lại (ví dụ khi gõ vào ô thông tin khách hàng).
@@ -284,13 +287,6 @@ export default function CreateOrder() {
       }
     },
     [restaurantId, cart, menu],
-  );
-
-  const handleCustomerChange = useCallback(
-    <K extends keyof CustomerFormValues>(field: K, value: string) => {
-      setCustomer((prev) => ({ ...prev, [field]: value }));
-    },
-    [],
   );
 
   // Tự động điền thông tin khách từ email đã xác thực.
@@ -349,10 +345,8 @@ export default function CreateOrder() {
       toast.error("Ngoài giờ mở cửa — vui lòng quay lại sau.");
       return;
     }
-    setTouched(true);
-    const errs = validateCustomerForm(customer, { hideAddress: true });
-    if (Object.keys(errs).length > 0) {
-      toast.error("Vui lòng kiểm tra thông tin khách hàng.");
+    if (!profileComplete) {
+      toast.error('Vui lòng hoàn thành "Thông tin của bạn" trước khi đặt đơn.');
       return;
     }
     if (!restaurantId || cartLines.length === 0) {
@@ -410,8 +404,10 @@ export default function CreateOrder() {
         description: `Mã đơn: ${res.orderId}`,
       });
       setCart({});
-      setCustomer(EMPTY_CUSTOMER);
-      setTouched(false);
+      // KHÔNG reset customer về rỗng nữa — hồ sơ khách hàng (tên/SĐT/email)
+      // giờ là dữ liệu bền vững từ "Thông tin của bạn" (/profile), không
+      // phải form cần xoá sau mỗi lần đặt đơn. Giữ nguyên để khách đặt đơn
+      // tiếp theo trong cùng phiên vẫn thấy tóm tắt hồ sơ ngay lập tức.
       setCartOpen(false);
       navigate({ to: "/track/$orderId", params: { orderId: res.orderId } });
     } catch (err) {
@@ -673,13 +669,46 @@ export default function CreateOrder() {
                 <h3 className="mb-2 text-sm font-semibold">
                   Thông tin khách hàng
                 </h3>
-                <CustomerForm
-                  values={customer}
-                  errors={customerErrors}
-                  onChange={handleCustomerChange}
-                  disabled={submitting}
-                  hideAddress
-                />
+                {profileComplete ? (
+                  <div
+                    className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5"
+                    data-ocid="create_order.profile_summary"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {customer.cusName} · {customer.cusPhone}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {customer.receiverEmail}
+                      </p>
+                    </div>
+                    <Link
+                      to="/profile"
+                      className="shrink-0 text-xs font-semibold text-primary underline underline-offset-2"
+                      data-ocid="create_order.profile_edit_link"
+                    >
+                      Sửa
+                    </Link>
+                  </div>
+                ) : (
+                  <div
+                    className="flex flex-col gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5"
+                    data-ocid="create_order.profile_incomplete_notice"
+                  >
+                    <p className="text-sm text-warning">
+                      Vui lòng hoàn thành "Thông tin của bạn" (họ tên, SĐT,
+                      email đã xác thực) trước khi đặt đơn.
+                    </p>
+                    <Link
+                      to="/profile"
+                      className="inline-flex min-h-[36px] w-fit items-center gap-1.5 rounded-md bg-warning px-3 text-xs font-semibold text-warning-foreground transition-smooth hover:opacity-90"
+                      data-ocid="create_order.profile_link"
+                    >
+                      <User className="h-3.5 w-3.5" aria-hidden="true" />
+                      Đi tới Thông tin của bạn
+                    </Link>
+                  </div>
+                )}
               </div>
 
               <Separator />
@@ -712,7 +741,7 @@ export default function CreateOrder() {
                     submitting ||
                     storeClosed ||
                     cartLines.length === 0 ||
-                    Object.keys(customerErrors).length > 0
+                    !profileComplete
                   }
                   data-ocid="create_order.submit_button"
                 >

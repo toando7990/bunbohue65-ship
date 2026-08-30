@@ -229,6 +229,20 @@ export async function getCustomer(email: string): Promise<Customer | null> {
   }
 }
 
+// Cập nhật hồ sơ khách hàng (tên + SĐT) — LUÔN ghi đè, khác getCustomer/
+// POST (create-only). Dùng cho trang "Thông tin của bạn" (Profile.tsx).
+export async function updateCustomer(
+  email: string,
+  name: string,
+  phone: string,
+): Promise<Customer> {
+  return vpsFetch<Customer>({
+    method: "PUT",
+    path: `/customers/${encodeURIComponent(email)}`,
+    body: { name, phone },
+  });
+}
+
 // Lịch sử đặt đơn — VPS trả đơn TRƯỚC ngày hôm nay (canister chỉ giữ đơn
 // trong ngày, xem routes/order-history.js). Đã sắp mới nhất lên đầu.
 export async function getOrderHistory(

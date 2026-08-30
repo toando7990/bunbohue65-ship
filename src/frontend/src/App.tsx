@@ -16,6 +16,7 @@ import OrderHistory from "@/pages/OrderHistory";
 import OrderList from "@/pages/OrderList";
 import OrderTracker from "@/pages/OrderTracker";
 import OrderingPartners from "@/pages/OrderingPartners";
+import Profile from "@/pages/Profile";
 import PromotionManager from "@/pages/PromotionManager";
 import RestaurantManager from "@/pages/RestaurantManager";
 import {
@@ -121,6 +122,12 @@ const historyRoute = createRoute({
   component: () => <OrderHistory />,
 });
 
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/profile",
+  component: () => <Profile />,
+});
+
 const grabGuideRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/grab-guide",
@@ -215,6 +222,7 @@ const router = createRouter({
     trackIndexRoute,
     trackRoute,
     historyRoute,
+    profileRoute,
     grabGuideRoute,
     orderingPartnersRoute,
     driverRoute,

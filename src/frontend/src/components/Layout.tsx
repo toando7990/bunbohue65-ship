@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Store,
   Truck,
+  User,
   UtensilsCrossed,
   Video,
 } from "lucide-react";
@@ -46,6 +47,12 @@ const PRIMARY_NAV: NavItem[] = [
     to: "/history",
     label: "Lịch sử đặt đơn",
     icon: History,
+    hideOnPrefixes: ["/driver"],
+  },
+  {
+    to: "/profile",
+    label: "Thông tin của bạn",
+    icon: User,
     hideOnPrefixes: ["/driver"],
   },
   { to: "/grab-guide", label: "Hướng dẫn đặt Grab giao hàng", icon: Video },
