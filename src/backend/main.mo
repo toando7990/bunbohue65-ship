@@ -19,6 +19,7 @@ import MenuApi "mixins/menu-api";
 import MenuSeedApi "mixins/menu-seed-api";
 import EmailVerificationApi "mixins/email-verification-api";
 import PromotionApi "mixins/promotion-api";
+import VoucherApi "mixins/voucher-api";
 import PaymentModeConfigApi "mixins/payment-mode-config-api";
 import StoreHoursConfigApi "mixins/store-hours-config-api";
 
@@ -34,6 +35,7 @@ import PaymentModeConfigTypes "types/payment-mode-config";
 import StoreHoursConfigLib "lib/store-hours-config";
 import StoreHoursConfigTypes "types/store-hours-config";
 import PromotionTypes "types/promotion";
+import VoucherTypes "types/voucher";
 // Top-level Value modules so the OQL auto-derivation resolver picks them up
 // for the variant fields on the exposed entities.
 import DeviceRoleValue "types/DeviceRoleValue";
@@ -107,6 +109,12 @@ actor Main {
   // Chương trình khuyến mại Hệ 1 — theo khung giờ (17th stable field). key =
   // mã chương trình (8 ký tự ngẫu nhiên). Giai đoạn 2 của hệ thống KM.
   let promotions : PromotionTypes.PromotionStore;
+
+  // Phiếu giảm giá (18th stable field) — Giai đoạn 3b. key = mã phiếu (8
+  // ký tự ngẫu nhiên). Phát hành tự động bởi Giai đoạn 3c (đăng ký)/3d
+  // (doanh số tuần/tháng), chưa có ở Giai đoạn 3b (chỉ xây cấu trúc dữ
+  // liệu + hàm dùng chung).
+  let vouchers : VoucherTypes.VoucherStore;
 
   // Stable shuttle for the transient `accessControlState` (line 36). The
   // access-control state is `transient let` — re-initialized empty on every
@@ -269,6 +277,7 @@ actor Main {
   include MenuSeedApi(accessControlState, menus);
   include EmailVerificationApi(otpRecords);
   include PromotionApi(accessControlState, kmUsage, kmDailyCount, promotions, secretState, otpRecords);
+  include VoucherApi(vouchers, secretState);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
 
