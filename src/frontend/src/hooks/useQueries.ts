@@ -19,6 +19,7 @@ import {
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
   getCurrentPromotion as getCurrentPromotionFn,
+  getCurrentSalesPromo as getCurrentSalesPromoFn,
   getItemImage as getItemImageFn,
   getMenuForRestaurant as getMenuForRestaurantFn,
   getOrder as getOrderFn,
@@ -446,6 +447,19 @@ export function useCurrentPromotion() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 30000,
+  });
+}
+
+// Chương trình "Khuyến mại doanh số" đang có hiệu lực hôm nay — dùng cho
+// dòng gợi ý "còn X đ nữa để đạt mức thưởng tiếp theo" ở tab "Tuần
+// này"/"Tháng này" (Giai đoạn 3f).
+export function useCurrentSalesPromo() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["currentSalesPromo"],
+    queryFn: () =>
+      actor ? getCurrentSalesPromoFn(actor) : Promise.resolve(null),
+    enabled: !!actor && !isFetching,
   });
 }
 

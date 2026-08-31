@@ -255,6 +255,26 @@ export async function getOrderHistory(
   return res.orders;
 }
 
+// Tổng doanh số + danh sách đơn CỦA 1 KHÁCH trong kỳ HIỆN TẠI (tuần
+// này/tháng này, TÍNH TỚI THỜI ĐIỂM GỌI — bao gồm cả hôm nay). Chỉ tính
+// đơn đã thanh toán. Dùng cho tab "Tuần này"/"Tháng này" trong "Lịch sử
+// đặt đơn" (Giai đoạn 3f) — khác getOrderHistory() (chỉ tính TRƯỚC hôm
+// nay) và getRestaurantHistory() (theo nhà hàng, không theo khách).
+export async function getPeriodSummary(
+  email: string,
+  period: "week" | "month",
+): Promise<{ orders: VpsHistoryOrder[]; total: number }> {
+  const res = await vpsFetch<{
+    ok: boolean;
+    orders: VpsHistoryOrder[];
+    total: number;
+  }>({
+    method: "GET",
+    path: `/orders/period-summary?email=${encodeURIComponent(email)}&period=${period}`,
+  });
+  return { orders: res.orders, total: res.total };
+}
+
 // Lịch sử đơn hàng theo nhà hàng — dùng cho tab "Lịch sử đơn hàng" trên
 // /driver. period: 'today' | 'week' (tuần này, Thứ 2 - hiện tại) | 'month'
 // (tháng này, ngày 1 - hiện tại).

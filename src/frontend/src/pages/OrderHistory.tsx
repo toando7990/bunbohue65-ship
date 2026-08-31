@@ -18,6 +18,9 @@
 
 import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
 import { OrderCard } from "@/components/OrderCard";
+import { PeriodSummaryPanel } from "@/components/PeriodSummaryPanel";
+import { VoucherListPanel } from "@/components/VoucherListPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toOrder } from "@/lib/order-mapping";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import { getOrderHistory } from "@/lib/vps-client";
@@ -102,65 +105,101 @@ export default function OrderHistory() {
             Xác thực email
           </button>
         </div>
-      ) : results.length > 0 ? (
-        <>
-          <p
-            className="mb-3 text-sm text-muted-foreground"
-            data-ocid="order_history.count"
-          >
-            {results.length} đơn hàng
-          </p>
-          <div
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-            data-ocid="order_history.grid"
-          >
-            {results.map((order, i) => (
-              <OrderCard
-                key={order.orderId}
-                order={order}
-                index={i + 1}
-                hidePickupCode
-                disableDetailLink
-              />
-            ))}
-          </div>
-        </>
-      ) : isError ? (
-        <div
-          className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-center"
-          data-ocid="order_history.error_state"
-          role="alert"
-        >
-          <p className="font-medium text-destructive">
-            Không tải được đơn hàng
-          </p>
-          <button
-            type="button"
-            onClick={() => refetch()}
-            data-ocid="order_history.retry_button"
-            className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90"
-          >
-            Thử lại
-          </button>
-        </div>
-      ) : !isLoading ? (
-        <div
-          className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center"
-          data-ocid="order_history.empty_state"
-        >
-          <History
-            className="h-12 w-12 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <h2 className="mt-4 font-display text-lg font-semibold">
-            Chưa có đơn hàng nào trước hôm nay
-          </h2>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Đơn hàng bạn đặt hôm nay xem ở "Theo dõi đơn". Đơn của những ngày
-            trước sẽ xuất hiện tại đây.
-          </p>
-        </div>
-      ) : null}
+      ) : (
+        <Tabs defaultValue="history" data-ocid="order_history.tabs">
+          <TabsList>
+            <TabsTrigger value="history" data-ocid="order_history.tab.history">
+              Lịch sử
+            </TabsTrigger>
+            <TabsTrigger value="week" data-ocid="order_history.tab.week">
+              Tuần này
+            </TabsTrigger>
+            <TabsTrigger value="month" data-ocid="order_history.tab.month">
+              Tháng này
+            </TabsTrigger>
+            <TabsTrigger
+              value="vouchers"
+              data-ocid="order_history.tab.vouchers"
+            >
+              Phiếu giảm giá
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="history">
+            {results.length > 0 ? (
+              <>
+                <p
+                  className="mb-3 text-sm text-muted-foreground"
+                  data-ocid="order_history.count"
+                >
+                  {results.length} đơn hàng
+                </p>
+                <div
+                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  data-ocid="order_history.grid"
+                >
+                  {results.map((order, i) => (
+                    <OrderCard
+                      key={order.orderId}
+                      order={order}
+                      index={i + 1}
+                      hidePickupCode
+                      disableDetailLink
+                    />
+                  ))}
+                </div>
+              </>
+            ) : isError ? (
+              <div
+                className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-center"
+                data-ocid="order_history.error_state"
+                role="alert"
+              >
+                <p className="font-medium text-destructive">
+                  Không tải được đơn hàng
+                </p>
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  data-ocid="order_history.retry_button"
+                  className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90"
+                >
+                  Thử lại
+                </button>
+              </div>
+            ) : !isLoading ? (
+              <div
+                className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center"
+                data-ocid="order_history.empty_state"
+              >
+                <History
+                  className="h-12 w-12 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <h2 className="mt-4 font-display text-lg font-semibold">
+                  Chưa có đơn hàng nào trước hôm nay
+                </h2>
+                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                  Đơn hàng bạn đặt hôm nay xem ở "Theo dõi đơn". Đơn của những
+                  ngày trước sẽ xuất hiện tại đây.
+                </p>
+              </div>
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="week">
+            <PeriodSummaryPanel email={searchedEmail} period="week" />
+          </TabsContent>
+
+          <TabsContent value="month">
+            <PeriodSummaryPanel email={searchedEmail} period="month" />
+          </TabsContent>
+
+          <TabsContent value="vouchers">
+            <VoucherListPanel email={searchedEmail} />
+          </TabsContent>
+        </Tabs>
+      )}
 
       <EmailVerificationDialog
         open={verifyDialogOpen}

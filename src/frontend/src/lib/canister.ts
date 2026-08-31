@@ -348,6 +348,15 @@ export async function getCurrentPromotion(
   return actor.getCurrentPromotion();
 }
 
+// Chương trình "Khuyến mại doanh số" đang có hiệu lực hôm nay — canister
+// chỉ cung cấp CẤU HÌNH (tiers), frontend tự tính "còn thiếu bao nhiêu"
+// từ doanh số hiện tại của khách (xem OrderHistory.tsx, Giai đoạn 3f).
+export async function getCurrentSalesPromo(
+  actor: Backend,
+): Promise<SalesPromo | null> {
+  return actor.getCurrentSalesPromo();
+}
+
 // ---- Quản lý chương trình KM (admin, /admin/promotions) ----
 
 export interface PromotionInput {
