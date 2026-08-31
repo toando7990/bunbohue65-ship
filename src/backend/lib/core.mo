@@ -3,6 +3,7 @@ import Text "mo:core/Text";
 import Int "mo:core/Int";
 import Time "mo:core/Time";
 import Principal "mo:core/Principal";
+import Result "mo:core/Result";
 import CoreTypes "../types/core";
 import SecretTypes "../types/secret";
 
@@ -160,6 +161,37 @@ module {
         };
         state.orders.add(orderId, updated);
         ?updated;
+      };
+    };
+  };
+
+  // Đổi restaurantId của 1 đơn — khách tự phục vụ (Giai đoạn 4a), trường
+  // hợp đặt tài xế đến nhầm nhà hàng (các nhà hàng cùng 1 MST, việc chuyển
+  // không có rào cản pháp lý — đã xác nhận với người dùng). CHỈ cho phép
+  // khi paymentStatus=#unpaid (đơn đã thanh toán/huỷ thì KHÔNG đổi được —
+  // ảnh hưởng doanh thu đã ghi nhận cho đúng nhà hàng). Trả #err rõ lý do
+  // thay vì null (khác cancelOrder) — frontend cần hiện đúng thông báo cho
+  // khách biết TẠI SAO không đổi được (đơn không tồn tại HAY đã thanh
+  // toán/huỷ, 2 lý do khác nhau).
+  public func changeRestaurant(
+    state : State,
+    orderId : Text,
+    newRestaurantId : Text,
+  ) : Result.Result<Order, Text> {
+    pruneOldOrders(state);
+    switch (state.orders.get(orderId)) {
+      case null { #err("Không tìm thấy đơn hàng") };
+      case (?o) {
+        if (o.paymentStatus != #unpaid) {
+          return #err("Đơn đã thanh toán hoặc đã huỷ, không thể đổi nhà hàng");
+        };
+        let updated : Order = {
+          o with
+          restaurantId = newRestaurantId;
+          updatedAt = Time.now();
+        };
+        state.orders.add(orderId, updated);
+        #ok(updated);
       };
     };
   };

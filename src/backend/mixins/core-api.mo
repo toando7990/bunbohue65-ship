@@ -188,6 +188,24 @@ mixin (
     };
   };
 
+  // changeOrderRestaurant — khách tự đổi nhà hàng của đơn CHƯA THANH TOÁN
+  // (Giai đoạn 4a, trường hợp đặt tài xế đến nhầm nhà hàng — các nhà hàng
+  // cùng 1 MST nên không có rào cản pháp lý, đã xác nhận với người dùng).
+  // VPS gọi qua HMAC (payload "orderId|newRestaurantId") sau khi khách tự
+  // chọn nhà hàng đích trên "Theo dõi đơn" — không yêu cầu đăng nhập, cùng
+  // mức tin cậy với các hành động tự phục vụ khác theo orderId (requestQr).
+  public shared func changeOrderRestaurant(
+    orderId : Text,
+    newRestaurantId : Text,
+    hmac : Text,
+  ) : async Result.Result<CoreTypes.Order, Text> {
+    let payload : HmacTypes.Payload = orderId # "|" # newRestaurantId;
+    if (not HmacLib.verifyHmac(state.secretState.vpsSecret, state.secretState.vpsSecretPrevious, payload, hmac)) {
+      return #err("Invalid HMAC");
+    };
+    CoreLib.changeRestaurant(state, orderId, newRestaurantId);
+  };
+
   // Return a copy of `o` with the three most sensitive PII fields blanked
   // (cusAddress, cusTaxCode, receiverEmail). cusName and cusPhone are
   // intentionally preserved so drivers can identify customers at payment and
