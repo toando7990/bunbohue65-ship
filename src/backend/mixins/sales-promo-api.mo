@@ -117,6 +117,17 @@ mixin (
     #ok(salesPromos.toArray().map(func((_code : Text, p : SalesPromoTypes.SalesPromo)) : SalesPromoTypes.SalesPromo = p));
   };
 
+  // Công khai. Trả về chương trình doanh số đang có hiệu lực HÔM NAY
+  // (active + trong khoảng ngày) — dùng cho khách xem "còn X đ nữa để đạt
+  // mức thưởng tiếp theo" ở tab "Tuần này"/"Tháng này" trong Lịch sử đặt
+  // đơn (Giai đoạn 3f). null nếu không có chương trình nào hợp lệ hôm nay.
+  // Cùng pattern getCurrentPromotion() của Hệ 1 — canister chỉ cung cấp
+  // CẤU HÌNH (tiers), frontend tự tính "còn thiếu bao nhiêu" từ doanh số
+  // hiện tại của khách (không cần canister biết doanh số).
+  public query func getCurrentSalesPromo() : async ?SalesPromoTypes.SalesPromo {
+    SalesPromoLib.findActiveSalesPromo(salesPromos, Time.now());
+  };
+
   public shared func issueSalesBonus(
     email : Text,
     periodType : Text,
