@@ -257,7 +257,9 @@ function buildJsonPayload(invoice, config) {
 
 // ------------------------------------------------------------
 // buildInvoiceLines — danh sách dòng hàng cho hoá đơn, CÓ áp dụng chiết
-// khấu KM theo từng món nếu invoice.kmDiscountAmount > 0.
+// khấu theo từng món nếu invoice.kmDiscountAmount hoặc
+// invoice.voucherDiscountAmount > 0 (Giai đoạn 3e: 2 loại CỘNG DỒN thành
+// 1 tổng chiết khấu duy nhất trước khi phân bổ theo món).
 // ------------------------------------------------------------
 // PHÁT HIỆN QUAN TRỌNG (đối chiếu với ảnh hoá đơn thật người dùng gửi):
 // it.price trong toàn hệ thống là giá ĐÃ GỒM VAT (đúng theo comment sẵn có
@@ -288,9 +290,13 @@ function buildJsonPayload(invoice, config) {
 function buildInvoiceLines(invoice, taxRateID) {
   const items = invoice.items || [];
   const vatDivisor = 1 + invoice.taxRate / 100;
-  const kmDiscountInclusiveVat = Number(invoice.kmDiscountAmount || 0);
+  // Tổng CẢ 2 loại chiết khấu (KM Hệ 1 + phiếu giảm giá, Giai đoạn 3e) —
+  // cả 2 đều ĐÃ GỒM VAT, cộng dồn trước khi quy đổi + phân bổ theo món
+  // (công thức không đổi, chỉ gộp số tiền đầu vào).
+  const totalDiscountInclusiveVat =
+    Number(invoice.kmDiscountAmount || 0) + Number(invoice.voucherDiscountAmount || 0);
   const discountPreTax =
-    kmDiscountInclusiveVat > 0 ? kmDiscountInclusiveVat / vatDivisor : 0;
+    totalDiscountInclusiveVat > 0 ? totalDiscountInclusiveVat / vatDivisor : 0;
 
   // Tổng tiền TRƯỚC THUẾ toàn đơn — mẫu số để phân bổ chiết khấu theo tỷ lệ.
   const goodsAmountPreTax = items.reduce(
