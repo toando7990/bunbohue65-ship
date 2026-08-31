@@ -20,6 +20,7 @@ import { PromotionBanner } from "@/components/PromotionBanner";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -27,6 +28,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useCartDiscounts } from "@/hooks/useCartDiscounts";
 import { useOpenCountdown } from "@/hooks/useOpenCountdown";
 import {
   useGetStoreHours,
@@ -97,6 +99,12 @@ function formatVnd(value: number): string {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+// "YYYYMMDD" -> "DD/MM/YYYY", dùng để hiện hạn dùng phiếu giảm giá.
+function formatVoucherDate(yyyymmdd: string): string {
+  if (yyyymmdd.length !== 8) return yyyymmdd;
+  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
 }
 
 const EMPTY_CUSTOMER: CustomerFormValues = {
@@ -382,6 +390,9 @@ export default function CreateOrder() {
         // Không tính phí ship trong hệ thống — khách trả phí trực tiếp bên ngoài.
         shippingFee: 0,
         ahamoveOrderId: "",
+        ...(cartDiscounts.selectedVoucherCode
+          ? { voucherCode: cartDiscounts.selectedVoucherCode }
+          : {}),
       };
       const res = await vpsCreate(payload);
       if (!res.ok) {
@@ -404,6 +415,12 @@ export default function CreateOrder() {
         description: `Mã đơn: ${res.orderId}`,
       });
       setCart({});
+      // Phiếu giảm giá vừa dùng (nếu có) đã bị đánh dấu "đã dùng" ở
+      // canister — bỏ chọn để tránh giữ mã phiếu cũ (không còn hợp lệ) cho
+      // lần đặt đơn tiếp theo. useCartDiscounts cũng tự bỏ chọn khi danh
+      // sách phiếu hợp lệ tải lại và không còn thấy mã này, nhưng chủ động
+      // reset ở đây cho tức thời, không cần chờ query tải lại.
+      cartDiscounts.setSelectedVoucherCode(null);
       // KHÔNG reset customer về rỗng nữa — hồ sơ khách hàng (tên/SĐT/email)
       // giờ là dữ liệu bền vững từ "Thông tin của bạn" (/profile), không
       // phải form cần xoá sau mỗi lần đặt đơn. Giữ nguyên để khách đặt đơn
@@ -419,6 +436,10 @@ export default function CreateOrder() {
   }
 
   const totalAmount = itemsTotal;
+  const cartDiscounts = useCartDiscounts(
+    itemsTotal,
+    profileComplete ? customer.receiverEmail.trim() : null,
+  );
 
   return (
     <div className="bbh-order-theme bg-background text-foreground">
@@ -713,13 +734,82 @@ export default function CreateOrder() {
 
               <Separator />
 
+              {/* Tổng tiền hàng + chiết khấu (nếu có) — Giai đoạn 3e. Hệ 1
+                  chỉ hiện khi ĐANG trong khung giờ (không hiện lúc "sắp
+                  tới") và giỏ hàng đã đạt mức nào đó. Đây CHỈ LÀ ƯỚC TÍNH
+                  hiển thị — số tiền thật vẫn do canister xác nhận lúc đặt
+                  đơn (applyPromotion/applyVoucher), không đổi logic đã có. */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Tổng tiền hàng</span>
+                <span className="font-mono">{formatVnd(totalAmount)}</span>
+              </div>
+
+              {cartDiscounts.kmDiscount > 0 && (
+                <div
+                  className="flex items-center justify-between text-sm text-destructive"
+                  data-ocid="create_order.km_discount_line"
+                >
+                  <span>{cartDiscounts.kmLabel || "Khuyến mãi giờ vàng"}</span>
+                  <span className="font-mono">
+                    -{formatVnd(cartDiscounts.kmDiscount)}
+                  </span>
+                </div>
+              )}
+
+              {cartDiscounts.validVouchers.length > 0 && (
+                <div
+                  className="flex flex-col gap-1.5"
+                  data-ocid="create_order.voucher_selector"
+                >
+                  <Label
+                    htmlFor="create-order-voucher-select"
+                    className="text-xs text-muted-foreground"
+                  >
+                    Phiếu giảm giá
+                  </Label>
+                  <select
+                    id="create-order-voucher-select"
+                    value={cartDiscounts.selectedVoucherCode ?? ""}
+                    onChange={(e) =>
+                      cartDiscounts.setSelectedVoucherCode(
+                        e.target.value || null,
+                      )
+                    }
+                    className="h-9 rounded-md border border-border bg-card px-2 text-sm"
+                    data-ocid="create_order.voucher_select"
+                  >
+                    <option value="">Không dùng phiếu</option>
+                    {cartDiscounts.validVouchers.map((v) => (
+                      <option key={v.code} value={v.code}>
+                        Giảm {formatVnd(Number(v.value))} (HSD{" "}
+                        {formatVoucherDate(v.endDate)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {cartDiscounts.voucherDiscount > 0 && (
+                <div
+                  className="flex items-center justify-between text-sm text-destructive"
+                  data-ocid="create_order.voucher_discount_line"
+                >
+                  <span>Phiếu giảm giá</span>
+                  <span className="font-mono">
+                    -{formatVnd(cartDiscounts.voucherDiscount)}
+                  </span>
+                </div>
+              )}
+
+              <Separator />
+
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-sm font-semibold">
                   <Receipt className="h-4 w-4" aria-hidden="true" />
-                  Tổng tiền
+                  Tổng thanh toán
                 </span>
                 <span className="font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]">
-                  {formatVnd(totalAmount)}
+                  {formatVnd(cartDiscounts.finalTotal)}
                 </span>
               </div>
 
@@ -761,7 +851,7 @@ export default function CreateOrder() {
                   ) : (
                     <>
                       <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-                      Đặt đơn · {formatVnd(totalAmount)}
+                      Đặt đơn · {formatVnd(cartDiscounts.finalTotal)}
                     </>
                   )}
                 </Button>

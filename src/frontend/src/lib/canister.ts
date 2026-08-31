@@ -18,6 +18,7 @@ import {
   type Restaurant,
   type SalesPromo,
   type StoreHours,
+  type Voucher,
 } from "@/backend";
 import { useActor } from "@caffeineai/core-infrastructure";
 
@@ -528,6 +529,15 @@ export async function deleteSalesPromo(
   code: string,
 ): Promise<void> {
   unwrap(await actor.deleteSalesPromo(code));
+}
+
+// ---- Phiếu giảm giá (khách xem/áp dụng, Giai đoạn 3e) ----
+
+export async function listMyVouchers(
+  actor: Backend,
+  email: string,
+): Promise<Voucher[]> {
+  return actor.listMyVouchers(email);
 }
 
 // Re-export enums for convenience in components.

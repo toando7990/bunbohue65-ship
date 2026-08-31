@@ -75,6 +75,7 @@ export interface CreateOrderPayload {
   }>;
   shippingFee: number;
   ahamoveOrderId: string;
+  voucherCode?: string;
 }
 
 // VPS create-order response — canister orderId + signed payload confirmation.

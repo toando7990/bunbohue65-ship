@@ -29,6 +29,7 @@ import {
   isStoreOpen as isStoreOpenFn,
   listDevicesByRestaurant as listDevicesByRestaurantFn,
   listMenus as listMenusFn,
+  listMyVouchers as listMyVouchersFn,
   listOrders as listOrdersFn,
   listPromotions as listPromotionsFn,
   listRegistrationPromos as listRegistrationPromosFn,
@@ -625,5 +626,17 @@ export function useDeleteSalesPromo() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesPromos"] });
     },
+  });
+}
+
+// ---- Phiếu giảm giá (khách xem/áp dụng) ----
+
+export function useMyVouchers(email: string | null) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["myVouchers", email],
+    queryFn: () =>
+      actor && email ? listMyVouchersFn(actor, email) : Promise.resolve([]),
+    enabled: !!actor && !isFetching && !!email,
   });
 }
