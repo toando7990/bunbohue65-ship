@@ -517,6 +517,7 @@ export interface backendInterface {
     updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean): Promise<Result_SalesPromo>;
     deleteSalesPromo(code: string): Promise<Result_3>;
     listSalesPromos(): Promise<Result_SalesPromoList>;
+    getCurrentSalesPromo(): Promise<SalesPromo | null>;
     issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: string): Promise<Result_IssueSalesBonus>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
@@ -1055,6 +1056,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.listSalesPromos();
             return from_candid_Result_SalesPromoList(result);
+        }
+    }
+    async getCurrentSalesPromo(): Promise<SalesPromo | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getCurrentSalesPromo();
+                return result.length > 0 ? result[0] : null;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getCurrentSalesPromo();
+            return result.length > 0 ? result[0] : null;
         }
     }
     async issueSalesBonus(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string): Promise<Result_IssueSalesBonus> {

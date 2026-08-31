@@ -377,6 +377,7 @@ export const idlService = IDL.Service({
     ),
   'deleteSalesPromo' : IDL.Func([IDL.Text], [Result_3], []),
   'listSalesPromos' : IDL.Func([], [Result_SalesPromoList], ['query']),
+  'getCurrentSalesPromo' : IDL.Func([], [IDL.Opt(SalesPromo)], ['query']),
   'issueSalesBonus' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
       [Result_IssueSalesBonus],
@@ -843,6 +844,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'deleteSalesPromo' : IDL.Func([IDL.Text], [Result_3], []),
     'listSalesPromos' : IDL.Func([], [Result_SalesPromoList], ['query']),
+    'getCurrentSalesPromo' : IDL.Func([], [IDL.Opt(SalesPromo)], ['query']),
     'issueSalesBonus' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
         [Result_IssueSalesBonus],

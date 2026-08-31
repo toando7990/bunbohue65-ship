@@ -322,6 +322,7 @@ export interface _SERVICE {
   'updateSalesPromo' : ActorMethod<[string, string, string, string, Array<SalesTier>, Array<SalesTier>, bigint, boolean], Result_SalesPromo>,
   'deleteSalesPromo' : ActorMethod<[string], Result_3>,
   'listSalesPromos' : ActorMethod<[], Result_SalesPromoList>,
+  'getCurrentSalesPromo' : ActorMethod<[], [] | [SalesPromo]>,
   'issueSalesBonus' : ActorMethod<[string, string, string, bigint, string], Result_IssueSalesBonus>,
   'getItemImage' : ActorMethod<[string], [] | [Uint8Array]>,
   'getOrder' : ActorMethod<[string], Result>,
