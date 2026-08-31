@@ -95,4 +95,103 @@ router.get('/orders/history', (req, res) => {
   res.json({ ok: true, orders });
 });
 
+// ------------------------------------------------------------
+// GET /orders/period-summary?email=X&period=week|month
+// ------------------------------------------------------------
+// Frontend (OrderHistory.tsx, tab "Tuần này"/"Tháng này", Giai đoạn 3f)
+// gọi endpoint này — trả DANH SÁCH ĐƠN + TỔNG DOANH SỐ của khách trong kỳ
+// HIỆN TẠI (tuần này/tháng này TÍNH TỚI THỜI ĐIỂM GỌI, BAO GỒM CẢ HÔM
+// NAY) — khác GET /orders/history ở trên (chỉ tính TRƯỚC hôm nay). Chỉ
+// tính đơn payment_status='paid' (đúng quy ước dùng ở
+// routes/sales-bonus-cron.js — doanh số chỉ tính đơn đã thanh toán).
+//
+// "Tuần này" bắt đầu từ Thứ Hai gần nhất (kể cả hôm nay nếu hôm nay là
+// Thứ Hai). "Tháng này" bắt đầu từ ngày 1 tháng hiện tại.
+
+function startOfDayLocal(d) {
+  const r = new Date(d);
+  r.setHours(0, 0, 0, 0);
+  return r;
+}
+
+function computeThisWeekRange(now) {
+  const todayStart = startOfDayLocal(now);
+  const dayOfWeek = todayStart.getDay(); // 0=CN,1=T2,...,6=T7
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(todayStart);
+  weekStart.setDate(weekStart.getDate() - daysSinceMonday);
+  return { start: weekStart, endExclusive: now };
+}
+
+function computeThisMonthRange(now) {
+  const todayStart = startOfDayLocal(now);
+  const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+  return { start: monthStart, endExclusive: now };
+}
+
+router.get('/orders/period-summary', (req, res) => {
+  const db = req.app.locals.db;
+  const email = String(req.query.email || '').trim().toLowerCase();
+  const period = String(req.query.period || '');
+  if (!email) {
+    return res.status(400).json({ ok: false, error: 'Missing email' });
+  }
+  if (period !== 'week' && period !== 'month') {
+    return res.status(400).json({ ok: false, error: "period must be 'week' or 'month'" });
+  }
+
+  const now = Date.now();
+  const range = period === 'week' ? computeThisWeekRange(now) : computeThisMonthRange(now);
+
+  const orderRows = db.prepare(
+    `SELECT order_id, restaurant_id, cus_name, cus_phone, amount,
+            booking_status, payment_status, created_at
+     FROM orders
+     WHERE receiver_email = ? AND payment_status = 'paid'
+       AND created_at >= ? AND created_at < ?
+     ORDER BY created_at DESC
+     LIMIT ?`,
+  ).all(email, range.start.getTime(), range.endExclusive, MAX_ORDERS);
+
+  const total = orderRows.reduce((s, r) => s + r.amount, 0);
+
+  if (orderRows.length === 0) {
+    return res.json({ ok: true, orders: [], total: 0 });
+  }
+
+  const orderIds = orderRows.map((r) => r.order_id);
+  const placeholders = orderIds.map(() => '?').join(',');
+  const itemRows = db.prepare(
+    `SELECT order_id, item_id, name, price, quantity, unit_name
+     FROM order_items WHERE order_id IN (${placeholders})`,
+  ).all(...orderIds);
+
+  const itemsByOrder = new Map();
+  for (const it of itemRows) {
+    const list = itemsByOrder.get(it.order_id) || [];
+    list.push({
+      itemId: it.item_id,
+      name: it.name,
+      price: it.price,
+      quantity: it.quantity,
+      unitName: it.unit_name || '',
+    });
+    itemsByOrder.set(it.order_id, list);
+  }
+
+  const orders = orderRows.map((r) => ({
+    orderId: r.order_id,
+    restaurantId: r.restaurant_id,
+    cusName: r.cus_name,
+    cusPhone: r.cus_phone,
+    amount: r.amount,
+    bookingStatus: r.booking_status,
+    paymentStatus: r.payment_status,
+    createdAt: r.created_at,
+    items: itemsByOrder.get(r.order_id) || [],
+  }));
+
+  res.json({ ok: true, orders, total });
+});
+
 module.exports = router;
