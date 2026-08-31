@@ -143,6 +143,11 @@ const IDL_FACTORY = ({ IDL }) => {
       })],
       [],
     ),
+    applyVoucher: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+      [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
+      [],
+    ),
   });
 };
 
@@ -299,8 +304,22 @@ async function issueSalesBonus(email, periodType, periodKey, totalSales) {
   return await actor.issueSalesBonus(email, periodType, periodKey, BigInt(totalSalesInt), hmacSig);
 }
 
+// applyVoucher — kiểm tra + đánh dấu ĐÃ DÙNG 1 phiếu giảm giá (Giai đoạn
+// 3e). orderAmount PHẢI là số tiền CÒN LẠI sau khi đã trừ KM Hệ 1 (nếu có)
+// — phiếu áp vào phần còn lại, 2 loại chiết khấu CỘNG DỒN (không giới hạn
+// chỉ 1 loại). Trả { ok: Nat } (số tiền giảm THỰC TẾ, đã giới hạn không
+// vượt orderAmount) | { err: string } (phiếu không hợp lệ/đã dùng/hết
+// hạn/sai email) — #err KHÔNG chặn tạo đơn, chỉ đơn giản là không áp
+// dụng được phiếu đó.
+async function applyVoucher(email, code, orderAmount) {
+  const actor = getActor();
+  const orderAmountInt = Math.round(Number(orderAmount));
+  const hmacSig = hmac.signApplyVoucher(VPS_SECRET, email, code, orderAmountInt);
+  return await actor.applyVoucher(email, code, BigInt(orderAmountInt), hmacSig);
+}
+
 module.exports = {
   getActor, createOrder, updateStatus, updatePaymentStatus,
   updateInvoiceStatus, updateOrderQr, markPaymentExpired, getOrderStatus, listPendingPaymentOrders, cancelOrder,
-  getMenuForRestaurant, getPaymentMode, applyPromotion, issueSalesBonus,
+  getMenuForRestaurant, getPaymentMode, applyPromotion, issueSalesBonus, applyVoucher,
 };

@@ -68,6 +68,14 @@ function signIssueSalesBonus(secret, email, periodType, periodKey, totalSales) {
   return sign(secret, `${email}|${periodType}|${periodKey}|${totalSales}`);
 }
 
+// applyVoucher: email|code|orderAmount — khớp canister mixins/voucher-api.mo
+// (payload = email # "|" # code # "|" # Nat.toText(orderAmount)).
+// orderAmount ở đây là số tiền CÒN LẠI sau khi đã trừ KM Hệ 1 (nếu có) —
+// phiếu áp vào phần còn lại, không phải tổng đơn gốc.
+function signApplyVoucher(secret, email, code, orderAmount) {
+  return sign(secret, `${email}|${code}|${orderAmount}`);
+}
+
 module.exports = {
   sign,
   signCreateOrder,
@@ -78,4 +86,5 @@ module.exports = {
   signMarkPaymentExpired,
   signApplyPromotion,
   signIssueSalesBonus,
+  signApplyVoucher,
 };

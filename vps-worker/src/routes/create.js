@@ -33,6 +33,7 @@ router.post('/order/create', async (req, res, next) => {
     const {
       restaurantId, pickupAddress, cusName, cusPhone, cusAddress, cusTaxCode, receiverEmail,
       items, shippingFee: frontendShippingFee, ahamoveOrderId: frontendAhamoveOrderId,
+      voucherCode,
     } = body;
     const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const now = Date.now();
@@ -80,15 +81,37 @@ router.post('/order/create', async (req, res, next) => {
     // KM → amount = goodsAmount như cũ, không đổi hành vi hiện tại.
     const amountAfterDiscount = goodsAmount - kmDiscountAmount;
 
+    // Áp dụng phiếu giảm giá (Giai đoạn 3e) nếu khách chọn — ÁP SAU KM Hệ
+    // 1 (orderAmount truyền vào là amountAfterDiscount, PHẦN CÒN LẠI sau
+    // KM, không phải goodsAmount gốc). 2 loại chiết khấu CỘNG DỒN, không
+    // giới hạn chỉ 1 loại (đúng quyết định đã chốt). Canister tự kiểm tra:
+    // phiếu tồn tại, đúng email, chưa dùng, còn hạn — #err (bất kỳ lý do
+    // gì) → KHÔNG chặn tạo đơn, chỉ đơn giản không áp dụng phiếu.
+    let voucherCodeApplied = '';
+    let voucherDiscountAmount = 0;
+    if (voucherCode && receiverEmail) {
+      try {
+        const voucherResult = await canister.applyVoucher(receiverEmail, voucherCode, amountAfterDiscount);
+        if (voucherResult?.ok !== undefined) {
+          voucherCodeApplied = voucherCode;
+          voucherDiscountAmount = Number(voucherResult.ok);
+        }
+      } catch (e) {
+        console.warn('[create] applyVoucher lỗi (bỏ qua, tạo đơn không phiếu):', e.message);
+      }
+    }
+    const amountAfterVoucher = amountAfterDiscount - voucherDiscountAmount;
+
     // Không tạo đơn Ahamove (khách tự đặt tài xế bằng app ngoài, trả phí trực tiếp bên ngoài).
     const ahamoveOrderId = frontendAhamoveOrderId || '';
     const shippingFee = 0;
     const sharedLinkFromAhamove = '';
     const bookingStatus = 'confirmed';
 
-    // QR chỉ chứa tiền hàng (đã gồm VAT, không phí ship), ĐÃ TRỪ chiết
-    // khấu KM nếu có — đây là số tiền khách thực sự phải trả.
-    const amount = amountAfterDiscount;
+    // QR chỉ chứa tiền hàng (đã gồm VAT, không phí ship), ĐÃ TRỪ cả 2 loại
+    // chiết khấu (KM Hệ 1 + phiếu, nếu có) — đây là số tiền khách thực sự
+    // phải trả.
+    const amount = amountAfterVoucher;
 
     // KHÔNG tạo QR Tingee ở đây nữa. QR động chỉ được tạo khi khách bấm
     // 'Thanh toán' trên thẻ đơn trong 'Theo dõi đơn' (POST /order/:id/qr).
@@ -101,17 +124,19 @@ router.post('/order/create', async (req, res, next) => {
       INSERT INTO orders (order_id, restaurant_id, cus_name, cus_phone, cus_address, cus_tax_code,
         receiver_email, amount, goods_amount, shipping_fee, tax_total,
         ahamove_order_id, tingee_qr_id, tingee_qr_account, tingee_bill_id, tingee_qr_code, shared_link,
-        pickup_code, km_program_code, km_discount_amount, booking_status, payment_status, invoice_status, canister_synced, created_at, updated_at)
+        pickup_code, km_program_code, km_discount_amount, voucher_code, voucher_discount_amount,
+        booking_status, payment_status, invoice_status, canister_synced, created_at, updated_at)
       VALUES (@orderId, @restaurantId, @cusName, @cusPhone, @cusAddress, @cusTaxCode,
         @receiverEmail, @amount, @goodsAmount, @shippingFee, @taxTotal,
         @ahamoveOrderId, @tingeeQrId, @tingeeQrAccount, @tingeeBillId, @tingeeQrCode, @sharedLink,
-        @pickupCode, @kmProgramCode, @kmDiscountAmount, @bookingStatus, 'unpaid', 'none', 0, @now, @now)
+        @pickupCode, @kmProgramCode, @kmDiscountAmount, @voucherCodeApplied, @voucherDiscountAmount,
+        @bookingStatus, 'unpaid', 'none', 0, @now, @now)
     `);
     insertOrder.run({
       orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
       receiverEmail: receiverEmail || '', amount, goodsAmount, shippingFee, taxTotal,
       ahamoveOrderId, tingeeQrId, tingeeQrAccount, tingeeBillId, tingeeQrCode, sharedLink,
-      pickupCode, kmProgramCode, kmDiscountAmount, bookingStatus, now,
+      pickupCode, kmProgramCode, kmDiscountAmount, voucherCodeApplied, voucherDiscountAmount, bookingStatus, now,
     });
     const insertItem = db.prepare(`
       INSERT INTO order_items (order_id, item_id, name, price, quantity, unit_name, vat_rate)
