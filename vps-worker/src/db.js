@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS customers (
   email       TEXT PRIMARY KEY,
   name        TEXT NOT NULL DEFAULT '',
   phone       TEXT NOT NULL DEFAULT '',
+  km_notify_opt_in INTEGER NOT NULL DEFAULT 0, -- 1 = đã đăng ký nhận email nhắc KM Hệ 1 (Giai đoạn 4b)
   created_at  INTEGER NOT NULL,
   updated_at  INTEGER NOT NULL
 );
@@ -196,6 +197,13 @@ function initSchema(db) {
   }
   if (!colNames.has('voucher_discount_amount')) {
     db.exec('ALTER TABLE orders ADD COLUMN voucher_discount_amount INTEGER NOT NULL DEFAULT 0');
+  }
+
+  // customers: thêm km_notify_opt_in (Giai đoạn 4b) nếu DB cũ chưa có.
+  const customerCols = db.prepare('PRAGMA table_info(customers)').all();
+  const customerColNames = new Set(customerCols.map((c) => c.name));
+  if (!customerColNames.has('km_notify_opt_in')) {
+    db.exec('ALTER TABLE customers ADD COLUMN km_notify_opt_in INTEGER NOT NULL DEFAULT 0');
   }
 }
 

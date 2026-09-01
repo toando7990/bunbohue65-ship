@@ -100,6 +100,19 @@ const IDL_FACTORY = ({ IDL }) => {
   });
   const ResultOrder = IDL.Variant({ ok: Order, err: IDL.Text });
   const ResultOrderStatus = IDL.Variant({ ok: OrderStatus, err: IDL.Text });
+  // Promotion — khớp CoreTypes/PromotionTypes.Promotion của backend (Hệ 1,
+  // theo khung giờ). Dùng cho cron nhắc email 15 phút trước khung giờ
+  // (Giai đoạn 4b) — chỉ cần đọc, không ghi.
+  const TimeSlot = IDL.Record({
+    startHour: IDL.Nat, startMinute: IDL.Nat, durationMinutes: IDL.Nat,
+  });
+  const DiscountTier = IDL.Record({ minOrderValue: IDL.Nat, discountAmount: IDL.Nat });
+  const Promotion = IDL.Record({
+    code: IDL.Text, name: IDL.Text, startDate: IDL.Text, endDate: IDL.Text,
+    daysOfWeek: IDL.Vec(IDL.Bool), timeSlots: IDL.Vec(TimeSlot),
+    dailyOrderLimit: IDL.Nat, perCustomerDailyLimit: IDL.Nat,
+    tiers: IDL.Vec(DiscountTier), active: IDL.Bool,
+  });
   return IDL.Service({
     createOrder: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text,
@@ -128,6 +141,7 @@ const IDL_FACTORY = ({ IDL }) => {
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
     getMenuForRestaurant: IDL.Func([IDL.Text], [IDL.Vec(MenuItemRecord)], ['query']),
     getPaymentMode: IDL.Func([], [IDL.Text], ['query']),
+    getCurrentPromotion: IDL.Func([], [IDL.Opt(Promotion)], ['query']),
     applyPromotion: IDL.Func(
       [IDL.Text, IDL.Nat, IDL.Text],
       [IDL.Variant({ ok: IDL.Record({ promotionCode: IDL.Text, discountAmount: IDL.Nat }), err: IDL.Text })],
@@ -143,8 +157,7 @@ const IDL_FACTORY = ({ IDL }) => {
         err: IDL.Text,
       })],
       [],
-    ),
-    applyVoucher: IDL.Func(
+    ),    applyVoucher: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
       [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
       [],
@@ -288,6 +301,17 @@ async function getPaymentMode() {
   return await actor.getPaymentMode();
 }
 
+// getCurrentPromotion — query, không cần HMAC. Trả chương trình KM Hệ 1
+// đang có hiệu lực HÔM NAY (khớp ngày + thứ trong tuần), null nếu không
+// có. Dùng cho cron nhắc email 15 phút trước khung giờ (Giai đoạn 4b) —
+// cron tự kiểm tra khớp khung giờ cụ thể (canister chỉ xác nhận đúng
+// ngày, không xác nhận đúng giờ — cùng quy ước đã dùng ở frontend
+// usePromotionCountdown.ts).
+async function getCurrentPromotion() {
+  const actor = getActor();
+  return await actor.getCurrentPromotion();
+}
+
 // applyPromotion — kiểm tra + áp dụng KM (Hệ 1, theo khung giờ) lúc tạo
 // đơn. HMAC payload: email|orderAmount (Nat.toText, khớp
 // promotion-api.mo). orderAmount PHẢI là integer khi gọi (giống lý do ở
@@ -334,4 +358,5 @@ module.exports = {
   getActor, createOrder, updateStatus, updatePaymentStatus,
   updateInvoiceStatus, updateOrderQr, markPaymentExpired, getOrderStatus, listPendingPaymentOrders, cancelOrder,
   getMenuForRestaurant, getPaymentMode, applyPromotion, issueSalesBonus, applyVoucher, changeOrderRestaurant,
+  getCurrentPromotion,
 };
