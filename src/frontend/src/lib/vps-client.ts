@@ -193,6 +193,19 @@ export async function requestQr(
   });
 }
 
+// Khách tự đổi nhà hàng của đơn CHƯA THANH TOÁN — trường hợp đặt tài xế
+// đến nhầm nhà hàng (Giai đoạn 4a). VPS POST /order/:id/restaurant.
+export async function changeOrderRestaurant(
+  orderId: string,
+  restaurantId: string,
+): Promise<{ ok: boolean; restaurantId: string }> {
+  return vpsFetch<{ ok: boolean; restaurantId: string }>({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/restaurant`,
+    body: { restaurantId },
+  });
+}
+
 // Upsert a customer record by email — VPS POST /customers with { email }.
 // Creates the customer if it does not already exist (idempotent). This is
 // intentionally non-blocking and swallows every error (network slow, VPS

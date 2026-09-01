@@ -5,6 +5,8 @@
 // nút "Thanh toán" cho khách. Nút "Theo dõi hành trình" mở Ahamove shared_link.
 // Nút "Tải hoá đơn" tải Bkav PDF qua VPS /order/:id/invoice. UI tiếng Việt.
 
+import type { Restaurant } from "@/backend";
+import { ChangeRestaurantDialog } from "@/components/ChangeRestaurantDialog";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
 import { useGetOrder, useRestaurants } from "@/hooks/useQueries";
@@ -12,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { getInvoice } from "@/lib/vps-client";
 import type { Order, OrderStatus } from "@/types";
 import { BookingStatus, InvoiceStatus, PaymentStatus } from "@/types";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   AlertCircle,
@@ -134,6 +137,7 @@ export default function OrderTracker() {
   const { data: order } = useGetOrder(orderId);
   // Tra cứu địa chỉ nhà hàng theo restaurantId của đơn.
   const { data: restaurants } = useRestaurants();
+  const queryClient = useQueryClient();
   const [invoiceState, setInvoiceState] = useState<InvoiceState>({
     kind: "idle",
   });
@@ -304,6 +308,7 @@ export default function OrderTracker() {
         <OrderStatusView
           status={data}
           order={order}
+          restaurants={restaurants ?? []}
           restaurantAddress={
             restaurants?.find((r) => r.restaurantId === order?.restaurantId)
               ?.address
@@ -312,6 +317,9 @@ export default function OrderTracker() {
           isFetching={isFetching}
           invoiceState={invoiceState}
           onDownloadInvoice={handleDownloadInvoice}
+          onRestaurantChanged={() =>
+            queryClient.invalidateQueries({ queryKey: ["order", orderId] })
+          }
         />
       )}
     </section>
@@ -321,22 +329,27 @@ export default function OrderTracker() {
 interface OrderStatusViewProps {
   status: OrderStatus;
   order: Order | null | undefined;
+  restaurants: Restaurant[];
   restaurantAddress: string | undefined;
   lastUpdated: string;
   isFetching: boolean;
   invoiceState: InvoiceState;
   onDownloadInvoice: () => void;
+  onRestaurantChanged: () => void;
 }
 
 function OrderStatusView({
   status,
   order,
+  restaurants,
   restaurantAddress,
   lastUpdated,
   isFetching,
   invoiceState,
   onDownloadInvoice,
+  onRestaurantChanged,
 }: OrderStatusViewProps) {
+  const [changeRestaurantOpen, setChangeRestaurantOpen] = useState(false);
   const booking = status.bookingStatus as BookingStatus;
   const payment = status.paymentStatus as PaymentStatus;
   const invoice = status.invoiceStatus as InvoiceStatus;
@@ -439,6 +452,17 @@ function OrderStatusView({
                 />
               )}
             </div>
+
+            {order && payment === PaymentStatus.unpaid && (
+              <button
+                type="button"
+                onClick={() => setChangeRestaurantOpen(true)}
+                data-ocid="order_tracker.change_restaurant_button"
+                className="self-start text-xs font-semibold text-primary underline underline-offset-2"
+              >
+                Đặt nhầm nhà hàng? Chuyển sang nhà hàng khác
+              </button>
+            )}
 
             {/* Tổng tiền hàng */}
             <div className="flex items-start justify-between gap-3">
@@ -588,6 +612,17 @@ function OrderStatusView({
           </p>
         )}
       </div>
+
+      {order && (
+        <ChangeRestaurantDialog
+          open={changeRestaurantOpen}
+          onOpenChange={setChangeRestaurantOpen}
+          orderId={order.orderId}
+          currentRestaurantId={order.restaurantId}
+          restaurants={restaurants}
+          onChanged={onRestaurantChanged}
+        />
+      )}
     </div>
   );
 }
