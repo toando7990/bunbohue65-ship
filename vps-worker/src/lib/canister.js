@@ -124,6 +124,7 @@ const IDL_FACTORY = ({ IDL }) => {
     ),
     listPendingPaymentOrders: IDL.Func([IDL.Text], [IDL.Vec(Order)], ['query']),
     cancelOrder: IDL.Func([IDL.Text, IDL.Text], [ResultOrder], []),
+    changeOrderRestaurant: IDL.Func([IDL.Text, IDL.Text, IDL.Text], [ResultOrder], []),
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
     getMenuForRestaurant: IDL.Func([IDL.Text], [IDL.Vec(MenuItemRecord)], ['query']),
     getPaymentMode: IDL.Func([], [IDL.Text], ['query']),
@@ -261,6 +262,17 @@ async function cancelOrder(orderId) {
   return await actor.cancelOrder(orderId, hmacSig);
 }
 
+// changeOrderRestaurant — khách tự đổi nhà hàng của đơn CHƯA THANH TOÁN
+// (Giai đoạn 4a, trường hợp đặt tài xế đến nhầm nhà hàng). Canister tự
+// kiểm tra paymentStatus=#unpaid — #err (đã thanh toán/huỷ/không tồn tại)
+// KHÔNG phải lỗi hệ thống, chỉ đơn giản là không đổi được, trả nguyên văn
+// cho route xử lý.
+async function changeOrderRestaurant(orderId, newRestaurantId) {
+  const actor = getActor();
+  const hmacSig = hmac.signChangeOrderRestaurant(VPS_SECRET, orderId, newRestaurantId);
+  return await actor.changeOrderRestaurant(orderId, newRestaurantId, hmacSig);
+}
+
 // getMenuForRestaurant — query. Trả [MenuItem] (price là BigInt Nat).
 // Dùng trong routes/quote.js để fetch price cho items khi frontend không gửi price.
 async function getMenuForRestaurant(restaurantId) {
@@ -321,5 +333,5 @@ async function applyVoucher(email, code, orderAmount) {
 module.exports = {
   getActor, createOrder, updateStatus, updatePaymentStatus,
   updateInvoiceStatus, updateOrderQr, markPaymentExpired, getOrderStatus, listPendingPaymentOrders, cancelOrder,
-  getMenuForRestaurant, getPaymentMode, applyPromotion, issueSalesBonus, applyVoucher,
+  getMenuForRestaurant, getPaymentMode, applyPromotion, issueSalesBonus, applyVoucher, changeOrderRestaurant,
 };

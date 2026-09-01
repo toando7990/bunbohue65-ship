@@ -76,6 +76,12 @@ function signApplyVoucher(secret, email, code, orderAmount) {
   return sign(secret, `${email}|${code}|${orderAmount}`);
 }
 
+// changeOrderRestaurant: orderId|newRestaurantId — khớp canister
+// mixins/core-api.mo (payload = orderId # "|" # newRestaurantId).
+function signChangeOrderRestaurant(secret, orderId, newRestaurantId) {
+  return sign(secret, `${orderId}|${newRestaurantId}`);
+}
+
 module.exports = {
   sign,
   signCreateOrder,
@@ -87,4 +93,5 @@ module.exports = {
   signApplyPromotion,
   signIssueSalesBonus,
   signApplyVoucher,
+  signChangeOrderRestaurant,
 };
