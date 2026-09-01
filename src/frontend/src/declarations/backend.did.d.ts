@@ -268,6 +268,7 @@ export interface _SERVICE {
   'addRestaurant' : ActorMethod<[string, string, string, string], Result_1>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'cancelOrder' : ActorMethod<[string, string], Result>,
+  'changeOrderRestaurant' : ActorMethod<[string, string, string], Result>,
   'cleanupExpiredActivations' : ActorMethod<[], bigint>,
   'createOrder' : ActorMethod<
     [

@@ -17,6 +17,7 @@ export const mockBackend: backendInterface = {
   addRestaurant: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   assignCallerUserRole: async () => {},
   cancelOrder: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  changeOrderRestaurant: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   cleanupExpiredActivations: async () => BigInt(0),
   createOrder: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   deleteItem: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),

@@ -299,6 +299,7 @@ export const idlService = IDL.Service({
     ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'cancelOrder' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+  'changeOrderRestaurant' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Result], []),
   'cleanupExpiredActivations' : IDL.Func([], [IDL.Nat], []),
   'createOrder' : IDL.Func(
       [
@@ -756,6 +757,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'cancelOrder' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+    'changeOrderRestaurant' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Result], []),
     'cleanupExpiredActivations' : IDL.Func([], [IDL.Nat], []),
     'createOrder' : IDL.Func(
         [

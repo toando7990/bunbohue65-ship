@@ -484,6 +484,7 @@ export interface backendInterface {
     addRestaurant(restaurantId: string, name: string, address: string, phone: string): Promise<Result_1>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
+    changeOrderRestaurant(orderId: string, newRestaurantId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
     createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, hmac: string): Promise<Result>;
     deleteItem(itemId: string): Promise<Result_3>;
@@ -677,6 +678,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.cancelOrder(arg0, arg1);
+            return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async changeOrderRestaurant(arg0: string, arg1: string, arg2: string): Promise<Result> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.changeOrderRestaurant(arg0, arg1, arg2);
+                return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.changeOrderRestaurant(arg0, arg1, arg2);
             return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
         }
     }
