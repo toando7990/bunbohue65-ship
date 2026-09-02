@@ -30,11 +30,21 @@ import {
 import {
   useCreateRegistrationPromo,
   useDeleteRegistrationPromo,
+  useIsRegistrationPromoUsed,
   useRegistrationPromos,
+  useStopRegistrationPromo,
   useUpdateRegistrationPromo,
 } from "@/hooks/useQueries";
 import type { RegistrationPromoInput } from "@/lib/canister";
-import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+  Copy,
+  Loader2,
+  Pencil,
+  Plus,
+  StopCircle,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -68,6 +78,7 @@ function RegistrationPromoForm({
   onCancel,
 }: FormProps) {
   const [name, setName] = useState(initial?.name ?? "");
+  const [termsUrl, setTermsUrl] = useState(initial?.termsUrl ?? "");
   const [startDate, setStartDate] = useState(
     toDateInputValue(initial?.startDate ?? ""),
   );
@@ -117,6 +128,7 @@ function RegistrationPromoForm({
         endDate: fromDateInputValue(endDate),
         voucherValue: BigInt(value),
         voucherValidDays: BigInt(validDays),
+        termsUrl: termsUrl.trim(),
       },
       active,
     );
@@ -136,6 +148,18 @@ function RegistrationPromoForm({
           onChange={(e) => setName(e.target.value)}
           placeholder="Ưu đãi khách hàng mới"
           data-ocid="registration_promo.form.name_input"
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="regpromo-terms-url">Link Điều khoản (tuỳ chọn)</Label>
+        <Input
+          id="regpromo-terms-url"
+          type="url"
+          value={termsUrl}
+          onChange={(e) => setTermsUrl(e.target.value)}
+          placeholder="https://..."
+          data-ocid="registration_promo.form.terms_url_input"
         />
       </div>
 
@@ -245,9 +269,119 @@ function RegistrationPromoForm({
   );
 }
 
+interface RowProps {
+  promo: RegistrationPromo;
+  onEdit: (promo: RegistrationPromo) => void;
+  onRequestDelete: (promo: RegistrationPromo) => void;
+  onStop: (code: string) => void;
+  onCopy: (promo: RegistrationPromo) => void;
+  isStopping: boolean;
+}
+
+function RegistrationPromoTableRow({
+  promo,
+  onEdit,
+  onRequestDelete,
+  onStop,
+  onCopy,
+  isStopping,
+}: RowProps) {
+  const { data: isUsed, isLoading: isUsedLoading } = useIsRegistrationPromoUsed(
+    promo.code,
+  );
+
+  return (
+    <TableRow data-ocid={`registration_promo.table.row.${promo.code}`}>
+      <TableCell className="font-mono text-xs">{promo.code}</TableCell>
+      <TableCell className="font-medium">{promo.name}</TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+        {formatDate(promo.startDate)} - {formatDate(promo.endDate)}
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {promo.voucherValue.toLocaleString("vi-VN")}đ
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {promo.voucherValidDays.toString()} ngày
+      </TableCell>
+      <TableCell className="text-center">
+        <span
+          className={
+            promo.active
+              ? "rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success"
+              : "rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+          }
+        >
+          {promo.active ? "Đang bật" : "Đã tắt"}
+        </span>
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => onCopy(promo)}
+            aria-label={`Sao chép và tạo mới từ ${promo.name}`}
+            data-ocid={`registration_promo.table.copy_button.${promo.code}`}
+          >
+            <Copy className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          {isUsedLoading ? (
+            <Loader2
+              className="h-4 w-4 animate-spin text-muted-foreground"
+              aria-hidden="true"
+            />
+          ) : isUsed ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => onStop(promo.code)}
+              disabled={!promo.active || isStopping}
+              aria-label={`Dừng ${promo.name}`}
+              title={
+                promo.active
+                  ? "Đã có khách nhận phiếu — chỉ có thể Dừng, không sửa/xoá được"
+                  : "Đã dừng"
+              }
+              data-ocid={`registration_promo.table.stop_button.${promo.code}`}
+            >
+              <StopCircle className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onEdit(promo)}
+                aria-label={`Sửa ${promo.name}`}
+                data-ocid={`registration_promo.table.edit_button.${promo.code}`}
+              >
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onRequestDelete(promo)}
+                aria-label={`Xoá ${promo.name}`}
+                data-ocid={`registration_promo.table.delete_button.${promo.code}`}
+                className="text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 type Mode =
   | { kind: "list" }
-  | { kind: "add" }
+  | { kind: "add"; copyFrom?: RegistrationPromo }
   | { kind: "edit"; promo: RegistrationPromo };
 
 export default function RegistrationPromoManager() {
@@ -255,16 +389,23 @@ export default function RegistrationPromoManager() {
   const createMutation = useCreateRegistrationPromo();
   const updateMutation = useUpdateRegistrationPromo();
   const deleteMutation = useDeleteRegistrationPromo();
+  const stopMutation = useStopRegistrationPromo();
   const [mode, setMode] = useState<Mode>({ kind: "list" });
   const [pendingDelete, setPendingDelete] = useState<RegistrationPromo | null>(
     null,
   );
 
   function handleAddSubmit(input: RegistrationPromoInput) {
+    const isCopyFlow = mode.kind === "add" && !!mode.copyFrom;
     createMutation.mutate(input, {
-      onSuccess: () => {
+      onSuccess: (created) => {
         toast.success("Đã tạo chương trình khuyến mại đăng ký.");
         setMode({ kind: "list" });
+        // Sao chép và tạo mới: mặc định TẮT (canister luôn tạo
+        // active=true) — tự động Dừng ngay sau khi tạo.
+        if (isCopyFlow) {
+          stopMutation.mutate(created.code);
+        }
       },
       onError: (e) =>
         toast.error(e instanceof Error ? e.message : "Lỗi khi tạo."),
@@ -292,6 +433,18 @@ export default function RegistrationPromoManager() {
       onError: (e) =>
         toast.error(e instanceof Error ? e.message : "Lỗi khi xoá."),
     });
+  }
+
+  function handleStop(code: string) {
+    stopMutation.mutate(code, {
+      onSuccess: () => toast.success("Đã dừng chương trình."),
+      onError: (e) =>
+        toast.error(e instanceof Error ? e.message : "Lỗi khi dừng."),
+    });
+  }
+
+  function handleCopy(promo: RegistrationPromo) {
+    setMode({ kind: "add", copyFrom: promo });
   }
 
   const promos = promosQuery.data ?? [];
@@ -331,7 +484,9 @@ export default function RegistrationPromoManager() {
         >
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold text-foreground">
-              Thêm chương trình
+              {mode.copyFrom
+                ? `Sao chép từ "${mode.copyFrom.name}"`
+                : "Thêm chương trình"}
             </h2>
             <button
               type="button"
@@ -342,7 +497,14 @@ export default function RegistrationPromoManager() {
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
+          {mode.copyFrom && (
+            <p className="mb-4 text-xs text-muted-foreground">
+              Chương trình mới sẽ được tạo với trạng thái "Đã tắt" — bạn có thể
+              bật lại sau khi kiểm tra thông tin.
+            </p>
+          )}
           <RegistrationPromoForm
+            initial={mode.copyFrom}
             submitting={createMutation.isPending}
             submitError={
               createMutation.isError
@@ -430,58 +592,15 @@ export default function RegistrationPromoManager() {
                 </TableHeader>
                 <TableBody>
                   {promos.map((promo) => (
-                    <TableRow key={promo.code}>
-                      <TableCell className="font-mono text-xs">
-                        {promo.code}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {promo.name}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                        {formatDate(promo.startDate)} -{" "}
-                        {formatDate(promo.endDate)}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {promo.voucherValue.toLocaleString("vi-VN")}đ
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {promo.voucherValidDays.toString()} ngày
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span
-                          className={
-                            promo.active
-                              ? "rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success"
-                              : "rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                          }
-                        >
-                          {promo.active ? "Đang bật" : "Đã tắt"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setMode({ kind: "edit", promo })}
-                            aria-label={`Sửa ${promo.name}`}
-                          >
-                            <Pencil className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setPendingDelete(promo)}
-                            aria-label={`Xoá ${promo.name}`}
-                            className="text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <RegistrationPromoTableRow
+                      key={promo.code}
+                      promo={promo}
+                      onEdit={(p) => setMode({ kind: "edit", promo: p })}
+                      onRequestDelete={setPendingDelete}
+                      onStop={handleStop}
+                      onCopy={handleCopy}
+                      isStopping={stopMutation.isPending}
+                    />
                   ))}
                 </TableBody>
               </Table>

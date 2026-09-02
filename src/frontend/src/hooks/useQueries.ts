@@ -28,6 +28,7 @@ import {
   getStoreHours as getStoreHoursFn,
   isCallerAdmin as isCallerAdminFn,
   isPromotionUsed as isPromotionUsedFn,
+  isRegistrationPromoUsed as isRegistrationPromoUsedFn,
   isStoreOpen as isStoreOpenFn,
   listDevicesByRestaurant as listDevicesByRestaurantFn,
   listMenus as listMenusFn,
@@ -45,6 +46,7 @@ import {
   setStoreHours as setStoreHoursFn,
   setVpsSecret as setVpsSecretFn,
   stopPromotion as stopPromotionFn,
+  stopRegistrationPromo as stopRegistrationPromoFn,
   updateItem as updateItemFn,
   updatePromotion as updatePromotionFn,
   updateRegistrationPromo as updateRegistrationPromoFn,
@@ -609,6 +611,30 @@ export function useDeleteRegistrationPromo() {
     mutationFn: (code: string) => {
       if (!actor) throw new Error("Actor not ready");
       return deleteRegistrationPromoFn(actor, code);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["registrationPromos"] });
+    },
+  });
+}
+
+export function useIsRegistrationPromoUsed(code: string) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["registrationPromoUsed", code],
+    queryFn: () =>
+      actor ? isRegistrationPromoUsedFn(actor, code) : Promise.resolve(false),
+    enabled: !!actor && !isFetching && !!code,
+  });
+}
+
+export function useStopRegistrationPromo() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (code: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return stopRegistrationPromoFn(actor, code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["registrationPromos"] });
