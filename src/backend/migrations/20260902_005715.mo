@@ -242,6 +242,8 @@ module {
     vouchers : Map.Map<Text, Voucher>;
     registrationPromos : Map.Map<Text, RegistrationPromo>;
     registrationBonusIssued : Map.Map<Text, Int>;
+    salesPromos : Map.Map<Text, SalesPromo>;
+    salesBonusIssued : Map.Map<Text, Int>;
   };
 
   type NewActor = {
