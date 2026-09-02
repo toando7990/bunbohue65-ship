@@ -38,6 +38,7 @@ export default function Profile() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [notifyKm, setNotifyKm] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
   const [saving, setSaving] = useState(false);
 
@@ -50,6 +51,7 @@ export default function Profile() {
       if (customerQuery.data) {
         setName(customerQuery.data.name);
         setPhone(customerQuery.data.phone);
+        setNotifyKm(customerQuery.data.notifyKm);
       }
       setPrefilled(true);
     }
@@ -71,7 +73,7 @@ export default function Profile() {
 
     setSaving(true);
     try {
-      await updateCustomer(verifiedEmail, name.trim(), phone.trim());
+      await updateCustomer(verifiedEmail, name.trim(), phone.trim(), notifyKm);
       queryClient.invalidateQueries({ queryKey: ["customer", verifiedEmail] });
       toast.success("Đã lưu thông tin của bạn.");
     } catch (err) {
@@ -182,6 +184,24 @@ export default function Profile() {
               </p>
             )}
           </div>
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-muted/30 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={notifyKm}
+              onChange={(e) => setNotifyKm(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-primary"
+              data-ocid="profile.notify_km_checkbox"
+            />
+            <span>
+              <span className="font-medium">
+                Nhận thông báo khi có khuyến mãi giờ vàng
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Gửi email nhắc trước 15 phút mỗi khi khung giờ khuyến mãi sắp
+                bắt đầu.
+              </span>
+            </span>
+          </label>
           <Button
             type="submit"
             disabled={saving || customerQuery.isLoading}

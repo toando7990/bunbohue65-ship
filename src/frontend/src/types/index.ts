@@ -169,6 +169,7 @@ export interface Customer {
   email: string;
   name: string;
   phone: string;
+  notifyKm: boolean;
 }
 
 // Payment mode — who pays the order amount on the driver screen.

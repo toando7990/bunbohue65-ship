@@ -242,17 +242,19 @@ export async function getCustomer(email: string): Promise<Customer | null> {
   }
 }
 
-// Cập nhật hồ sơ khách hàng (tên + SĐT) — LUÔN ghi đè, khác getCustomer/
-// POST (create-only). Dùng cho trang "Thông tin của bạn" (Profile.tsx).
+// Cập nhật hồ sơ khách hàng (tên + SĐT + đăng ký nhận thông báo KM, Giai
+// đoạn 4b) — LUÔN ghi đè, khác getCustomer/POST (create-only). Dùng cho
+// trang "Thông tin của bạn" (Profile.tsx).
 export async function updateCustomer(
   email: string,
   name: string,
   phone: string,
+  notifyKm: boolean,
 ): Promise<Customer> {
   return vpsFetch<Customer>({
     method: "PUT",
     path: `/customers/${encodeURIComponent(email)}`,
-    body: { name, phone },
+    body: { name, phone, notifyKm },
   });
 }
 
