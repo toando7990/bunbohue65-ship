@@ -68,6 +68,7 @@ export function PromotionForm({
   onCancel,
 }: PromotionFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
+  const [termsUrl, setTermsUrl] = useState(initial?.termsUrl ?? "");
   const [startDate, setStartDate] = useState(
     toDateInputValue(initial?.startDate ?? ""),
   );
@@ -241,6 +242,7 @@ export function PromotionForm({
         dailyOrderLimit: BigInt(dailyLimitNum),
         perCustomerDailyLimit: BigInt(perCustomerLimitNum),
         tiers: parsedTiers,
+        termsUrl: termsUrl.trim(),
       },
       active,
     );
@@ -261,6 +263,22 @@ export function PromotionForm({
           placeholder="Khung giờ vàng"
           data-ocid="promotion.form.name_input"
         />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="promo-terms-url">Link Điều khoản (tuỳ chọn)</Label>
+        <Input
+          id="promo-terms-url"
+          type="url"
+          value={termsUrl}
+          onChange={(e) => setTermsUrl(e.target.value)}
+          placeholder="https://..."
+          data-ocid="promotion.form.terms_url_input"
+        />
+        <p className="text-xs text-muted-foreground">
+          Hiện dưới dạng link "Điều khoản" cho khách xem trên banner khuyến mãi.
+          Để trống nếu không cần.
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
