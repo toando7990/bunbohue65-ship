@@ -28,6 +28,7 @@ const orderRestaurantRoutes = require('./routes/order-restaurant');
 const webhooksRoutes = require('./routes/webhooks');
 const invoiceRoutes = require('./routes/invoice');
 const salesBonusCron = require('./routes/sales-bonus-cron');
+const kmNotifyCron = require('./routes/km-notify-cron');
 const analyticsRoutes = require('./routes/analytics');
 const uploadRoutes = require('./routes/upload');
 const customersRoutes = require('./routes/customers');
@@ -112,6 +113,7 @@ cronJobs.push(webhooksRoutes.startTingeePoll(db));
 // Invoice cron 1 phút (tạo invoice cho completed + paid)
 cronJobs.push(invoiceRoutes.startInvoiceCron(db));
 cronJobs.push(salesBonusCron.startSalesBonusCron(db));
+cronJobs.push(kmNotifyCron.startKmNotifyCron(db));
 
 // --- Start ---
 app.listen(PORT, () => {

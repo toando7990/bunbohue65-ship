@@ -87,6 +87,29 @@ CREATE TABLE IF NOT EXISTS customers (
   updated_at  INTEGER NOT NULL
 );
 
+-- Chống gửi trùng email nhắc KM (Giai đoạn 4b) — 1 dòng = đã gửi cho ĐÚNG
+-- ngày + chương trình + khung giờ đó rồi, không gửi lại dù cron chạy
+-- nhiều lần trong đúng phút khớp (hiếm nhưng có thể xảy ra nếu server
+-- khởi động lại giữa chừng).
+CREATE TABLE IF NOT EXISTS km_notify_sent (
+  date_key    TEXT NOT NULL,   -- "YYYYMMDD" giờ VN
+  promo_code  TEXT NOT NULL,
+  slot_index  INTEGER NOT NULL,
+  sent_at     INTEGER NOT NULL,
+  PRIMARY KEY (date_key, promo_code, slot_index)
+);
+
+-- Chống gửi trùng email nhắc KM Hệ 1 (Giai đoạn 4b) — mỗi (ngày, mã
+-- chương trình, chỉ số khung giờ) chỉ gửi đúng 1 lần, dù cron chạy lại
+-- (server khởi động lại, lệch giờ...) trong đúng phút đó.
+CREATE TABLE IF NOT EXISTS km_notifications_sent (
+  date_key         TEXT NOT NULL,
+  promotion_code   TEXT NOT NULL,
+  slot_index       INTEGER NOT NULL,
+  sent_at          INTEGER NOT NULL,
+  PRIMARY KEY (date_key, promotion_code, slot_index)
+);
+
 CREATE TABLE IF NOT EXISTS ahamove_logs (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   order_id        TEXT NOT NULL,
