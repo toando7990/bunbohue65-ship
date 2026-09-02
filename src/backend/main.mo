@@ -139,8 +139,8 @@ actor Main {
   // Giai đoạn 3d. key = "email|periodType|periodKey".
   let salesBonusIssued : SalesPromoTypes.SalesBonusIssuedStore;
 
-  // Đánh dấu chương trình KM Hệ 1 đã có khách dùng thành công (23rd stable
-  // field) — Giai đoạn 4f. key = mã chương trình. Chương trình đã đánh dấu
+  // Đánh dấu chương trình KM Hệ 1 đã có khách dùng thành công (stable
+  // field mới) — Giai đoạn 4f. key = mã chương trình. Chương trình đã đánh dấu
   // thì không cho sửa/xoá nữa, chỉ còn "Dừng" (stopPromotion).
   let promotionUsed : PromotionTypes.PromotionUsedStore;
 
