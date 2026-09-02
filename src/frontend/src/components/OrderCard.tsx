@@ -46,14 +46,18 @@ function shortOrderId(orderId: string): string {
 }
 
 // Nút copy nhỏ — sao chép giá trị vào clipboard để dán vào app ngoài.
+// small=true: kích thước gọn hơn, dùng khi ghép chung 1 hàng với nhãn/giá
+// trị khác (địa chỉ/SĐT nhà hàng đặt cùng hàng với mã đơn/SĐT khách).
 function CopyButton({
   value,
   label,
   ocid,
+  small,
 }: {
   value: string;
   label: string;
   ocid: string;
+  small?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -74,12 +78,22 @@ function CopyButton({
       onClick={handleCopy}
       data-ocid={ocid}
       aria-label={`Sao chép ${label}`}
-      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-smooth hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={`inline-flex shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-smooth hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        small ? "h-6 w-6" : "h-8 w-8"
+      }`}
     >
       {copied ? (
-        <Check className="h-4 w-4 text-success" aria-hidden="true" />
+        <Check
+          className={
+            small ? "h-3.5 w-3.5 text-success" : "h-4 w-4 text-success"
+          }
+          aria-hidden="true"
+        />
       ) : (
-        <Copy className="h-4 w-4" aria-hidden="true" />
+        <Copy
+          className={small ? "h-3.5 w-3.5" : "h-4 w-4"}
+          aria-hidden="true"
+        />
       )}
     </button>
   );
@@ -137,95 +151,79 @@ export function OrderCard({
 
   const content = (
     <>
+      {/* Hàng 1: mã đơn (trái) + địa chỉ nhà hàng (phải) — theo yêu cầu sắp
+          xếp lại, chỉ áp dụng khi KHÔNG compactRestaurantInfo (chế độ đó đã
+          tự có cách hiện gọn riêng, xem bên dưới). */}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <Receipt
-              className="h-4 w-4 shrink-0 text-muted-foreground"
+        <div className="flex min-w-0 items-center gap-2">
+          <Receipt
+            className="h-4 w-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span
+            className="truncate font-mono text-xs text-muted-foreground"
+            title={order.orderId}
+          >
+            {shortOrderId(order.orderId)}
+          </span>
+        </div>
+        {!compactRestaurantInfo && restaurantAddress && (
+          <div className="flex min-w-0 shrink-0 items-center gap-1">
+            <MapPin
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
-            <span
-              className="truncate font-mono text-xs text-muted-foreground"
-              title={order.orderId}
-            >
-              {shortOrderId(order.orderId)}
+            <span className="max-w-[9rem] truncate text-xs text-muted-foreground sm:max-w-[14rem]">
+              {restaurantAddress}
             </span>
+            <CopyButton
+              small
+              value={restaurantAddress}
+              label="địa chỉ nhà hàng"
+              ocid={`order.card.${index}.copy_address_button`}
+            />
           </div>
-          {compactRestaurantInfo && restaurantAddress && (
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
-              <span className="truncate">{restaurantAddress}</span>
-            </p>
-          )}
-          <div className="mt-1 flex items-center justify-between gap-2">
-            <h3 className="min-w-0 truncate font-display text-base font-semibold text-foreground">
-              {order.cusName || "Khách vãng lai"}
-            </h3>
-            {compactRestaurantInfo && contactPhone && (
-              <span className="shrink-0 text-sm text-muted-foreground">
-                {contactPhone}
-              </span>
-            )}
-          </div>
-          {order.cusPhone && (
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">
-              {order.cusPhone}
-            </p>
-          )}
-        </div>
-        <div className="flex items-start gap-1.5">
-          <div className="text-right">
-            <p className="font-display text-base font-semibold text-foreground">
-              {formatVnd(order.amount)}
-            </p>
-            <p className="text-xs text-muted-foreground">Tổng cộng</p>
-          </div>
-          <CopyButton
-            value={formatVnd(order.amount)}
-            label="tổng tiền"
-            ocid={`order.card.${index}.copy_amount_button`}
-          />
-        </div>
+        )}
+        {compactRestaurantInfo && restaurantAddress && (
+          <p className="flex min-w-0 shrink-0 items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span className="max-w-[9rem] truncate">{restaurantAddress}</span>
+          </p>
+        )}
       </div>
 
-      {/* Địa chỉ nhà hàng — copy để dán vào app ngoài. Ẩn khi
-          compactRestaurantInfo (đã hiện gọn dưới mã đơn ở trên). */}
-      {!compactRestaurantInfo && restaurantAddress && (
-        <div className="mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2">
-          <MapPin
-            className="h-4 w-4 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-            {restaurantAddress}
-          </span>
-          <CopyButton
-            value={restaurantAddress}
-            label="địa chỉ nhà hàng"
-            ocid={`order.card.${index}.copy_address_button`}
-          />
-        </div>
-      )}
+      <h3 className="mt-1 min-w-0 truncate font-display text-base font-semibold text-foreground">
+        {order.cusName || "Khách vãng lai"}
+      </h3>
 
-      {/* SĐT liên hệ — ưu tiên nhân viên đang trực (thiết bị active gần
-          nhất), fallback SĐT chung của quán nếu chưa có thiết bị nào. Ẩn khi
-          compactRestaurantInfo (đã hiện gọn cùng hàng tên khách ở trên). */}
-      {!compactRestaurantInfo && contactPhone && (
-        <div className="mt-2 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2">
-          <Phone
-            className="h-4 w-4 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+      {/* Hàng: SĐT khách (trái) + SĐT liên hệ nhà hàng (phải). */}
+      <div className="mt-0.5 flex items-center justify-between gap-3">
+        <span className="min-w-0 truncate text-sm text-muted-foreground">
+          {order.cusPhone || ""}
+        </span>
+        {!compactRestaurantInfo && contactPhone && (
+          <div className="flex min-w-0 shrink-0 items-center gap-1">
+            <Phone
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span className="text-xs text-muted-foreground">
+              {contactPhone}
+            </span>
+            <CopyButton
+              small
+              value={contactPhone}
+              label="số điện thoại liên hệ"
+              ocid={`order.card.${index}.copy_phone_button`}
+            />
+          </div>
+        )}
+        {compactRestaurantInfo && contactPhone && (
+          <span className="shrink-0 text-sm text-muted-foreground">
             {contactPhone}
           </span>
-          <CopyButton
-            value={contactPhone}
-            label="số điện thoại liên hệ"
-            ocid={`order.card.${index}.copy_phone_button`}
-          />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Mã nhận hàng — khách tự báo cho tài xế (gọi điện, nhắn tin...),
           tài xế đọc lại cho nhân viên quán khi đến lấy hàng để xác nhận
@@ -284,21 +282,35 @@ export function OrderCard({
         ))}
       </ul>
 
+      {/* Hàng cuối: số mặt hàng (trái) + Tổng cộng (phải) — theo yêu cầu
+          sắp xếp lại, chuyển xuống dòng cuối cùng của thẻ. */}
+      <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+        <span className="text-xs text-muted-foreground">
+          {order.items.length} mặt hàng
+        </span>
+        <div className="flex items-center gap-1.5">
+          <div className="text-right">
+            <p className="font-display text-base font-semibold text-foreground">
+              {formatVnd(order.amount)}
+            </p>
+            <p className="text-[11px] text-muted-foreground">Tổng cộng</p>
+          </div>
+          <CopyButton
+            small
+            value={formatVnd(order.amount)}
+            label="tổng tiền"
+            ocid={`order.card.${index}.copy_amount_button`}
+          />
+        </div>
+      </div>
+
       {!disableDetailLink && (
-        <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-          <span className="text-xs text-muted-foreground">
-            {order.items.length} mặt hàng
-          </span>
+        <div className="mt-2 flex items-center justify-end">
           <span className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-smooth group-hover:gap-2">
             Xem chi tiết
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </span>
         </div>
-      )}
-      {disableDetailLink && (
-        <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
-          {order.items.length} mặt hàng
-        </p>
       )}
     </>
   );
