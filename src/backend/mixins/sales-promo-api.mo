@@ -34,7 +34,7 @@ mixin (
   vouchers : VoucherTypes.VoucherStore,
   secretState : SecretTypes.SecretState,
 ) {
-  func hasIssuedVoucher(code : Text) : Bool {
+  func hasIssuedSalesVoucher(code : Text) : Bool {
     for ((_voucherCode, v) in vouchers.toArray().vals()) {
       if (v.programCode == code) { return true };
     };
@@ -93,7 +93,7 @@ mixin (
     if (salesPromos.get(code) == null) {
       return #err("Không tìm thấy chương trình khuyến mại doanh số");
     };
-    if (hasIssuedVoucher(code)) {
+    if (hasIssuedSalesVoucher(code)) {
       return #err("Chương trình đã có khách nhận phiếu, không thể sửa — hãy Dừng chương trình hoặc Sao chép và tạo mới");
     };
     if (weeklyTiers.size() > 3) {
@@ -125,7 +125,7 @@ mixin (
       case null { return #err("Không tìm thấy chương trình khuyến mại doanh số") };
       case (?_) {};
     };
-    if (hasIssuedVoucher(code)) {
+    if (hasIssuedSalesVoucher(code)) {
       return #err("Chương trình đã có khách nhận phiếu, không thể xoá — hãy Dừng chương trình thay vì xoá");
     };
     salesPromos.remove(code);
@@ -150,7 +150,7 @@ mixin (
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
     };
-    #ok(hasIssuedVoucher(code));
+    #ok(hasIssuedSalesVoucher(code));
   };
 
   public query ({ caller }) func listSalesPromos() : async Result.Result<[SalesPromoTypes.SalesPromo], Text> {

@@ -24,7 +24,7 @@ mixin (
   // Chương trình đã có phiếu nào phát ra với programCode này chưa — kiểm
   // tra trực tiếp trên Voucher.programCode (field sẵn có, không cần lưu
   // thêm dữ liệu theo dõi riêng).
-  func hasIssuedVoucher(code : Text) : Bool {
+  func hasIssuedRegistrationVoucher(code : Text) : Bool {
     for ((_voucherCode, v) in vouchers.toArray().vals()) {
       if (v.programCode == code) { return true };
     };
@@ -74,7 +74,7 @@ mixin (
     if (registrationPromos.get(code) == null) {
       return #err("Không tìm thấy chương trình khuyến mại đăng ký");
     };
-    if (hasIssuedVoucher(code)) {
+    if (hasIssuedRegistrationVoucher(code)) {
       return #err("Chương trình đã có khách nhận phiếu, không thể sửa — hãy Dừng chương trình hoặc Sao chép và tạo mới");
     };
     let promo : RegistrationPromoTypes.RegistrationPromo = {
@@ -99,7 +99,7 @@ mixin (
       case null { return #err("Không tìm thấy chương trình khuyến mại đăng ký") };
       case (?_) {};
     };
-    if (hasIssuedVoucher(code)) {
+    if (hasIssuedRegistrationVoucher(code)) {
       return #err("Chương trình đã có khách nhận phiếu, không thể xoá — hãy Dừng chương trình thay vì xoá");
     };
     registrationPromos.remove(code);
@@ -124,7 +124,7 @@ mixin (
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
     };
-    #ok(hasIssuedVoucher(code));
+    #ok(hasIssuedRegistrationVoucher(code));
   };
 
   public query ({ caller }) func listRegistrationPromos() : async Result.Result<[RegistrationPromoTypes.RegistrationPromo], Text> {
