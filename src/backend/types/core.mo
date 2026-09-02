@@ -102,6 +102,15 @@ module {
     // expireAt: thời điểm hết hạn QR (Unix timestamp, giây). Optional — null
     // khi chưa có QR.
     expireAt : ?Nat64;
+    // kmDiscountAmount/voucherDiscountAmount (Giai đoạn 4c) — số tiền chiết
+    // khấu ĐÃ ÁP DỤNG lúc tạo đơn, ĐÃ GỒM VAT (cùng đơn vị amount). Sao chép
+    // từ VPS SQLite (đã có sẵn từ Giai đoạn 3e — km_discount_amount/
+    // voucher_discount_amount) sang canister CHỈ ĐỂ HIỂN THỊ trên thẻ đơn
+    // ("Theo dõi đơn") — canister không tự tính lại, VPS là nguồn xác nhận
+    // cuối cùng (applyPromotion/applyVoucher). 0 nếu đơn không có chiết
+    // khấu loại đó (mặc định, không cần Optional).
+    kmDiscountAmount : Nat;
+    voucherDiscountAmount : Nat;
     createdAt : Int;
     updatedAt : Int;
   };

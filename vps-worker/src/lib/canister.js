@@ -86,6 +86,8 @@ const IDL_FACTORY = ({ IDL }) => {
     billId: IDL.Opt(IDL.Text),
     qrCode: IDL.Opt(IDL.Text),
     expireAt: IDL.Opt(IDL.Nat64),
+    kmDiscountAmount: IDL.Nat,
+    voucherDiscountAmount: IDL.Nat,
     createdAt: IDL.Int,
     updatedAt: IDL.Int,
   });
@@ -117,7 +119,7 @@ const IDL_FACTORY = ({ IDL }) => {
     createOrder: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text,
        IDL.Vec(OrderItem), IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat,
-       IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+       IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Text],
       [ResultOrder], [],
     ),
     updateStatus: IDL.Func(
@@ -190,6 +192,14 @@ async function createOrder(order) {
   const goodsAmountInt = Math.round(Number(order.goodsAmount));
   const shippingFeeInt = Math.round(Number(order.shippingFee));
   const taxTotalInt = Math.round(Number(order.taxTotal));
+  // Giai đoạn 4c: sao chép 2 giá trị chiết khấu ĐÃ TÍNH ở routes/create.js
+  // (km_discount_amount/voucher_discount_amount) sang canister CHỈ ĐỂ HIỂN
+  // THỊ trên "Theo dõi đơn" — không nằm trong HMAC payload (cùng nguyên
+  // tắc tingeeQrCode/pickupCode trước đó), mặc định 0 nếu order không có
+  // trường này (giữ tương thích ngược nếu có nơi khác gọi createOrder mà
+  // chưa truyền — hiện tại chỉ routes/create.js gọi hàm này).
+  const kmDiscountAmountInt = Math.round(Number(order.kmDiscountAmount || 0));
+  const voucherDiscountAmountInt = Math.round(Number(order.voucherDiscountAmount || 0));
   const hmacSig = hmac.signCreateOrder(
     VPS_SECRET, order.orderId, order.restaurantId, amountInt, goodsAmountInt,
   );
@@ -203,7 +213,7 @@ async function createOrder(order) {
     BigInt(amountInt), BigInt(goodsAmountInt),
     BigInt(shippingFeeInt), BigInt(taxTotalInt),
     order.ahamoveOrderId, order.tingeeQrId, order.sharedLink, order.tingeeQrCode,
-    order.pickupCode || '', hmacSig,
+    order.pickupCode || '', BigInt(kmDiscountAmountInt), BigInt(voucherDiscountAmountInt), hmacSig,
   );
   return result; // { ok } | { err }
 }

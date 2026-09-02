@@ -175,6 +175,7 @@ router.post('/order/create', async (req, res, next) => {
         orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
         receiverEmail: receiverEmail || '', items, amount, goodsAmount, shippingFee, taxTotal,
         ahamoveOrderId, tingeeQrId, sharedLink, tingeeQrCode, pickupCode,
+        kmDiscountAmount, voucherDiscountAmount,
       });
       if (result?.ok) {
         db.prepare(`UPDATE orders SET canister_synced = 1, updated_at = ? WHERE order_id = ?`)

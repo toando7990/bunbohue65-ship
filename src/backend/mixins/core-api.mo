@@ -51,9 +51,15 @@ mixin (
     sharedLink : Text,
     tingeeQrCode : Text,
     pickupCode : Text,
+    kmDiscountAmount : Nat,
+    voucherDiscountAmount : Nat,
     hmac : Text,
   ) : async Result.Result<CoreTypes.Order, Text> {
-    // Canonical HMAC payload — UNCHANGED by the tingeeQrCode/pickupCode additions.
+    // Canonical HMAC payload — UNCHANGED by the tingeeQrCode/pickupCode/
+    // kmDiscountAmount/voucherDiscountAmount additions (cùng nguyên tắc đã
+    // áp dụng trước đó — chỉ 4 field gốc nằm trong payload, các field bổ
+    // sung sau này chỉ mang tính hiển thị/theo dõi, không phải dữ liệu cần
+    // bảo toàn tính toàn vẹn giao dịch qua HMAC).
     let payload : HmacTypes.Payload = orderId # "|" # restaurantId # "|" # amount.toText() # "|" # goodsAmount.toText();
     if (not HmacLib.verifyHmac(state.secretState.vpsSecret, state.secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
@@ -88,6 +94,8 @@ mixin (
       billId = null;
       qrCode = null;
       expireAt = null;
+      kmDiscountAmount;
+      voucherDiscountAmount;
       createdAt = now;
       updatedAt = now;
     };
