@@ -27,6 +27,7 @@ import {
   getPaymentMode as getPaymentModeFn,
   getStoreHours as getStoreHoursFn,
   isCallerAdmin as isCallerAdminFn,
+  isPromotionUsed as isPromotionUsedFn,
   isStoreOpen as isStoreOpenFn,
   listDevicesByRestaurant as listDevicesByRestaurantFn,
   listMenus as listMenusFn,
@@ -43,6 +44,7 @@ import {
   setPaymentMode as setPaymentModeFn,
   setStoreHours as setStoreHoursFn,
   setVpsSecret as setVpsSecretFn,
+  stopPromotion as stopPromotionFn,
   updateItem as updateItemFn,
   updatePromotion as updatePromotionFn,
   updateRegistrationPromo as updateRegistrationPromoFn,
@@ -515,6 +517,34 @@ export function useDeletePromotion() {
     mutationFn: (code: string) => {
       if (!actor) throw new Error("Actor not ready");
       return deletePromotionFn(actor, code);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["promotions"] });
+      qc.invalidateQueries({ queryKey: ["currentPromotion"] });
+    },
+  });
+}
+
+// Chương trình đã có khách dùng thành công chưa (Giai đoạn 4f) — quyết
+// định hiện nút Sửa/Xoá hay chỉ Dừng. Gọi riêng theo từng dòng bảng (mỗi
+// hàng PromotionTableRow tự gọi hook này cho mã của chính nó).
+export function useIsPromotionUsed(code: string) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["promotionUsed", code],
+    queryFn: () =>
+      actor ? isPromotionUsedFn(actor, code) : Promise.resolve(false),
+    enabled: !!actor && !isFetching && !!code,
+  });
+}
+
+export function useStopPromotion() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (code: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return stopPromotionFn(actor, code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });

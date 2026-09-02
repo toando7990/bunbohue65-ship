@@ -9,6 +9,7 @@ import {
   useCreatePromotion,
   useDeletePromotion,
   usePromotions,
+  useStopPromotion,
   useUpdatePromotion,
 } from "@/hooks/useQueries";
 import type { PromotionInput } from "@/lib/canister";
@@ -18,7 +19,7 @@ import { toast } from "sonner";
 
 type Mode =
   | { kind: "list" }
-  | { kind: "add" }
+  | { kind: "add"; copyFrom?: Promotion }
   | { kind: "edit"; promotion: Promotion };
 
 export default function PromotionManager() {
@@ -26,14 +27,21 @@ export default function PromotionManager() {
   const createMutation = useCreatePromotion();
   const updateMutation = useUpdatePromotion();
   const deleteMutation = useDeletePromotion();
+  const stopMutation = useStopPromotion();
 
   const [mode, setMode] = useState<Mode>({ kind: "list" });
 
   function handleAddSubmit(input: PromotionInput) {
+    const isCopyFlow = mode.kind === "add" && !!mode.copyFrom;
     createMutation.mutate(input, {
-      onSuccess: () => {
+      onSuccess: (created) => {
         toast.success("Đã tạo chương trình khuyến mại.");
         setMode({ kind: "list" });
+        // Sao chép và tạo mới: mặc định TẮT (khác hành vi tạo thường —
+        // canister luôn active=true) — tự động Dừng ngay sau khi tạo.
+        if (isCopyFlow) {
+          stopMutation.mutate(created.code);
+        }
       },
       onError: (e) =>
         toast.error(
@@ -63,6 +71,18 @@ export default function PromotionManager() {
       onError: (e) =>
         toast.error(e instanceof Error ? e.message : "Lỗi khi xoá."),
     });
+  }
+
+  function handleStop(code: string) {
+    stopMutation.mutate(code, {
+      onSuccess: () => toast.success("Đã dừng chương trình."),
+      onError: (e) =>
+        toast.error(e instanceof Error ? e.message : "Lỗi khi dừng."),
+    });
+  }
+
+  function handleCopy(promotion: Promotion) {
+    setMode({ kind: "add", copyFrom: promotion });
   }
 
   const promotions = promotionsQuery.data ?? [];
@@ -102,7 +122,9 @@ export default function PromotionManager() {
         >
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold text-foreground">
-              Thêm chương trình khuyến mại
+              {mode.copyFrom
+                ? `Sao chép từ "${mode.copyFrom.name}"`
+                : "Thêm chương trình khuyến mại"}
             </h2>
             <button
               type="button"
@@ -114,7 +136,14 @@ export default function PromotionManager() {
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
+          {mode.copyFrom && (
+            <p className="mb-4 text-xs text-muted-foreground">
+              Chương trình mới sẽ được tạo với trạng thái "Đã tắt" — bạn có thể
+              bật lại sau khi kiểm tra thông tin.
+            </p>
+          )}
           <PromotionForm
+            initial={mode.copyFrom}
             submitting={createMutation.isPending}
             submitError={
               createMutation.isError
@@ -182,8 +211,11 @@ export default function PromotionManager() {
               promotions={promotions}
               isLoading={promotionsQuery.isLoading}
               isDeleting={deleteMutation.isPending}
+              isStopping={stopMutation.isPending}
               onEdit={(p) => setMode({ kind: "edit", promotion: p })}
               onDelete={handleDelete}
+              onStop={handleStop}
+              onCopy={handleCopy}
             />
           )}
         </div>
