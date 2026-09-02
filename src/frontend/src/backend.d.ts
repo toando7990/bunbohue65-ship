@@ -344,6 +344,8 @@ export interface Order {
     invoiceStatus: InvoiceStatus;
     billId?: string;
     qrCode?: string;
+    kmDiscountAmount: bigint;
+    voucherDiscountAmount: bigint;
 }
 export interface Device {
     active: boolean;

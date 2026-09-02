@@ -90,6 +90,8 @@ export interface Order {
   'invoiceStatus' : InvoiceStatus,
   'billId' : [] | [string],
   'qrCode' : [] | [string],
+  'kmDiscountAmount' : bigint,
+  'voucherDiscountAmount' : bigint,
 }
 export interface OrderEntry { 'order' : Order, 'orderId' : OrderId }
 export type OrderId = string;

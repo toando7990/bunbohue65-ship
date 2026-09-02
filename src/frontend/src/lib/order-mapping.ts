@@ -49,6 +49,8 @@ export function toOrder(h: VpsHistoryOrder): Order {
     tingeeQrCode: "",
     invoiceId: "",
     pdfUrl: "",
+    kmDiscountAmount: BigInt(h.kmDiscountAmount || 0),
+    voucherDiscountAmount: BigInt(h.voucherDiscountAmount || 0),
     createdAt: createdAtNs,
     updatedAt: createdAtNs,
   };

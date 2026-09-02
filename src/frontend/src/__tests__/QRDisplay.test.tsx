@@ -94,6 +94,8 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
     invoiceId: "",
     sharedLink: "",
     pdfUrl: "",
+    kmDiscountAmount: 0n,
+    voucherDiscountAmount: 0n,
     ...overrides,
   };
 }

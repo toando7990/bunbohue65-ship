@@ -125,6 +125,8 @@ export const Order = IDL.Record({
   'invoiceStatus' : InvoiceStatus,
   'billId' : IDL.Opt(IDL.Text),
   'qrCode' : IDL.Opt(IDL.Text),
+  'kmDiscountAmount' : IDL.Nat,
+  'voucherDiscountAmount' : IDL.Nat,
 });
 export const Result = IDL.Variant({ 'ok' : Order, 'err' : IDL.Text });
 export const Result_3 = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
@@ -320,6 +322,8 @@ export const idlService = IDL.Service({
         IDL.Text,
         IDL.Text,
         IDL.Text,
+        IDL.Nat,
+        IDL.Nat,
         IDL.Text,
       ],
       [Result],
@@ -592,6 +596,8 @@ export const idlFactory = ({ IDL }) => {
     'invoiceStatus' : InvoiceStatus,
     'billId' : IDL.Opt(IDL.Text),
     'qrCode' : IDL.Opt(IDL.Text),
+    'kmDiscountAmount' : IDL.Nat,
+    'voucherDiscountAmount' : IDL.Nat,
   });
   const Result = IDL.Variant({ 'ok' : Order, 'err' : IDL.Text });
   const Result_3 = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
@@ -778,6 +784,8 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Text,
           IDL.Text,
+          IDL.Nat,
+          IDL.Nat,
           IDL.Text,
         ],
         [Result],

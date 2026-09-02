@@ -190,6 +190,8 @@ export interface VpsHistoryOrder {
   bookingStatus: string;
   paymentStatus: string;
   createdAt: number;
+  kmDiscountAmount: number;
+  voucherDiscountAmount: number;
   items: Array<{
     itemId: string;
     name: string;

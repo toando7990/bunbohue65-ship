@@ -390,6 +390,8 @@ export interface Order {
     invoiceStatus: InvoiceStatus;
     billId?: string;
     qrCode?: string;
+    kmDiscountAmount: bigint;
+    voucherDiscountAmount: bigint;
 }
 export interface Device {
     active: boolean;
@@ -486,7 +488,7 @@ export interface backendInterface {
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
     changeOrderRestaurant(orderId: string, newRestaurantId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
-    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, hmac: string): Promise<Result>;
+    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, kmDiscountAmount: bigint, voucherDiscountAmount: bigint, hmac: string): Promise<Result>;
     deleteItem(itemId: string): Promise<Result_3>;
     deleteRestaurant(restaurantId: string): Promise<Result_3>;
     execute(qJson: string): Promise<Result__1>;
@@ -709,17 +711,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async createOrder(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: Array<OrderItem>, arg8: bigint, arg9: bigint, arg10: bigint, arg11: bigint, arg12: string, arg13: string, arg14: string, arg15: string, arg16: string, arg17: string): Promise<Result> {
+    async createOrder(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: Array<OrderItem>, arg8: bigint, arg9: bigint, arg10: bigint, arg11: bigint, arg12: string, arg13: string, arg14: string, arg15: string, arg16: string, arg17: bigint, arg18: bigint, arg19: string): Promise<Result> {
         if (this.processError) {
             try {
-                const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17);
+                const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19);
                 return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17);
+            const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19);
             return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -1872,6 +1874,8 @@ function from_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uin
     invoiceStatus: _InvoiceStatus;
     billId: [] | [string];
     qrCode: [] | [string];
+    kmDiscountAmount: bigint;
+    voucherDiscountAmount: bigint;
 }): {
     paymentStatus: PaymentStatus;
     cusTaxCode: string;
@@ -1900,6 +1904,8 @@ function from_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uin
     invoiceStatus: InvoiceStatus;
     billId?: string;
     qrCode?: string;
+    kmDiscountAmount: bigint;
+    voucherDiscountAmount: bigint;
 } {
     return {
         paymentStatus: from_candid_PaymentStatus_n21(_uploadFile, _downloadFile, value.paymentStatus),
@@ -1928,7 +1934,9 @@ function from_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uin
         cusAddress: value.cusAddress,
         invoiceStatus: from_candid_InvoiceStatus_n26(_uploadFile, _downloadFile, value.invoiceStatus),
         billId: record_opt_to_undefined(from_candid_opt_n28(_uploadFile, _downloadFile, value.billId)),
-        qrCode: record_opt_to_undefined(from_candid_opt_n28(_uploadFile, _downloadFile, value.qrCode))
+        qrCode: record_opt_to_undefined(from_candid_opt_n28(_uploadFile, _downloadFile, value.qrCode)),
+        kmDiscountAmount: value.kmDiscountAmount,
+        voucherDiscountAmount: value.voucherDiscountAmount
     };
 }
 function from_candid_record_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
