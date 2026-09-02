@@ -48,6 +48,7 @@ export interface Promotion {
     perCustomerDailyLimit: bigint;
     tiers: Array<DiscountTier>;
     active: boolean;
+    termsUrl: string;
 }
 export type Result_Promo = {
     __kind__: "ok";
@@ -59,6 +60,13 @@ export type Result_Promo = {
 export type Result_PromoList = {
     __kind__: "ok";
     ok: Array<Promotion>;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_Bool = {
+    __kind__: "ok";
+    ok: boolean;
 } | {
     __kind__: "err";
     err: string;
@@ -99,6 +107,7 @@ export interface RegistrationPromo {
     voucherValue: bigint;
     voucherValidDays: bigint;
     active: boolean;
+    termsUrl: string;
 }
 export type Result_RegPromo = {
     __kind__: "ok";
@@ -127,6 +136,7 @@ export interface SalesPromo {
     monthlyTiers: Array<SalesTier>;
     voucherValidDays: bigint;
     active: boolean;
+    termsUrl: string;
 }
 export type Result_SalesPromo = {
     __kind__: "ok";
@@ -455,21 +465,27 @@ export interface backendInterface {
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
     getKmUsageCount(email: string, programCode: string): Promise<bigint>;
-    createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>): Promise<Result_Promo>;
-    updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean): Promise<Result_Promo>;
+    createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_Promo>;
+    updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, termsUrl: string): Promise<Result_Promo>;
     deletePromotion(code: string): Promise<Result_3>;
+    stopPromotion(code: string): Promise<Result_Promo>;
+    isPromotionUsed(code: string): Promise<Result_Bool>;
     listPromotions(): Promise<Result_PromoList>;
     getCurrentPromotion(): Promise<Promotion | null>;
     applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
     applyVoucher(email: string, code: string, orderAmount: bigint, hmac: string): Promise<Result_Voucher>;
     listMyVouchers(email: string): Promise<Array<Voucher>>;
-    createRegistrationPromo(name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint): Promise<Result_RegPromo>;
-    updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean): Promise<Result_RegPromo>;
+    createRegistrationPromo(name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, termsUrl: string): Promise<Result_RegPromo>;
+    updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_RegPromo>;
     deleteRegistrationPromo(code: string): Promise<Result_3>;
+    stopRegistrationPromo(code: string): Promise<Result_RegPromo>;
+    isRegistrationPromoUsed(code: string): Promise<Result_Bool>;
     listRegistrationPromos(): Promise<Result_RegPromoList>;
-    createSalesPromo(name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint): Promise<Result_SalesPromo>;
-    updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean): Promise<Result_SalesPromo>;
+    createSalesPromo(name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, termsUrl: string): Promise<Result_SalesPromo>;
+    updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_SalesPromo>;
     deleteSalesPromo(code: string): Promise<Result_3>;
+    stopSalesPromo(code: string): Promise<Result_SalesPromo>;
+    isSalesPromoUsed(code: string): Promise<Result_Bool>;
     listSalesPromos(): Promise<Result_SalesPromoList>;
     getCurrentSalesPromo(): Promise<SalesPromo | null>;
     issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: string): Promise<Result_IssueSalesBonus>;

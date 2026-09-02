@@ -372,6 +372,7 @@ export interface PromotionInput {
   dailyOrderLimit: bigint;
   perCustomerDailyLimit: bigint;
   tiers: { minOrderValue: bigint; discountAmount: bigint }[];
+  termsUrl: string;
 }
 
 export async function listPromotions(actor: Backend): Promise<Promotion[]> {
@@ -392,6 +393,7 @@ export async function createPromotion(
       input.dailyOrderLimit,
       input.perCustomerDailyLimit,
       input.tiers,
+      input.termsUrl,
     ),
   );
 }
@@ -414,6 +416,7 @@ export async function updatePromotion(
       input.perCustomerDailyLimit,
       input.tiers,
       active,
+      input.termsUrl,
     ),
   );
 }
@@ -425,6 +428,25 @@ export async function deletePromotion(
   unwrap(await actor.deletePromotion(code));
 }
 
+// Dừng chương trình (set active=false) — LUÔN dùng được, kể cả chương
+// trình đã có khách dùng (Giai đoạn 4f). Cách DUY NHẤT tắt 1 chương trình
+// đã dùng — updatePromotion/deletePromotion sẽ bị canister từ chối.
+export async function stopPromotion(
+  actor: Backend,
+  code: string,
+): Promise<Promotion> {
+  return unwrap(await actor.stopPromotion(code));
+}
+
+// Chương trình đã có khách dùng thành công chưa (Giai đoạn 4f) — quyết
+// định frontend hiện nút Sửa/Xoá hay chỉ Dừng.
+export async function isPromotionUsed(
+  actor: Backend,
+  code: string,
+): Promise<boolean> {
+  return unwrap(await actor.isPromotionUsed(code));
+}
+
 // ---- Quản lý "Khuyến mại đăng ký" (admin, /admin/registration-promo) ----
 
 export interface RegistrationPromoInput {
@@ -433,6 +455,7 @@ export interface RegistrationPromoInput {
   endDate: string;
   voucherValue: bigint;
   voucherValidDays: bigint;
+  termsUrl: string;
 }
 
 export async function listRegistrationPromos(
@@ -452,6 +475,7 @@ export async function createRegistrationPromo(
       input.endDate,
       input.voucherValue,
       input.voucherValidDays,
+      input.termsUrl,
     ),
   );
 }
@@ -471,6 +495,7 @@ export async function updateRegistrationPromo(
       input.voucherValue,
       input.voucherValidDays,
       active,
+      input.termsUrl,
     ),
   );
 }
@@ -482,6 +507,20 @@ export async function deleteRegistrationPromo(
   unwrap(await actor.deleteRegistrationPromo(code));
 }
 
+export async function stopRegistrationPromo(
+  actor: Backend,
+  code: string,
+): Promise<RegistrationPromo> {
+  return unwrap(await actor.stopRegistrationPromo(code));
+}
+
+export async function isRegistrationPromoUsed(
+  actor: Backend,
+  code: string,
+): Promise<boolean> {
+  return unwrap(await actor.isRegistrationPromoUsed(code));
+}
+
 // ---- Quản lý "Khuyến mại doanh số tuần/tháng" (admin, /admin/sales-promo) ----
 
 export interface SalesPromoInput {
@@ -491,6 +530,7 @@ export interface SalesPromoInput {
   weeklyTiers: { minSales: bigint; voucherValue: bigint }[];
   monthlyTiers: { minSales: bigint; voucherValue: bigint }[];
   voucherValidDays: bigint;
+  termsUrl: string;
 }
 
 export async function listSalesPromos(actor: Backend): Promise<SalesPromo[]> {
@@ -509,6 +549,7 @@ export async function createSalesPromo(
       input.weeklyTiers,
       input.monthlyTiers,
       input.voucherValidDays,
+      input.termsUrl,
     ),
   );
 }
@@ -529,6 +570,7 @@ export async function updateSalesPromo(
       input.monthlyTiers,
       input.voucherValidDays,
       active,
+      input.termsUrl,
     ),
   );
 }
@@ -538,6 +580,20 @@ export async function deleteSalesPromo(
   code: string,
 ): Promise<void> {
   unwrap(await actor.deleteSalesPromo(code));
+}
+
+export async function stopSalesPromo(
+  actor: Backend,
+  code: string,
+): Promise<SalesPromo> {
+  return unwrap(await actor.stopSalesPromo(code));
+}
+
+export async function isSalesPromoUsed(
+  actor: Backend,
+  code: string,
+): Promise<boolean> {
+  return unwrap(await actor.isSalesPromoUsed(code));
 }
 
 // ---- Phiếu giảm giá (khách xem/áp dụng, Giai đoạn 3e) ----

@@ -94,6 +94,7 @@ export interface Promotion {
     perCustomerDailyLimit: bigint;
     tiers: Array<DiscountTier>;
     active: boolean;
+    termsUrl: string;
 }
 export type Result_Promo = {
     __kind__: "ok";
@@ -105,6 +106,13 @@ export type Result_Promo = {
 export type Result_PromoList = {
     __kind__: "ok";
     ok: Array<Promotion>;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_Bool = {
+    __kind__: "ok";
+    ok: boolean;
 } | {
     __kind__: "err";
     err: string;
@@ -145,6 +153,7 @@ export interface RegistrationPromo {
     voucherValue: bigint;
     voucherValidDays: bigint;
     active: boolean;
+    termsUrl: string;
 }
 export type Result_RegPromo = {
     __kind__: "ok";
@@ -173,6 +182,7 @@ export interface SalesPromo {
     monthlyTiers: Array<SalesTier>;
     voucherValidDays: bigint;
     active: boolean;
+    termsUrl: string;
 }
 export type Result_SalesPromo = {
     __kind__: "ok";
@@ -504,21 +514,27 @@ export interface backendInterface {
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
     getKmUsageCount(email: string, programCode: string): Promise<bigint>;
-    createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>): Promise<Result_Promo>;
-    updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean): Promise<Result_Promo>;
+    createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_Promo>;
+    updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, termsUrl: string): Promise<Result_Promo>;
     deletePromotion(code: string): Promise<Result_3>;
+    stopPromotion(code: string): Promise<Result_Promo>;
+    isPromotionUsed(code: string): Promise<Result_Bool>;
     listPromotions(): Promise<Result_PromoList>;
     getCurrentPromotion(): Promise<Promotion | null>;
     applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
     applyVoucher(email: string, code: string, orderAmount: bigint, hmac: string): Promise<Result_Voucher>;
     listMyVouchers(email: string): Promise<Array<Voucher>>;
-    createRegistrationPromo(name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint): Promise<Result_RegPromo>;
-    updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean): Promise<Result_RegPromo>;
+    createRegistrationPromo(name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, termsUrl: string): Promise<Result_RegPromo>;
+    updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_RegPromo>;
     deleteRegistrationPromo(code: string): Promise<Result_3>;
+    stopRegistrationPromo(code: string): Promise<Result_RegPromo>;
+    isRegistrationPromoUsed(code: string): Promise<Result_Bool>;
     listRegistrationPromos(): Promise<Result_RegPromoList>;
-    createSalesPromo(name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint): Promise<Result_SalesPromo>;
-    updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean): Promise<Result_SalesPromo>;
+    createSalesPromo(name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, termsUrl: string): Promise<Result_SalesPromo>;
+    updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_SalesPromo>;
     deleteSalesPromo(code: string): Promise<Result_3>;
+    stopSalesPromo(code: string): Promise<Result_SalesPromo>;
+    isSalesPromoUsed(code: string): Promise<Result_Bool>;
     listSalesPromos(): Promise<Result_SalesPromoList>;
     getCurrentSalesPromo(): Promise<SalesPromo | null>;
     issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: string): Promise<Result_IssueSalesBonus>;
@@ -568,7 +584,7 @@ export interface backendInterface {
     tryConsumeKmSlot(email: string, programCode: string, dailyLimit: bigint, hmac: string): Promise<Result_Km>;
     verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }
-import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, Result_Km as _Result_Km, Result_Promo as _Result_Promo, Result_PromoList as _Result_PromoList, Result_Apply as _Result_Apply, Result_Voucher as _Result_Voucher, Result_RegPromo as _Result_RegPromo, Result_RegPromoList as _Result_RegPromoList, Result_SalesPromo as _Result_SalesPromo, Result_SalesPromoList as _Result_SalesPromoList, Result_IssueSalesBonus as _Result_IssueSalesBonus, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
+import type { BookingStatus as _BookingStatus, Cell as _Cell, Device as _Device, DeviceEntry as _DeviceEntry, DeviceRole as _DeviceRole, Error as _Error, InvoiceStatus as _InvoiceStatus, MenuEntry as _MenuEntry, MenuItem as _MenuItem, Order as _Order, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderItem as _OrderItem, OrderStatus as _OrderStatus, PaymentStatus as _PaymentStatus, PendingActivation as _PendingActivation, PendingActivationEntry as _PendingActivationEntry, Restaurant as _Restaurant, RestaurantEntry as _RestaurantEntry, RestaurantMenuOverrideEntry as _RestaurantMenuOverrideEntry, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result__1 as _Result__1, Result_Km as _Result_Km, Result_Promo as _Result_Promo, Result_PromoList as _Result_PromoList, Result_Apply as _Result_Apply, Result_Voucher as _Result_Voucher, Result_RegPromo as _Result_RegPromo, Result_RegPromoList as _Result_RegPromoList, Result_SalesPromo as _Result_SalesPromo, Result_SalesPromoList as _Result_SalesPromoList, Result_IssueSalesBonus as _Result_IssueSalesBonus, Result_Bool as _Result_Bool, SendCodeResult as _SendCodeResult, UpgradeState as _UpgradeState, UserRole as _UserRole, Value as _Value, VerifyResult as _VerifyResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initialize_access_control(): Promise<void> {
@@ -851,31 +867,31 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async createPromotion(arg0: string, arg1: string, arg2: string, arg3: Array<boolean>, arg4: Array<TimeSlot>, arg5: bigint, arg6: bigint, arg7: Array<DiscountTier>): Promise<Result_Promo> {
+    async createPromotion(arg0: string, arg1: string, arg2: string, arg3: Array<boolean>, arg4: Array<TimeSlot>, arg5: bigint, arg6: bigint, arg7: Array<DiscountTier>, arg8: string): Promise<Result_Promo> {
         if (this.processError) {
             try {
-                const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                 return from_candid_Result_Promo(result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
             return from_candid_Result_Promo(result);
         }
     }
-    async updatePromotion(arg0: string, arg1: string, arg2: string, arg3: string, arg4: Array<boolean>, arg5: Array<TimeSlot>, arg6: bigint, arg7: bigint, arg8: Array<DiscountTier>, arg9: boolean): Promise<Result_Promo> {
+    async updatePromotion(arg0: string, arg1: string, arg2: string, arg3: string, arg4: Array<boolean>, arg5: Array<TimeSlot>, arg6: bigint, arg7: bigint, arg8: Array<DiscountTier>, arg9: boolean, arg10: string): Promise<Result_Promo> {
         if (this.processError) {
             try {
-                const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
                 return from_candid_Result_Promo(result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             return from_candid_Result_Promo(result);
         }
     }
@@ -891,6 +907,34 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.deletePromotion(arg0);
             return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async stopPromotion(arg0: string): Promise<Result_Promo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.stopPromotion(arg0);
+                return from_candid_Result_Promo(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.stopPromotion(arg0);
+            return from_candid_Result_Promo(result);
+        }
+    }
+    async isPromotionUsed(arg0: string): Promise<Result_Bool> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isPromotionUsed(arg0);
+                return from_candid_Result_Bool(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isPromotionUsed(arg0);
+            return from_candid_Result_Bool(result);
         }
     }
     async listPromotions(): Promise<Result_PromoList> {
@@ -963,31 +1007,31 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async createRegistrationPromo(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: bigint): Promise<Result_RegPromo> {
+    async createRegistrationPromo(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: bigint, arg5: string): Promise<Result_RegPromo> {
         if (this.processError) {
             try {
-                const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4);
+                const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5);
                 return from_candid_Result_RegPromo(result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4);
+            const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5);
             return from_candid_Result_RegPromo(result);
         }
     }
-    async updateRegistrationPromo(arg0: string, arg1: string, arg2: string, arg3: string, arg4: bigint, arg5: bigint, arg6: boolean): Promise<Result_RegPromo> {
+    async updateRegistrationPromo(arg0: string, arg1: string, arg2: string, arg3: string, arg4: bigint, arg5: bigint, arg6: boolean, arg7: string): Promise<Result_RegPromo> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                 return from_candid_Result_RegPromo(result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+            const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
             return from_candid_Result_RegPromo(result);
         }
     }
@@ -1005,6 +1049,34 @@ export class Backend implements backendInterface {
             return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
         }
     }
+    async stopRegistrationPromo(arg0: string): Promise<Result_RegPromo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.stopRegistrationPromo(arg0);
+                return from_candid_Result_RegPromo(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.stopRegistrationPromo(arg0);
+            return from_candid_Result_RegPromo(result);
+        }
+    }
+    async isRegistrationPromoUsed(arg0: string): Promise<Result_Bool> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isRegistrationPromoUsed(arg0);
+                return from_candid_Result_Bool(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isRegistrationPromoUsed(arg0);
+            return from_candid_Result_Bool(result);
+        }
+    }
     async listRegistrationPromos(): Promise<Result_RegPromoList> {
         if (this.processError) {
             try {
@@ -1019,31 +1091,31 @@ export class Backend implements backendInterface {
             return from_candid_Result_RegPromoList(result);
         }
     }
-    async createSalesPromo(arg0: string, arg1: string, arg2: string, arg3: Array<SalesTier>, arg4: Array<SalesTier>, arg5: bigint): Promise<Result_SalesPromo> {
+    async createSalesPromo(arg0: string, arg1: string, arg2: string, arg3: Array<SalesTier>, arg4: Array<SalesTier>, arg5: bigint, arg6: string): Promise<Result_SalesPromo> {
         if (this.processError) {
             try {
-                const result = await this.actor.createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5);
+                const result = await this.actor.createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                 return from_candid_Result_SalesPromo(result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5);
+            const result = await this.actor.createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
             return from_candid_Result_SalesPromo(result);
         }
     }
-    async updateSalesPromo(arg0: string, arg1: string, arg2: string, arg3: string, arg4: Array<SalesTier>, arg5: Array<SalesTier>, arg6: bigint, arg7: boolean): Promise<Result_SalesPromo> {
+    async updateSalesPromo(arg0: string, arg1: string, arg2: string, arg3: string, arg4: Array<SalesTier>, arg5: Array<SalesTier>, arg6: bigint, arg7: boolean, arg8: string): Promise<Result_SalesPromo> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                 return from_candid_Result_SalesPromo(result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
             return from_candid_Result_SalesPromo(result);
         }
     }
@@ -1059,6 +1131,34 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.deleteSalesPromo(arg0);
             return from_candid_Result_3_n29(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async stopSalesPromo(arg0: string): Promise<Result_SalesPromo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.stopSalesPromo(arg0);
+                return from_candid_Result_SalesPromo(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.stopSalesPromo(arg0);
+            return from_candid_Result_SalesPromo(result);
+        }
+    }
+    async isSalesPromoUsed(arg0: string): Promise<Result_Bool> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isSalesPromoUsed(arg0);
+                return from_candid_Result_Bool(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isSalesPromoUsed(arg0);
+            return from_candid_Result_Bool(result);
         }
     }
     async listSalesPromos(): Promise<Result_SalesPromoList> {
@@ -1717,6 +1817,17 @@ function from_candid_Result_Km(value: _Result_Km): Result_Km {
 // Blob/opt cần biến đổi, chỉ cần bọc lại dạng { __kind__, ... } frontend
 // dùng (giống from_candid_Result_Km).
 function from_candid_Result_Promo(value: _Result_Promo): Result_Promo {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : {
+        __kind__: "err",
+        err: value.err
+    };
+}
+// Result_Bool: dùng chung cho is*Used (Promotion/RegistrationPromo/
+// SalesPromo, Giai đoạn 4f) — ok là Bool đơn giản, không cần biến đổi.
+function from_candid_Result_Bool(value: _Result_Bool): Result_Bool {
     return "ok" in value ? {
         __kind__: "ok",
         ok: value.ok

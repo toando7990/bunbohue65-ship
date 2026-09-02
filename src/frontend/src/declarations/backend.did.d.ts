@@ -178,10 +178,13 @@ export interface Promotion {
   'perCustomerDailyLimit' : bigint,
   'tiers' : Array<DiscountTier>,
   'active' : boolean,
+  'termsUrl' : string,
 }
 export type Result_Promo = { 'ok' : Promotion } |
   { 'err' : string };
 export type Result_PromoList = { 'ok' : Array<Promotion> } |
+  { 'err' : string };
+export type Result_Bool = { 'ok' : boolean } |
   { 'err' : string };
 export interface ApplyPromotionOk { 'promotionCode' : string, 'discountAmount' : bigint }
 export type Result_Apply = { 'ok' : ApplyPromotionOk } |
@@ -206,6 +209,7 @@ export interface RegistrationPromo {
   'voucherValue' : bigint,
   'voucherValidDays' : bigint,
   'active' : boolean,
+  'termsUrl' : string,
 }
 export type Result_RegPromo = { 'ok' : RegistrationPromo } |
   { 'err' : string };
@@ -221,6 +225,7 @@ export interface SalesPromo {
   'monthlyTiers' : Array<SalesTier>,
   'voucherValidDays' : bigint,
   'active' : boolean,
+  'termsUrl' : string,
 }
 export type Result_SalesPromo = { 'ok' : SalesPromo } |
   { 'err' : string };
@@ -309,21 +314,27 @@ export interface _SERVICE {
   'getMenu' : ActorMethod<[], Array<MenuItem>>,
   'getMenuForRestaurant' : ActorMethod<[string], Array<MenuItem>>,
   'getKmUsageCount' : ActorMethod<[string, string], bigint>,
-  'createPromotion' : ActorMethod<[string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>], Result_Promo>,
-  'updatePromotion' : ActorMethod<[string, string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>, boolean], Result_Promo>,
+  'createPromotion' : ActorMethod<[string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>, string], Result_Promo>,
+  'updatePromotion' : ActorMethod<[string, string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>, boolean, string], Result_Promo>,
   'deletePromotion' : ActorMethod<[string], Result_3>,
+  'stopPromotion' : ActorMethod<[string], Result_Promo>,
+  'isPromotionUsed' : ActorMethod<[string], Result_Bool>,
   'listPromotions' : ActorMethod<[], Result_PromoList>,
   'getCurrentPromotion' : ActorMethod<[], [] | [Promotion]>,
   'applyPromotion' : ActorMethod<[string, bigint, string], Result_Apply>,
   'applyVoucher' : ActorMethod<[string, string, bigint, string], Result_Voucher>,
   'listMyVouchers' : ActorMethod<[string], Array<Voucher>>,
-  'createRegistrationPromo' : ActorMethod<[string, string, string, bigint, bigint], Result_RegPromo>,
-  'updateRegistrationPromo' : ActorMethod<[string, string, string, string, bigint, bigint, boolean], Result_RegPromo>,
+  'createRegistrationPromo' : ActorMethod<[string, string, string, bigint, bigint, string], Result_RegPromo>,
+  'updateRegistrationPromo' : ActorMethod<[string, string, string, string, bigint, bigint, boolean, string], Result_RegPromo>,
   'deleteRegistrationPromo' : ActorMethod<[string], Result_3>,
+  'stopRegistrationPromo' : ActorMethod<[string], Result_RegPromo>,
+  'isRegistrationPromoUsed' : ActorMethod<[string], Result_Bool>,
   'listRegistrationPromos' : ActorMethod<[], Result_RegPromoList>,
-  'createSalesPromo' : ActorMethod<[string, string, string, Array<SalesTier>, Array<SalesTier>, bigint], Result_SalesPromo>,
-  'updateSalesPromo' : ActorMethod<[string, string, string, string, Array<SalesTier>, Array<SalesTier>, bigint, boolean], Result_SalesPromo>,
+  'createSalesPromo' : ActorMethod<[string, string, string, Array<SalesTier>, Array<SalesTier>, bigint, string], Result_SalesPromo>,
+  'updateSalesPromo' : ActorMethod<[string, string, string, string, Array<SalesTier>, Array<SalesTier>, bigint, boolean, string], Result_SalesPromo>,
   'deleteSalesPromo' : ActorMethod<[string], Result_3>,
+  'stopSalesPromo' : ActorMethod<[string], Result_SalesPromo>,
+  'isSalesPromoUsed' : ActorMethod<[string], Result_Bool>,
   'listSalesPromos' : ActorMethod<[], Result_SalesPromoList>,
   'getCurrentSalesPromo' : ActorMethod<[], [] | [SalesPromo]>,
   'issueSalesBonus' : ActorMethod<[string, string, string, bigint, string], Result_IssueSalesBonus>,
