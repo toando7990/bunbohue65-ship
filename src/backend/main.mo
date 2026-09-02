@@ -409,6 +409,8 @@ actor Main {
           billId = null;
           qrCode = null;
           expireAt = null;
+          kmDiscountAmount = 0;
+          voucherDiscountAmount = 0;
           createdAt = 0;
           updatedAt = 0;
         },
