@@ -282,6 +282,21 @@ export function OrderCard({
         ))}
       </ul>
 
+      {/* Chiết khấu (Hệ 1 + phiếu giảm giá, Giai đoạn 4c) — chỉ hiện khi
+          đơn thực sự có áp dụng ít nhất 1 loại. Cộng gộp thành 1 dòng duy
+          nhất (khớp cách hoá đơn Bkav cũng cộng gộp 2 loại — Giai đoạn 3e). */}
+      {order.kmDiscountAmount + order.voucherDiscountAmount > 0n && (
+        <div
+          className="mt-2 flex items-center justify-between text-xs"
+          data-ocid={`order.card.${index}.discount_line`}
+        >
+          <span className="text-muted-foreground">Đã giảm</span>
+          <span className="font-mono font-medium text-destructive">
+            -{formatVnd(order.kmDiscountAmount + order.voucherDiscountAmount)}
+          </span>
+        </div>
+      )}
+
       {/* Hàng cuối: số mặt hàng (trái) + Tổng cộng (phải) — theo yêu cầu
           sắp xếp lại, chuyển xuống dòng cuối cùng của thẻ. */}
       <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
