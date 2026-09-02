@@ -60,7 +60,19 @@ module {
     perCustomerDailyLimit : Nat; // Số đơn KM/ngày/khách (dùng KmUsageStore).
     tiers : [DiscountTier]; // Tối đa 5 phần tử, nên sắp xếp tăng dần theo minOrderValue.
     active : Bool; // Admin bật/tắt thủ công — false thì luôn bỏ qua dù còn hiệu lực ngày/giờ.
+    // termsUrl (Giai đoạn 4f) — link "Điều khoản" hiện cho khách ngay trên
+    // banner khuyến mãi (PromotionBanner.tsx). Rỗng = không hiện link.
+    termsUrl : Text;
   };
+
+  // Đánh dấu chương trình ĐÃ TỪNG CÓ khách dùng thành công (Giai đoạn 4f) —
+  // key = mã chương trình, value luôn true (chỉ cần biết có/không, không
+  // cần đếm). Đánh dấu NGAY LÚC applyPromotion() THÀNH CÔNG lần đầu tiên
+  // — KHÔNG scan lại kmDailyCount (tránh phải parse tiền tố khoá phức hợp
+  // "programCode|YYYYMMDD", chưa có tiền lệ dùng Text.startsWith trong
+  // codebase này). Chương trình ĐÃ ĐÁNH DẤU thì KHÔNG cho sửa/xoá nữa —
+  // chỉ còn nút "Dừng" (set active=false, luôn dùng được không điều kiện).
+  public type PromotionUsedStore = Map.Map<Text, Bool>;
 
   public type PromotionStore = Map.Map<Text, Promotion>; // key = code
 };

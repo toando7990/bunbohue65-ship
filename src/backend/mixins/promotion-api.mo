@@ -7,13 +7,12 @@
 // tạo/sửa/xoá/bật-tắt, khách xem chương trình đang áp dụng (banner), VPS
 // gọi applyPromotion() lúc tạo đơn để kiểm tra + áp dụng chiết khấu.
 //
-// applyPromotion: HMAC-verified (VPS gọi) — bắt buộc email đã xác thực OTP
-// thật (kiểm tra qua otpRecords, không tin localStorage client), kiểm tra
-// khung giờ + 2 giới hạn (tổng đơn/ngày toàn hệ thống, đơn/ngày/khách)
-// TRONG 1 THAO TÁC ATOMIC, tránh race condition giữa kiểm tra và ghi.
-// Không đạt điều kiện nào → #err, KHÔNG tăng bộ đếm nào cả (đơn vẫn đặt
-// được bình thường, chỉ không có KM — theo quyết định đã chốt, xử lý ở
-// phía VPS gọi hàm này).
+// Giai đoạn 4f (bổ sung): chương trình ĐÃ CÓ KHÁCH DÙNG THÀNH CÔNG (đánh
+// dấu qua promotionUsed, ngay lúc applyPromotion() thành công lần đầu) —
+// KHÔNG cho sửa/xoá nữa, chỉ còn nút "Dừng" (stopPromotion — set
+// active=false, luôn dùng được không điều kiện). Muốn sửa nội dung thì
+// admin "Sao chép và tạo mới" (tạo chương trình mới qua createPromotion
+// bình thường, phía frontend tự điền sẵn dữ liệu — không cần API riêng).
 
 import AccessControl "mo:caffeineai-authorization/access-control";
 import Result "mo:core/Result";
@@ -34,11 +33,8 @@ mixin (
   promotions : PromotionTypes.PromotionStore,
   secretState : SecretTypes.SecretState,
   otpRecords : EmailVerificationLib.State,
+  promotionUsed : PromotionTypes.PromotionUsedStore,
 ) {
-  // ============================================================
-  // Giai đoạn 1 — giữ nguyên
-  // ============================================================
-
   public shared func tryConsumeKmSlot(
     email : Text,
     programCode : Text,
@@ -56,12 +52,6 @@ mixin (
     PromotionLib.getUsageCount(kmUsage, email, programCode, Time.now());
   };
 
-  // ============================================================
-  // Giai đoạn 2 — quản trị chương trình KM (Hệ 1: theo khung giờ)
-  // ============================================================
-
-  // Admin only. Tạo chương trình KM mới — canister tự sinh mã 8 ký tự.
-  // active=true mặc định (admin tự tắt sau nếu cần).
   public shared ({ caller }) func createPromotion(
     name : Text,
     startDate : Text,
@@ -71,6 +61,7 @@ mixin (
     dailyOrderLimit : Nat,
     perCustomerDailyLimit : Nat,
     tiers : [PromotionTypes.DiscountTier],
+    termsUrl : Text,
   ) : async Result.Result<PromotionTypes.Promotion, Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
@@ -97,13 +88,12 @@ mixin (
       perCustomerDailyLimit;
       tiers;
       active = true;
+      termsUrl;
     };
     promotions.add(code, promo);
     #ok(promo);
   };
 
-  // Admin only. Cập nhật chương trình KM đã có (theo code) — ghi đè toàn bộ
-  // field trừ code. Dùng để sửa thông tin lẫn bật/tắt (active).
   public shared ({ caller }) func updatePromotion(
     code : Text,
     name : Text,
@@ -115,12 +105,16 @@ mixin (
     perCustomerDailyLimit : Nat,
     tiers : [PromotionTypes.DiscountTier],
     active : Bool,
+    termsUrl : Text,
   ) : async Result.Result<PromotionTypes.Promotion, Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
     };
     if (promotions.get(code) == null) {
       return #err("Không tìm thấy chương trình khuyến mại");
+    };
+    if (promotionUsed.get(code) == ?true) {
+      return #err("Chương trình đã có khách sử dụng, không thể sửa — hãy Dừng chương trình hoặc Sao chép và tạo mới");
     };
     if (daysOfWeek.size() != 7) {
       return #err("daysOfWeek phải có đúng 7 phần tử (0=Chủ nhật...6=Thứ bảy)");
@@ -142,12 +136,12 @@ mixin (
       perCustomerDailyLimit;
       tiers;
       active;
+      termsUrl;
     };
     promotions.add(code, promo);
     #ok(promo);
   };
 
-  // Admin only. Xoá chương trình KM.
   public shared ({ caller }) func deletePromotion(code : Text) : async Result.Result<(), Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
@@ -156,11 +150,34 @@ mixin (
       case null { return #err("Không tìm thấy chương trình khuyến mại") };
       case (?_) {};
     };
+    if (promotionUsed.get(code) == ?true) {
+      return #err("Chương trình đã có khách sử dụng, không thể xoá — hãy Dừng chương trình thay vì xoá");
+    };
     promotions.remove(code);
     #ok;
   };
 
-  // Admin only. Liệt kê TẤT CẢ chương trình (kể cả hết hạn/tắt) để quản lý.
+  public shared ({ caller }) func stopPromotion(code : Text) : async Result.Result<PromotionTypes.Promotion, Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Admin only");
+    };
+    switch (promotions.get(code)) {
+      case null { #err("Không tìm thấy chương trình khuyến mại") };
+      case (?promo) {
+        let updated : PromotionTypes.Promotion = { promo with active = false };
+        promotions.add(code, updated);
+        #ok(updated);
+      };
+    };
+  };
+
+  public query ({ caller }) func isPromotionUsed(code : Text) : async Result.Result<Bool, Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Admin only");
+    };
+    #ok(promotionUsed.get(code) == ?true);
+  };
+
   public query ({ caller }) func listPromotions() : async Result.Result<[PromotionTypes.Promotion], Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
@@ -168,13 +185,6 @@ mixin (
     #ok(promotions.toArray().map(func((_code : Text, p : PromotionTypes.Promotion)) : PromotionTypes.Promotion = p));
   };
 
-  // Công khai. Trả về chương trình KM đang có hiệu lực HÔM NAY (khớp ngày +
-  // thứ trong tuần, active=true) — KHÔNG kiểm tra khớp khung giờ cụ thể
-  // (frontend tự làm đếm ngược theo timeSlots trả về). null nếu không có
-  // chương trình nào hợp lệ hôm nay. Tại 1 thời điểm chỉ có ĐÚNG 1 chương
-  // trình hoạt động (theo quyết định đã chốt) — nếu có nhiều hơn 1 (admin
-  // cấu hình trùng, không nên xảy ra), trả về chương trình đầu tiên tìm
-  // được, không đảm bảo thứ tự.
   public query func getCurrentPromotion() : async ?PromotionTypes.Promotion {
     let now = Time.now();
     let today = PromotionLib.vnDateKey(now);
@@ -190,27 +200,6 @@ mixin (
     null;
   };
 
-  // ============================================================
-  // Giai đoạn 2 — áp dụng KM lúc tạo đơn (VPS gọi, HMAC-verified)
-  // ============================================================
-
-  // Kiểm tra + áp dụng KM cho 1 đơn hàng:
-  //   1. Tìm chương trình đang ĐÚNG khung giờ NGAY BÂY GIỜ (không chỉ đúng
-  //      ngày như getCurrentPromotion — phải khớp CẢ khung giờ cụ thể).
-  //   2. Tìm mức chiết khấu theo orderAmount (đã gồm VAT).
-  //   3. Kiểm tra CẢ 2 điều kiện (tổng đơn/ngày, đơn/ngày/khách) TRƯỚC,
-  //      KHÔNG sửa gì — chỉ khi CẢ 2 đạt mới tăng cả 2 bộ đếm. Motoko không
-  //      tự rollback khi trả #err giữa chừng trong 1 lệnh gọi, nên nếu tăng
-  //      bộ đếm A rồi mới kiểm tra điều kiện B thất bại, bộ đếm A đã bị
-  //      tăng NHẦM — ĐÃ TỰ PHÁT HIỆN VÀ SỬA lỗi này qua mô phỏng Python
-  //      trước khi giao. Không có await giữa các bước → toàn bộ chạy atomic
-  //      trong 1 lượt xử lý message.
-  // Bất kỳ điều kiện nào không đạt → #err, KHÔNG tăng bộ đếm nào. Caller
-  // (VPS) coi #err là "không có KM", vẫn tạo đơn bình thường.
-  //
-  // HMAC payload: "email|orderAmount". Không cần truyền programCode (VPS
-  // không tự chọn chương trình — canister tự tìm chương trình đang khớp
-  // khung giờ NGAY LÚC XỬ LÝ, tránh VPS gửi sai/cũ).
   public shared func applyPromotion(
     email : Text,
     orderAmount : Nat,
@@ -220,9 +209,6 @@ mixin (
     if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
     };
-    // Bắt buộc email đã xác thực OTP thật (kiểm tra qua otpRecords, KHÔNG
-    // tin vào localStorage phía client — dễ giả mạo) — theo đúng yêu cầu
-    // gốc "Khách Phải xác thực email trước khi tham dự chương trình KM".
     if (not EmailVerificationLib.isEmailVerified(otpRecords, email)) {
       return #err("Email chưa được xác thực");
     };
@@ -251,6 +237,7 @@ mixin (
     };
     ignore PromotionLib.tryConsumeDailyCount(kmDailyCount, promo.code, promo.dailyOrderLimit, now);
     ignore PromotionLib.tryConsumeSlot(kmUsage, email, promo.code, promo.perCustomerDailyLimit, now);
+    promotionUsed.add(promo.code, true);
     #ok({ promotionCode = promo.code; discountAmount = tier.discountAmount });
   };
 };

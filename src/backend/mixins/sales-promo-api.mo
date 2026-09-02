@@ -8,6 +8,11 @@
 // thực trả) rồi gọi hàm này; canister tự quyết định có đạt mức nào không
 // (không tin VPS tính đúng) và CHỐNG PHÁT TRÙNG nếu cron gọi lại cho cùng
 // 1 kỳ đã xử lý.
+//
+// Giai đoạn 4f (bổ sung): chương trình ĐÃ CÓ khách nhận phiếu (kiểm tra
+// TRỰC TIẾP qua Voucher.programCode, giống Khuyến mại đăng ký — vouchers
+// đã sẵn có trong mixin này từ trước) — KHÔNG cho sửa/xoá nữa, chỉ còn
+// stopSalesPromo.
 
 import AccessControl "mo:caffeineai-authorization/access-control";
 import Result "mo:core/Result";
@@ -29,6 +34,13 @@ mixin (
   vouchers : VoucherTypes.VoucherStore,
   secretState : SecretTypes.SecretState,
 ) {
+  func hasIssuedVoucher(code : Text) : Bool {
+    for ((_voucherCode, v) in vouchers.toArray().vals()) {
+      if (v.programCode == code) { return true };
+    };
+    false;
+  };
+
   public shared ({ caller }) func createSalesPromo(
     name : Text,
     startDate : Text,
@@ -36,6 +48,7 @@ mixin (
     weeklyTiers : [SalesPromoTypes.SalesTier],
     monthlyTiers : [SalesPromoTypes.SalesTier],
     voucherValidDays : Nat,
+    termsUrl : Text,
   ) : async Result.Result<SalesPromoTypes.SalesPromo, Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
@@ -57,6 +70,7 @@ mixin (
       monthlyTiers;
       voucherValidDays;
       active = true;
+      termsUrl;
     };
     salesPromos.add(code, promo);
     #ok(promo);
@@ -71,12 +85,16 @@ mixin (
     monthlyTiers : [SalesPromoTypes.SalesTier],
     voucherValidDays : Nat,
     active : Bool,
+    termsUrl : Text,
   ) : async Result.Result<SalesPromoTypes.SalesPromo, Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
     };
     if (salesPromos.get(code) == null) {
       return #err("Không tìm thấy chương trình khuyến mại doanh số");
+    };
+    if (hasIssuedVoucher(code)) {
+      return #err("Chương trình đã có khách nhận phiếu, không thể sửa — hãy Dừng chương trình hoặc Sao chép và tạo mới");
     };
     if (weeklyTiers.size() > 3) {
       return #err("Tối đa 3 mức khuyến mại theo tuần");
@@ -93,6 +111,7 @@ mixin (
       monthlyTiers;
       voucherValidDays;
       active;
+      termsUrl;
     };
     salesPromos.add(code, promo);
     #ok(promo);
@@ -106,8 +125,32 @@ mixin (
       case null { return #err("Không tìm thấy chương trình khuyến mại doanh số") };
       case (?_) {};
     };
+    if (hasIssuedVoucher(code)) {
+      return #err("Chương trình đã có khách nhận phiếu, không thể xoá — hãy Dừng chương trình thay vì xoá");
+    };
     salesPromos.remove(code);
     #ok;
+  };
+
+  public shared ({ caller }) func stopSalesPromo(code : Text) : async Result.Result<SalesPromoTypes.SalesPromo, Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Admin only");
+    };
+    switch (salesPromos.get(code)) {
+      case null { #err("Không tìm thấy chương trình khuyến mại doanh số") };
+      case (?promo) {
+        let updated : SalesPromoTypes.SalesPromo = { promo with active = false };
+        salesPromos.add(code, updated);
+        #ok(updated);
+      };
+    };
+  };
+
+  public query ({ caller }) func isSalesPromoUsed(code : Text) : async Result.Result<Bool, Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Admin only");
+    };
+    #ok(hasIssuedVoucher(code));
   };
 
   public query ({ caller }) func listSalesPromos() : async Result.Result<[SalesPromoTypes.SalesPromo], Text> {
@@ -117,13 +160,6 @@ mixin (
     #ok(salesPromos.toArray().map(func((_code : Text, p : SalesPromoTypes.SalesPromo)) : SalesPromoTypes.SalesPromo = p));
   };
 
-  // Công khai. Trả về chương trình doanh số đang có hiệu lực HÔM NAY
-  // (active + trong khoảng ngày) — dùng cho khách xem "còn X đ nữa để đạt
-  // mức thưởng tiếp theo" ở tab "Tuần này"/"Tháng này" trong Lịch sử đặt
-  // đơn (Giai đoạn 3f). null nếu không có chương trình nào hợp lệ hôm nay.
-  // Cùng pattern getCurrentPromotion() của Hệ 1 — canister chỉ cung cấp
-  // CẤU HÌNH (tiers), frontend tự tính "còn thiếu bao nhiêu" từ doanh số
-  // hiện tại của khách (không cần canister biết doanh số).
   public query func getCurrentSalesPromo() : async ?SalesPromoTypes.SalesPromo {
     SalesPromoLib.findActiveSalesPromo(salesPromos, Time.now());
   };

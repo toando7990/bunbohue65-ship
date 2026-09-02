@@ -15,6 +15,8 @@ module {
     voucherValue : Nat; // Số tiền phiếu phát ra.
     voucherValidDays : Nat; // Phiếu có hiệu lực bao nhiêu ngày kể từ lúc phát.
     active : Bool;
+    // termsUrl (Giai đoạn 4f) — link "Điều khoản". Rỗng = không có.
+    termsUrl : Text;
   };
 
   public type RegistrationPromoStore = Map.Map<Text, RegistrationPromo>; // key = code

@@ -22,6 +22,8 @@ module {
     monthlyTiers : [SalesTier]; // Tối đa 3 phần tử.
     voucherValidDays : Nat; // Phiếu phát ra có hiệu lực bao nhiêu ngày.
     active : Bool;
+    // termsUrl (Giai đoạn 4f) — link "Điều khoản". Rỗng = không có.
+    termsUrl : Text;
   };
 
   public type SalesPromoStore = Map.Map<Text, SalesPromo>; // key = code
