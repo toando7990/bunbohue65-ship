@@ -94,6 +94,18 @@ export function PromotionBanner() {
           </p>
         )}
 
+        {promotion.termsUrl && (
+          <a
+            href={promotion.termsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-6 mt-1 inline-block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            data-ocid="promotion_banner.terms_link"
+          >
+            Điều khoản
+          </a>
+        )}
+
         {isActive && (
           <div className="ml-6 mt-2">
             {verifiedEmail ? (
