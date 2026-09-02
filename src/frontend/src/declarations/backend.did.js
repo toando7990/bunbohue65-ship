@@ -173,9 +173,11 @@ export const Promotion = IDL.Record({
   'perCustomerDailyLimit' : IDL.Nat,
   'tiers' : IDL.Vec(DiscountTier),
   'active' : IDL.Bool,
+  'termsUrl' : IDL.Text,
 });
 export const Result_Promo = IDL.Variant({ 'ok' : Promotion, 'err' : IDL.Text });
 export const Result_PromoList = IDL.Variant({ 'ok' : IDL.Vec(Promotion), 'err' : IDL.Text });
+export const Result_Bool = IDL.Variant({ 'ok' : IDL.Bool, 'err' : IDL.Text });
 export const ApplyPromotionOk = IDL.Record({
   'promotionCode' : IDL.Text,
   'discountAmount' : IDL.Nat,
@@ -200,6 +202,7 @@ export const RegistrationPromo = IDL.Record({
   'voucherValue' : IDL.Nat,
   'voucherValidDays' : IDL.Nat,
   'active' : IDL.Bool,
+  'termsUrl' : IDL.Text,
 });
 export const Result_RegPromo = IDL.Variant({ 'ok' : RegistrationPromo, 'err' : IDL.Text });
 export const Result_RegPromoList = IDL.Variant({ 'ok' : IDL.Vec(RegistrationPromo), 'err' : IDL.Text });
@@ -216,6 +219,7 @@ export const SalesPromo = IDL.Record({
   'monthlyTiers' : IDL.Vec(SalesTier),
   'voucherValidDays' : IDL.Nat,
   'active' : IDL.Bool,
+  'termsUrl' : IDL.Text,
 });
 export const Result_SalesPromo = IDL.Variant({ 'ok' : SalesPromo, 'err' : IDL.Text });
 export const Result_SalesPromoList = IDL.Variant({ 'ok' : IDL.Vec(SalesPromo), 'err' : IDL.Text });
@@ -343,44 +347,50 @@ export const idlService = IDL.Service({
   'getMenuForRestaurant' : IDL.Func([IDL.Text], [IDL.Vec(MenuItem)], ['query']),
   'getKmUsageCount' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], ['query']),
   'createPromotion' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier)],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier), IDL.Text],
       [Result_Promo],
       [],
     ),
   'updatePromotion' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier), IDL.Bool],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier), IDL.Bool, IDL.Text],
       [Result_Promo],
       [],
     ),
   'deletePromotion' : IDL.Func([IDL.Text], [Result_3], []),
+  'stopPromotion' : IDL.Func([IDL.Text], [Result_Promo], []),
+  'isPromotionUsed' : IDL.Func([IDL.Text], [Result_Bool], ['query']),
   'listPromotions' : IDL.Func([], [Result_PromoList], ['query']),
   'getCurrentPromotion' : IDL.Func([], [IDL.Opt(Promotion)], ['query']),
   'applyPromotion' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [Result_Apply], []),
   'applyVoucher' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Text], [Result_Voucher], []),
   'listMyVouchers' : IDL.Func([IDL.Text], [IDL.Vec(Voucher)], ['query']),
   'createRegistrationPromo' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Text],
       [Result_RegPromo],
       [],
     ),
   'updateRegistrationPromo' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool, IDL.Text],
       [Result_RegPromo],
       [],
     ),
   'deleteRegistrationPromo' : IDL.Func([IDL.Text], [Result_3], []),
+  'stopRegistrationPromo' : IDL.Func([IDL.Text], [Result_RegPromo], []),
+  'isRegistrationPromoUsed' : IDL.Func([IDL.Text], [Result_Bool], ['query']),
   'listRegistrationPromos' : IDL.Func([], [Result_RegPromoList], ['query']),
   'createSalesPromo' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(SalesTier), IDL.Vec(SalesTier), IDL.Nat],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(SalesTier), IDL.Vec(SalesTier), IDL.Nat, IDL.Text],
       [Result_SalesPromo],
       [],
     ),
   'updateSalesPromo' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(SalesTier), IDL.Vec(SalesTier), IDL.Nat, IDL.Bool],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(SalesTier), IDL.Vec(SalesTier), IDL.Nat, IDL.Bool, IDL.Text],
       [Result_SalesPromo],
       [],
     ),
   'deleteSalesPromo' : IDL.Func([IDL.Text], [Result_3], []),
+  'stopSalesPromo' : IDL.Func([IDL.Text], [Result_SalesPromo], []),
+  'isSalesPromoUsed' : IDL.Func([IDL.Text], [Result_Bool], ['query']),
   'listSalesPromos' : IDL.Func([], [Result_SalesPromoList], ['query']),
   'getCurrentSalesPromo' : IDL.Func([], [IDL.Opt(SalesPromo)], ['query']),
   'issueSalesBonus' : IDL.Func(
@@ -645,9 +655,11 @@ export const idlFactory = ({ IDL }) => {
     'perCustomerDailyLimit' : IDL.Nat,
     'tiers' : IDL.Vec(DiscountTier),
     'active' : IDL.Bool,
+    'termsUrl' : IDL.Text,
   });
   const Result_Promo = IDL.Variant({ 'ok' : Promotion, 'err' : IDL.Text });
   const Result_PromoList = IDL.Variant({ 'ok' : IDL.Vec(Promotion), 'err' : IDL.Text });
+  const Result_Bool = IDL.Variant({ 'ok' : IDL.Bool, 'err' : IDL.Text });
   const ApplyPromotionOk = IDL.Record({
     'promotionCode' : IDL.Text,
     'discountAmount' : IDL.Nat,
@@ -672,6 +684,7 @@ export const idlFactory = ({ IDL }) => {
     'voucherValue' : IDL.Nat,
     'voucherValidDays' : IDL.Nat,
     'active' : IDL.Bool,
+    'termsUrl' : IDL.Text,
   });
   const Result_RegPromo = IDL.Variant({ 'ok' : RegistrationPromo, 'err' : IDL.Text });
   const Result_RegPromoList = IDL.Variant({ 'ok' : IDL.Vec(RegistrationPromo), 'err' : IDL.Text });
@@ -688,6 +701,7 @@ export const idlFactory = ({ IDL }) => {
     'monthlyTiers' : IDL.Vec(SalesTier),
     'voucherValidDays' : IDL.Nat,
     'active' : IDL.Bool,
+    'termsUrl' : IDL.Text,
   });
   const Result_SalesPromo = IDL.Variant({ 'ok' : SalesPromo, 'err' : IDL.Text });
   const Result_SalesPromoList = IDL.Variant({ 'ok' : IDL.Vec(SalesPromo), 'err' : IDL.Text });
@@ -803,16 +817,18 @@ export const idlFactory = ({ IDL }) => {
     'getCanisterIdText' : IDL.Func([], [IDL.Text], ['query']),
     'getKmUsageCount' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], ['query']),
     'createPromotion' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier)],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier), IDL.Text],
         [Result_Promo],
         [],
       ),
     'updatePromotion' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier), IDL.Bool],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier), IDL.Bool, IDL.Text],
         [Result_Promo],
         [],
       ),
     'deletePromotion' : IDL.Func([IDL.Text], [Result_3], []),
+    'stopPromotion' : IDL.Func([IDL.Text], [Result_Promo], []),
+    'isPromotionUsed' : IDL.Func([IDL.Text], [Result_Bool], ['query']),
     'listPromotions' : IDL.Func([], [Result_PromoList], ['query']),
     'getCurrentPromotion' : IDL.Func([], [IDL.Opt(Promotion)], ['query']),
     'applyPromotion' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [Result_Apply], []),
@@ -831,28 +847,32 @@ export const idlFactory = ({ IDL }) => {
     'applyVoucher' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Text], [Result_Voucher], []),
     'listMyVouchers' : IDL.Func([IDL.Text], [IDL.Vec(Voucher)], ['query']),
     'createRegistrationPromo' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Text],
         [Result_RegPromo],
         [],
       ),
     'updateRegistrationPromo' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool, IDL.Text],
         [Result_RegPromo],
         [],
       ),
     'deleteRegistrationPromo' : IDL.Func([IDL.Text], [Result_3], []),
+    'stopRegistrationPromo' : IDL.Func([IDL.Text], [Result_RegPromo], []),
+    'isRegistrationPromoUsed' : IDL.Func([IDL.Text], [Result_Bool], ['query']),
     'listRegistrationPromos' : IDL.Func([], [Result_RegPromoList], ['query']),
     'createSalesPromo' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(SalesTier), IDL.Vec(SalesTier), IDL.Nat],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(SalesTier), IDL.Vec(SalesTier), IDL.Nat, IDL.Text],
         [Result_SalesPromo],
         [],
       ),
     'updateSalesPromo' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(SalesTier), IDL.Vec(SalesTier), IDL.Nat, IDL.Bool],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(SalesTier), IDL.Vec(SalesTier), IDL.Nat, IDL.Bool, IDL.Text],
         [Result_SalesPromo],
         [],
       ),
     'deleteSalesPromo' : IDL.Func([IDL.Text], [Result_3], []),
+    'stopSalesPromo' : IDL.Func([IDL.Text], [Result_SalesPromo], []),
+    'isSalesPromoUsed' : IDL.Func([IDL.Text], [Result_Bool], ['query']),
     'listSalesPromos' : IDL.Func([], [Result_SalesPromoList], ['query']),
     'getCurrentSalesPromo' : IDL.Func([], [IDL.Opt(SalesPromo)], ['query']),
     'issueSalesBonus' : IDL.Func(
