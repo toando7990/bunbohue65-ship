@@ -16,6 +16,7 @@
 
 import type { CustomerFormValues } from "@/components/CustomerForm";
 import { MenuPicker } from "@/components/MenuPicker";
+import { OrderProcessFlow } from "@/components/OrderProcessFlow";
 import { PromotionBanner } from "@/components/PromotionBanner";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
 import { Button } from "@/components/ui/button";
@@ -448,12 +449,7 @@ export default function CreateOrder() {
         data-ocid="create_order.page"
       >
         <header className="mb-6 flex flex-col gap-3">
-          <h1
-            className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
-            data-ocid="create_order.title"
-          >
-            Đặt món
-          </h1>
+          <OrderProcessFlow />
 
           <PromotionBanner />
 
