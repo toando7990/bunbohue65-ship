@@ -129,47 +129,70 @@ export default function GioiThieu() {
         </div>
       </div>
 
-      {/* Chuỗi cửa hàng — lấy thật từ hệ thống, không hardcode */}
+      {/* Chuỗi cửa hàng — lấy thật từ hệ thống, không hardcode. Dạng
+          BẢNG (theo bản xem trước đã duyệt) — 3 cột: Chi nhánh/Địa chỉ/SĐT,
+          cuộn ngang nếu tràn màn hình nhỏ. */}
       <div className="mt-6" data-ocid="gioi_thieu.restaurant_chain">
-        <h3 className="mb-3 flex items-center gap-1.5 font-display text-base font-bold text-foreground">
+        <h3 className="mb-1 flex items-center gap-1.5 font-display text-base font-bold text-foreground">
           <Store className="h-4 w-4 text-primary" aria-hidden="true" />
           Chuỗi cửa hàng
         </h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Bảng động — tự cập nhật khi thêm/bớt chi nhánh trong hệ thống, không
+          cần sửa giao diện.
+        </p>
         {restaurantsLoading ? (
           <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             Đang tải…
           </div>
         ) : visibleRestaurants.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border bg-card px-4 py-7 text-center text-sm text-muted-foreground">
             Chưa có thông tin chi nhánh.
-          </p>
+          </div>
         ) : (
-          <div className="flex flex-col gap-2.5">
-            {visibleRestaurants.map((r) => (
-              <div
-                key={r.restaurantId}
-                className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
-                data-ocid={`gioi_thieu.restaurant.${r.restaurantId}`}
-              >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-accent">
-                  <Store className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-foreground">{r.name}</p>
-                  {r.address && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {r.address}
-                    </p>
-                  )}
-                  {r.phone && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {r.phone}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-xl border border-border bg-card">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-primary/5">
+                  <th className="whitespace-nowrap border-b border-border px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-primary">
+                    Chi nhánh
+                  </th>
+                  <th className="whitespace-nowrap border-b border-border px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-primary">
+                    Địa chỉ
+                  </th>
+                  <th className="whitespace-nowrap border-b border-border px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-primary">
+                    SĐT
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleRestaurants.map((r) => (
+                  <tr
+                    key={r.restaurantId}
+                    className="last:[&>td]:border-b-0"
+                    data-ocid={`gioi_thieu.restaurant.${r.restaurantId}`}
+                  >
+                    <td className="border-b border-border px-3 py-3 align-top">
+                      <p className="font-bold text-foreground">{r.name}</p>
+                      <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-bold text-accent">
+                        <span
+                          className="h-1.5 w-1.5 rounded-full bg-accent"
+                          aria-hidden="true"
+                        />
+                        Đang hoạt động
+                      </span>
+                    </td>
+                    <td className="border-b border-border px-3 py-3 align-top text-muted-foreground">
+                      {r.address || "—"}
+                    </td>
+                    <td className="border-b border-border px-3 py-3 align-top text-muted-foreground">
+                      {r.phone || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
