@@ -52,6 +52,13 @@ mixin (
     PromotionLib.getUsageCount(kmUsage, email, programCode, Time.now());
   };
 
+  // Tổng số đơn KM Hệ 1 ĐÃ DÙNG hôm nay (toàn hệ thống, không phân biệt
+  // khách) — công khai, dùng để hiện "Đã dùng X/Y đơn khuyến mại hôm nay"
+  // cạnh banner khuyến mãi. Khác getKmUsageCount (theo TỪNG khách).
+  public query func getKmDailyCount(programCode : Text) : async Nat {
+    PromotionLib.getDailyCount(kmDailyCount, programCode, Time.now());
+  };
+
   public shared ({ caller }) func createPromotion(
     name : Text,
     startDate : Text,

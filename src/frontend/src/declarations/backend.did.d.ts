@@ -314,6 +314,7 @@ export interface _SERVICE {
   'getMenu' : ActorMethod<[], Array<MenuItem>>,
   'getMenuForRestaurant' : ActorMethod<[string], Array<MenuItem>>,
   'getKmUsageCount' : ActorMethod<[string, string], bigint>,
+  'getKmDailyCount' : ActorMethod<[string], bigint>,
   'createPromotion' : ActorMethod<[string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>, string], Result_Promo>,
   'updatePromotion' : ActorMethod<[string, string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>, boolean, string], Result_Promo>,
   'deletePromotion' : ActorMethod<[string], Result_3>,

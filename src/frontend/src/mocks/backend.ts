@@ -33,6 +33,7 @@ export const mockBackend: backendInterface = {
   getMenuForRestaurant: async () => [],
   getItemImage: async () => null,
   getKmUsageCount: async () => BigInt(0),
+  getKmDailyCount: async () => BigInt(0),
   createPromotion: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   updatePromotion: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   deletePromotion: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
