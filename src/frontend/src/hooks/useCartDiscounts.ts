@@ -10,7 +10,12 @@
 
 import type { Voucher } from "@/backend";
 import { usePromotionCountdown } from "@/hooks/usePromotionCountdown";
-import { useCurrentPromotion, useMyVouchers } from "@/hooks/useQueries";
+import {
+  useCurrentPromotion,
+  useKmDailyCount,
+  useKmUsageCount,
+  useMyVouchers,
+} from "@/hooks/useQueries";
 import { useEffect, useMemo, useState } from "react";
 
 const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
@@ -41,8 +46,37 @@ export function useCartDiscounts(
     null,
   );
 
+  // Kiểm tra giới hạn TRƯỚC khi ước tính chiết khấu Hệ 1 — canister sẽ từ
+  // chối áp KM nếu đã đạt 1 trong 2 giới hạn (tổng đơn/ngày HOẶC lượt/
+  // khách/ngày), nhưng trước đây hook này KHÔNG kiểm tra gì, khiến giỏ
+  // hàng hiện chiết khấu dù canister chắc chắn sẽ từ chối lúc đặt đơn thật
+  // — khách thấy 1 số tiền lúc xem giỏ, bị tính tiền KHÁC lúc thanh toán.
+  // PHÁT HIỆN từ báo lỗi thực tế (banner hiện "Bạn đã dùng 1/1 lượt hôm
+  // nay" nhưng giỏ hàng vẫn trừ tiền).
+  const { data: dailyCount } = useKmDailyCount(promotion?.code ?? null);
+  const { data: customerCount } = useKmUsageCount(
+    verifiedEmail,
+    promotion?.code ?? null,
+  );
+  const limitReached =
+    !!promotion &&
+    ((dailyCount !== undefined && dailyCount >= promotion.dailyOrderLimit) ||
+      (verifiedEmail &&
+        customerCount !== undefined &&
+        customerCount >= promotion.perCustomerDailyLimit));
+
   const kmTier = useMemo(() => {
-    if (countdown.kind !== "active" || !promotion) return null;
+    // Canister applyPromotion() TỪ CHỐI nếu chưa xác thực email (bất kể
+    // giỏ hàng đủ điều kiện gì) — ước tính phải khớp điều kiện này, nếu
+    // không sẽ cùng lỗi mismatch như trường hợp giới hạn lượt/ngày.
+    if (
+      countdown.kind !== "active" ||
+      !promotion ||
+      !verifiedEmail ||
+      limitReached
+    ) {
+      return null;
+    }
     let best: { minOrderValue: bigint; discountAmount: bigint } | null = null;
     for (const t of promotion.tiers) {
       if (subtotal >= Number(t.minOrderValue)) {
@@ -50,7 +84,7 @@ export function useCartDiscounts(
       }
     }
     return best;
-  }, [countdown.kind, promotion, subtotal]);
+  }, [countdown.kind, promotion, subtotal, limitReached, verifiedEmail]);
   const kmDiscount = kmTier ? Number(kmTier.discountAmount) : 0;
   const kmLabel = promotion?.name ?? "";
 
