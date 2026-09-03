@@ -11,7 +11,11 @@
 
 import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
 import { usePromotionCountdown } from "@/hooks/usePromotionCountdown";
-import { useCurrentPromotion } from "@/hooks/useQueries";
+import {
+  useCurrentPromotion,
+  useKmDailyCount,
+  useKmUsageCount,
+} from "@/hooks/useQueries";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import { CheckCircle2, Clock, Mail } from "lucide-react";
 import { useState } from "react";
@@ -37,6 +41,15 @@ export function PromotionBanner() {
   // sẽ tự re-render qua state verifyOpen đóng lại + EmailVerificationDialog
   // gọi onVerified.
   const verifiedEmail = getVerifiedEmail();
+
+  // Gọi TRƯỚC nhánh return sớm bên dưới (quy tắc Hook) — bản thân 2 hook
+  // này tự bỏ qua (enabled=false) khi chưa có promotion/email, không tốn
+  // request thừa.
+  const { data: dailyCount } = useKmDailyCount(promotion?.code ?? null);
+  const { data: customerCount } = useKmUsageCount(
+    verifiedEmail?.email ?? null,
+    promotion?.code ?? null,
+  );
 
   if (countdown.kind === "hidden" || !promotion) {
     return null;
@@ -134,6 +147,30 @@ export function PromotionBanner() {
                   Xác thực
                 </button>
               </div>
+            )}
+
+            {/* Tổng số đơn KM đã dùng hôm nay (toàn hệ thống) — luôn hiện
+                khi đang active, không cần xác thực email mới xem được
+                (thông tin công khai, không riêng tư). */}
+            {dailyCount !== undefined && (
+              <p
+                className="mt-1.5 text-xs text-muted-foreground"
+                data-ocid="promotion_banner.daily_count"
+              >
+                Đã dùng {dailyCount.toString()}/
+                {promotion.dailyOrderLimit.toString()} đơn khuyến mại hôm nay
+              </p>
+            )}
+            {/* Số lượt CHÍNH khách này đã dùng hôm nay — chỉ hiện khi đã
+                xác thực email (cần email để tra). */}
+            {verifiedEmail && customerCount !== undefined && (
+              <p
+                className="mt-0.5 text-xs text-muted-foreground"
+                data-ocid="promotion_banner.customer_count"
+              >
+                Bạn đã dùng {customerCount.toString()}/
+                {promotion.perCustomerDailyLimit.toString()} lượt hôm nay
+              </p>
             )}
           </div>
         )}

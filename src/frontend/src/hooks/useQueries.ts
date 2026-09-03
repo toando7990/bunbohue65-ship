@@ -21,6 +21,8 @@ import {
   getCurrentPromotion as getCurrentPromotionFn,
   getCurrentSalesPromo as getCurrentSalesPromoFn,
   getItemImage as getItemImageFn,
+  getKmDailyCount as getKmDailyCountFn,
+  getKmUsageCount as getKmUsageCountFn,
   getMenuForRestaurant as getMenuForRestaurantFn,
   getOrder as getOrderFn,
   getOrdersByEmail as getOrdersByEmailFn,
@@ -452,6 +454,40 @@ export function useCurrentPromotion() {
     enabled: !!actor && !isFetching,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 30000,
+  });
+}
+
+// Tổng số đơn KM Hệ 1 đã dùng hôm nay (toàn hệ thống) — hiện "Đã dùng
+// X/Y đơn khuyến mại hôm nay" cạnh banner. Refetch cùng nhịp với
+// useCurrentPromotion (30s) — đủ mới, không cần realtime tuyệt đối.
+export function useKmDailyCount(programCode: string | null) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["kmDailyCount", programCode],
+    queryFn: () =>
+      actor && programCode
+        ? getKmDailyCountFn(actor, programCode)
+        : Promise.resolve(0n),
+    enabled: !!actor && !isFetching && !!programCode,
+    refetchInterval: 30000,
+  });
+}
+
+// Số đơn KM Hệ 1 khách NÀY đã dùng hôm nay — hiện "Bạn đã dùng X/Y lượt
+// hôm nay", chỉ khi khách đã xác thực email (cần email để tra).
+export function useKmUsageCount(
+  email: string | null,
+  programCode: string | null,
+) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["kmUsageCount", email, programCode],
+    queryFn: () =>
+      actor && email && programCode
+        ? getKmUsageCountFn(actor, email, programCode)
+        : Promise.resolve(0n),
+    enabled: !!actor && !isFetching && !!email && !!programCode,
     refetchInterval: 30000,
   });
 }

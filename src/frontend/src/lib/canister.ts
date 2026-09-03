@@ -348,6 +348,25 @@ export async function getCurrentPromotion(
   return actor.getCurrentPromotion();
 }
 
+// Tổng số đơn KM Hệ 1 đã dùng hôm nay (toàn hệ thống, không phân biệt
+// khách) — dùng cho "Đã dùng X/Y đơn khuyến mại hôm nay".
+export async function getKmDailyCount(
+  actor: Backend,
+  programCode: string,
+): Promise<bigint> {
+  return actor.getKmDailyCount(programCode);
+}
+
+// Số đơn KM Hệ 1 khách NÀY đã dùng hôm nay — dùng cho "Bạn đã dùng X/Y
+// lượt hôm nay".
+export async function getKmUsageCount(
+  actor: Backend,
+  email: string,
+  programCode: string,
+): Promise<bigint> {
+  return actor.getKmUsageCount(email, programCode);
+}
+
 // Chương trình "Khuyến mại doanh số" đang có hiệu lực hôm nay — canister
 // chỉ cung cấp CẤU HÌNH (tiers), frontend tự tính "còn thiếu bao nhiêu"
 // từ doanh số hiện tại của khách (xem OrderHistory.tsx, Giai đoạn 3f).
