@@ -168,12 +168,12 @@ export function OrderCard({
           </span>
         </div>
         {!compactRestaurantInfo && restaurantAddress && (
-          <div className="flex min-w-0 shrink-0 items-center gap-1">
+          <div className="flex min-w-0 shrink-0 items-start gap-1">
             <MapPin
-              className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
-            <span className="max-w-[9rem] truncate text-xs text-muted-foreground sm:max-w-[14rem]">
+            <span className="line-clamp-2 max-w-[9rem] text-xs text-muted-foreground sm:max-w-[14rem]">
               {restaurantAddress}
             </span>
             <CopyButton

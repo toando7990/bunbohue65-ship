@@ -19,7 +19,6 @@ import { MenuPicker } from "@/components/MenuPicker";
 import { OrderProcessFlow } from "@/components/OrderProcessFlow";
 import { PromotionBanner } from "@/components/PromotionBanner";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
-import { SalesProgressPanel } from "@/components/SalesProgressPanel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -417,10 +416,6 @@ export default function CreateOrder() {
           <OrderProcessFlow />
 
           <PromotionBanner />
-
-          {profileComplete && (
-            <SalesProgressPanel email={customer.receiverEmail.trim()} />
-          )}
         </header>
 
         <div className="flex flex-col gap-6">

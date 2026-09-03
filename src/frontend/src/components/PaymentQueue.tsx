@@ -66,6 +66,15 @@ function elapsedMinutes(createdAt: bigint): number {
 function isOverdue(createdAt: bigint): boolean {
   return elapsedMinutes(createdAt) > OVERDUE_MINUTES;
 }
+
+// Đơn có áp dụng chiết khấu (Hệ 1 hoặc phiếu giảm giá, cộng gộp) — dùng để
+// tô màu viền thẻ phân biệt trực quan với đơn thường (theo yêu cầu: đỏ =
+// có khuyến mại, xanh = bình thường). THAY THẾ ý nghĩa màu đỏ trước đây
+// (trước dùng đỏ cho đơn quá hạn — nay bỏ hẳn hiển thị "Trễ X phút", màu
+// đỏ chuyển sang biểu thị khuyến mại để không xung đột ý nghĩa).
+function hasDiscount(o: Order): boolean {
+  return o.kmDiscountAmount + o.voucherDiscountAmount > 0n;
+}
 export function PaymentQueue({
   orders,
   isLoading,
@@ -149,11 +158,8 @@ export function PaymentQueue({
         >
           {sorted.map((order, idx) => {
             const isPaying = payingOrderId === order.orderId;
-            const overdue = isOverdue(order.createdAt);
             const expired = isExpired(order);
-            const lateMinutes = Math.floor(
-              elapsedMinutes(order.createdAt) - OVERDUE_MINUTES,
-            );
+            const discounted = hasDiscount(order);
             return (
               <li
                 key={order.orderId}
@@ -161,9 +167,9 @@ export function PaymentQueue({
                 className={`rounded-xl border p-4 shadow-sm transition-smooth hover:shadow-md ${
                   expired
                     ? "border-amber-500/60 bg-amber-500/10 ring-1 ring-amber-500/40"
-                    : overdue
+                    : discounted
                       ? "border-destructive bg-destructive/10 ring-1 ring-destructive/40"
-                      : "border-border bg-card"
+                      : "border-accent/50 bg-accent/5 ring-1 ring-accent/25"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -185,14 +191,6 @@ export function PaymentQueue({
                           data-ocid={`queue.expired_badge.${idx + 1}`}
                         >
                           QR hết hạn — tạo lại
-                        </span>
-                      )}
-                      {!expired && overdue && (
-                        <span
-                          className="inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground"
-                          data-ocid={`queue.overdue_badge.${idx + 1}`}
-                        >
-                          Trễ {lateMinutes} phút
                         </span>
                       )}
                     </div>
@@ -231,6 +229,20 @@ export function PaymentQueue({
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2">
+                    {/* Đã giảm (Giai đoạn 4c/cộng gộp KM Hệ 1 + phiếu) —
+                        hiện ngay trên tổng tiền khi đơn có áp dụng chiết
+                        khấu, khớp cách hiện ở OrderCard.tsx. */}
+                    {discounted && (
+                      <span
+                        className="font-mono text-xs font-medium text-destructive"
+                        data-ocid={`queue.discount.${idx + 1}`}
+                      >
+                        Đã giảm -
+                        {formatVnd(
+                          order.kmDiscountAmount + order.voucherDiscountAmount,
+                        )}
+                      </span>
+                    )}
                     {/* Chỉ hiện tiền hàng — không gồm phí ship (khách tự trả
                         tài xế bên ngoài, không phải khoản quán nhận). Khớp
                         với số trên màn QR. */}

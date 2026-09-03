@@ -19,6 +19,7 @@
 import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
 import { OrderCard } from "@/components/OrderCard";
 import { PeriodSummaryPanel } from "@/components/PeriodSummaryPanel";
+import { SalesProgressPanel } from "@/components/SalesProgressPanel";
 import { VoucherListPanel } from "@/components/VoucherListPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toOrder } from "@/lib/order-mapping";
@@ -72,12 +73,13 @@ export default function OrderHistory() {
           <History className="h-6 w-6 text-primary" aria-hidden="true" />
           Lịch sử đặt đơn
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {searchedEmail
-            ? `Các đơn hàng trước hôm nay đã đặt bằng email ${searchedEmail}. Đơn hôm nay xem ở "Theo dõi đơn".`
-            : "Xác thực email để tra cứu lại các đơn hàng trước hôm nay đã đặt bằng email đó."}
-        </p>
       </header>
+
+      {searchedEmail && (
+        <div className="mb-6">
+          <SalesProgressPanel email={searchedEmail} />
+        </div>
+      )}
 
       {!searchedEmail ? (
         <div
