@@ -22,8 +22,12 @@ const { rateLimit } = require('../middleware/rate-limit');
 const router = express.Router();
 const VAT_RATE = 0.08;
 
-// Rate-limit: 30 req/phút/IP
-router.use(rateLimit({ windowMs: 60000, max: 30, message: 'Too many create requests' }));
+// Rate-limit: 30 req/phút/IP — CHỈ áp dụng cho route tạo đơn cụ thể
+// (KHÔNG dùng router.use() không path — mount chung tại '/' cùng các
+// router khác nên sẽ vô tình tính luôn MỌI request khác đi qua trước khi
+// tới đúng route của chúng, gây lỗi rate-limit sai chỗ toàn hệ thống —
+// đã tự phát hiện + sửa lỗi này).
+router.use('/order/create', rateLimit({ windowMs: 60000, max: 30, message: 'Too many create requests' }));
 
 // POST /order/create
 router.post('/order/create', async (req, res, next) => {

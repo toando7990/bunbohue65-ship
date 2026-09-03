@@ -21,8 +21,9 @@ const shutdown = require('../lib/shutdown');
 
 const router = express.Router();
 
-// Rate-limit webhooks: 60 req/phút/IP
-router.use(rateLimit({ windowMs: 60000, max: 60, message: 'Too many webhook calls' }));
+// Rate-limit webhooks: 60 req/phút/IP. CHỈ áp dụng cho route cụ thể —
+// cùng lý do đã sửa ở routes/create.js.
+router.use('/webhook/tingee', rateLimit({ windowMs: 60000, max: 60, message: 'Too many webhook calls' }));
 
 // ------------------------------------------------------------
 // Webhook signature verification.

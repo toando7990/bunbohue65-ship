@@ -27,8 +27,10 @@ const router = express.Router();
 
 // Rate-limit: 20 req/phút/IP (khách bấm 'Thanh toán' nhiều lần cũng không
 // nên vượt quá — mỗi lần tạo bill Tingee mới đều tốn request + có thể chạm
-// code=1001).
-router.use(rateLimit({ windowMs: 60000, max: 20, message: 'Too many QR requests' }));
+// code=1001). CHỈ áp dụng cho route cụ thể — cùng lý do đã sửa ở
+// routes/create.js (router.use() không path sẽ tính nhầm mọi request khác
+// đi qua, do tất cả router mount chung tại '/').
+router.use('/order/:id/qr', rateLimit({ windowMs: 60000, max: 20, message: 'Too many QR requests' }));
 
 // Thời hạn QR Tingee (phút) — khớp expireInMinute khi gọi generateDynamicQr.
 const QR_EXPIRE_MINUTES = 15;

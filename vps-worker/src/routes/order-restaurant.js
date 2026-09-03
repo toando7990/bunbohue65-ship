@@ -24,8 +24,9 @@ const { rateLimit } = require('../middleware/rate-limit');
 const router = express.Router();
 
 // Rate-limit: 10 req/phút/IP — hành động ít khi lặp lại nhiều lần trong
-// thời gian ngắn, giới hạn thấp đủ chống lạm dụng.
-router.use(rateLimit({ windowMs: 60000, max: 10, message: 'Too many requests' }));
+// thời gian ngắn, giới hạn thấp đủ chống lạm dụng. CHỈ áp dụng cho route
+// cụ thể — cùng lý do đã sửa ở routes/create.js.
+router.use('/order/:id/restaurant', rateLimit({ windowMs: 60000, max: 10, message: 'Too many requests' }));
 
 router.post('/order/:id/restaurant', async (req, res, next) => {
   try {
