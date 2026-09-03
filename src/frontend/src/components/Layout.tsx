@@ -1,5 +1,15 @@
 // Main layout with Vietnamese nav, responsive, admin-gated links.
-// Header: bg-card border-b shadow-subtle. Main: bg-background. Footer: bg-muted/40 border-t.
+// Header: bg-card border-b shadow-subtle. Main: bg-background.
+//
+// Giai đoạn "tối ưu trang đặt món cho di động" (theo bản xem trước HTML
+// đã duyệt): BỎ HẲN chân trang cũ (SĐT/tên công ty/địa chỉ — thông tin
+// này giờ có đầy đủ ở /gioi-thieu, không cần lặp lại mọi trang). THAY
+// BẰNG thanh điều hướng CỐ ĐỊNH ở đáy màn hình (chỉ MOBILE, md:hidden —
+// desktop giữ nguyên nav ngang trên đầu như cũ) với đúng 4 mục theo thứ
+// tự yêu cầu, nhãn rút gọn: "Đặt món", "Theo dõi" (trước "Theo dõi
+// đơn"), "Lịch sử" (trước "Lịch sử đặt đơn"), "Tôi" (trước "Thông tin
+// của bạn"). Các mục còn lại (Hướng dẫn Grab, Đối tác đặt món, Giới
+// thiệu) vẫn nằm trong nút "Menu" như cũ trên mobile.
 
 import { useAuth } from "@/hooks/useAuth";
 import { useGetStoreHours, useIsStoreOpen } from "@/hooks/useQueries";
@@ -11,7 +21,6 @@ import {
   Info,
   type LucideIcon,
   Percent,
-  Phone,
   ShieldCheck,
   Store,
   Truck,
@@ -60,6 +69,18 @@ const PRIMARY_NAV: NavItem[] = [
   { to: "/ordering-partners", label: "Đối tác đặt món", icon: Store },
   { to: "/gioi-thieu", label: "Giới thiệu", icon: Info },
 ];
+
+// 4 mục "lõi" — chuyển xuống thanh điều hướng cố định ở đáy màn hình
+// (mobile), dùng nhãn RÚT GỌN riêng (khác PRIMARY_NAV — desktop vẫn hiện
+// nhãn đầy đủ như cũ). Đúng thứ tự đã yêu cầu.
+const BOTTOM_NAV: NavItem[] = [
+  { to: "/", label: "Đặt món", icon: UtensilsCrossed },
+  { to: "/track", label: "Theo dõi", icon: Truck },
+  { to: "/history", label: "Lịch sử", icon: History },
+  { to: "/profile", label: "Tôi", icon: User },
+];
+const BOTTOM_NAV_PATHS = new Set(BOTTOM_NAV.map((item) => item.to));
+
 const ADMIN_NAV: NavItem[] = [
   { to: "/admin", label: "Quản lý", icon: ShieldCheck, adminOnly: true },
   {
@@ -130,6 +151,37 @@ function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
   );
 }
 
+// Thanh điều hướng cố định ở đáy màn hình — CHỈ mobile (md:hidden). Icon
+// trên + nhãn ngắn dưới, mục active có gạch màu primary phía trên +
+// icon/nhãn đổi màu, khớp quy ước app di động thông thường.
+function BottomNavLink({ item }: { item: NavItem }) {
+  const router = useRouterState();
+  const isActive =
+    item.to === "/"
+      ? router.location.pathname === item.to
+      : router.location.pathname.startsWith(item.to);
+  const Icon = item.icon;
+  return (
+    <Link
+      to={item.to}
+      data-ocid={`bottom_nav.link.${item.to.replace(/\//g, "_") || "home"}`}
+      className={cn(
+        "relative flex flex-1 flex-col items-center gap-0.5 px-1 pb-1.5 pt-2.5 text-[10.5px] font-semibold transition-smooth",
+        isActive ? "text-primary" : "text-muted-foreground",
+      )}
+    >
+      {isActive && (
+        <span
+          className="absolute top-0 h-[3px] w-7 rounded-b-[4px] bg-primary"
+          aria-hidden="true"
+        />
+      )}
+      <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+      <span>{item.label}</span>
+    </Link>
+  );
+}
+
 function StoreHoursBar() {
   const { data: storeOpen } = useIsStoreOpen();
   const { data: storeHours } = useGetStoreHours();
@@ -194,6 +246,14 @@ export function Layout({ children }: { children: ReactNode }) {
     (item) =>
       !item.hideOnPrefixes?.some((p) => router.location.pathname.startsWith(p)),
   );
+  // Menu mobile (nút "Menu") chỉ còn các mục KHÔNG nằm trong thanh điều
+  // hướng cố định đáy màn hình (4 mục lõi đã chuyển xuống đó rồi).
+  const mobileMenuNav = visiblePrimaryNav.filter(
+    (item) => !BOTTOM_NAV_PATHS.has(item.to),
+  );
+  // Thanh điều hướng đáy cũng ẩn trên /driver — cùng logic hideOnPrefixes
+  // của 4 mục lõi trong PRIMARY_NAV (đều dùng chung ["/driver"]).
+  const showBottomNav = !router.location.pathname.startsWith("/driver");
 
   function showAdminNav() {
     return ADMIN_NAV;
@@ -252,7 +312,7 @@ export function Layout({ children }: { children: ReactNode }) {
             data-ocid="nav.mobile"
             aria-label="Điều hướng di động"
           >
-            {visiblePrimaryNav.map((item) => (
+            {mobileMenuNav.map((item) => (
               <NavLink
                 key={item.to}
                 item={item}
@@ -273,27 +333,24 @@ export function Layout({ children }: { children: ReactNode }) {
         <StoreHoursBar />
       </header>
 
-      <main className="flex-1 bg-background" data-ocid="page.main">
+      <main
+        className={cn("flex-1 bg-background", showBottomNav && "pb-24 md:pb-0")}
+        data-ocid="page.main"
+      >
         {children}
       </main>
 
-      <footer
-        className="border-t border-border bg-muted/40 px-4 py-4 md:px-6"
-        data-ocid="page.footer"
-      >
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-1.5 text-center text-xs text-muted-foreground">
-          <a
-            href="tel:0838656865"
-            data-ocid="page.footer.phone_link"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-smooth hover:opacity-80"
-          >
-            <Phone className="h-4 w-4" aria-hidden="true" />
-            0838 656 865
-          </a>
-          <p>© 2026 CÔNG TY TNHH THỰC PHẨM GIA KHÁNH - GIA KHÁNH FOODS</p>
-          <p>69 đường Láng, P. Đống Đa, Tp. Hà nội.</p>
-        </div>
-      </footer>
+      {showBottomNav && (
+        <nav
+          className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-card pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(0,0,0,0.05)] md:hidden"
+          data-ocid="nav.bottom"
+          aria-label="Điều hướng dưới"
+        >
+          {BOTTOM_NAV.map((item) => (
+            <BottomNavLink key={item.to} item={item} />
+          ))}
+        </nav>
+      )}
     </div>
   );
 }
