@@ -10,10 +10,17 @@
 // — mỗi bước "sáng" 2s; nhãn không cố định dưới từng icon, chỉ 1 dòng chữ
 // dùng chung bên dưới đổi nội dung theo bước đang sáng).
 //
+// Đã chuyển "Đặt tài xế qua" (4 dịch vụ giao hàng + icon xe máy) vào BÊN
+// TRONG phần mở rộng, ngay dưới bước "Bạn gọi tài xế" — đã xác nhận với
+// người dùng RỦI RO đi kèm: mặc định thu gọn nên khách phải chủ động bấm
+// mở ra mới thấy nút đặt tài xế, người dùng đã CHỌN GIỮ NGUYÊN như đề
+// xuất (không cần thêm gợi ý nhắc bấm mở).
+//
 // Xây từ bản xem trước HTML đã duyệt — giữ nguyên timing, icon, màu sắc
 // của phần mở rộng.
 
 import {
+  Bike,
   ChevronDown,
   CreditCard,
   Package,
@@ -39,6 +46,41 @@ const STEPS: FlowStep[] = [
 // 10s / 5 bước = 2s/bước — khớp đúng % trong keyframes (mỗi bước "sáng"
 // 0-20% của chu kỳ, dịch bằng animationDelay riêng từng bước).
 const STEP_DELAY_S = 2;
+
+// 4 dịch vụ giao hàng khách tự chọn để đặt tài xế — hệ thống không đặt
+// hộ, chỉ dẫn link tiện cho khách. Màu gần đúng theo nhận diện thương
+// hiệu công khai. Chuyển từ CreateOrder.tsx vào đây nguyên trạng.
+const DELIVERY_SERVICES: {
+  slug: string;
+  name: string;
+  logo: string;
+  url: string;
+}[] = [
+  {
+    slug: "grab",
+    name: "Grab giao hàng",
+    logo: "/assets/images/delivery/grab.png",
+    url: "https://www.grab.com/vn/express/",
+  },
+  {
+    slug: "xanhsm",
+    name: "Xanh SM giao hàng",
+    logo: "/assets/images/delivery/xanhsm.png",
+    url: "https://www.greensm.com/vn-vi/green-express",
+  },
+  {
+    slug: "be",
+    name: "Be giao hàng",
+    logo: "/assets/images/delivery/be.png",
+    url: "https://be.com.vn/khach-hang-ca-nhan/dich-vu-giao-hang/",
+  },
+  {
+    slug: "ahamove",
+    name: "Ahamove giao hàng",
+    logo: "/assets/images/delivery/ahamove.png",
+    url: "https://ahamove.com/service/aha-delivery",
+  },
+];
 
 export function OrderProcessFlow() {
   const [expanded, setExpanded] = useState(false);
@@ -153,6 +195,47 @@ export function OrderProcessFlow() {
             {step.label}
           </span>
         ))}
+      </div>
+
+      {/* Đặt tài xế qua — chuyển vào đây từ CreateOrder.tsx (giữ nguyên
+          hành vi: khách tự bấm mở app ngoài, hệ thống không đặt hộ). */}
+      <div className="mt-3.5 border-t border-dashed border-border pt-3.5">
+        <p
+          className="mb-1.5 text-xs text-muted-foreground"
+          data-ocid="order_process_flow.delivery_label"
+        >
+          Đặt tài xế qua
+        </p>
+        <div className="flex items-center gap-2.5">
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
+            aria-label="Dịch vụ giao hàng"
+            data-ocid="order_process_flow.delivery_icon"
+          >
+            <Bike className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {DELIVERY_SERVICES.map((service) => (
+              <a
+                key={service.slug}
+                href={service.url}
+                target="_blank"
+                rel="noreferrer"
+                title={service.name}
+                aria-label={service.name}
+                data-ocid={`order_process_flow.delivery_badge.${service.slug}`}
+                className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full transition-smooth hover:opacity-80"
+              >
+                <img
+                  src={service.logo}
+                  alt={service.name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

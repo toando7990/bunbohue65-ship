@@ -21,7 +21,6 @@ import { PromotionBanner } from "@/components/PromotionBanner";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
 import { SalesProgressPanel } from "@/components/SalesProgressPanel";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -48,7 +47,6 @@ import {
 import type { CreateOrderPayload, MenuItem, Restaurant } from "@/types";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
-  Bike,
   Clock,
   Loader2,
   Receipt,
@@ -59,40 +57,6 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-// 4 dịch vụ giao hàng khách tự chọn để đặt tài xế — hệ thống không đặt hộ,
-// chỉ dẫn link tiện cho khách. Màu gần đúng theo nhận diện thương hiệu công khai.
-const DELIVERY_SERVICES: {
-  slug: string;
-  name: string;
-  logo: string;
-  url: string;
-}[] = [
-  {
-    slug: "grab",
-    name: "Grab giao hàng",
-    logo: "/assets/images/delivery/grab.png",
-    url: "https://www.grab.com/vn/express/",
-  },
-  {
-    slug: "xanhsm",
-    name: "Xanh SM giao hàng",
-    logo: "/assets/images/delivery/xanhsm.png",
-    url: "https://www.greensm.com/vn-vi/green-express",
-  },
-  {
-    slug: "be",
-    name: "Be giao hàng",
-    logo: "/assets/images/delivery/be.png",
-    url: "https://be.com.vn/khach-hang-ca-nhan/dich-vu-giao-hang/",
-  },
-  {
-    slug: "ahamove",
-    name: "Ahamove giao hàng",
-    logo: "/assets/images/delivery/ahamove.png",
-    url: "https://ahamove.com/service/aha-delivery",
-  },
-];
 import { toast } from "sonner";
 
 function formatVnd(value: number): string {
@@ -457,81 +421,35 @@ export default function CreateOrder() {
           {profileComplete && (
             <SalesProgressPanel email={customer.receiverEmail.trim()} />
           )}
-
-          {/* Dịch vụ giao hàng — biểu tượng xe máy đại diện "giao hàng" +
-              4 logo app thật (Grab, Xanh SM, Be, Ahamove — người dùng cung
-              cấp ảnh icon từ màn hình điện thoại, đã cắt + bo góc) cùng hàng
-              bên phải, khách tự chọn để đặt tài xế nhận hàng, hệ thống
-              không đặt hộ. */}
-          <div>
-            <p
-              className="mb-1.5 text-xs text-muted-foreground"
-              data-ocid="create_order.delivery_label"
-            >
-              Đặt tài xế qua
-            </p>
-            <div className="flex items-center gap-2.5">
-              <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
-                aria-label="Dịch vụ giao hàng"
-                data-ocid="create_order.delivery_icon"
-              >
-                <Bike className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {DELIVERY_SERVICES.map((service) => (
-                  <a
-                    key={service.slug}
-                    href={service.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={service.name}
-                    aria-label={service.name}
-                    data-ocid={`create_order.delivery_badge.${service.slug}`}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full transition-smooth hover:opacity-80"
-                  >
-                    <img
-                      src={service.logo}
-                      alt={service.name}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
         </header>
 
         <div className="flex flex-col gap-6">
-          {/* Chọn nhà hàng + món gộp chung 1 thẻ — trước đây tách 2 thẻ đánh
-              số bước 1/2, gộp lại cho gọn (giải phóng không gian dọc cho
-              banner khuyến mãi phía trên). Hành vi giữ nguyên: menu hiện
-              sẵn ngay từ đầu, không phụ thuộc đã chọn nhà hàng hay chưa —
-              chỉ chặn ở bước THÊM MÓN (xem handleQuantityChange). Bỏ hẳn
-              dòng gợi ý "Xem menu thoải mái..." vì ô chọn nhà hàng giờ nằm
-              ngay phía trên menu trong cùng 1 khối, không cần giải thích
-              thêm. */}
-          <Card data-ocid="create_order.menu_card">
-            <CardContent>
-              <div className="mb-4" data-ocid="create_order.restaurant_card">
-                <RestaurantSelect
-                  restaurants={restaurants}
-                  isLoading={restaurantsLoading}
-                  value={restaurantId}
-                  onChange={handleRestaurantChange}
-                />
-              </div>
-              <MenuPicker
-                menu={menu}
-                isLoading={menuLoading}
-                cart={cart}
-                onQuantityChange={handleQuantityChange}
-                disabled={submitting}
-                groupByCategory
+          {/* Chọn nhà hàng + món — không còn bọc trong khung Card (đúng
+              theo bản xem trước đã duyệt: bỏ viền/bóng thừa, để món nằm
+              thẳng trên nền trang, hiện được nhiều món hơn). 1 đường kẻ
+              mảnh phân tách nhẹ với phần trên thay cho khung card cũ.
+              Hành vi giữ nguyên: menu hiện sẵn ngay từ đầu, không phụ
+              thuộc đã chọn nhà hàng hay chưa — chỉ chặn ở bước THÊM MÓN
+              (xem handleQuantityChange). */}
+          <div data-ocid="create_order.menu_card">
+            <hr className="mb-5 border-border" />
+            <div className="mb-4" data-ocid="create_order.restaurant_card">
+              <RestaurantSelect
+                restaurants={restaurants}
+                isLoading={restaurantsLoading}
+                value={restaurantId}
+                onChange={handleRestaurantChange}
               />
-            </CardContent>
-          </Card>
+            </div>
+            <MenuPicker
+              menu={menu}
+              isLoading={menuLoading}
+              cart={cart}
+              onQuantityChange={handleQuantityChange}
+              disabled={submitting}
+              groupByCategory
+            />
+          </div>
         </div>
 
         {/* Gợi ý gọi thêm */}
