@@ -119,6 +119,16 @@ function CartLineThumbnail({ item }: { item: MenuItem }) {
 export default function CreateOrder() {
   const navigate = useNavigate();
   const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
+  // Chỉ hiện nhà hàng ĐANG BẬT hiển thị (admin tự ẩn/hiện ở
+  // /admin/restaurants) trong dropdown chọn nhà hàng — PHÁT HIỆN khi điều
+  // tra báo lỗi "bật/tắt hiển thị không có tác dụng": trước đây dropdown
+  // này truyền THẲNG mảng restaurants chưa lọc, khiến nút ẩn/hiện của
+  // admin hoàn toàn không có tác dụng gì với khách hàng (dù đã ẩn, khách
+  // vẫn chọn được và đặt đơn bình thường). Vẫn giữ `restaurants` (chưa
+  // lọc) cho selectedRestaurant bên dưới — để nếu khách ĐÃ chọn 1 nhà
+  // hàng trước khi nó bị ẩn, chi tiết vẫn tra cứu được bình thường, không
+  // vỡ giao diện.
+  const visibleRestaurants = (restaurants ?? []).filter((r) => r.visible);
   // A1: trạng thái mở/đóng cửa hàng (toàn cục). data===false → cửa hàng đang
   // đóng → chặn đặt đơn và hiện màn hình chờ thay vì cho phép chọn món.
   const { data: storeOpen } = useIsStoreOpen();
@@ -430,7 +440,7 @@ export default function CreateOrder() {
             <hr className="mb-5 border-border" />
             <div className="mb-4" data-ocid="create_order.restaurant_card">
               <RestaurantSelect
-                restaurants={restaurants}
+                restaurants={visibleRestaurants}
                 isLoading={restaurantsLoading}
                 value={restaurantId}
                 onChange={handleRestaurantChange}
