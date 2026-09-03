@@ -8,6 +8,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Clock,
   History,
+  Info,
   type LucideIcon,
   Percent,
   Phone,
@@ -57,6 +58,7 @@ const PRIMARY_NAV: NavItem[] = [
   },
   { to: "/grab-guide", label: "Hướng dẫn đặt Grab giao hàng", icon: Video },
   { to: "/ordering-partners", label: "Đối tác đặt món", icon: Store },
+  { to: "/gioi-thieu", label: "Giới thiệu", icon: Info },
 ];
 const ADMIN_NAV: NavItem[] = [
   { to: "/admin", label: "Quản lý", icon: ShieldCheck, adminOnly: true },

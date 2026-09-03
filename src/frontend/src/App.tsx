@@ -10,6 +10,7 @@ import CounterOrder from "@/pages/CounterOrder";
 import CreateOrder from "@/pages/CreateOrder";
 import { DeviceManager } from "@/pages/DeviceManager";
 import { DriverPaymentScreen } from "@/pages/DriverPaymentScreen";
+import GioiThieu from "@/pages/GioiThieu";
 import GrabGuide from "@/pages/GrabGuide";
 import { MenuManager } from "@/pages/MenuManager";
 import OrderHistory from "@/pages/OrderHistory";
@@ -136,6 +137,12 @@ const grabGuideRoute = createRoute({
   component: () => <GrabGuide />,
 });
 
+const gioiThieuRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/gioi-thieu",
+  component: () => <GioiThieu />,
+});
+
 const orderingPartnersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/ordering-partners",
@@ -246,6 +253,7 @@ const router = createRouter({
     historyRoute,
     profileRoute,
     grabGuideRoute,
+    gioiThieuRoute,
     orderingPartnersRoute,
     driverRoute,
     counterRoute,
