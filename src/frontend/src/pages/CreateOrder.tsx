@@ -19,6 +19,7 @@ import { MenuPicker } from "@/components/MenuPicker";
 import { OrderProcessFlow } from "@/components/OrderProcessFlow";
 import { PromotionBanner } from "@/components/PromotionBanner";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
+import { SalesProgressPanel } from "@/components/SalesProgressPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -452,6 +453,10 @@ export default function CreateOrder() {
           <OrderProcessFlow />
 
           <PromotionBanner />
+
+          {profileComplete && (
+            <SalesProgressPanel email={customer.receiverEmail.trim()} />
+          )}
 
           {/* Dịch vụ giao hàng — biểu tượng xe máy đại diện "giao hàng" +
               4 logo app thật (Grab, Xanh SM, Be, Ahamove — người dùng cung
