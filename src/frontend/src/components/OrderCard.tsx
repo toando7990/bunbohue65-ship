@@ -115,10 +115,10 @@ export interface OrderCardProps {
    */
   disableDetailLink?: boolean;
   /**
-   * Khi true: bỏ 2 khối riêng "Địa chỉ nhà hàng"/"SĐT liên hệ" (chiếm nhiều
-   * chỗ), thay bằng hiển thị gọn — địa chỉ nằm dưới mã đơn (chữ nhỏ), SĐT
-   * liên hệ nằm bên phải cùng hàng với tên khách. Dùng cho "Lịch sử đơn
-   * hàng" trên /driver — danh sách dài, cần gọn để xem nhiều đơn cùng lúc.
+   * Khi true: ẨN HẲN địa chỉ nhà hàng + SĐT liên hệ (không hiện dưới bất
+   * kỳ dạng nào). Dùng cho "Lịch sử đơn hàng" trên /driver — nhân viên xem
+   * lịch sử đơn của ĐÚNG nhà hàng mình đang trực, đã biết rõ địa
+   * chỉ/SĐT của quán mình nên không cần lặp lại trên từng thẻ đơn.
    */
   compactRestaurantInfo?: boolean;
 }
@@ -184,12 +184,6 @@ export function OrderCard({
             />
           </div>
         )}
-        {compactRestaurantInfo && restaurantAddress && (
-          <p className="flex min-w-0 shrink-0 items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span className="max-w-[9rem] truncate">{restaurantAddress}</span>
-          </p>
-        )}
       </div>
 
       <h3 className="mt-1 min-w-0 truncate font-display text-base font-semibold text-foreground">
@@ -217,11 +211,6 @@ export function OrderCard({
               ocid={`order.card.${index}.copy_phone_button`}
             />
           </div>
-        )}
-        {compactRestaurantInfo && contactPhone && (
-          <span className="shrink-0 text-sm text-muted-foreground">
-            {contactPhone}
-          </span>
         )}
       </div>
 
