@@ -450,7 +450,7 @@ export default function CreateOrder() {
         {/* Gợi ý gọi thêm */}
         {upsellItems.length > 0 && (
           <div
-            className="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise"
+            className="fixed inset-x-4 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise md:bottom-24"
             data-ocid="create_order.upsell_strip"
           >
             <div className="mb-2 flex items-center justify-between">
@@ -503,12 +503,14 @@ export default function CreateOrder() {
           </div>
         )}
 
-        {/* Thanh giỏ hàng nổi */}
+        {/* Thanh giỏ hàng nổi — đẩy lên trên thanh điều hướng đáy (mobile,
+            Layout.tsx) bằng bottom-[calc(...)] + env(safe-area-inset-bottom);
+            desktop không có thanh điều hướng đáy nên giữ nguyên bottom-4. */}
         {itemCount > 0 && (
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-gradient-primary px-5 py-4 text-primary-foreground shadow-elevated"
+            className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-gradient-primary px-5 py-4 text-primary-foreground shadow-elevated md:bottom-4"
             data-ocid="create_order.open_cart_button"
           >
             <span className="flex flex-col items-start">
