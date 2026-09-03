@@ -1,15 +1,27 @@
-// OrderProcessFlow — thanh quy trình động thay cho tiêu đề "Đặt món", nêu
-// bật điểm khác biệt của app: không có đội tài xế riêng, khách tự đặt tài
-// xế ngoài, tài xế tới quán trả tiền mặt rồi tự giao. 5 bước, chấm chạy
-// dọc đường nối trong 1 chu kỳ 10s (animate-order-flow-run, khai báo ở
-// tailwind.config.js) — mỗi bước "sáng" 2s, đủ thời gian đọc câu dài nhất
-// mà không quá chậm. Nhãn không cố định dưới từng icon — chỉ 1 dòng chữ
-// dùng chung bên dưới, đổi nội dung theo bước đang "sáng" (label-fade,
-// cùng chu kỳ/degree lệch với icon để luôn khớp).
+// OrderProcessFlow — thanh quy trình giao hàng, thay cho tiêu đề "Đặt
+// món". Nêu bật điểm khác biệt của app: không có đội tài xế riêng, khách
+// tự đặt tài xế ngoài, tài xế tới quán trả tiền mặt rồi tự giao.
 //
-// Xây từ bản xem trước HTML đã duyệt — giữ nguyên timing, icon, màu sắc.
+// Giai đoạn tối ưu hiển thị (theo yêu cầu "hiển thị tối đa món chính"):
+// MẶC ĐỊNH THU GỌN thành 1 dòng (5 chấm màu + dòng chữ + mũi tên) — khách
+// quen không cần thấy lại quy trình mỗi lần vào trang, khách mới tò mò tự
+// bấm mở ra xem. Mở ra mới hiện đủ 5 bước hoạt hình (chấm chạy dọc đường
+// nối, chu kỳ 10s — animate-order-flow-run, khai báo ở tailwind.config.js
+// — mỗi bước "sáng" 2s; nhãn không cố định dưới từng icon, chỉ 1 dòng chữ
+// dùng chung bên dưới đổi nội dung theo bước đang sáng).
+//
+// Xây từ bản xem trước HTML đã duyệt — giữ nguyên timing, icon, màu sắc
+// của phần mở rộng.
 
-import { CreditCard, Package, Phone, Receipt, Store } from "lucide-react";
+import {
+  ChevronDown,
+  CreditCard,
+  Package,
+  Phone,
+  Receipt,
+  Store,
+} from "lucide-react";
+import { useState } from "react";
 
 interface FlowStep {
   icon: typeof Receipt;
@@ -29,12 +41,54 @@ const STEPS: FlowStep[] = [
 const STEP_DELAY_S = 2;
 
 export function OrderProcessFlow() {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!expanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        aria-expanded={false}
+        data-ocid="order_process_flow.collapsed"
+        className="flex w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-smooth hover:bg-secondary/60"
+      >
+        <span className="flex shrink-0 items-center gap-1" aria-hidden="true">
+          {STEPS.map((step, i) => (
+            <span
+              key={step.label}
+              className="h-1.5 w-1.5 rounded-full"
+              style={{
+                backgroundColor:
+                  i % 2 === 0
+                    ? "oklch(var(--primary))"
+                    : "oklch(var(--accent))",
+              }}
+            />
+          ))}
+        </span>
+        <span className="flex-1 text-[13px] font-semibold text-foreground">
+          Cách chúng tôi giao hàng đến bạn
+        </span>
+        <ChevronDown
+          className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+      </button>
+    );
+  }
+
   return (
     <div
       className="rounded-lg border border-border bg-card p-4"
-      data-ocid="order_process_flow"
+      data-ocid="order_process_flow.expanded"
     >
-      <p className="mb-3.5 flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+      <button
+        type="button"
+        onClick={() => setExpanded(false)}
+        aria-expanded={true}
+        data-ocid="order_process_flow.collapse_button"
+        className="mb-3.5 flex w-full items-center gap-1.5 text-left text-[13px] font-semibold text-foreground"
+      >
         <svg
           width="15"
           height="15"
@@ -46,8 +100,12 @@ export function OrderProcessFlow() {
         >
           <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
         </svg>
-        Cách Bún Bò Huế 65 giao hàng đến bạn
-      </p>
+        <span className="flex-1">Cách Bún Bò Huế 65 giao hàng đến bạn</span>
+        <ChevronDown
+          className="h-3.5 w-3.5 shrink-0 rotate-180 text-muted-foreground transition-transform"
+          aria-hidden="true"
+        />
+      </button>
 
       <div className="relative flex items-start">
         <div className="absolute left-[10%] right-[10%] top-[17px] h-0.5 overflow-visible bg-[repeating-linear-gradient(90deg,oklch(var(--border))_0px,oklch(var(--border))_5px,transparent_5px,transparent_10px)]">

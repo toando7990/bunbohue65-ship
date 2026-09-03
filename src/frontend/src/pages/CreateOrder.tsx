@@ -20,7 +20,7 @@ import { OrderProcessFlow } from "@/components/OrderProcessFlow";
 import { PromotionBanner } from "@/components/PromotionBanner";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -448,7 +448,7 @@ export default function CreateOrder() {
         className="mx-auto w-full max-w-2xl px-4 py-6 pb-28 md:px-6 md:py-10"
         data-ocid="create_order.page"
       >
-        <header className="mb-6 flex flex-col gap-3">
+        <header className="mb-4 flex flex-col gap-2.5">
           <OrderProcessFlow />
 
           <PromotionBanner />
@@ -508,9 +508,6 @@ export default function CreateOrder() {
               ngay phía trên menu trong cùng 1 khối, không cần giải thích
               thêm. */}
           <Card data-ocid="create_order.menu_card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Chọn nhà hàng và món</CardTitle>
-            </CardHeader>
             <CardContent>
               <div className="mb-4" data-ocid="create_order.restaurant_card">
                 <RestaurantSelect
