@@ -29,6 +29,7 @@ const webhooksRoutes = require('./routes/webhooks');
 const invoiceRoutes = require('./routes/invoice');
 const salesBonusCron = require('./routes/sales-bonus-cron');
 const kmNotifyCron = require('./routes/km-notify-cron');
+const cleanupUnpaidOrdersCron = require('./routes/cleanup-unpaid-orders-cron');
 const analyticsRoutes = require('./routes/analytics');
 const uploadRoutes = require('./routes/upload');
 const customersRoutes = require('./routes/customers');
@@ -114,6 +115,7 @@ cronJobs.push(webhooksRoutes.startTingeePoll(db));
 cronJobs.push(invoiceRoutes.startInvoiceCron(db));
 cronJobs.push(salesBonusCron.startSalesBonusCron(db));
 cronJobs.push(kmNotifyCron.startKmNotifyCron(db));
+cronJobs.push(cleanupUnpaidOrdersCron.startCleanupUnpaidOrdersCron(db));
 
 // --- Start ---
 app.listen(PORT, () => {
