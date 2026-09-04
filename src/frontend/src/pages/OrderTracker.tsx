@@ -1,7 +1,8 @@
 // OrderTracker — poll getOrderStatus canister 5s, hiển thị trạng thái realtime.
 // Khách tự đặt tài xế bằng app ngoài nên trang này chỉ cung cấp thông tin để dán
 // vào app ngoài: địa chỉ nhà hàng + tổng tiền (nút copy), trạng thái "Thanh toán"
-// và tiến trình 2 bước (Chờ tài xế thanh toán -> Tài xế đã nhận hàng). Không có
+// và tiến trình 2 bước (Chờ tài xế thanh toán -> Tài xế đã thanh toán và
+// nhận hàng). Không có
 // nút "Thanh toán" cho khách. Nút "Theo dõi hành trình" mở Ahamove shared_link.
 // Nút "Tải hoá đơn" tải Bkav PDF qua VPS /order/:id/invoice. UI tiếng Việt.
 
@@ -39,7 +40,7 @@ type InvoiceState =
   | { kind: "success"; url: string }
   | { kind: "error"; message: string };
 
-// Bước hành trình giao hàng — chỉ còn 2 bước, "Tài xế đã nhận hàng" là bước kết thúc.
+// Bước hành trình giao hàng — chỉ còn 2 bước, "Tài xế đã thanh toán và nhận hàng" là bước kết thúc.
 interface TimelineStep {
   key: string;
   label: string;
@@ -56,7 +57,7 @@ const TIMELINE: TimelineStep[] = [
   },
   {
     key: BookingStatus.pickedUp,
-    label: "Tài xế đã nhận hàng",
+    label: "Tài xế đã thanh toán và nhận hàng",
     description: "Tài xế đã nhận hàng — đơn hoàn tất.",
     icon: Truck,
   },
