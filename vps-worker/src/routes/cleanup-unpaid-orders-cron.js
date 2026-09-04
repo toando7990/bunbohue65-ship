@@ -39,26 +39,42 @@
 const cron = require('node-cron');
 const shutdown = require('./../lib/shutdown');
 
-function startOfDay(d) {
-  const r = new Date(d);
-  r.setHours(0, 0, 0, 0);
-  return r;
+const UTC7_OFFSET_MS = 7 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Mốc "đầu ngày hôm nay" theo giờ Việt Nam (UTC+7), tính TUYỆT ĐỐI bằng
+// epoch ms — KHÔNG phụ thuộc múi giờ cấu hình của máy chủ. CÙNG CÔNG THỨC
+// với startOfTodayUtc7() ở routes/order-history.js/restaurant-history.js
+// (và utc7DayStart() bên canister lib/core.mo) để mọi nơi tính ranh giới
+// ngày đều khớp nhau tuyệt đối.
+//
+// SỬA LỖI (phát hiện qua Composer, đã tự kiểm chứng lại độc lập trước khi
+// duyệt): bản cũ dùng startOfDay()/setHours(0,0,0,0) — hàm này tính theo
+// múi giờ CỤC BỘ của hệ điều hành máy chủ, chỉ đúng NẾU đồng hồ VPS đã
+// thực sự đặt giờ VN (giả định trước đây CHƯA từng xác minh thật). Nếu
+// VPS chạy giờ UTC (rất phổ biến với VPS mặc định, trừ khi cấu hình rõ),
+// "đầu ngày hôm nay" sẽ lệch tới 7 tiếng so với thực tế giờ VN — khiến
+// nút xoá thủ công + cron tự động tính SAI phạm vi ngày, có thể bỏ sót
+// hoàn toàn các đơn đáng lẽ phải xoá (deletedCount: 0 dù có đơn cũ thật).
+function startOfTodayUtc7(nowMs) {
+  const shifted = nowMs + UTC7_OFFSET_MS;
+  const dayStartShifted = Math.floor(shifted / DAY_MS) * DAY_MS;
+  return dayStartShifted - UTC7_OFFSET_MS;
 }
 
-// Trọn ngày hôm trước (giờ hệ thống VPS): [start, endExclusive).
+// Trọn ngày hôm trước (giờ VN, UTC+7 — tuyệt đối, không phụ thuộc múi giờ
+// máy chủ): [start, endExclusive).
 function yesterdayRange(now) {
-  const todayStart = startOfDay(now);
-  const yesterdayStart = new Date(todayStart);
-  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-  return { start: yesterdayStart.getTime(), endExclusive: todayStart.getTime() };
+  const todayStart = startOfTodayUtc7(now.getTime());
+  return { start: todayStart - DAY_MS, endExclusive: todayStart };
 }
 
-// MỌI THỜI ĐIỂM trước 00:00 hôm nay (giờ hệ thống VPS): [0, endExclusive).
+// MỌI THỜI ĐIỂM trước 00:00 hôm nay (giờ VN, UTC+7 — tuyệt đối): [0, endExclusive).
 // Dùng cho nút thủ công "trước ngày hiện tại" — rộng hơn yesterdayRange,
 // dọn luôn cả những đơn cũ hơn hôm qua (ví dụ cron bị lỡ chạy 1 ngày nào
 // đó do server tắt, hoặc admin muốn dọn sạch 1 lần).
 function beforeTodayRange(now) {
-  return { start: 0, endExclusive: startOfDay(now).getTime() };
+  return { start: 0, endExclusive: startOfTodayUtc7(now.getTime()) };
 }
 
 // Hàm xoá CỐT LÕI, dùng chung cho cả cron tự động lẫn nút thủ công — chỉ
