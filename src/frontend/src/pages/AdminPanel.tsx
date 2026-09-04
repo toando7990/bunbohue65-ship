@@ -1,6 +1,17 @@
 // AdminPanel — trang /admin: setVpsSecret, generateActivationCode,
-// revokeDevice, cleanupExpiredActivations, getCanisterIdText. UI tiếng Việt.
+// revokeDevice, cleanupExpiredActivations, getCanisterIdText,
+// cleanupUnpaidOrders. UI tiếng Việt.
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,6 +30,7 @@ import {
   useSetStoreHours,
   useSetVpsSecret,
 } from "@/hooks/useQueries";
+import { cleanupUnpaidOrders } from "@/lib/vps-client";
 import type { PaymentMode } from "@/types";
 import {
   Clock,
@@ -26,6 +38,7 @@ import {
   KeyRound,
   Loader2,
   ShieldOff,
+  Trash2,
   Wallet,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -76,6 +89,15 @@ export function AdminPanel() {
   const [openMinute, setOpenMinute] = useState<string>("");
   const [closeHour, setCloseHour] = useState<string>("");
   const [closeMinute, setCloseMinute] = useState<string>("");
+  // Xoá đơn chưa thanh toán trước ngày hiện tại — 2 bước xác nhận liên
+  // tiếp (không dùng useMutation/useQueries vì cleanupUnpaidOrders gọi
+  // thẳng VPS, không qua canister — cùng quy ước changeOrderRestaurant ở
+  // ChangeRestaurantDialog.tsx: gọi trực tiếp lib/vps-client, quản lý
+  // trạng thái bằng useState cục bộ).
+  const [cleanupStage, setCleanupStage] = useState<
+    "idle" | "confirm1" | "confirm2"
+  >("idle");
+  const [cleanupPending, setCleanupPending] = useState(false);
 
   const setSecretMutation = useSetVpsSecret();
   const canisterIdQuery = useCanisterIdText();
@@ -185,6 +207,27 @@ export function AdminPanel() {
           ? err.message
           : "Không thể cập nhật giờ mở/đóng cửa hàng.";
       toast.error(message);
+    }
+  }
+
+  async function handleConfirmCleanup() {
+    setCleanupPending(true);
+    try {
+      const result = await cleanupUnpaidOrders();
+      if (result.deletedCount === 0) {
+        toast.success("Không có đơn nào cần xoá.");
+      } else {
+        toast.success(`Đã xoá ${result.deletedCount} đơn chưa thanh toán.`);
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Không thể xoá đơn chưa thanh toán.";
+      toast.error(message);
+    } finally {
+      setCleanupPending(false);
+      setCleanupStage("idle");
     }
   }
 
@@ -516,7 +559,89 @@ export function AdminPanel() {
             </Button>
           </form>
         </SectionCard>
+
+        <SectionCard
+          icon={Trash2}
+          title="Xoá đơn chưa thanh toán"
+          description="Xoá vĩnh viễn mọi đơn CHƯA THANH TOÁN (kể cả hết hạn QR) được tạo TRƯỚC ngày hôm nay trên VPS. Đơn đã thanh toán/hoàn tiền không bao giờ bị đụng tới. Hành động này không thể hoàn tác."
+          testId="admin.cleanup_unpaid_orders"
+        >
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => setCleanupStage("confirm1")}
+            data-ocid="admin.cleanup_unpaid_orders.open_button"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            Xoá các đơn hàng chưa thanh toán trước ngày hiện tại
+          </Button>
+        </SectionCard>
       </div>
+
+      {/* Xác nhận LẦN 1 */}
+      <AlertDialog
+        open={cleanupStage === "confirm1"}
+        onOpenChange={(open) => {
+          if (!open) setCleanupStage("idle");
+        }}
+      >
+        <AlertDialogContent data-ocid="admin.cleanup_unpaid_orders.confirm1_dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xoá đơn chưa thanh toán?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Toàn bộ đơn chưa thanh toán (kể cả hết hạn QR) được tạo trước ngày
+              hôm nay sẽ bị xoá vĩnh viễn khỏi VPS, kèm log liên quan. Đơn đã
+              thanh toán không bị ảnh hưởng.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-ocid="admin.cleanup_unpaid_orders.confirm1_cancel">
+              Huỷ
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => setCleanupStage("confirm2")}
+              data-ocid="admin.cleanup_unpaid_orders.confirm1_continue"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Tiếp tục
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Xác nhận LẦN 2 — cuối cùng, gọi API */}
+      <AlertDialog
+        open={cleanupStage === "confirm2"}
+        onOpenChange={(open) => {
+          if (!open) setCleanupStage("idle");
+        }}
+      >
+        <AlertDialogContent data-ocid="admin.cleanup_unpaid_orders.confirm2_dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận lần cuối</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này KHÔNG THỂ HOÀN TÁC. Bạn có chắc chắn muốn xoá vĩnh
+              viễn các đơn chưa thanh toán này không?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-ocid="admin.cleanup_unpaid_orders.confirm2_cancel">
+              Huỷ
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCleanup}
+              disabled={cleanupPending}
+              data-ocid="admin.cleanup_unpaid_orders.confirm2_confirm"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cleanupPending && (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              )}
+              Xoá vĩnh viễn
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

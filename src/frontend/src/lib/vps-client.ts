@@ -193,6 +193,21 @@ export async function requestQr(
   });
 }
 
+// Nút "Xoá các đơn hàng chưa thanh toán trước ngày hiện tại" (trang Quản
+// lý, admin) — VPS POST /admin/cleanup-unpaid-orders. Xoá vĩnh viễn mọi
+// đơn unpaid/expired có created_at TRƯỚC 00:00 hôm nay (giờ hệ thống
+// VPS). Đơn đã thanh toán/hoàn tiền không bao giờ bị đụng tới.
+export async function cleanupUnpaidOrders(): Promise<{
+  ok: boolean;
+  deletedCount: number;
+  orderIds: string[];
+}> {
+  return vpsFetch<{ ok: boolean; deletedCount: number; orderIds: string[] }>({
+    method: "POST",
+    path: "/admin/cleanup-unpaid-orders",
+  });
+}
+
 // Khách tự đổi nhà hàng của đơn CHƯA THANH TOÁN — trường hợp đặt tài xế
 // đến nhầm nhà hàng (Giai đoạn 4a). VPS POST /order/:id/restaurant.
 export async function changeOrderRestaurant(
