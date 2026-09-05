@@ -22,35 +22,69 @@
 const cron = require('node-cron');
 const canister = require('../lib/canister');
 
-function startOfDay(d) {
-  const r = new Date(d);
-  r.setHours(0, 0, 0, 0);
-  return r;
+const UTC7_OFFSET_MS = 7 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Mốc "đầu ngày hôm nay" theo giờ VN (UTC+7), tính TUYỆT ĐỐI bằng epoch ms
+// — KHÔNG phụ thuộc múi giờ máy chủ. Cùng công thức đã kiểm chứng ở
+// routes/cleanup-unpaid-orders-cron.js/order-history.js/km-notify-cron.js.
+function startOfTodayUtc7(nowMs) {
+  const shifted = nowMs + UTC7_OFFSET_MS;
+  const dayStartShifted = Math.floor(shifted / DAY_MS) * DAY_MS;
+  return dayStartShifted - UTC7_OFFSET_MS;
+}
+
+// Lấy năm/tháng/ngày theo giờ VN từ 1 mốc epoch bất kỳ — không phụ thuộc
+// múi giờ máy chủ (dịch +7h rồi đọc các thành phần UTC).
+function vnDateParts(ms) {
+  const d = new Date(ms + UTC7_OFFSET_MS);
+  return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, day: d.getUTCDate() };
 }
 
 function pad(n, w) {
   return String(n).padStart(w, '0');
 }
 
-function formatYYYYMMDD(d) {
-  return `${d.getFullYear()}${pad(d.getMonth() + 1, 2)}${pad(d.getDate(), 2)}`;
+function formatYYYYMMDD(ms) {
+  const { y, m, day } = vnDateParts(ms);
+  return `${y}${pad(m, 2)}${pad(day, 2)}`;
 }
 
-function formatYYYYMM(d) {
-  return `${d.getFullYear()}${pad(d.getMonth() + 1, 2)}`;
+function formatYYYYMM(ms) {
+  const { y, m } = vnDateParts(ms);
+  return `${y}${pad(m, 2)}`;
 }
 
+// SỬA LỖI (phát hiện qua điều tra lỗi email KM cùng nguyên nhân): bản cũ
+// dùng setHours(0,0,0,0)/getFullYear()/getMonth()/getDate() — phụ thuộc
+// múi giờ CỤC BỘ máy chủ. Nếu VPS chạy giờ UTC, lịch phát thưởng
+// tuần/tháng có thể chạy sai giờ VÀ tính sai khoảng ngày (lệch tới 7
+// tiếng). Giờ tính TUYỆT ĐỐI theo UTC+7.
 function computeLastWeekRange(now) {
-  const todayStart = startOfDay(now);
-  const weekStart = new Date(todayStart);
-  weekStart.setDate(weekStart.getDate() - 7);
-  return { start: weekStart, endExclusive: todayStart, periodKey: formatYYYYMMDD(weekStart) };
+  const todayStartMs = startOfTodayUtc7(now.getTime());
+  const weekStartMs = todayStartMs - 7 * DAY_MS;
+  return {
+    start: new Date(weekStartMs),
+    endExclusive: new Date(todayStartMs),
+    periodKey: formatYYYYMMDD(weekStartMs),
+  };
 }
 
 function computeLastMonthRange(now) {
-  const todayStart = startOfDay(now);
-  const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth() - 1, 1);
-  return { start: monthStart, endExclusive: todayStart, periodKey: formatYYYYMM(monthStart) };
+  const todayStartMs = startOfTodayUtc7(now.getTime());
+  const { y, m } = vnDateParts(todayStartMs); // m: 1-12, tháng hiện tại theo lịch VN
+  // Tháng có độ dài khác nhau — tránh cộng/trừ số mili-giây thủ công dễ
+  // sai. Chọn GIỮA TRƯA UTC ngày 1 tháng trước (chắc chắn vẫn là đúng
+  // ngày đó theo giờ VN, không lệch biên), rồi áp lại startOfTodayUtc7 để
+  // ra đúng mốc "00:00 VN ngày 1 tháng trước" — an toàn với mọi độ dài
+  // tháng, kể cả qua năm (JS Date.UTC tự cuộn năm khi tháng âm).
+  const safeNoonUtcOfPrevMonthDay1 = Date.UTC(y, m - 1 - 1, 1, 12, 0, 0);
+  const monthStartMs = startOfTodayUtc7(safeNoonUtcOfPrevMonthDay1);
+  return {
+    start: new Date(monthStartMs),
+    endExclusive: new Date(todayStartMs),
+    periodKey: formatYYYYMM(monthStartMs),
+  };
 }
 
 function computeSalesByEmail(db, start, endExclusive) {

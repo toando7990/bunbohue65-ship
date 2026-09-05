@@ -24,18 +24,44 @@ const cron = require('node-cron');
 const nodemailer = require('nodemailer');
 const canister = require('./../lib/canister');
 
+const UTC7_OFFSET_MS = 7 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 function pad(n, w) {
   return String(n).padStart(w, '0');
 }
 
-function dateKeyOf(now) {
-  const d = new Date(now);
-  return `${d.getFullYear()}${pad(d.getMonth() + 1, 2)}${pad(d.getDate(), 2)}`;
+// Mốc "đầu ngày hôm nay" theo giờ VN (UTC+7), tính TUYỆT ĐỐI bằng epoch ms
+// — KHÔNG phụ thuộc múi giờ máy chủ. Cùng công thức đã kiểm chứng ở
+// routes/cleanup-unpaid-orders-cron.js/order-history.js.
+function startOfTodayUtc7(nowMs) {
+  const shifted = nowMs + UTC7_OFFSET_MS;
+  const dayStartShifted = Math.floor(shifted / DAY_MS) * DAY_MS;
+  return dayStartShifted - UTC7_OFFSET_MS;
 }
 
+// SỬA LỖI (phát hiện qua báo cáo thực tế "email KM không được gửi"): bản
+// cũ dùng d.getFullYear()/getMonth()/getDate() — phụ thuộc múi giờ CỤC BỘ
+// máy chủ. Nếu VPS chạy giờ UTC, "ngày hôm nay" tính sai tới 7 tiếng, khoá
+// chống-gửi-trùng (km_notifications_sent) dùng SAI date_key. Giờ tính
+// TUYỆT ĐỐI theo UTC+7 — chỉ cần lấy ngày/tháng/năm từ mốc đã dịch đúng
+// múi giờ VN.
+function dateKeyOf(now) {
+  const vnMs = startOfTodayUtc7(now.getTime()) + UTC7_OFFSET_MS; // giữa ngày VN, tránh biên
+  const d = new Date(vnMs);
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1, 2)}${pad(d.getUTCDate(), 2)}`;
+}
+
+// SỬA LỖI (cùng nguyên nhân): bản cũ dùng d.getHours()/getMinutes() — phụ
+// thuộc múi giờ CỤC BỘ máy chủ, khiến việc so khớp "đúng phút" với
+// notifyMinutesForSlot() (tính theo giờ VN admin đã cấu hình) gần như
+// KHÔNG BAO GIỜ trùng nếu VPS chạy giờ UTC (lệch 420 phút = 7 tiếng) — đây
+// chính là nguyên nhân email không được gửi. Giờ tính số phút trong ngày
+// TUYỆT ĐỐI theo UTC+7.
 function nowMinutesSinceMidnight(now) {
-  const d = new Date(now);
-  return d.getHours() * 60 + d.getMinutes();
+  const nowMs = now.getTime();
+  const todayStartUtc7 = startOfTodayUtc7(nowMs);
+  return Math.floor((nowMs - todayStartUtc7) / 60000);
 }
 
 // Thời điểm nhắc (phút trong ngày, đã xoay vòng 0-1439) của 1 khung giờ.

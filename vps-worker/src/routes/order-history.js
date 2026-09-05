@@ -111,25 +111,38 @@ router.get('/orders/history', (req, res) => {
 // "Tuần này" bắt đầu từ Thứ Hai gần nhất (kể cả hôm nay nếu hôm nay là
 // Thứ Hai). "Tháng này" bắt đầu từ ngày 1 tháng hiện tại.
 
-function startOfDayLocal(d) {
-  const r = new Date(d);
-  r.setHours(0, 0, 0, 0);
-  return r;
+// SỬA LỖI (phát hiện qua điều tra lỗi email KM cùng nguyên nhân): bản cũ
+// định nghĩa RIÊNG hàm startOfDayLocal()/setHours(0,0,0,0) — phụ thuộc
+// múi giờ CỤC BỘ máy chủ, KHÔNG dùng lại startOfTodayUtc7() đã đúng sẵn ở
+// đầu file. ".getDay()" gọi trên epoch đó cũng sai theo — trả về "thứ"
+// theo múi giờ máy chủ, không phải giờ VN. Giờ dùng lại startOfTodayUtc7()
+// + tính "thứ" bằng getUTCDay() trên epoch đã dịch +7h (không phụ thuộc
+// múi giờ máy chủ).
+function vnDayOfWeek(ms) {
+  return new Date(ms + UTC7_OFFSET_MS).getUTCDay(); // 0=CN,1=T2,...,6=T7
+}
+
+function vnYearMonth(ms) {
+  const d = new Date(ms + UTC7_OFFSET_MS);
+  return { y: d.getUTCFullYear(), m: d.getUTCMonth() }; // m: 0-indexed, khớp Date() constructor
 }
 
 function computeThisWeekRange(now) {
-  const todayStart = startOfDayLocal(now);
-  const dayOfWeek = todayStart.getDay(); // 0=CN,1=T2,...,6=T7
+  const todayStartMs = startOfTodayUtc7(now);
+  const dayOfWeek = vnDayOfWeek(todayStartMs);
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const weekStart = new Date(todayStart);
-  weekStart.setDate(weekStart.getDate() - daysSinceMonday);
-  return { start: weekStart, endExclusive: now };
+  const weekStartMs = todayStartMs - daysSinceMonday * DAY_MS;
+  return { start: new Date(weekStartMs), endExclusive: now };
 }
 
 function computeThisMonthRange(now) {
-  const todayStart = startOfDayLocal(now);
-  const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
-  return { start: monthStart, endExclusive: now };
+  const todayStartMs = startOfTodayUtc7(now);
+  const { y, m } = vnYearMonth(todayStartMs);
+  // Giữa trưa UTC ngày 1 tháng này (theo lịch VN) chắc chắn vẫn nằm đúng
+  // ngày đó theo giờ VN — tránh cộng/trừ mili-giây thủ công dễ sai biên.
+  const safeNoonUtcOfDay1 = Date.UTC(y, m, 1, 12, 0, 0);
+  const monthStartMs = startOfTodayUtc7(safeNoonUtcOfDay1);
+  return { start: new Date(monthStartMs), endExclusive: now };
 }
 
 router.get('/orders/period-summary', (req, res) => {
