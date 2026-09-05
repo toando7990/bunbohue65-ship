@@ -22,6 +22,9 @@ const router = express.Router();
 router.use(verifyApiKey);
 router.use(verifyHmac);
 
+const UTC7_OFFSET_MS = 7 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 // Map range string → ms cutoff.
 function rangeToFromMs(range) {
   const now = Date.now();
@@ -29,14 +32,30 @@ function rangeToFromMs(range) {
   return now - days * 24 * 60 * 60 * 1000;
 }
 
-// Format ms timestamp → YYYY-MM-DD (local date string for byDay grouping).
+// SỬA LỖI (phát hiện qua điều tra lỗi email KM cùng nguyên nhân): bản cũ
+// dùng d.getFullYear()/getMonth()/getDate() — phụ thuộc múi giờ CỤC BỘ
+// máy chủ. Giờ tính TUYỆT ĐỐI theo UTC+7 (dịch +7h rồi đọc thành phần
+// UTC — không phụ thuộc múi giờ máy chủ, cùng kỹ thuật đã dùng ở
+// order-history.js/sales-bonus-cron.js/km-notify-cron.js).
 function dayKey(ms) {
-  const d = new Date(ms);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const d = new Date(ms + UTC7_OFFSET_MS);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+// SỬA LỖI (cùng nguyên nhân — LỖI SÂU HƠN): câu SQL nhóm 'byDay' bên dưới
+// tự tính ranh giới ngày bằng "(created_at / 86400000) * 86400000" — đây
+// là ranh giới NGÀY UTC, không phải ngày VN, XẢY RA NGAY TRONG SQL, trước
+// cả khi dayKey() (ở trên) kịp định dạng hiển thị. Nếu chỉ sửa dayKey()
+// mà không sửa biểu thức SQL này, đơn tạo gần nửa đêm giờ VN vẫn bị gộp
+// SAI vào ngày UTC (lệch tới 7 tiếng). Biểu thức dưới đây dịch +7h TRƯỚC
+// khi chia lấy ranh giới ngày, rồi dịch lại -7h — tính đúng ranh giới
+// NGÀY VN ngay trong SQL, khớp với dayKey() ở trên.
+const DAY_MS_VN_SQL_EXPR =
+  `(((created_at + ${UTC7_OFFSET_MS}) / ${DAY_MS}) * ${DAY_MS}) - ${UTC7_OFFSET_MS}`;
+
 
 // GET /analytics?range=7d|30d|90d — frontend contract (camelCase)
 // Returns AnalyticsResponse:
@@ -79,11 +98,13 @@ router.get('/analytics', (req, res, next) => {
 
     const averageOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
 
-    // byRestaurant — group by restaurant_id trong range
+    // byRestaurant — group by restaurant_id trong range. CHỈ tính đơn đã
+    // thanh toán (payment_status='paid') — đây là số liệu hiệu suất kinh
+    // doanh, không nên tính gộp đơn chưa/không thành công.
     const byRestaurantRows = db.prepare(
       `SELECT restaurant_id, COALESCE(NULLIF(restaurant_id,''),'unknown') AS rid,
               COUNT(*) AS orders, COALESCE(SUM(amount),0) AS revenue
-       FROM orders WHERE created_at >= ?
+       FROM orders WHERE payment_status='paid' AND created_at >= ?
        GROUP BY restaurant_id ORDER BY revenue DESC`,
     ).all(fromMs);
     const byRestaurant = byRestaurantRows.map((r) => ({
@@ -93,11 +114,12 @@ router.get('/analytics', (req, res, next) => {
       revenue: r.revenue,
     }));
 
-    // byDay — group by date trong range
+    // byDay — group by date trong range (theo NGÀY VN, xem
+    // DAY_MS_VN_SQL_EXPR ở đầu file). CHỈ tính đơn đã thanh toán.
     const byDayRows = db.prepare(
-      `SELECT (created_at / 86400000) * 86400000 AS day_ms,
+      `SELECT ${DAY_MS_VN_SQL_EXPR} AS day_ms,
               COUNT(*) AS orders, COALESCE(SUM(amount),0) AS revenue
-       FROM orders WHERE created_at >= ?
+       FROM orders WHERE payment_status='paid' AND created_at >= ?
        GROUP BY day_ms ORDER BY day_ms ASC`,
     ).all(fromMs);
     const byDay = byDayRows.map((r) => ({
@@ -106,16 +128,17 @@ router.get('/analytics', (req, res, next) => {
       revenue: r.revenue,
     }));
 
-    // topItems — món bán chạy nhất trong range, gộp từ order_items. Loại
-    // đơn đã huỷ (booking_status='cancelled') vì món đó thực tế không được
-    // chuẩn bị/giao. Sắp theo số lượng bán, top 10.
+    // topItems — món bán chạy nhất trong range, gộp từ order_items. CHỈ
+    // tính đơn đã thanh toán (payment_status='paid') — món trong đơn chưa
+    // thanh toán/huỷ chưa thực sự "bán được", không nên tính vào doanh số
+    // bán chạy. Sắp theo số lượng bán, top 10.
     const topItemRows = db.prepare(
       `SELECT oi.item_id AS itemId, oi.name AS name,
               SUM(oi.quantity) AS quantity,
               COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue
        FROM order_items oi
        JOIN orders o ON o.order_id = oi.order_id
-       WHERE o.created_at >= ? AND o.booking_status != 'cancelled'
+       WHERE o.created_at >= ? AND o.payment_status='paid'
        GROUP BY oi.item_id, oi.name
        ORDER BY quantity DESC
        LIMIT 10`,
@@ -128,11 +151,14 @@ router.get('/analytics', (req, res, next) => {
     }));
 
     // customers — khách hàng thật (group theo cus_phone, không phải chi
-    // nhánh). Khách mới = lần đặt ĐẦU TIÊN của họ (xét trên TOÀN BỘ lịch sử,
-    // không chỉ trong range) rơi vào trong range này; khách quay lại = đã
-    // từng đặt trước range. topCustomers: top 10 theo tổng chi trong range.
+    // nhánh). CHỈ tính đơn đã thanh toán (payment_status='paid') — khách
+    // đặt nhưng chưa/không trả tiền chưa nên tính là "khách hàng" trong
+    // báo cáo hiệu suất. Khách mới = lần đặt ĐẦU TIÊN của họ (xét trên
+    // TOÀN BỘ lịch sử ĐÃ THANH TOÁN, không chỉ trong range) rơi vào trong
+    // range này; khách quay lại = đã từng đặt (đã thanh toán) trước range.
+    // topCustomers: top 10 theo tổng chi (đã thanh toán) trong range.
     const rangeCustomerRows = db.prepare(
-      `SELECT DISTINCT cus_phone FROM orders WHERE created_at >= ? AND cus_phone != ''`,
+      `SELECT DISTINCT cus_phone FROM orders WHERE payment_status='paid' AND created_at >= ? AND cus_phone != ''`,
     ).all(fromMs);
     const rangePhones = rangeCustomerRows.map((r) => r.cus_phone);
     let newCustomers = 0;
@@ -141,7 +167,7 @@ router.get('/analytics', (req, res, next) => {
       const placeholders = rangePhones.map(() => '?').join(',');
       const firstOrderRows = db.prepare(
         `SELECT cus_phone, MIN(created_at) AS first_created_at
-         FROM orders WHERE cus_phone IN (${placeholders})
+         FROM orders WHERE payment_status='paid' AND cus_phone IN (${placeholders})
          GROUP BY cus_phone`,
       ).all(...rangePhones);
       for (const row of firstOrderRows) {
@@ -155,7 +181,7 @@ router.get('/analytics', (req, res, next) => {
       `SELECT cus_phone AS phone, MAX(cus_name) AS name,
               COUNT(*) AS orderCount, COALESCE(SUM(amount),0) AS totalSpent
        FROM orders
-       WHERE created_at >= ? AND cus_phone != ''
+       WHERE payment_status='paid' AND created_at >= ? AND cus_phone != ''
        GROUP BY cus_phone
        ORDER BY totalSpent DESC
        LIMIT 10`,
@@ -230,13 +256,13 @@ router.get('/analytics/orders', (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// GET /analytics/customers — legacy
+// GET /analytics/customers — legacy. CHỈ tính đơn đã thanh toán.
 router.get('/analytics/customers', (req, res, next) => {
   try {
     const db = req.app.locals.db;
     const rows = db.prepare(
       `SELECT cus_phone, cus_name, COUNT(*) order_count, SUM(amount) total_spent
-       FROM orders GROUP BY cus_phone ORDER BY total_spent DESC LIMIT 100`,
+       FROM orders WHERE payment_status='paid' GROUP BY cus_phone ORDER BY total_spent DESC LIMIT 100`,
     ).all();
     res.json({ count: rows.length, customers: rows });
   } catch (e) { next(e); }
