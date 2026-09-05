@@ -51,8 +51,12 @@ module {
   // hổng "email bombing" (xem giải thích ở types/email-verification.mo).
   // 3 lần/giờ đủ dùng cho khách thật (mã bị mất/chậm, thử gửi lại vài
   // lần) nhưng chặn được việc lạm dụng gửi hàng loạt.
+  // SỬA LỖI BIÊN DỊCH: Motoko không cho phép biểu thức tính toán (dù chỉ
+  // là nhân các số nguyên) ở cấp MODULE (ngoài hàm) — chỉ chấp nhận hằng
+  // số đơn (lỗi M0014 "non-static expression"). 60 phút = 60×60×10^9
+  // nanosecond = 3.600.000.000.000 — viết thẳng số đã tính sẵn.
   let MAX_SENDS_PER_WINDOW : Nat = 3;
-  let WINDOW_NS : Int = 60 * 60 * 1_000_000_000; // 60 phút, tính nanosecond.
+  let WINDOW_NS : Int = 3_600_000_000_000; // 60 phút, tính nanosecond.
 
   // Issue a new OTP for `email`: store the given `code`'s hash with a
   // 15-minute expiry. Giới hạn tối đa MAX_SENDS_PER_WINDOW lần gửi cho mỗi
