@@ -17,7 +17,7 @@ import {
   useKmUsageCount,
 } from "@/hooks/useQueries";
 import { getVerifiedEmail } from "@/lib/verification-storage";
-import { CheckCircle2, Clock, Mail } from "lucide-react";
+import { CalendarRange, CheckCircle2, Clock, Mail } from "lucide-react";
 import { useState } from "react";
 
 function formatVnd(n: bigint | number): string {
@@ -30,6 +30,12 @@ function formatVnd(n: bigint | number): string {
   } catch {
     return `${n} đ`;
   }
+}
+
+// "YYYYMMDD" -> "dd/mm/yyyy" (cùng công thức đã dùng ở PromotionTable.tsx).
+function formatDate(yyyymmdd: string): string {
+  if (yyyymmdd.length !== 8) return yyyymmdd;
+  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
 }
 
 export function PromotionBanner() {
@@ -106,6 +112,15 @@ export function PromotionBanner() {
             {tiersSummary}
           </p>
         )}
+
+        <p
+          className="ml-6 mt-1 flex items-center gap-1 text-[11px] text-muted-foreground"
+          data-ocid="promotion_banner.validity"
+        >
+          <CalendarRange className="h-3 w-3 shrink-0" aria-hidden="true" />
+          Áp dụng: từ {formatDate(promotion.startDate)} đến{" "}
+          {formatDate(promotion.endDate)}
+        </p>
 
         {promotion.termsUrl && (
           <a

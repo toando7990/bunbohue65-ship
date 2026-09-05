@@ -7,7 +7,7 @@
 import { Progress } from "@/components/ui/progress";
 import { useCurrentSalesPromo } from "@/hooks/useQueries";
 import { useSalesProgress } from "@/hooks/useSalesProgress";
-import { TrendingUp } from "lucide-react";
+import { CalendarRange, TrendingUp } from "lucide-react";
 
 function formatVnd(value: number): string {
   return new Intl.NumberFormat("vi-VN", {
@@ -15,6 +15,12 @@ function formatVnd(value: number): string {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+// "YYYYMMDD" -> "dd/mm/yyyy" (cùng công thức đã dùng ở PromotionTable.tsx/PromotionBanner.tsx).
+function formatDate(yyyymmdd: string): string {
+  if (yyyymmdd.length !== 8) return yyyymmdd;
+  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
 }
 
 interface SalesProgressBarProps {
@@ -76,6 +82,14 @@ export function SalesProgressPanel({ email }: SalesProgressPanelProps) {
         <TrendingUp className="h-4 w-4 text-primary" aria-hidden="true" />
         {salesPromo.name}
       </h3>
+      <p
+        className="-mt-2 flex items-center gap-1 text-[11px] text-muted-foreground"
+        data-ocid="sales_progress.validity"
+      >
+        <CalendarRange className="h-3 w-3 shrink-0" aria-hidden="true" />
+        Áp dụng: từ {formatDate(salesPromo.startDate)} đến{" "}
+        {formatDate(salesPromo.endDate)}
+      </p>
       {hasWeekly && (
         <SalesProgressBar
           label="Doanh số tuần này"

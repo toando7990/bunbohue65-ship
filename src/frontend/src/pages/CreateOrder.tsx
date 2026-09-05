@@ -18,6 +18,7 @@ import type { CustomerFormValues } from "@/components/CustomerForm";
 import { MenuPicker } from "@/components/MenuPicker";
 import { OrderProcessFlow } from "@/components/OrderProcessFlow";
 import { PromotionBanner } from "@/components/PromotionBanner";
+import { RegistrationPromoBanner } from "@/components/RegistrationPromoBanner";
 import { RestaurantSelect } from "@/components/RestaurantSelect";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -426,6 +427,7 @@ export default function CreateOrder() {
           <OrderProcessFlow />
 
           <PromotionBanner />
+          <RegistrationPromoBanner />
         </header>
 
         <div className="flex flex-col gap-6">
