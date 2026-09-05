@@ -47,21 +47,42 @@ module {
     Sha256.fromBlob(#sha256, code.encodeUtf8());
   };
 
+  // Giới hạn số lần gửi mã cho MỖI email trong 1 cửa sổ thời gian — vá lỗ
+  // hổng "email bombing" (xem giải thích ở types/email-verification.mo).
+  // 3 lần/giờ đủ dùng cho khách thật (mã bị mất/chậm, thử gửi lại vài
+  // lần) nhưng chặn được việc lạm dụng gửi hàng loạt.
+  let MAX_SENDS_PER_WINDOW : Nat = 3;
+  let WINDOW_NS : Int = 60 * 60 * 1_000_000_000; // 60 phút, tính nanosecond.
+
   // Issue a new OTP for `email`: store the given `code`'s hash with a
-  // 15-minute expiry and increment the send count (kept for observability
-  // only — sending is not capped, so customers can always request a fresh
-  // code, e.g. if an earlier email was lost or delayed).
+  // 15-minute expiry. Giới hạn tối đa MAX_SENDS_PER_WINDOW lần gửi cho mỗi
+  // email trong mỗi cửa sổ WINDOW_NS — trả #err rõ ràng nếu vượt quá, thay
+  // vì luôn cho gửi không giới hạn như trước đây.
   public func sendVerificationCode(state : State, email : Email, code : Text) : SendCodeResult {
     let normalized = email.toLower();
-    let prevCount = switch (state.get(normalized)) {
-      case (?record) record.sendCount;
-      case null 0;
+    let now = Time.now();
+    // Còn trong cửa sổ cũ (chưa quá WINDOW_NS kể từ lần gửi đầu tiên của
+    // cửa sổ đó) → tiếp tục đếm dồn vào cửa sổ đó. Đã qua cửa sổ (hoặc
+    // chưa từng gửi) → bắt đầu cửa sổ MỚI, đếm lại từ 0.
+    let (windowStartAt, countInWindow) = switch (state.get(normalized)) {
+      case (?record) {
+        if (now - record.windowStartAt < WINDOW_NS) {
+          (record.windowStartAt, record.sendCount);
+        } else {
+          (now, 0);
+        };
+      };
+      case null (now, 0);
+    };
+    if (countInWindow >= MAX_SENDS_PER_WINDOW) {
+      return #err("Bạn đã yêu cầu mã xác nhận quá nhiều lần cho email này. Vui lòng thử lại sau ít phút.");
     };
     let record : OtpRecord = {
       email = normalized;
       codeHash = hashCode(code);
-      expiresAt = Time.now() + 15 * 60 * 1000000000;
-      sendCount = prevCount + 1;
+      expiresAt = now + 15 * 60 * 1_000_000_000;
+      sendCount = countInWindow + 1;
+      windowStartAt;
       verified = false;
     };
     state.add(normalized, record);
@@ -88,6 +109,7 @@ module {
             codeHash = record.codeHash;
             expiresAt = record.expiresAt;
             sendCount = record.sendCount;
+            windowStartAt = record.windowStartAt;
             verified = true;
           };
           state.add(normalized, updated);

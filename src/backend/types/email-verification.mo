@@ -18,10 +18,19 @@ module {
     codeHash : Blob;
     // Expiry timestamp (nanoseconds since epoch). OTPs are valid for 15 min.
     expiresAt : Int;
-    // Number of codes sent to this email so far — kept for observability
-    // only; sending is not rate-limited (customers can always request a
-    // fresh code).
+    // Number of codes sent to this email WITHIN THE CURRENT RATE-LIMIT
+    // WINDOW (see windowStartAt) — resets to 1 once the window elapses.
+    // SỬA LỖI BẢO MẬT (lỗ hổng "email bombing" — bất kỳ ai cũng có thể gửi
+    // mã OTP tới BẤT KỲ email nào không giới hạn số lần, có nguy cơ làm
+    // ngập hộp thư nạn nhân + khiến domain gửi email của hệ thống bị nhà
+    // cung cấp đưa vào danh sách đen, ảnh hưởng luôn việc gửi hoá đơn/
+    // thông báo đơn hàng cho MỌI khách hàng khác): trước đây trường này
+    // chỉ dùng để quan sát (sending is not rate-limited) — giờ dùng THẬT
+    // để giới hạn (xem sendVerificationCode() ở lib/email-verification.mo).
     sendCount : Nat;
+    // Mốc thời gian (nanosecond) BẮT ĐẦU cửa sổ đếm hiện tại — dùng để
+    // biết khi nào reset sendCount về 0 (mỗi cửa sổ mới).
+    windowStartAt : Int;
     // True once the email has been successfully verified.
     verified : Bool;
   };
@@ -31,7 +40,8 @@ module {
 
   // Result of sendVerificationCode. #ok when a fresh OTP was generated and the
   // transactional email was dispatched; #err carries a clear message (e.g. the
-  // email dispatch itself failed). Sending is not rate-limited.
+  // email dispatch itself failed, OR the per-email rate limit was exceeded —
+  // xem MAX_SENDS_PER_WINDOW/WINDOW_NS ở lib/email-verification.mo).
   public type SendCodeResult = {
     #ok;
     #err : Text;

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
+import { setVerifiedEmail } from "@/lib/verification-storage";
 import { CheckCircle2, Loader2, Mail, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -38,11 +39,15 @@ export function EmailVerificationDialog({
   onOpenChange,
   onVerified,
 }: EmailVerificationDialogProps) {
-  const { sendCode, verifyCode } = useEmailVerification();
+  const { sendCode, verifyCode, checkVerified } = useEmailVerification();
 
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [codeSent, setCodeSent] = useState(false);
+  const [checkingExisting, setCheckingExisting] = useState(false);
+  const [alreadyVerifiedEmail, setAlreadyVerifiedEmail] = useState<
+    string | null
+  >(null);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
@@ -58,6 +63,8 @@ export function EmailVerificationDialog({
     setEmail("");
     setEmailError(null);
     setCodeSent(false);
+    setCheckingExisting(false);
+    setAlreadyVerifiedEmail(null);
     setSending(false);
     setVerifying(false);
     setOtp(Array(6).fill(""));
@@ -86,6 +93,24 @@ export function EmailVerificationDialog({
       return;
     }
     setEmailError(null);
+    setCheckingExisting(true);
+    try {
+      // Kiểm tra email này ĐÃ được xác thực từ trước chưa (có thể xác
+      // thực trên thiết bị/trình duyệt khác) — nếu rồi, KHÔNG gửi mã OTP
+      // mới (tránh vô tình "reset" trạng thái verified về false cho tới
+      // khi xác thực lại), chỉ thông báo và cho tiếp tục luôn.
+      const alreadyVerified = await checkVerified(trimmed);
+      if (alreadyVerified) {
+        setAlreadyVerifiedEmail(trimmed);
+        return;
+      }
+    } catch {
+      // Kiểm tra thất bại (mất kết nối...) — không chặn luồng, để
+      // sendCode() bên dưới tự báo lỗi rõ ràng hơn nếu vẫn còn sự cố.
+    } finally {
+      setCheckingExisting(false);
+    }
+
     setSending(true);
     try {
       await sendCode(trimmed);
@@ -104,6 +129,12 @@ export function EmailVerificationDialog({
     } finally {
       setSending(false);
     }
+  };
+
+  const handleContinueAlreadyVerified = () => {
+    if (!alreadyVerifiedEmail) return;
+    setVerifiedEmail(alreadyVerifiedEmail);
+    onVerified(alreadyVerifiedEmail);
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -188,6 +219,41 @@ export function EmailVerificationDialog({
               Đang tiếp tục đặt đơn cho bạn…
             </p>
           </div>
+        ) : alreadyVerifiedEmail ? (
+          <div
+            className="flex flex-col items-center py-4 text-center"
+            data-ocid="verify_dialog.already_verified_state"
+          >
+            <span className="verify-success-mark">
+              <CheckCircle2 className="h-6 w-6" />
+            </span>
+            <h2 className="mt-4 font-display text-xl font-semibold tracking-tight">
+              Email đã được xác thực
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">
+                {alreadyVerifiedEmail}
+              </span>{" "}
+              đã được xác thực trước đó — không cần gửi lại mã.
+            </p>
+            <Button
+              type="button"
+              size="lg"
+              className="mt-4 w-full"
+              onClick={handleContinueAlreadyVerified}
+              data-ocid="verify_dialog.already_verified_continue_button"
+            >
+              Tiếp tục đặt đơn
+            </Button>
+            <button
+              type="button"
+              onClick={() => setAlreadyVerifiedEmail(null)}
+              className="mt-3 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              data-ocid="verify_dialog.already_verified_change_email_button"
+            >
+              Dùng email khác
+            </button>
+          </div>
         ) : (
           <>
             <DialogHeader>
@@ -252,13 +318,17 @@ export function EmailVerificationDialog({
                   type="submit"
                   size="lg"
                   className="w-full"
-                  disabled={sending}
+                  disabled={sending || checkingExisting}
                   data-ocid="verify_dialog.send_code_button"
                 >
-                  {sending ? (
+                  {sending || checkingExisting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : null}
-                  {sending ? "Đang gửi…" : "Gửi mã xác nhận"}
+                  {checkingExisting
+                    ? "Đang kiểm tra…"
+                    : sending
+                      ? "Đang gửi…"
+                      : "Gửi mã xác nhận"}
                 </Button>
 
                 <p className="text-center text-xs text-muted-foreground">
