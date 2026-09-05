@@ -348,6 +348,16 @@ export async function getCurrentPromotion(
   return actor.getCurrentPromotion();
 }
 
+// Chương trình "Khuyến mại đăng ký" (chào mừng khách mới) đang có hiệu
+// lực hôm nay — hiện ở trang đặt món CHỈ khi khách chưa từng xác thực
+// email (kiểm tra qua getVerifiedEmail() localStorage, xem
+// RegistrationPromoBanner.tsx).
+export async function getCurrentRegistrationPromo(
+  actor: Backend,
+): Promise<RegistrationPromo | null> {
+  return actor.getCurrentRegistrationPromo();
+}
+
 // Tổng số đơn KM Hệ 1 đã dùng hôm nay (toàn hệ thống, không phân biệt
 // khách) — dùng cho "Đã dùng X/Y đơn khuyến mại hôm nay".
 export async function getKmDailyCount(

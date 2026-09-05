@@ -322,6 +322,7 @@ export interface _SERVICE {
   'isPromotionUsed' : ActorMethod<[string], Result_Bool>,
   'listPromotions' : ActorMethod<[], Result_PromoList>,
   'getCurrentPromotion' : ActorMethod<[], [] | [Promotion]>,
+  'getCurrentRegistrationPromo' : ActorMethod<[], [] | [RegistrationPromo]>,
   'applyPromotion' : ActorMethod<[string, bigint, string], Result_Apply>,
   'applyVoucher' : ActorMethod<[string, string, bigint, string], Result_Voucher>,
   'listMyVouchers' : ActorMethod<[string], Array<Voucher>>,

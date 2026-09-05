@@ -19,6 +19,7 @@ import {
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
   getCurrentPromotion as getCurrentPromotionFn,
+  getCurrentRegistrationPromo as getCurrentRegistrationPromoFn,
   getCurrentSalesPromo as getCurrentSalesPromoFn,
   getItemImage as getItemImageFn,
   getKmDailyCount as getKmDailyCountFn,
@@ -455,6 +456,20 @@ export function useCurrentPromotion() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 30000,
+  });
+}
+
+// Chương trình "Khuyến mại đăng ký" đang có hiệu lực hôm nay — hiện ở
+// trang đặt món cho khách CHƯA TỪNG xác thực email (xem
+// RegistrationPromoBanner.tsx, tự kiểm tra localStorage riêng, hook này
+// chỉ lấy dữ liệu chương trình, không quyết định hiện/ẩn).
+export function useCurrentRegistrationPromo() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["currentRegistrationPromo"],
+    queryFn: () =>
+      actor ? getCurrentRegistrationPromoFn(actor) : Promise.resolve(null),
+    enabled: !!actor && !isFetching,
   });
 }
 

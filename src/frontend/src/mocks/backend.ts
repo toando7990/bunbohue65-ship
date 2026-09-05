@@ -41,6 +41,7 @@ export const mockBackend: backendInterface = {
   isPromotionUsed: async () => ({ __kind__: "ok", ok: false }),
   listPromotions: async () => ({ __kind__: "ok", ok: [] }),
   getCurrentPromotion: async () => null,
+  getCurrentRegistrationPromo: async () => null,
   applyPromotion: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   applyVoucher: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   listMyVouchers: async () => [],

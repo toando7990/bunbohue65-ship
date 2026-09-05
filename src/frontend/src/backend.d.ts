@@ -473,6 +473,7 @@ export interface backendInterface {
     isPromotionUsed(code: string): Promise<Result_Bool>;
     listPromotions(): Promise<Result_PromoList>;
     getCurrentPromotion(): Promise<Promotion | null>;
+    getCurrentRegistrationPromo(): Promise<RegistrationPromo | null>;
     applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
     applyVoucher(email: string, code: string, orderAmount: bigint, hmac: string): Promise<Result_Voucher>;
     listMyVouchers(email: string): Promise<Array<Voucher>>;

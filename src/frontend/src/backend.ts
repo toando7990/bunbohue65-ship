@@ -522,6 +522,7 @@ export interface backendInterface {
     isPromotionUsed(code: string): Promise<Result_Bool>;
     listPromotions(): Promise<Result_PromoList>;
     getCurrentPromotion(): Promise<Promotion | null>;
+    getCurrentRegistrationPromo(): Promise<RegistrationPromo | null>;
     applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
     applyVoucher(email: string, code: string, orderAmount: bigint, hmac: string): Promise<Result_Voucher>;
     listMyVouchers(email: string): Promise<Array<Voucher>>;
@@ -977,6 +978,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getCurrentPromotion();
+            return result.length > 0 ? result[0] : null;
+        }
+    }
+    async getCurrentRegistrationPromo(): Promise<RegistrationPromo | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getCurrentRegistrationPromo();
+                return result.length > 0 ? result[0] : null;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getCurrentRegistrationPromo();
             return result.length > 0 ? result[0] : null;
         }
     }

@@ -11,6 +11,7 @@
 
 import AccessControl "mo:caffeineai-authorization/access-control";
 import Result "mo:core/Result";
+import Time "mo:core/Time";
 
 import RegistrationPromoTypes "../types/registration-promo";
 import RegistrationPromoLib "../lib/registration-promo";
@@ -132,5 +133,24 @@ mixin (
       return #err("Admin only");
     };
     #ok(registrationPromos.toArray().map(func((_code : Text, p : RegistrationPromoTypes.RegistrationPromo)) : RegistrationPromoTypes.RegistrationPromo = p));
+  };
+
+  // Công khai — khách hàng (chưa xác thực email lần nào) xem để biết
+  // chương trình chào mừng đang có, hiển thị ở trang đặt món (Giai đoạn
+  // "hiện KM đăng ký cho khách mới"). Cùng quy ước getCurrentPromotion()/
+  // getCurrentSalesPromo() — không yêu cầu quyền admin, chỉ trả CHƯƠNG
+  // TRÌNH ĐANG CÒN HIỆU LỰC (active + trong khoảng ngày), null nếu không
+  // có. Không lọc theo "khách đã xác thực email chưa" — việc này do
+  // FRONTEND tự quyết định hiện/ẩn banner (dựa vào localStorage), vì
+  // canister không có khái niệm "trình duyệt nào chưa từng xác thực".
+  public query func getCurrentRegistrationPromo() : async ?RegistrationPromoTypes.RegistrationPromo {
+    let now = Time.now();
+    let today = RegistrationPromoLib.vnDateKey(now);
+    for ((_code, promo) in registrationPromos.toArray().vals()) {
+      if (promo.active and today >= promo.startDate and today <= promo.endDate) {
+        return ?promo;
+      };
+    };
+    null;
   };
 };

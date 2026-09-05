@@ -362,6 +362,11 @@ export const idlService = IDL.Service({
   'isPromotionUsed' : IDL.Func([IDL.Text], [Result_Bool], ['query']),
   'listPromotions' : IDL.Func([], [Result_PromoList], ['query']),
   'getCurrentPromotion' : IDL.Func([], [IDL.Opt(Promotion)], ['query']),
+  'getCurrentRegistrationPromo' : IDL.Func(
+      [],
+      [IDL.Opt(RegistrationPromo)],
+      ['query'],
+    ),
   'applyPromotion' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [Result_Apply], []),
   'applyVoucher' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Text], [Result_Voucher], []),
   'listMyVouchers' : IDL.Func([IDL.Text], [IDL.Vec(Voucher)], ['query']),
@@ -833,6 +838,11 @@ export const idlFactory = ({ IDL }) => {
     'isPromotionUsed' : IDL.Func([IDL.Text], [Result_Bool], ['query']),
     'listPromotions' : IDL.Func([], [Result_PromoList], ['query']),
     'getCurrentPromotion' : IDL.Func([], [IDL.Opt(Promotion)], ['query']),
+    'getCurrentRegistrationPromo' : IDL.Func(
+        [],
+        [IDL.Opt(RegistrationPromo)],
+        ['query'],
+      ),
     'applyPromotion' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [Result_Apply], []),
     'getMenu' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
     'getMenuForRestaurant' : IDL.Func(
