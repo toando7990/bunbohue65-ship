@@ -309,7 +309,7 @@ actor Main {
   include VoucherApi(vouchers, secretState);
   include RegistrationPromoApi(accessControlState, registrationPromos, vouchers);
   include SalesPromoApi(accessControlState, salesPromos, salesBonusIssued, vouchers, secretState);
-  include PromoMaintenanceApi(promotions, registrationPromos, salesPromos, secretState);
+  include PromoMaintenanceApi(promotions, registrationPromos, salesPromos, vouchers, secretState);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
 

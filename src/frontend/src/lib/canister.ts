@@ -367,6 +367,15 @@ export async function getKmDailyCount(
   return actor.getKmDailyCount(programCode);
 }
 
+// Đếm số phiếu (Đăng ký/Doanh số) đã phát cho 1 chương trình — dùng ở
+// trang /admin/theo-doi-km (việc 1).
+export async function countVouchersByProgram(
+  actor: Backend,
+  programCode: string,
+): Promise<bigint> {
+  return actor.countVouchersByProgram(programCode);
+}
+
 // Số đơn KM Hệ 1 khách NÀY đã dùng hôm nay — dùng cho "Bạn đã dùng X/Y
 // lượt hôm nay".
 export async function getKmUsageCount(

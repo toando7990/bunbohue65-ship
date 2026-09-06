@@ -8,6 +8,7 @@ import {
   addItem as addItemFn,
   addRestaurant as addRestaurantFn,
   cleanupExpiredActivations as cleanupFn,
+  countVouchersByProgram as countVouchersByProgramFn,
   createPromotion as createPromotionFn,
   createRegistrationPromo as createRegistrationPromoFn,
   createSalesPromo as createSalesPromoFn,
@@ -490,6 +491,20 @@ export function useKmDailyCount(programCode: string | null) {
         : Promise.resolve(0n),
     enabled: !!actor && !isFetching && !!programCode,
     refetchInterval: 30000,
+  });
+}
+
+// Số phiếu (Đăng ký/Doanh số) đã phát cho 1 chương trình — dùng ở trang
+// /admin/theo-doi-km (việc 1).
+export function useVoucherCountByProgram(programCode: string | null) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["voucherCountByProgram", programCode],
+    queryFn: () =>
+      actor && programCode
+        ? countVouchersByProgramFn(actor, programCode)
+        : Promise.resolve(0n),
+    enabled: !!actor && !isFetching && !!programCode,
   });
 }
 

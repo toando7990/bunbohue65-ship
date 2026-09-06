@@ -515,6 +515,7 @@ export interface backendInterface {
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
     getKmUsageCount(email: string, programCode: string): Promise<bigint>;
     getKmDailyCount(programCode: string): Promise<bigint>;
+    countVouchersByProgram(programCode: string): Promise<bigint>;
     createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_Promo>;
     updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, termsUrl: string): Promise<Result_Promo>;
     deletePromotion(code: string): Promise<Result_3>;
@@ -882,6 +883,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getKmDailyCount(arg0);
+            return result;
+        }
+    }
+    async countVouchersByProgram(arg0: string): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.countVouchersByProgram(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.countVouchersByProgram(arg0);
             return result;
         }
     }

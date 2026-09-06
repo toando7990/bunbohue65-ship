@@ -347,6 +347,7 @@ export const idlService = IDL.Service({
   'getMenuForRestaurant' : IDL.Func([IDL.Text], [IDL.Vec(MenuItem)], ['query']),
   'getKmUsageCount' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], ['query']),
   'getKmDailyCount' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
+  'countVouchersByProgram' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
   'createPromotion' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier), IDL.Text],
       [Result_Promo],
@@ -825,6 +826,7 @@ export const idlFactory = ({ IDL }) => {
     'getCanisterIdText' : IDL.Func([], [IDL.Text], ['query']),
     'getKmUsageCount' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], ['query']),
     'getKmDailyCount' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
+    'countVouchersByProgram' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     'createPromotion' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Bool), IDL.Vec(TimeSlot), IDL.Nat, IDL.Nat, IDL.Vec(DiscountTier), IDL.Text],
         [Result_Promo],

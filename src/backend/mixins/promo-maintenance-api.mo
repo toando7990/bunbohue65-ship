@@ -11,6 +11,14 @@
 // khác gọi canister — xem tryIssueSalesBonus ở sales-promo-api.mo — VPS
 // gọi canister với principal ẩn danh, không phải admin identity, nên
 // dùng HMAC ký bằng VPS_SECRET thay vì AccessControl.isAdmin).
+//
+// countVouchersByProgram(): đếm số phiếu (Đăng ký/Doanh số dùng chung 1
+// VoucherStore, phân biệt qua programCode) đã phát cho 1 chương trình cụ
+// thể — phục vụ trang /admin/theo-doi-km (việc 1) hiển thị "mức sử dụng"
+// cho 2 loại KM này (Hệ 1 đã có sẵn getKmDailyCount ở promotion-api.mo).
+// KHÔNG check admin — chỉ là SỐ ĐẾM, không lộ thông tin nhạy cảm (email,
+// mã phiếu cụ thể...), cùng tiền lệ getKmDailyCount hiện có (cũng không
+// check quyền, chỉ đếm số).
 
 import Result "mo:core/Result";
 import Time "mo:core/Time";
@@ -20,6 +28,7 @@ import SecretTypes "../types/secret";
 import PromotionTypes "../types/promotion";
 import RegistrationPromoTypes "../types/registration-promo";
 import SalesPromoTypes "../types/sales-promo";
+import VoucherTypes "../types/voucher";
 import HmacLib "../lib/hmac";
 import PromotionLib "../lib/promotion";
 import RegistrationPromoLib "../lib/registration-promo";
@@ -29,6 +38,7 @@ mixin (
   promotions : PromotionTypes.PromotionStore,
   registrationPromos : RegistrationPromoTypes.RegistrationPromoStore,
   salesPromos : SalesPromoTypes.SalesPromoStore,
+  vouchers : VoucherTypes.VoucherStore,
   secretState : SecretTypes.SecretState,
 ) {
   public shared func deactivateExpiredPromotions(
@@ -42,5 +52,15 @@ mixin (
     let b = RegistrationPromoLib.deactivateExpiredRegistrationPromos(registrationPromos, now);
     let c = SalesPromoLib.deactivateExpiredSalesPromos(salesPromos, now);
     #ok(a + b + c);
+  };
+
+  public query func countVouchersByProgram(programCode : Text) : async Nat {
+    var count = 0;
+    for ((_code, v) in vouchers.toArray().vals()) {
+      if (v.programCode == programCode) {
+        count += 1;
+      };
+    };
+    count;
   };
 };
