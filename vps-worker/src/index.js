@@ -29,10 +29,8 @@ const webhooksRoutes = require('./routes/webhooks');
 const invoiceRoutes = require('./routes/invoice');
 const salesBonusCron = require('./routes/sales-bonus-cron');
 const kmNotifyCron = require('./routes/km-notify-cron');
-const cleanupUnpaidOrdersCron = require('./routes/cleanup-unpaid-orders-cron');
 const promoExpiryCron = require('./routes/promo-expiry-cron');
 const analyticsRoutes = require('./routes/analytics');
-const adminActionsRoutes = require('./routes/admin-actions');
 const uploadRoutes = require('./routes/upload');
 const customersRoutes = require('./routes/customers');
 const orderHistoryRoutes = require('./routes/order-history');
@@ -79,7 +77,6 @@ app.use('/', customersRoutes);
 app.use('/', orderHistoryRoutes);
 app.use('/', restaurantHistoryRoutes);
 app.use('/', analyticsRoutes);
-app.use('/', adminActionsRoutes);
 
 // Error handler
 app.use((err, req, res, _next) => {
@@ -118,7 +115,6 @@ cronJobs.push(webhooksRoutes.startTingeePoll(db));
 cronJobs.push(invoiceRoutes.startInvoiceCron(db));
 cronJobs.push(salesBonusCron.startSalesBonusCron(db));
 cronJobs.push(kmNotifyCron.startKmNotifyCron(db));
-cronJobs.push(cleanupUnpaidOrdersCron.startCleanupUnpaidOrdersCron(db));
 cronJobs.push(promoExpiryCron.startPromoExpiryCron());
 
 // --- Start ---
