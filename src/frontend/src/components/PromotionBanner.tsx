@@ -1,13 +1,20 @@
 // PromotionBanner — banner khuyến mại (KM) trên trang đặt món. 3 trạng thái
-// hiển thị (xem giao diện mẫu đã duyệt trước khi build):
+// hiển thị:
 //   1. "upcoming" — sắp tới khung giờ KM hôm nay: đếm ngược màu vàng.
 //   2. "active" — đang trong khung giờ KM: đếm ngược màu đỏ + nhắc xác
 //      thực email nếu máy này chưa từng xác thực (bấm mở EmailVerificationDialog
 //      có sẵn, không xây lại).
-//   3. "active" + đã xác thực — dòng xác nhận xanh, không cần thao tác gì
-//      thêm (KM tự áp dụng lúc đặt đơn, xử lý ở VPS/canister).
+//   3. "active" + đã xác thực — KHÔNG hiện gì thêm ở vị trí xác thực (đã ẩn
+//      theo yêu cầu — trước đây có dòng xác nhận xanh, giờ bỏ để gọn hơn;
+//      KM vẫn tự áp dụng lúc đặt đơn như cũ, xử lý ở VPS/canister).
 // "hidden" (ngoài mọi khung giờ hôm nay, hoặc không có chương trình nào) —
 // component trả về null, không chiếm chỗ.
+//
+// Bố cục (đã duyệt bản xem trước trước khi build): mỗi mức khuyến mại hiện
+// thành 1 dòng riêng (không gộp chung 1 câu như trước) để nổi bật hơn; 2
+// thanh tiến trình (tổng hệ thống/của riêng bạn) đặt CÙNG 1 HÀNG, phân biệt
+// bằng màu, không kèm câu giải thích dài; thời hạn hiệu lực chuyển xuống
+// góc dưới bên phải.
 
 import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
 import { usePromotionCountdown } from "@/hooks/usePromotionCountdown";
@@ -17,7 +24,7 @@ import {
   useKmUsageCount,
 } from "@/hooks/useQueries";
 import { getVerifiedEmail } from "@/lib/verification-storage";
-import { CalendarRange, CheckCircle2, Clock, Mail } from "lucide-react";
+import { CalendarRange, Clock, Mail } from "lucide-react";
 import { useState } from "react";
 
 function formatVnd(n: bigint | number): string {
@@ -32,10 +39,11 @@ function formatVnd(n: bigint | number): string {
   }
 }
 
-// "YYYYMMDD" -> "dd/mm/yyyy" (cùng công thức đã dùng ở PromotionTable.tsx).
-function formatDate(yyyymmdd: string): string {
+// "YYYYMMDD" -> "dd/mm" (bỏ năm — luôn trong năm hiện tại, rút gọn cho
+// đúng bố cục góc dưới bên phải).
+function formatDateShort(yyyymmdd: string): string {
   if (yyyymmdd.length !== 8) return yyyymmdd;
-  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
+  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}`;
 }
 
 export function PromotionBanner() {
@@ -61,17 +69,27 @@ export function PromotionBanner() {
     return null;
   }
 
-  // Tóm tắt các mức chiết khấu, sắp tăng dần theo mức tối thiểu — ví dụ
-  // "Đơn từ 150.000đ giảm 15.000đ · từ 300.000đ giảm 30.000đ".
-  const tiersSummary = [...promotion.tiers]
-    .sort((a, b) => Number(a.minOrderValue) - Number(b.minOrderValue))
-    .map(
-      (t) =>
-        `${t === promotion.tiers[0] ? "Đơn từ" : "từ"} ${formatVnd(t.minOrderValue)} giảm ${formatVnd(t.discountAmount)}`,
-    )
-    .join(" · ");
+  const sortedTiers = [...promotion.tiers].sort(
+    (a, b) => Number(a.minOrderValue) - Number(b.minOrderValue),
+  );
 
   const isActive = countdown.kind === "active";
+
+  const dailyPercent =
+    dailyCount !== undefined && promotion.dailyOrderLimit > 0n
+      ? Math.min(
+          100,
+          (Number(dailyCount) / Number(promotion.dailyOrderLimit)) * 100,
+        )
+      : 0;
+  const customerPercent =
+    customerCount !== undefined && promotion.perCustomerDailyLimit > 0n
+      ? Math.min(
+          100,
+          (Number(customerCount) / Number(promotion.perCustomerDailyLimit)) *
+            100,
+        )
+      : 0;
 
   return (
     <>
@@ -107,88 +125,118 @@ export function PromotionBanner() {
           </span>
         </div>
 
-        {tiersSummary && (
-          <p className="ml-6 mt-1 text-xs text-muted-foreground">
-            {tiersSummary}
-          </p>
-        )}
-
-        <p
-          className="ml-6 mt-1 flex items-center gap-1 text-[11px] text-muted-foreground"
-          data-ocid="promotion_banner.validity"
-        >
-          <CalendarRange className="h-3 w-3 shrink-0" aria-hidden="true" />
-          Áp dụng: từ {formatDate(promotion.startDate)} đến{" "}
-          {formatDate(promotion.endDate)}
-        </p>
-
-        {promotion.termsUrl && (
-          <a
-            href={promotion.termsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-6 mt-1 inline-block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-            data-ocid="promotion_banner.terms_link"
-          >
-            Điều khoản
-          </a>
-        )}
-
-        {isActive && (
-          <div className="ml-6 mt-2">
-            {verifiedEmail ? (
-              <p
-                className="flex items-center gap-1.5 text-xs text-success"
-                data-ocid="promotion_banner.verified_notice"
+        {/* Mỗi mức khuyến mại 1 dòng riêng — nổi bật hơn bản gộp chung 1
+            câu trước đây. */}
+        {sortedTiers.length > 0 && (
+          <div className="mt-2 flex flex-col gap-1.5">
+            {sortedTiers.map((t) => (
+              <div
+                key={t.minOrderValue.toString()}
+                className="flex items-center justify-between rounded-md bg-card px-2.5 py-1.5"
+                data-ocid="promotion_banner.tier_row"
               >
-                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                Email đã xác thực — đơn của bạn sẽ tự áp dụng ưu đãi
-              </p>
-            ) : (
-              <div className="flex items-center gap-2 rounded-md bg-card px-2.5 py-1.5">
-                <Mail
-                  className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <span className="text-xs text-muted-foreground">
-                  Xác thực email để nhận ưu đãi này
+                <span className="text-xs font-medium text-foreground">
+                  Đơn từ {formatVnd(t.minOrderValue)}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setVerifyOpen(true)}
-                  className="ml-auto shrink-0 rounded-md bg-destructive px-2.5 py-1 text-xs font-semibold text-destructive-foreground transition-smooth hover:opacity-90"
-                  data-ocid="promotion_banner.verify_button"
-                >
-                  Xác thực
-                </button>
+                <span className="font-display text-sm font-bold text-destructive">
+                  −{formatVnd(t.discountAmount)}
+                </span>
               </div>
-            )}
+            ))}
+          </div>
+        )}
 
-            {/* Tổng số đơn KM đã dùng hôm nay (toàn hệ thống) — luôn hiện
-                khi đang active, không cần xác thực email mới xem được
-                (thông tin công khai, không riêng tư). */}
-            {dailyCount !== undefined && (
-              <p
-                className="mt-1.5 text-xs text-muted-foreground"
-                data-ocid="promotion_banner.daily_count"
-              >
-                Đã dùng {dailyCount.toString()}/
-                {promotion.dailyOrderLimit.toString()} đơn khuyến mại hôm nay
-              </p>
-            )}
-            {/* Số lượt CHÍNH khách này đã dùng hôm nay — chỉ hiện khi đã
-                xác thực email (cần email để tra). */}
+        {/* 2 thanh tiến trình cùng 1 hàng, phân biệt màu — chỉ hiện khi
+            đang trong khung giờ KM (isActive), giống logic cũ. */}
+        {isActive && dailyCount !== undefined && (
+          <div className="mt-2.5 flex gap-2.5">
+            <div className="min-w-0 flex-1">
+              <div className="mb-0.5 flex items-baseline justify-between">
+                <span className="text-[10px] text-muted-foreground">
+                  Toàn hệ thống
+                </span>
+                <span className="font-display text-[11px] font-bold text-[oklch(0.5_0.15_250)]">
+                  {dailyCount.toString()}/{promotion.dailyOrderLimit.toString()}
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
+                <div
+                  className="h-full rounded-full bg-[oklch(0.62_0.14_250)] transition-all"
+                  style={{ width: `${dailyPercent}%` }}
+                />
+              </div>
+            </div>
             {verifiedEmail && customerCount !== undefined && (
-              <p
-                className="mt-0.5 text-xs text-muted-foreground"
-                data-ocid="promotion_banner.customer_count"
-              >
-                Bạn đã dùng {customerCount.toString()}/
-                {promotion.perCustomerDailyLimit.toString()} lượt hôm nay
-              </p>
+              <div className="min-w-0 flex-1">
+                <div className="mb-0.5 flex items-baseline justify-between">
+                  <span className="text-[10px] text-muted-foreground">
+                    Của bạn
+                  </span>
+                  <span className="font-display text-[11px] font-bold text-success">
+                    {customerCount.toString()}/
+                    {promotion.perCustomerDailyLimit.toString()}
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
+                  <div
+                    className="h-full rounded-full bg-success transition-all"
+                    style={{ width: `${customerPercent}%` }}
+                  />
+                </div>
+              </div>
             )}
           </div>
         )}
+
+        {/* Nhắc xác thực — CHỈ hiện khi CHƯA xác thực (giữ nguyên hành
+            động cần thiết). Khi ĐÃ xác thực: không hiện gì thay thế ở đây
+            nữa (trước đây có dòng xác nhận xanh, đã ẩn theo yêu cầu). */}
+        {isActive && !verifiedEmail && (
+          <div className="mt-2.5 flex items-center gap-2 rounded-md bg-card px-2.5 py-1.5">
+            <Mail
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span className="text-xs text-muted-foreground">
+              Xác thực email để nhận ưu đãi này
+            </span>
+            <button
+              type="button"
+              onClick={() => setVerifyOpen(true)}
+              className="ml-auto shrink-0 rounded-md bg-destructive px-2.5 py-1 text-xs font-semibold text-destructive-foreground transition-smooth hover:opacity-90"
+              data-ocid="promotion_banner.verify_button"
+            >
+              Xác thực
+            </button>
+          </div>
+        )}
+
+        {/* Thời hạn hiệu lực + Điều khoản — chuyển xuống góc dưới bên
+            phải (trước đây nằm giữa, ngay dưới các mức KM). */}
+        <div className="mt-2.5 flex items-center justify-end gap-3">
+          {promotion.termsUrl && (
+            <a
+              href={promotion.termsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              data-ocid="promotion_banner.terms_link"
+            >
+              Điều khoản
+            </a>
+          )}
+          <span
+            className="flex items-center gap-1 text-[10px] text-muted-foreground"
+            data-ocid="promotion_banner.validity"
+          >
+            <CalendarRange
+              className="h-2.5 w-2.5 shrink-0"
+              aria-hidden="true"
+            />
+            {formatDateShort(promotion.startDate)} –{" "}
+            {formatDateShort(promotion.endDate)}
+          </span>
+        </div>
       </div>
 
       <EmailVerificationDialog
