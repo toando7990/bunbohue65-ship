@@ -1,7 +1,10 @@
 // OrderCard — card tóm tắt đơn hàng: orderId, cusName, amount, status badges.
-// Mobile-first, dùng trong OrderList. Phần nội dung bấm được nằm trong <Link>
-// đến /track/:orderId; footer chứa <QrPayment> (nút "Thanh toán" / QR / badge).
-// Card là <div> bọc ngoài để tránh thẻ tương tác lồng nhau (Link chứa button).
+// Mobile-first, dùng trong OrderList. Bấm bất kỳ đâu trên thẻ KHÔNG điều
+// hướng — chỉ bấm đúng nút "Xem chi tiết" (cuối thẻ) mới đi tới
+// /track/:orderId (yêu cầu đã xác nhận: tránh điều hướng ngoài ý muốn khi
+// người dùng chỉ định bấm nút gọi/sao chép trên thẻ). Card là <div> bọc
+// ngoài; "Xem chi tiết" là <Link> riêng, không lồng trong link/button nào
+// khác.
 
 import { StatusBadge } from "@/components/StatusBadge";
 import { useDevicesByRestaurant, useRestaurants } from "@/hooks/useQueries";
@@ -168,20 +171,32 @@ export function OrderCard({
           </span>
         </div>
         {!compactRestaurantInfo && restaurantAddress && (
-          <div className="flex min-w-0 shrink-0 items-start gap-1">
-            <MapPin
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="line-clamp-2 max-w-[9rem] text-xs text-muted-foreground sm:max-w-[14rem]">
-              {restaurantAddress}
-            </span>
-            <CopyButton
-              small
-              value={restaurantAddress}
-              label="địa chỉ nhà hàng"
-              ocid={`order.card.${index}.copy_address_button`}
-            />
+          <div className="flex min-w-0 shrink-0 flex-col items-end gap-1">
+            <div className="flex items-start gap-1">
+              <MapPin
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span className="line-clamp-2 max-w-[9rem] text-xs text-muted-foreground sm:max-w-[14rem]">
+                {restaurantAddress}
+              </span>
+              <CopyButton
+                small
+                value={restaurantAddress}
+                label="địa chỉ nhà hàng"
+                ocid={`order.card.${index}.copy_address_button`}
+              />
+            </div>
+            {contactPhone && (
+              <a
+                href={`tel:${contactPhone}`}
+                data-ocid={`order.card.${index}.call_restaurant_link`}
+                className="flex items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
+              >
+                <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {contactPhone}
+              </a>
+            )}
           </div>
         )}
       </div>
@@ -190,28 +205,12 @@ export function OrderCard({
         {order.cusName || "Khách vãng lai"}
       </h3>
 
-      {/* Hàng: SĐT khách (trái) + SĐT liên hệ nhà hàng (phải). */}
-      <div className="mt-0.5 flex items-center justify-between gap-3">
+      {/* Hàng: SĐT khách — SĐT nhà hàng đã chuyển lên ngay dưới địa chỉ
+          (phía trên), không còn lặp lại ở đây nữa. */}
+      <div className="mt-0.5">
         <span className="min-w-0 truncate text-sm text-muted-foreground">
           {order.cusPhone || ""}
         </span>
-        {!compactRestaurantInfo && contactPhone && (
-          <div className="flex min-w-0 shrink-0 items-center gap-1">
-            <Phone
-              className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="text-xs text-muted-foreground">
-              {contactPhone}
-            </span>
-            <CopyButton
-              small
-              value={contactPhone}
-              label="số điện thoại liên hệ"
-              ocid={`order.card.${index}.copy_phone_button`}
-            />
-          </div>
-        )}
       </div>
 
       {/* Mã nhận hàng — khách tự báo cho tài xế (gọi điện, nhắn tin...),
@@ -309,12 +308,15 @@ export function OrderCard({
       </div>
 
       {!disableDetailLink && (
-        <div className="mt-2 flex items-center justify-end">
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-smooth group-hover:gap-2">
-            Xem chi tiết
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </span>
-        </div>
+        <Link
+          to="/track/$orderId"
+          params={{ orderId: order.orderId }}
+          data-ocid={`order.card.${index}.detail_link`}
+          className="group mt-2 flex items-center justify-end gap-1 text-sm font-medium text-primary transition-smooth hover:gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          Xem chi tiết
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
       )}
     </>
   );
@@ -324,17 +326,7 @@ export function OrderCard({
       data-ocid={`order.card.${index}`}
       className="flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-smooth hover:border-primary/40 hover:shadow-md"
     >
-      {disableDetailLink ? (
-        <div className="block">{content}</div>
-      ) : (
-        <Link
-          to="/track/$orderId"
-          params={{ orderId: order.orderId }}
-          className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          {content}
-        </Link>
-      )}
+      {content}
     </div>
   );
 }

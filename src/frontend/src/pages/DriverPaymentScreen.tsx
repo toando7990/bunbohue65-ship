@@ -9,7 +9,8 @@ import { DriverOrderHistory } from "@/components/DriverOrderHistory";
 import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
 import { usePendingOrders } from "@/hooks/usePendingOrders";
-import { History, ListOrdered, Smartphone } from "lucide-react";
+import { useRestaurants } from "@/hooks/useQueries";
+import { History, ListOrdered, MapPin, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -49,6 +50,8 @@ export function DriverPaymentScreen() {
   const [activeTab, setActiveTab] = useState<"queue" | "history">("queue");
 
   const ordersQuery = usePendingOrders(restaurantId ?? undefined);
+  const { data: restaurants } = useRestaurants();
+  const restaurant = restaurants?.find((r) => r.restaurantId === restaurantId);
 
   function handleActivated(restId: string, devId: string, name: string) {
     setRestaurantId(restId);
@@ -110,6 +113,20 @@ export function DriverPaymentScreen() {
               <p className="truncate font-mono text-xs text-muted-foreground">
                 {deviceId}
               </p>
+              {restaurant && (
+                <>
+                  <p className="truncate text-xs font-medium text-foreground">
+                    {restaurant.name}
+                  </p>
+                  <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
+                    <MapPin
+                      className="mt-0.5 h-3 w-3 shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="line-clamp-2">{restaurant.address}</span>
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
