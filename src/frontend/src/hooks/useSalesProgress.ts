@@ -2,6 +2,13 @@
 // thưởng đang cấu hình (Giai đoạn 4d). Tái sử dụng logic tìm mức tiếp
 // theo đã có ở PeriodSummaryPanel.tsx (Giai đoạn 3f) — tách riêng thành
 // hook dùng chung cho cả "Lịch sử đặt đơn" lẫn trang đặt món.
+//
+// SỬA (việc 7 — thiết kế lại giao diện Doanh số, hiện ĐẦY ĐỦ mọi mốc
+// thưởng trên 1 thanh thay vì chỉ % tới mốc tiếp theo): progressPercent
+// giờ tính theo % TỚI MỐC CAO NHẤT (không phải mốc tiếp theo — ý nghĩa cũ
+// khiến thanh "reset ngắn lại" mỗi khi vượt 1 mốc, không thấy được toàn
+// cảnh). Thêm tierProgress — vị trí % của TỪNG mốc trên thang (so với mốc
+// cao nhất) + đã đạt hay chưa, để vẽ chấm tròn dọc theo thanh.
 
 import { useCurrentSalesPromo } from "@/hooks/useQueries";
 import { getPeriodSummary } from "@/lib/vps-client";
@@ -10,6 +17,14 @@ import { useQuery } from "@tanstack/react-query";
 interface SalesTierLike {
   minSales: bigint;
   voucherValue: bigint;
+}
+
+export interface TierProgress {
+  tier: SalesTierLike;
+  /** Vị trí % trên thang (0-100), so với mốc CAO NHẤT. */
+  positionPercent: number;
+  /** Đã đạt mốc này chưa (total >= tier.minSales). */
+  reached: boolean;
 }
 
 // Mức tiếp theo CHƯA đạt được (thấp nhất trong các mức còn thiếu) — null
@@ -27,18 +42,6 @@ function findNextTierGap(
     }
   }
   return null;
-}
-
-// % tiến độ (0-100) hướng tới mức tiếp theo — 100 nếu đã đạt mức cao nhất,
-// 0 nếu không có mức nào cấu hình.
-function computeProgressPercent(
-  tiers: SalesTierLike[],
-  total: number,
-  nextGap: { tier: SalesTierLike; remaining: number } | null,
-): number {
-  if (tiers.length === 0) return 0;
-  if (!nextGap) return 100;
-  return Math.min(100, (total / Number(nextGap.tier.minSales)) * 100);
 }
 
 export function useSalesProgress(
@@ -62,8 +65,30 @@ export function useSalesProgress(
       ? salesPromo.weeklyTiers
       : salesPromo.monthlyTiers
     : [];
+  const sortedTiers = [...tiers].sort((a, b) =>
+    a.minSales < b.minSales ? -1 : a.minSales > b.minSales ? 1 : 0,
+  );
+  const maxMinSales =
+    sortedTiers.length > 0
+      ? Number(sortedTiers[sortedTiers.length - 1].minSales)
+      : 0;
+  const tierProgress: TierProgress[] = sortedTiers.map((t) => ({
+    tier: t,
+    positionPercent:
+      maxMinSales > 0 ? (Number(t.minSales) / maxMinSales) * 100 : 100,
+    reached: total >= Number(t.minSales),
+  }));
   const nextGap = findNextTierGap(tiers, total);
-  const progressPercent = computeProgressPercent(tiers, total, nextGap);
+  const progressPercent =
+    maxMinSales > 0 ? Math.min(100, (total / maxMinSales) * 100) : 0;
 
-  return { total, tiers, nextGap, progressPercent, isLoading, isError };
+  return {
+    total,
+    tiers,
+    tierProgress,
+    nextGap,
+    progressPercent,
+    isLoading,
+    isError,
+  };
 }
