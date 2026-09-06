@@ -59,6 +59,7 @@ export const mockBackend: backendInterface = {
   listSalesPromos: async () => ({ __kind__: "ok", ok: [] }),
   getCurrentSalesPromo: async () => null,
   issueSalesBonus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  deactivateExpiredPromotions: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   getOrder: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   getOrdersByEmail: async () => [],
   getOrderStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),

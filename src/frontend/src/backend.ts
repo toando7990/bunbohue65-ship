@@ -540,6 +540,7 @@ export interface backendInterface {
     listSalesPromos(): Promise<Result_SalesPromoList>;
     getCurrentSalesPromo(): Promise<SalesPromo | null>;
     issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: string): Promise<Result_IssueSalesBonus>;
+    deactivateExpiredPromotions(hmac: string): Promise<Result_Km>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrdersByEmail(email: string): Promise<Array<Order>>;
@@ -1231,6 +1232,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.issueSalesBonus(arg0, arg1, arg2, arg3, arg4);
             return from_candid_Result_IssueSalesBonus(result);
+        }
+    }
+    async deactivateExpiredPromotions(arg0: string): Promise<Result_Km> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deactivateExpiredPromotions(arg0);
+                return from_candid_Result_Km(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deactivateExpiredPromotions(arg0);
+            return from_candid_Result_Km(result);
         }
     }
     async getItemImage(arg0: string): Promise<Uint8Array | null> {

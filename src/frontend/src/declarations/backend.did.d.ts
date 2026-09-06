@@ -340,6 +340,7 @@ export interface _SERVICE {
   'listSalesPromos' : ActorMethod<[], Result_SalesPromoList>,
   'getCurrentSalesPromo' : ActorMethod<[], [] | [SalesPromo]>,
   'issueSalesBonus' : ActorMethod<[string, string, string, bigint, string], Result_IssueSalesBonus>,
+  'deactivateExpiredPromotions' : ActorMethod<[string], Result_Km>,
   'getItemImage' : ActorMethod<[string], [] | [Uint8Array]>,
   'getOrder' : ActorMethod<[string], Result>,
   'getOrderStatus' : ActorMethod<[string], Result_5>,

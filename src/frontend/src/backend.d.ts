@@ -491,6 +491,7 @@ export interface backendInterface {
     listSalesPromos(): Promise<Result_SalesPromoList>;
     getCurrentSalesPromo(): Promise<SalesPromo | null>;
     issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: string): Promise<Result_IssueSalesBonus>;
+    deactivateExpiredPromotions(hmac: string): Promise<Result_Km>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
     getOrder(orderId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_5>;
