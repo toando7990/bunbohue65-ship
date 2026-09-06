@@ -159,7 +159,13 @@ const IDL_FACTORY = ({ IDL }) => {
         err: IDL.Text,
       })],
       [],
-    ),    applyVoucher: IDL.Func(
+    ),
+    deactivateExpiredPromotions: IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
+      [],
+    ),
+    applyVoucher: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
       [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
       [],
@@ -350,6 +356,17 @@ async function issueSalesBonus(email, periodType, periodKey, totalSales) {
   return await actor.issueSalesBonus(email, periodType, periodKey, BigInt(totalSalesInt), hmacSig);
 }
 
+// deactivateExpiredPromotions — quét TOÀN BỘ 3 loại khuyến mại (Hệ 1/Đăng
+// ký/Doanh số), tự chuyển active=false cho chương trình ĐÃ QUA endDate.
+// Gọi định kỳ từ routes/promo-expiry-cron.js. Trả về { ok: Nat } (tổng số
+// chương trình vừa bị tắt, cộng dồn cả 3 loại) | { err: string } (chỉ khi
+// HMAC sai — không nên xảy ra nếu VPS_SECRET cấu hình đúng).
+async function deactivateExpiredPromotions() {
+  const actor = getActor();
+  const hmacSig = hmac.signDeactivateExpiredPromotions(VPS_SECRET);
+  return await actor.deactivateExpiredPromotions(hmacSig);
+}
+
 // applyVoucher — kiểm tra + đánh dấu ĐÃ DÙNG 1 phiếu giảm giá (Giai đoạn
 // 3e). orderAmount PHẢI là số tiền CÒN LẠI sau khi đã trừ KM Hệ 1 (nếu có)
 // — phiếu áp vào phần còn lại, 2 loại chiết khấu CỘNG DỒN (không giới hạn
@@ -368,5 +385,6 @@ module.exports = {
   getActor, createOrder, updateStatus, updatePaymentStatus,
   updateInvoiceStatus, updateOrderQr, markPaymentExpired, getOrderStatus, listPendingPaymentOrders, cancelOrder,
   getMenuForRestaurant, getPaymentMode, applyPromotion, issueSalesBonus, applyVoucher, changeOrderRestaurant,
+  deactivateExpiredPromotions,
   getCurrentPromotion,
 };

@@ -82,6 +82,14 @@ function signChangeOrderRestaurant(secret, orderId, newRestaurantId) {
   return sign(secret, `${orderId}|${newRestaurantId}`);
 }
 
+// deactivateExpiredPromotions: payload cố định (không tham số) — khớp
+// canister mixins/promo-maintenance-api.mo. Dùng payload cố định vì hàm
+// không nhận tham số nghiệp vụ nào (chỉ đóng vai trò "phím bấm" xác thực
+// đúng là VPS gọi, không phải request giả mạo).
+function signDeactivateExpiredPromotions(secret) {
+  return sign(secret, 'deactivate-expired-promotions');
+}
+
 module.exports = {
   sign,
   signCreateOrder,
@@ -94,4 +102,5 @@ module.exports = {
   signIssueSalesBonus,
   signApplyVoucher,
   signChangeOrderRestaurant,
+  signDeactivateExpiredPromotions,
 };

@@ -22,6 +22,7 @@ import PromotionApi "mixins/promotion-api";
 import VoucherApi "mixins/voucher-api";
 import RegistrationPromoApi "mixins/registration-promo-api";
 import SalesPromoApi "mixins/sales-promo-api";
+import PromoMaintenanceApi "mixins/promo-maintenance-api";
 import PaymentModeConfigApi "mixins/payment-mode-config-api";
 import StoreHoursConfigApi "mixins/store-hours-config-api";
 
@@ -308,6 +309,7 @@ actor Main {
   include VoucherApi(vouchers, secretState);
   include RegistrationPromoApi(accessControlState, registrationPromos, vouchers);
   include SalesPromoApi(accessControlState, salesPromos, salesBonusIssued, vouchers, secretState);
+  include PromoMaintenanceApi(promotions, registrationPromos, salesPromos, secretState);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
 

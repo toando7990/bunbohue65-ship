@@ -158,4 +158,24 @@ module {
       };
     };
   };
+
+  // Quét TOÀN BỘ chương trình KM đăng ký, tự chuyển active=false cho
+  // những chương trình ĐÃ QUA endDate — cùng nguyên tắc đã áp dụng ở
+  // lib/promotion.mo (xem giải thích đầy đủ ở đó). Trả về số chương trình
+  // vừa bị tắt.
+  public func deactivateExpiredRegistrationPromos(
+    store : RegistrationPromoTypes.RegistrationPromoStore,
+    now : Int,
+  ) : Nat {
+    let today = vnDateKey(now);
+    var count = 0;
+    for ((code, p) in store.toArray().vals()) {
+      if (p.active and today > p.endDate) {
+        let updated : RegistrationPromoTypes.RegistrationPromo = { p with active = false };
+        store.add(code, updated);
+        count += 1;
+      };
+    };
+    count;
+  };
 };

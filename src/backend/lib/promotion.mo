@@ -242,4 +242,29 @@ module {
     store.add(key, next);
     #ok(next);
   };
+
+  // Quét TOÀN BỘ chương trình Hệ 1, tự chuyển active=false cho những
+  // chương trình ĐÃ QUA endDate nhưng vẫn còn đánh dấu active=true (đúng
+  // yêu cầu "chương trình KM hết hiệu lực phải chuyển sang trạng thái
+  // 'tắt'" — trước đây field active chỉ được ADMIN tự tay tắt, còn KHÔNG
+  // TỰ ĐỘNG chuyển khi hết hạn theo ngày, dù logic hiển thị/áp dụng cho
+  // khách đã tự lọc theo ngày đúng rồi — đây là để field active PHẢN ÁNH
+  // ĐÚNG trạng thái thật, phục vụ trang /admin/theo-doi-km. Trả về số
+  // chương trình vừa bị tắt. Gọi định kỳ từ VPS (xem
+  // vps-worker/src/routes/promo-expiry-cron.js).
+  public func deactivateExpiredPromotions(
+    store : PromotionTypes.PromotionStore,
+    now : Int,
+  ) : Nat {
+    let today = vnDateKey(now);
+    var count = 0;
+    for ((code, p) in store.toArray().vals()) {
+      if (p.active and today > p.endDate) {
+        let updated : PromotionTypes.Promotion = { p with active = false };
+        store.add(code, updated);
+        count += 1;
+      };
+    };
+    count;
+  };
 };
