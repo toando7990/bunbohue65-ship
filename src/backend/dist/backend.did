@@ -1,3 +1,14 @@
+type Voucher = 
+ record {
+   code: text;
+   email: text;
+   endDate: text;
+   issuedAt: int;
+   programCode: text;
+   startDate: text;
+   used: bool;
+   value: nat;
+ };
 type VerifyResult = 
  variant {
    err: text;
@@ -27,6 +38,12 @@ type UpgradeState =
    restaurantMenuOverrides: vec RestaurantMenuOverrideEntry;
    restaurants: vec RestaurantEntry;
  };
+type TimeSlot = 
+ record {
+   durationMinutes: nat;
+   startHour: nat;
+   startMinute: nat;
+ };
 type StoreHours = 
  record {
    closeHour: nat;
@@ -39,45 +56,115 @@ type SendCodeResult =
    err: text;
    ok;
  };
+type SalesTier = 
+ record {
+   minSales: nat;
+   voucherValue: nat;
+ };
+type SalesPromo = 
+ record {
+   active: bool;
+   code: text;
+   endDate: text;
+   monthlyTiers: vec SalesTier;
+   name: text;
+   startDate: text;
+   termsUrl: text;
+   voucherValidDays: nat;
+   weeklyTiers: vec SalesTier;
+ };
 type Result__1 = 
  record {
    hasMore: bool;
    rows: vec vec Cell;
  };
+type Result_9 = 
+ variant {
+   err: text;
+   ok: vec SalesPromo;
+ };
+type Result_8 = 
+ variant {
+   err: text;
+   ok: Device;
+ };
 type Result_7 = 
  variant {
-   err: Error;
+   err: text;
    ok;
  };
 type Result_6 = 
  variant {
    err: text;
-   ok: PendingActivation;
+   ok: nat;
  };
 type Result_5 = 
  variant {
    err: text;
-   ok: OrderStatus;
+   ok: MenuItem;
  };
 type Result_4 = 
  variant {
    err: text;
-   ok: Device;
+   ok: Promotion;
  };
 type Result_3 = 
  variant {
    err: text;
-   ok;
+   ok: RegistrationPromo;
  };
 type Result_2 = 
  variant {
    err: text;
-   ok: MenuItem;
+   ok: Restaurant;
+ };
+type Result_17 = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Result_16 = 
+ variant {
+   err: text;
+   ok: record {
+         discountAmount: nat;
+         promotionCode: text;
+       };
+ };
+type Result_15 = 
+ variant {
+   err: text;
+   ok: PendingActivation;
+ };
+type Result_14 = 
+ variant {
+   err: text;
+   ok: OrderStatus;
+ };
+type Result_13 = 
+ variant {
+   err: text;
+   ok: bool;
+ };
+type Result_12 = 
+ variant {
+   err: text;
+   ok: opt Voucher;
+ };
+type Result_11 = 
+ variant {
+   err: text;
+   ok: vec Promotion;
+ };
+type Result_10 = 
+ variant {
+   err: text;
+   ok: vec RegistrationPromo;
  };
 type Result_1 = 
  variant {
    err: text;
-   ok: Restaurant;
+   ok: SalesPromo;
  };
 type Result = 
  variant {
@@ -105,6 +192,31 @@ type Restaurant =
    phone: text;
    restaurantId: text;
    visible: bool;
+ };
+type RegistrationPromo = 
+ record {
+   active: bool;
+   code: text;
+   endDate: text;
+   name: text;
+   startDate: text;
+   termsUrl: text;
+   voucherValidDays: nat;
+   voucherValue: nat;
+ };
+type Promotion = 
+ record {
+   active: bool;
+   code: text;
+   dailyOrderLimit: nat;
+   daysOfWeek: vec bool;
+   endDate: text;
+   name: text;
+   perCustomerDailyLimit: nat;
+   startDate: text;
+   termsUrl: text;
+   tiers: vec DiscountTier;
+   timeSlots: vec TimeSlot;
  };
 type PendingActivationEntry = 
  record {
@@ -169,9 +281,11 @@ type Order =
    invoiceId: text;
    invoiceStatus: InvoiceStatus;
    items: vec OrderItem;
+   kmDiscountAmount: nat;
    orderId: text;
    paymentStatus: PaymentStatus;
    pdfUrl: text;
+   pickupCode: text;
    qrCode: opt text;
    receiverEmail: text;
    restaurantId: text;
@@ -181,6 +295,7 @@ type Order =
    tingeeQrCode: text;
    tingeeQrId: text;
    updatedAt: int;
+   voucherDiscountAmount: nat;
  };
 type MenuItem = 
  record {
@@ -228,6 +343,11 @@ type Error =
    UntrustedSsoSource: record {domain: text;};
  };
 type Email = text;
+type DiscountTier = 
+ record {
+   discountAmount: nat;
+   minOrderValue: nat;
+ };
 type DeviceRole = 
  variant {
    admin;
@@ -245,6 +365,8 @@ type Device =
    activatedAt: int;
    active: bool;
    deviceId: text;
+   name: text;
+   phone: text;
    restaurantId: text;
    role: DeviceRole;
  };
@@ -264,76 +386,131 @@ type BookingStatus =
  };
 service : {
   _initialize_access_control: () -> ();
-  _internet_identity_sign_in_finish: () -> (Result_7);
+  _internet_identity_sign_in_finish: () -> (Result_17);
   _internet_identity_sign_in_start: () -> (blob);
-  activateDevice: (code: text, deviceId: DeviceId) -> (Result_4);
+  activateDevice: (code: text, deviceId: DeviceId, name: text, phone:
+   text) -> (Result_8);
   addItem: (itemId: text, name: text, price: nat, unitName: text, vatRate:
-   nat, category: text, image: blob) -> (Result_2);
+   nat, category: text, image: blob) -> (Result_5);
   addRestaurant: (restaurantId: text, name: text, address: text, phone:
-   text) -> (Result_1);
+   text) -> (Result_2);
+  applyPromotion: (email: text, orderAmount: nat, hmac: Hmac) -> (Result_16);
+  applyVoucher: (email: text, code: text, orderAmount: nat, hmac: Hmac) ->
+   (Result_6);
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
   cancelOrder: (orderId: text, hmac: text) -> (Result);
+  changeOrderRestaurant: (orderId: text, newRestaurantId: text, hmac:
+   text) -> (Result);
   cleanupExpiredActivations: () -> (nat);
+  countVouchersByProgram: (programCode: text) -> (nat) query;
   createOrder: (orderId: text, restaurantId: text, cusName: text, cusPhone:
    text, cusAddress: text, cusTaxCode: text, receiverEmail: text, items:
    vec OrderItem, amount: nat, goodsAmount: nat, shippingFee: nat, taxTotal:
    nat, ahamoveOrderId: text, tingeeQrId: text, sharedLink: text,
-   tingeeQrCode: text, hmac: text) -> (Result);
-  deleteItem: (itemId: text) -> (Result_3);
-  deleteRestaurant: (restaurantId: text) -> (Result_3);
+   tingeeQrCode: text, pickupCode: text, kmDiscountAmount: nat,
+   voucherDiscountAmount: nat, hmac: text) -> (Result);
+  createPromotion: (name: text, startDate: text, endDate: text, daysOfWeek:
+   vec bool, timeSlots: vec TimeSlot, dailyOrderLimit: nat,
+   perCustomerDailyLimit: nat, tiers: vec DiscountTier, termsUrl: text) ->
+   (Result_4);
+  createRegistrationPromo: (name: text, startDate: text, endDate: text,
+   voucherValue: nat, voucherValidDays: nat, termsUrl: text) -> (Result_3);
+  createSalesPromo: (name: text, startDate: text, endDate: text, weeklyTiers:
+   vec SalesTier, monthlyTiers: vec SalesTier, voucherValidDays: nat,
+   termsUrl: text) -> (Result_1);
+  deactivateExpiredPromotions: (hmac: Hmac) -> (Result_6);
+  deleteItem: (itemId: text) -> (Result_7);
+  deletePromotion: (code: text) -> (Result_7);
+  deleteRegistrationPromo: (code: text) -> (Result_7);
+  deleteRestaurant: (restaurantId: text) -> (Result_7);
+  deleteSalesPromo: (code: text) -> (Result_7);
   execute: (qJson: text) -> (Result__1) query;
   generateActivationCode: (restaurantId: RestaurantId, role: DeviceRole) ->
-   (Result_6);
+   (Result_15);
+  getApiDoc: () -> (text) query;
   getCallerUserRole: () -> (UserRole) query;
   /// Returns the canister's own id as text, so the VPS knows which canister
   /// it is talking to. `Principal.fromActor(Main)` resolves the actor's own
   /// canister principal at runtime (mo:core/IC.getCanisterId does not exist in
   /// core 2.6.1).
   getCanisterIdText: () -> (text) query;
+  getCurrentPromotion: () -> (opt Promotion) query;
+  getCurrentRegistrationPromo: () -> (opt RegistrationPromo) query;
+  getCurrentSalesPromo: () -> (opt SalesPromo) query;
+  getItemImage: (itemId: text) -> (opt blob) query;
+  getKmDailyCount: (programCode: text) -> (nat) query;
+  getKmUsageCount: (email: text, programCode: text) -> (nat) query;
   getMenu: () -> (vec MenuItem) query;
   getMenuForRestaurant: (restaurantId: text) -> (vec MenuItem) query;
   getOrder: (orderId: text) -> (Result);
-  getOrderStatus: (orderId: text) -> (Result_5) query;
+  getOrderStatus: (orderId: text) -> (Result_14) query;
+  getOrdersByEmail: (email: text) -> (vec Order);
   getPaymentMode: () -> (text) query;
   getRestaurants: () -> (vec Restaurant) query;
   getStoreHours: () -> (StoreHours) query;
   getUpgradeState: () -> (UpgradeState);
   isCallerAdmin: () -> (bool) query;
   isEmailVerified: (email: Email) -> (bool) query;
+  isPromotionUsed: (code: text) -> (Result_13) query;
+  isRegistrationPromoUsed: (code: text) -> (Result_13) query;
+  isSalesPromoUsed: (code: text) -> (Result_13) query;
   isStoreOpen: () -> (bool) query;
+  issueSalesBonus: (email: text, periodType: text, periodKey: text,
+   totalSales: nat, hmac: Hmac) -> (Result_12);
   listDevicesByRestaurant: (restaurantId: RestaurantId) -> (vec Device) query;
   listDevicesByRole: (role: DeviceRole) -> (vec Device) query;
   listMenus: () -> (vec MenuItem) query;
+  listMyVouchers: (email: text) -> (vec Voucher) query;
   listOrders: () -> (vec Order);
   listPaidOrdersForPickup: () -> (vec Order);
   listPendingPaymentOrders: (restaurantId: text) -> (vec Order);
+  listPromotions: () -> (Result_11) query;
+  listRegistrationPromos: () -> (Result_10) query;
   listRestaurants: () -> (vec Restaurant) query;
+  listSalesPromos: () -> (Result_9) query;
   markPaymentExpired: (orderId: text, hmac: text) -> (Result);
   markPickedUp: (orderId: text) -> (Result);
+  pruneOldOrdersNow: (hmac: text) -> (Result_6);
   restoreUpgradeState: ("blob": blob) -> (bool);
-  revokeDevice: (deviceId: DeviceId) -> (Result_4);
+  revokeDevice: (deviceId: DeviceId) -> (Result_8);
   schema: () -> (text) query;
   seedMenuItems: () -> (bool);
   sendVerificationCode: (email: Email) -> (SendCodeResult);
-  setPaymentMode: (mode: text) -> (Result_3);
+  setItemVisible: (itemId: text, visible: bool) -> (Result_5);
+  setPaymentMode: (mode: text) -> (Result_7);
   setRestaurantPriceOverride: (restaurantId: text, itemId: text, price:
-   nat) -> (Result_3);
-  setStoreHours: (hours: StoreHours) -> (Result_3);
+   nat) -> (Result_7);
+  setStoreHours: (hours: StoreHours) -> (Result_7);
   setVpsSecret: (newSecret: text) -> (variant {
                                         err: text;
                                         ok;
                                       });
   snapshotUpgradeState: () -> (blob);
+  stopPromotion: (code: text) -> (Result_4);
+  stopRegistrationPromo: (code: text) -> (Result_3);
+  stopSalesPromo: (code: text) -> (Result_1);
+  tryConsumeKmSlot: (email: text, programCode: text, dailyLimit: nat, hmac:
+   Hmac) -> (Result_6);
   updateInvoiceStatus: (orderId: OrderId, invoiceStatus: InvoiceStatus,
    invoiceId: text, pdfUrl: text, hmac: Hmac) -> (Result);
   updateItem: (itemId: text, name: text, price: nat, unitName: text, vatRate:
-   nat, category: text, image: blob, visible: bool) -> (Result_2);
+   nat, category: text, image: blob, visible: bool) -> (Result_5);
   updateOrderQr: (orderId: text, qrCode: opt text, billId: opt text,
    expireAt: opt nat64, hmac: text) -> (Result);
   updatePaymentStatus: (orderId: OrderId, paymentStatus: PaymentStatus, hmac:
    Hmac) -> (Result);
+  updatePromotion: (code: text, name: text, startDate: text, endDate: 
+   text, daysOfWeek: vec bool, timeSlots: vec TimeSlot, dailyOrderLimit: 
+   nat, perCustomerDailyLimit: nat, tiers: vec DiscountTier, active: 
+   bool, termsUrl: text) -> (Result_4);
+  updateRegistrationPromo: (code: text, name: text, startDate: text, endDate:
+   text, voucherValue: nat, voucherValidDays: nat, active: bool, termsUrl:
+   text) -> (Result_3);
   updateRestaurant: (restaurantId: text, name: text, address: text, phone:
-   text, visible: bool) -> (Result_1);
+   text, visible: bool) -> (Result_2);
+  updateSalesPromo: (code: text, name: text, startDate: text, endDate: 
+   text, weeklyTiers: vec SalesTier, monthlyTiers: vec SalesTier,
+   voucherValidDays: nat, active: bool, termsUrl: text) -> (Result_1);
   updateStatus: (orderId: OrderId, bookingStatus: BookingStatus, hmac:
    Hmac) -> (Result);
   verifyEmailCode: (email: Email, code: text) -> (VerifyResult);

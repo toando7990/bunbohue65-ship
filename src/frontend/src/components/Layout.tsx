@@ -14,11 +14,12 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useGetStoreHours, useIsStoreOpen } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Clock,
   History,
   Info,
+  LogOut,
   type LucideIcon,
   Percent,
   ShieldCheck,
@@ -240,10 +241,11 @@ function StoreHoursBar() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, clear } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const showAdmin = isAuthenticated && isAdmin;
   const router = useRouterState();
+  const navigate = useNavigate();
 
   const visibleAdminNav = showAdminNav();
   // Lọc mục nav theo route hiện tại — ví dụ /driver (thiết bị nhân viên
@@ -260,6 +262,19 @@ export function Layout({ children }: { children: ReactNode }) {
   // Thanh điều hướng đáy cũng ẩn trên /driver — cùng logic hideOnPrefixes
   // của 4 mục lõi trong PRIMARY_NAV (đều dùng chung ["/driver"]).
   const showBottomNav = !router.location.pathname.startsWith("/driver");
+
+  // Nút "Đăng xuất" CHỈ hiển thị trên /admin và các trang con /admin/*,
+  // và chỉ khi người dùng đã đăng nhập + có quyền quản trị. Không hiện trên
+  // bất kỳ trang không phải /admin nào.
+  const isAdminRoute =
+    router.location.pathname === "/admin" ||
+    router.location.pathname.startsWith("/admin/");
+  const showLogout = isAdminRoute && isAuthenticated && isAdmin;
+
+  function handleLogout() {
+    clear();
+    void navigate({ to: "/" });
+  }
 
   function showAdminNav() {
     return ADMIN_NAV;
@@ -299,6 +314,17 @@ export function Layout({ children }: { children: ReactNode }) {
               visibleAdminNav.map((item) => (
                 <NavLink key={item.to} item={item} />
               ))}
+            {showLogout && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                data-ocid="nav.logout_button"
+                className="ml-1 inline-flex min-h-[44px] items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-smooth hover:bg-destructive/10 hover:text-destructive md:min-h-0"
+              >
+                <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">Đăng xuất</span>
+              </button>
+            )}
           </nav>
           <button
             type="button"
@@ -333,6 +359,20 @@ export function Layout({ children }: { children: ReactNode }) {
                   onClick={() => setMobileOpen(false)}
                 />
               ))}
+            {showLogout && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false);
+                  handleLogout();
+                }}
+                data-ocid="nav.logout_button"
+                className="mt-1 inline-flex min-h-[44px] items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-smooth hover:bg-destructive/10 hover:text-destructive"
+              >
+                <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">Đăng xuất</span>
+              </button>
+            )}
           </nav>
         )}
 

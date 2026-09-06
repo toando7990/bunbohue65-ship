@@ -27,6 +27,7 @@ export const mockBackend: backendInterface = {
     __kind__: "err",
     err: "Mock: không hỗ trợ",
   }),
+  getApiDoc: async () => "Mock: tài liệu API",
   getCallerUserRole: async () => UserRole.user,
   getCanisterIdText: async () => "mock-canister",
   getMenu: async () => [],

@@ -41,7 +41,7 @@ mixin (
     dailyLimit : Nat,
     hmac : Types.Hmac,
   ) : async Result.Result<Nat, Text> {
-    let payload = email # "|" # programCode # "|" # Nat.toText(dailyLimit);
+    let payload = email # "|" # programCode # "|" # dailyLimit.toText();
     if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
     };
@@ -212,7 +212,7 @@ mixin (
     orderAmount : Nat,
     hmac : Types.Hmac,
   ) : async Result.Result<{ promotionCode : Text; discountAmount : Nat }, Text> {
-    let payload = email # "|" # Nat.toText(orderAmount);
+    let payload = email # "|" # orderAmount.toText();
     if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
     };

@@ -20,10 +20,10 @@ export interface Cell { 'value' : Value, 'name' : string }
 export interface Device {
   'active' : boolean,
   'activatedAt' : bigint,
+  'name' : string,
   'role' : DeviceRole,
   'restaurantId' : string,
   'deviceId' : string,
-  'name' : string,
   'phone' : string,
 }
 export interface DeviceEntry { 'device' : Device, 'deviceId' : string }
@@ -31,6 +31,10 @@ export type DeviceId = string;
 export type DeviceRole = { 'admin' : null } |
   { 'cashier' : null } |
   { 'driver' : null };
+export interface DiscountTier {
+  'discountAmount' : bigint,
+  'minOrderValue' : bigint,
+}
 export type Email = string;
 export type Error = { 'FrontendOriginsNotConfigured' : null } |
   {
@@ -81,17 +85,17 @@ export interface Order {
   'receiverEmail' : string,
   'pickupCode' : string,
   'expireAt' : [] | [bigint],
+  'kmDiscountAmount' : bigint,
   'pdfUrl' : string,
   'tingeeQrId' : string,
   'goodsAmount' : bigint,
   'items' : Array<OrderItem>,
+  'voucherDiscountAmount' : bigint,
   'amount' : bigint,
   'cusAddress' : string,
   'invoiceStatus' : InvoiceStatus,
   'billId' : [] | [string],
   'qrCode' : [] | [string],
-  'kmDiscountAmount' : bigint,
-  'voucherDiscountAmount' : bigint,
 }
 export interface OrderEntry { 'order' : Order, 'orderId' : OrderId }
 export type OrderId = string;
@@ -129,6 +133,29 @@ export interface PendingActivationEntry {
   'code' : string,
   'activation' : PendingActivation,
 }
+export interface Promotion {
+  'tiers' : Array<DiscountTier>,
+  'active' : boolean,
+  'endDate' : string,
+  'timeSlots' : Array<TimeSlot>,
+  'code' : string,
+  'name' : string,
+  'daysOfWeek' : Array<boolean>,
+  'dailyOrderLimit' : bigint,
+  'perCustomerDailyLimit' : bigint,
+  'termsUrl' : string,
+  'startDate' : string,
+}
+export interface RegistrationPromo {
+  'active' : boolean,
+  'endDate' : string,
+  'code' : string,
+  'name' : string,
+  'voucherValidDays' : bigint,
+  'voucherValue' : bigint,
+  'termsUrl' : string,
+  'startDate' : string,
+}
 export interface Restaurant {
   'name' : string,
   'restaurantId' : string,
@@ -147,95 +174,55 @@ export interface RestaurantMenuOverrideEntry {
 }
 export type Result = { 'ok' : Order } |
   { 'err' : string };
-export type Result_1 = { 'ok' : Restaurant } |
+export type Result_1 = { 'ok' : SalesPromo } |
   { 'err' : string };
-export type Result_2 = { 'ok' : MenuItem } |
+export type Result_10 = { 'ok' : Array<RegistrationPromo> } |
   { 'err' : string };
-export type Result_3 = { 'ok' : null } |
+export type Result_11 = { 'ok' : Array<Promotion> } |
   { 'err' : string };
-export type Result_4 = { 'ok' : Device } |
+export type Result_12 = { 'ok' : [] | [Voucher] } |
   { 'err' : string };
-export type Result_5 = { 'ok' : OrderStatus } |
+export type Result_13 = { 'ok' : boolean } |
   { 'err' : string };
-export type Result_6 = { 'ok' : PendingActivation } |
+export type Result_14 = { 'ok' : OrderStatus } |
   { 'err' : string };
-export type Result_Km = { 'ok' : bigint } |
+export type Result_15 = { 'ok' : PendingActivation } |
   { 'err' : string };
-export interface TimeSlot {
-  'startHour' : bigint,
-  'startMinute' : bigint,
-  'durationMinutes' : bigint,
-}
-export interface DiscountTier { 'minOrderValue' : bigint, 'discountAmount' : bigint }
-export interface Promotion {
-  'code' : string,
-  'name' : string,
-  'startDate' : string,
-  'endDate' : string,
-  'daysOfWeek' : Array<boolean>,
-  'timeSlots' : Array<TimeSlot>,
-  'dailyOrderLimit' : bigint,
-  'perCustomerDailyLimit' : bigint,
-  'tiers' : Array<DiscountTier>,
-  'active' : boolean,
-  'termsUrl' : string,
-}
-export type Result_Promo = { 'ok' : Promotion } |
+export type Result_16 = {
+    'ok' : { 'discountAmount' : bigint, 'promotionCode' : string }
+  } |
   { 'err' : string };
-export type Result_PromoList = { 'ok' : Array<Promotion> } |
+export type Result_17 = { 'ok' : null } |
+  { 'err' : Error };
+export type Result_2 = { 'ok' : Restaurant } |
   { 'err' : string };
-export type Result_Bool = { 'ok' : boolean } |
+export type Result_3 = { 'ok' : RegistrationPromo } |
   { 'err' : string };
-export interface ApplyPromotionOk { 'promotionCode' : string, 'discountAmount' : bigint }
-export type Result_Apply = { 'ok' : ApplyPromotionOk } |
+export type Result_4 = { 'ok' : Promotion } |
   { 'err' : string };
-export interface Voucher {
-  'code' : string,
-  'programCode' : string,
-  'email' : string,
-  'value' : bigint,
-  'startDate' : string,
-  'endDate' : string,
-  'used' : boolean,
-  'issuedAt' : bigint,
-}
-export type Result_Voucher = { 'ok' : bigint } |
+export type Result_5 = { 'ok' : MenuItem } |
   { 'err' : string };
-export interface RegistrationPromo {
-  'code' : string,
-  'name' : string,
-  'startDate' : string,
-  'endDate' : string,
-  'voucherValue' : bigint,
-  'voucherValidDays' : bigint,
-  'active' : boolean,
-  'termsUrl' : string,
-}
-export type Result_RegPromo = { 'ok' : RegistrationPromo } |
-  { 'err' : string };
-export type Result_RegPromoList = { 'ok' : Array<RegistrationPromo> } |
-  { 'err' : string };
-export interface SalesTier { 'minSales' : bigint, 'voucherValue' : bigint }
-export interface SalesPromo {
-  'code' : string,
-  'name' : string,
-  'startDate' : string,
-  'endDate' : string,
-  'weeklyTiers' : Array<SalesTier>,
-  'monthlyTiers' : Array<SalesTier>,
-  'voucherValidDays' : bigint,
-  'active' : boolean,
-  'termsUrl' : string,
-}
-export type Result_SalesPromo = { 'ok' : SalesPromo } |
-  { 'err' : string };
-export type Result_SalesPromoList = { 'ok' : Array<SalesPromo> } |
-  { 'err' : string };
-export type Result_IssueSalesBonus = { 'ok' : [] | [Voucher] } |
+export type Result_6 = { 'ok' : bigint } |
   { 'err' : string };
 export type Result_7 = { 'ok' : null } |
-  { 'err' : Error };
+  { 'err' : string };
+export type Result_8 = { 'ok' : Device } |
+  { 'err' : string };
+export type Result_9 = { 'ok' : Array<SalesPromo> } |
+  { 'err' : string };
 export interface Result__1 { 'hasMore' : boolean, 'rows' : Array<Array<Cell>> }
+export interface SalesPromo {
+  'active' : boolean,
+  'endDate' : string,
+  'code' : string,
+  'name' : string,
+  'voucherValidDays' : bigint,
+  'weeklyTiers' : Array<SalesTier>,
+  'monthlyTiers' : Array<SalesTier>,
+  'termsUrl' : string,
+  'startDate' : string,
+}
+export interface SalesTier { 'minSales' : bigint, 'voucherValue' : bigint }
 export type SendCodeResult = { 'ok' : null } |
   { 'err' : string };
 export interface StoreHours {
@@ -243,6 +230,11 @@ export interface StoreHours {
   'closeHour' : bigint,
   'openMinute' : bigint,
   'openHour' : bigint,
+}
+export interface TimeSlot {
+  'durationMinutes' : bigint,
+  'startMinute' : bigint,
+  'startHour' : bigint,
 }
 export interface UpgradeState {
   'menus' : Array<MenuEntry>,
@@ -263,20 +255,33 @@ export type Value = { 'int' : bigint } |
   { 'text' : string };
 export type VerifyResult = { 'ok' : null } |
   { 'err' : string };
+export interface Voucher {
+  'endDate' : string,
+  'value' : bigint,
+  'code' : string,
+  'used' : boolean,
+  'email' : string,
+  'programCode' : string,
+  'issuedAt' : bigint,
+  'startDate' : string,
+}
 export interface _SERVICE {
   '_initialize_access_control' : ActorMethod<[], undefined>,
-  '_internet_identity_sign_in_finish' : ActorMethod<[], Result_7>,
+  '_internet_identity_sign_in_finish' : ActorMethod<[], Result_17>,
   '_internet_identity_sign_in_start' : ActorMethod<[], Uint8Array>,
-  'activateDevice' : ActorMethod<[string, DeviceId, string, string], Result_4>,
+  'activateDevice' : ActorMethod<[string, DeviceId, string, string], Result_8>,
   'addItem' : ActorMethod<
     [string, string, bigint, string, bigint, string, Uint8Array],
-    Result_2
+    Result_5
   >,
-  'addRestaurant' : ActorMethod<[string, string, string, string], Result_1>,
+  'addRestaurant' : ActorMethod<[string, string, string, string], Result_2>,
+  'applyPromotion' : ActorMethod<[string, bigint, Hmac], Result_16>,
+  'applyVoucher' : ActorMethod<[string, string, bigint, Hmac], Result_6>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'cancelOrder' : ActorMethod<[string, string], Result>,
   'changeOrderRestaurant' : ActorMethod<[string, string, string], Result>,
   'cleanupExpiredActivations' : ActorMethod<[], bigint>,
+  'countVouchersByProgram' : ActorMethod<[string], bigint>,
   'createOrder' : ActorMethod<
     [
       string,
@@ -296,13 +301,51 @@ export interface _SERVICE {
       string,
       string,
       string,
+      bigint,
+      bigint,
+      string,
     ],
     Result
   >,
-  'deleteItem' : ActorMethod<[string], Result_3>,
-  'deleteRestaurant' : ActorMethod<[string], Result_3>,
+  'createPromotion' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      Array<boolean>,
+      Array<TimeSlot>,
+      bigint,
+      bigint,
+      Array<DiscountTier>,
+      string,
+    ],
+    Result_4
+  >,
+  'createRegistrationPromo' : ActorMethod<
+    [string, string, string, bigint, bigint, string],
+    Result_3
+  >,
+  'createSalesPromo' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      Array<SalesTier>,
+      Array<SalesTier>,
+      bigint,
+      string,
+    ],
+    Result_1
+  >,
+  'deactivateExpiredPromotions' : ActorMethod<[Hmac], Result_6>,
+  'deleteItem' : ActorMethod<[string], Result_7>,
+  'deletePromotion' : ActorMethod<[string], Result_7>,
+  'deleteRegistrationPromo' : ActorMethod<[string], Result_7>,
+  'deleteRestaurant' : ActorMethod<[string], Result_7>,
+  'deleteSalesPromo' : ActorMethod<[string], Result_7>,
   'execute' : ActorMethod<[string], Result__1>,
-  'generateActivationCode' : ActorMethod<[RestaurantId, DeviceRole], Result_6>,
+  'generateActivationCode' : ActorMethod<[RestaurantId, DeviceRole], Result_15>,
+  'getApiDoc' : ActorMethod<[], string>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   /**
    * / Returns the canister's own id as text, so the VPS knows which canister
@@ -311,91 +354,115 @@ export interface _SERVICE {
    * / core 2.6.1).
    */
   'getCanisterIdText' : ActorMethod<[], string>,
-  'getMenu' : ActorMethod<[], Array<MenuItem>>,
-  'getMenuForRestaurant' : ActorMethod<[string], Array<MenuItem>>,
-  'getKmUsageCount' : ActorMethod<[string, string], bigint>,
-  'getKmDailyCount' : ActorMethod<[string], bigint>,
-  'countVouchersByProgram' : ActorMethod<[string], bigint>,
-  'createPromotion' : ActorMethod<[string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>, string], Result_Promo>,
-  'updatePromotion' : ActorMethod<[string, string, string, string, Array<boolean>, Array<TimeSlot>, bigint, bigint, Array<DiscountTier>, boolean, string], Result_Promo>,
-  'deletePromotion' : ActorMethod<[string], Result_3>,
-  'stopPromotion' : ActorMethod<[string], Result_Promo>,
-  'isPromotionUsed' : ActorMethod<[string], Result_Bool>,
-  'listPromotions' : ActorMethod<[], Result_PromoList>,
   'getCurrentPromotion' : ActorMethod<[], [] | [Promotion]>,
   'getCurrentRegistrationPromo' : ActorMethod<[], [] | [RegistrationPromo]>,
-  'applyPromotion' : ActorMethod<[string, bigint, string], Result_Apply>,
-  'applyVoucher' : ActorMethod<[string, string, bigint, string], Result_Voucher>,
-  'listMyVouchers' : ActorMethod<[string], Array<Voucher>>,
-  'createRegistrationPromo' : ActorMethod<[string, string, string, bigint, bigint, string], Result_RegPromo>,
-  'updateRegistrationPromo' : ActorMethod<[string, string, string, string, bigint, bigint, boolean, string], Result_RegPromo>,
-  'deleteRegistrationPromo' : ActorMethod<[string], Result_3>,
-  'stopRegistrationPromo' : ActorMethod<[string], Result_RegPromo>,
-  'isRegistrationPromoUsed' : ActorMethod<[string], Result_Bool>,
-  'listRegistrationPromos' : ActorMethod<[], Result_RegPromoList>,
-  'createSalesPromo' : ActorMethod<[string, string, string, Array<SalesTier>, Array<SalesTier>, bigint, string], Result_SalesPromo>,
-  'updateSalesPromo' : ActorMethod<[string, string, string, string, Array<SalesTier>, Array<SalesTier>, bigint, boolean, string], Result_SalesPromo>,
-  'deleteSalesPromo' : ActorMethod<[string], Result_3>,
-  'stopSalesPromo' : ActorMethod<[string], Result_SalesPromo>,
-  'isSalesPromoUsed' : ActorMethod<[string], Result_Bool>,
-  'listSalesPromos' : ActorMethod<[], Result_SalesPromoList>,
   'getCurrentSalesPromo' : ActorMethod<[], [] | [SalesPromo]>,
-  'issueSalesBonus' : ActorMethod<[string, string, string, bigint, string], Result_IssueSalesBonus>,
-  'deactivateExpiredPromotions' : ActorMethod<[string], Result_Km>,
   'getItemImage' : ActorMethod<[string], [] | [Uint8Array]>,
+  'getKmDailyCount' : ActorMethod<[string], bigint>,
+  'getKmUsageCount' : ActorMethod<[string, string], bigint>,
+  'getMenu' : ActorMethod<[], Array<MenuItem>>,
+  'getMenuForRestaurant' : ActorMethod<[string], Array<MenuItem>>,
   'getOrder' : ActorMethod<[string], Result>,
-  'getOrderStatus' : ActorMethod<[string], Result_5>,
+  'getOrderStatus' : ActorMethod<[string], Result_14>,
+  'getOrdersByEmail' : ActorMethod<[string], Array<Order>>,
   'getPaymentMode' : ActorMethod<[], string>,
   'getRestaurants' : ActorMethod<[], Array<Restaurant>>,
   'getStoreHours' : ActorMethod<[], StoreHours>,
   'getUpgradeState' : ActorMethod<[], UpgradeState>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isEmailVerified' : ActorMethod<[Email], boolean>,
+  'isPromotionUsed' : ActorMethod<[string], Result_13>,
+  'isRegistrationPromoUsed' : ActorMethod<[string], Result_13>,
+  'isSalesPromoUsed' : ActorMethod<[string], Result_13>,
   'isStoreOpen' : ActorMethod<[], boolean>,
+  'issueSalesBonus' : ActorMethod<
+    [string, string, string, bigint, Hmac],
+    Result_12
+  >,
   'listDevicesByRestaurant' : ActorMethod<[RestaurantId], Array<Device>>,
   'listDevicesByRole' : ActorMethod<[DeviceRole], Array<Device>>,
   'listMenus' : ActorMethod<[], Array<MenuItem>>,
+  'listMyVouchers' : ActorMethod<[string], Array<Voucher>>,
   'listOrders' : ActorMethod<[], Array<Order>>,
-  'getOrdersByEmail' : ActorMethod<[string], Array<Order>>,
   'listPaidOrdersForPickup' : ActorMethod<[], Array<Order>>,
   'listPendingPaymentOrders' : ActorMethod<[string], Array<Order>>,
+  'listPromotions' : ActorMethod<[], Result_11>,
+  'listRegistrationPromos' : ActorMethod<[], Result_10>,
   'listRestaurants' : ActorMethod<[], Array<Restaurant>>,
+  'listSalesPromos' : ActorMethod<[], Result_9>,
   'markPaymentExpired' : ActorMethod<[string, string], Result>,
-  'pruneOldOrdersNow' : ActorMethod<[string], Result_Km>,
   'markPickedUp' : ActorMethod<[string], Result>,
+  'pruneOldOrdersNow' : ActorMethod<[string], Result_6>,
   'restoreUpgradeState' : ActorMethod<[Uint8Array], boolean>,
-  'revokeDevice' : ActorMethod<[DeviceId], Result_4>,
+  'revokeDevice' : ActorMethod<[DeviceId], Result_8>,
   'schema' : ActorMethod<[], string>,
   'seedMenuItems' : ActorMethod<[], boolean>,
   'sendVerificationCode' : ActorMethod<[Email], SendCodeResult>,
-  'setPaymentMode' : ActorMethod<[string], Result_3>,
+  'setItemVisible' : ActorMethod<[string, boolean], Result_5>,
+  'setPaymentMode' : ActorMethod<[string], Result_7>,
   'setRestaurantPriceOverride' : ActorMethod<
     [string, string, bigint],
-    Result_3
+    Result_7
   >,
-  'setStoreHours' : ActorMethod<[StoreHours], Result_3>,
+  'setStoreHours' : ActorMethod<[StoreHours], Result_7>,
   'setVpsSecret' : ActorMethod<[string], { 'ok' : null } | { 'err' : string }>,
   'snapshotUpgradeState' : ActorMethod<[], Uint8Array>,
+  'stopPromotion' : ActorMethod<[string], Result_4>,
+  'stopRegistrationPromo' : ActorMethod<[string], Result_3>,
+  'stopSalesPromo' : ActorMethod<[string], Result_1>,
+  'tryConsumeKmSlot' : ActorMethod<[string, string, bigint, Hmac], Result_6>,
   'updateInvoiceStatus' : ActorMethod<
     [OrderId, InvoiceStatus, string, string, Hmac],
     Result
   >,
   'updateItem' : ActorMethod<
     [string, string, bigint, string, bigint, string, Uint8Array, boolean],
-    Result_2
+    Result_5
   >,
-  'setItemVisible' : ActorMethod<[string, boolean], Result_2>,
   'updateOrderQr' : ActorMethod<
     [string, [] | [string], [] | [string], [] | [bigint], string],
     Result
   >,
   'updatePaymentStatus' : ActorMethod<[OrderId, PaymentStatus, Hmac], Result>,
+  'updatePromotion' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      string,
+      Array<boolean>,
+      Array<TimeSlot>,
+      bigint,
+      bigint,
+      Array<DiscountTier>,
+      boolean,
+      string,
+    ],
+    Result_4
+  >,
+  'updateRegistrationPromo' : ActorMethod<
+    [string, string, string, string, bigint, bigint, boolean, string],
+    Result_3
+  >,
   'updateRestaurant' : ActorMethod<
     [string, string, string, string, boolean],
+    Result_2
+  >,
+  'updateSalesPromo' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      string,
+      Array<SalesTier>,
+      Array<SalesTier>,
+      bigint,
+      boolean,
+      string,
+    ],
     Result_1
   >,
   'updateStatus' : ActorMethod<[OrderId, BookingStatus, Hmac], Result>,
-  'tryConsumeKmSlot' : ActorMethod<[string, string, bigint, string], Result_Km>,
   'verifyEmailCode' : ActorMethod<[Email, string], VerifyResult>,
 }
 export declare const idlService: IDL.ServiceClass;

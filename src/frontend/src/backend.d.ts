@@ -7,181 +7,24 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export type SendCodeResult = {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "err";
-    err: string;
-};
 export type Result_2 = {
     __kind__: "ok";
-    ok: MenuItem;
+    ok: Restaurant;
 } | {
     __kind__: "err";
     err: string;
 };
-export type Result_Km = {
-    __kind__: "ok";
-    ok: bigint;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface TimeSlot {
-    startHour: bigint;
-    startMinute: bigint;
-    durationMinutes: bigint;
-}
-export interface DiscountTier {
-    minOrderValue: bigint;
-    discountAmount: bigint;
-}
-export interface Promotion {
-    code: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-    daysOfWeek: Array<boolean>;
-    timeSlots: Array<TimeSlot>;
-    dailyOrderLimit: bigint;
-    perCustomerDailyLimit: bigint;
-    tiers: Array<DiscountTier>;
-    active: boolean;
-    termsUrl: string;
-}
-export type Result_Promo = {
-    __kind__: "ok";
-    ok: Promotion;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Result_PromoList = {
-    __kind__: "ok";
-    ok: Array<Promotion>;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Result_Bool = {
-    __kind__: "ok";
-    ok: boolean;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface ApplyPromotionOk {
-    promotionCode: string;
-    discountAmount: bigint;
-}
-export type Result_Apply = {
-    __kind__: "ok";
-    ok: ApplyPromotionOk;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface Voucher {
-    code: string;
-    programCode: string;
-    email: string;
-    value: bigint;
-    startDate: string;
-    endDate: string;
-    used: boolean;
-    issuedAt: bigint;
-}
-export type Result_Voucher = {
-    __kind__: "ok";
-    ok: bigint;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface RegistrationPromo {
-    code: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-    voucherValue: bigint;
-    voucherValidDays: bigint;
-    active: boolean;
-    termsUrl: string;
-}
-export type Result_RegPromo = {
-    __kind__: "ok";
-    ok: RegistrationPromo;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Result_RegPromoList = {
-    __kind__: "ok";
-    ok: Array<RegistrationPromo>;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface SalesTier {
-    minSales: bigint;
-    voucherValue: bigint;
-}
-export interface SalesPromo {
-    code: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-    weeklyTiers: Array<SalesTier>;
-    monthlyTiers: Array<SalesTier>;
-    voucherValidDays: bigint;
-    active: boolean;
-    termsUrl: string;
-}
-export type Result_SalesPromo = {
-    __kind__: "ok";
-    ok: SalesPromo;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Result_SalesPromoList = {
-    __kind__: "ok";
-    ok: Array<SalesPromo>;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Result_IssueSalesBonus = {
-    __kind__: "ok";
-    ok: Voucher | null;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface OrderItem {
-    itemId: string;
-    name: string;
-    quantity: bigint;
-    price: bigint;
-    vatRate: bigint;
-    unitName: string;
-}
 export interface Result__1 {
     hasMore: boolean;
     rows: Array<Array<Cell>>;
 }
+export interface DiscountTier {
+    discountAmount: bigint;
+    minOrderValue: bigint;
+}
 export type Result_5 = {
     __kind__: "ok";
-    ok: OrderStatus;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type RestaurantId = string;
-export type Result_1 = {
-    __kind__: "ok";
-    ok: Restaurant;
+    ok: MenuItem;
 } | {
     __kind__: "err";
     err: string;
@@ -196,25 +39,11 @@ export interface RestaurantEntry {
 }
 export type Result_4 = {
     __kind__: "ok";
-    ok: Device;
+    ok: Promotion;
 } | {
     __kind__: "err";
     err: string;
 };
-export interface MenuEntry {
-    itemId: string;
-    menu: MenuItem;
-}
-export interface OrderStatus {
-    paymentStatus: PaymentStatus;
-    tingeeQrCode: string;
-    invoiceId: string;
-    sharedLink: string;
-    bookingStatus: BookingStatus;
-    pdfUrl: string;
-    tingeeQrId: string;
-    invoiceStatus: InvoiceStatus;
-}
 export interface Cell {
     value: Value;
     name: string;
@@ -224,45 +53,17 @@ export type Result_7 = {
     ok: null;
 } | {
     __kind__: "err";
-    err: Error_;
-};
-export type Value = {
-    __kind__: "int";
-    int: bigint;
-} | {
-    __kind__: "nat";
-    nat: bigint;
-} | {
-    __kind__: "float";
-    float: number;
-} | {
-    __kind__: "bool";
-    bool: boolean;
-} | {
-    __kind__: "null";
-    null: null;
-} | {
-    __kind__: "text";
-    text: string;
-};
-export type Email = string;
-export type VerifyResult = {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "err";
     err: string;
 };
 export type DeviceId = string;
-export interface StoreHours {
-    closeMinute: bigint;
-    closeHour: bigint;
-    openMinute: bigint;
-    openHour: bigint;
+export interface TimeSlot {
+    durationMinutes: bigint;
+    startMinute: bigint;
+    startHour: bigint;
 }
 export type Result_6 = {
     __kind__: "ok";
-    ok: PendingActivation;
+    ok: bigint;
 } | {
     __kind__: "err";
     err: string;
@@ -311,15 +112,34 @@ export type Error_ = {
         expected: Array<string>;
     };
 };
-export interface DeviceEntry {
-    device: Device;
-    deviceId: string;
-}
+export type Result_12 = {
+    __kind__: "ok";
+    ok: Voucher | null;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_9 = {
+    __kind__: "ok";
+    ok: Array<SalesPromo>;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface Restaurant {
     name: string;
     restaurantId: string;
     address: string;
     visible: boolean;
+    phone: string;
+}
+export interface Device {
+    active: boolean;
+    activatedAt: bigint;
+    name: string;
+    role: DeviceRole;
+    restaurantId: string;
+    deviceId: string;
     phone: string;
 }
 export interface PendingActivationEntry {
@@ -345,27 +165,50 @@ export interface Order {
     receiverEmail: string;
     pickupCode: string;
     expireAt?: bigint;
+    kmDiscountAmount: bigint;
     pdfUrl: string;
     tingeeQrId: string;
     goodsAmount: bigint;
     items: Array<OrderItem>;
+    voucherDiscountAmount: bigint;
     amount: bigint;
     cusAddress: string;
     invoiceStatus: InvoiceStatus;
     billId?: string;
     qrCode?: string;
-    kmDiscountAmount: bigint;
-    voucherDiscountAmount: bigint;
 }
-export interface Device {
-    active: boolean;
-    activatedAt: bigint;
-    role: DeviceRole;
-    restaurantId: string;
+export interface DeviceEntry {
+    device: Device;
     deviceId: string;
-    name: string;
-    phone: string;
 }
+export interface SalesTier {
+    minSales: bigint;
+    voucherValue: bigint;
+}
+export interface Voucher {
+    endDate: string;
+    value: bigint;
+    code: string;
+    used: boolean;
+    email: string;
+    programCode: string;
+    issuedAt: bigint;
+    startDate: string;
+}
+export type Result = {
+    __kind__: "ok";
+    ok: Order;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_10 = {
+    __kind__: "ok";
+    ok: Array<RegistrationPromo>;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface MenuItem {
     itemId: string;
     name: string;
@@ -376,21 +219,13 @@ export interface MenuItem {
     vatRate: bigint;
     unitName: string;
 }
-export type Result = {
+export type Result_8 = {
     __kind__: "ok";
-    ok: Order;
+    ok: Device;
 } | {
     __kind__: "err";
     err: string;
 };
-export type Result_3 = {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Hmac = string;
 export interface PendingActivation {
     expiresAt: bigint;
     code: string;
@@ -399,6 +234,163 @@ export interface PendingActivation {
     used: boolean;
     restaurantId: string;
 }
+export interface SalesPromo {
+    active: boolean;
+    endDate: string;
+    code: string;
+    name: string;
+    voucherValidDays: bigint;
+    weeklyTiers: Array<SalesTier>;
+    monthlyTiers: Array<SalesTier>;
+    termsUrl: string;
+    startDate: string;
+}
+export interface RegistrationPromo {
+    active: boolean;
+    endDate: string;
+    code: string;
+    name: string;
+    voucherValidDays: bigint;
+    voucherValue: bigint;
+    termsUrl: string;
+    startDate: string;
+}
+export type SendCodeResult = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_17 = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: Error_;
+};
+export type Result_13 = {
+    __kind__: "ok";
+    ok: boolean;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export interface OrderItem {
+    itemId: string;
+    name: string;
+    quantity: bigint;
+    price: bigint;
+    vatRate: bigint;
+    unitName: string;
+}
+export type Result_16 = {
+    __kind__: "ok";
+    ok: {
+        discountAmount: bigint;
+        promotionCode: string;
+    };
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_1 = {
+    __kind__: "ok";
+    ok: SalesPromo;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type RestaurantId = string;
+export interface MenuEntry {
+    itemId: string;
+    menu: MenuItem;
+}
+export type Result_11 = {
+    __kind__: "ok";
+    ok: Array<Promotion>;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export interface OrderStatus {
+    paymentStatus: PaymentStatus;
+    tingeeQrCode: string;
+    invoiceId: string;
+    sharedLink: string;
+    bookingStatus: BookingStatus;
+    pdfUrl: string;
+    tingeeQrId: string;
+    invoiceStatus: InvoiceStatus;
+}
+export type Result_14 = {
+    __kind__: "ok";
+    ok: OrderStatus;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Value = {
+    __kind__: "int";
+    int: bigint;
+} | {
+    __kind__: "nat";
+    nat: bigint;
+} | {
+    __kind__: "float";
+    float: number;
+} | {
+    __kind__: "bool";
+    bool: boolean;
+} | {
+    __kind__: "null";
+    null: null;
+} | {
+    __kind__: "text";
+    text: string;
+};
+export type Email = string;
+export type VerifyResult = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export interface Promotion {
+    tiers: Array<DiscountTier>;
+    active: boolean;
+    endDate: string;
+    timeSlots: Array<TimeSlot>;
+    code: string;
+    name: string;
+    daysOfWeek: Array<boolean>;
+    dailyOrderLimit: bigint;
+    perCustomerDailyLimit: bigint;
+    termsUrl: string;
+    startDate: string;
+}
+export interface StoreHours {
+    closeMinute: bigint;
+    closeHour: bigint;
+    openMinute: bigint;
+    openHour: bigint;
+}
+export type Result_3 = {
+    __kind__: "ok";
+    ok: RegistrationPromo;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Hmac = string;
+export type Result_15 = {
+    __kind__: "ok";
+    ok: PendingActivation;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface OrderEntry {
     order: Order;
     orderId: OrderId;
@@ -442,18 +434,29 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
-    activateDevice(code: string, deviceId: DeviceId, name: string, phone: string): Promise<Result_4>;
-    addItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array): Promise<Result_2>;
-    addRestaurant(restaurantId: string, name: string, address: string, phone: string): Promise<Result_1>;
+    activateDevice(code: string, deviceId: DeviceId, name: string, phone: string): Promise<Result_8>;
+    addItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array): Promise<Result_5>;
+    addRestaurant(restaurantId: string, name: string, address: string, phone: string): Promise<Result_2>;
+    applyPromotion(email: string, orderAmount: bigint, hmac: Hmac): Promise<Result_16>;
+    applyVoucher(email: string, code: string, orderAmount: bigint, hmac: Hmac): Promise<Result_6>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
     changeOrderRestaurant(orderId: string, newRestaurantId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
-    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, hmac: string): Promise<Result>;
-    deleteItem(itemId: string): Promise<Result_3>;
-    deleteRestaurant(restaurantId: string): Promise<Result_3>;
+    countVouchersByProgram(programCode: string): Promise<bigint>;
+    createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, kmDiscountAmount: bigint, voucherDiscountAmount: bigint, hmac: string): Promise<Result>;
+    createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_4>;
+    createRegistrationPromo(name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, termsUrl: string): Promise<Result_3>;
+    createSalesPromo(name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, termsUrl: string): Promise<Result_1>;
+    deactivateExpiredPromotions(hmac: Hmac): Promise<Result_6>;
+    deleteItem(itemId: string): Promise<Result_7>;
+    deletePromotion(code: string): Promise<Result_7>;
+    deleteRegistrationPromo(code: string): Promise<Result_7>;
+    deleteRestaurant(restaurantId: string): Promise<Result_7>;
+    deleteSalesPromo(code: string): Promise<Result_7>;
     execute(qJson: string): Promise<Result__1>;
-    generateActivationCode(restaurantId: RestaurantId, role: DeviceRole): Promise<Result_6>;
+    generateActivationCode(restaurantId: RestaurantId, role: DeviceRole): Promise<Result_15>;
+    getApiDoc(): Promise<string>;
     getCallerUserRole(): Promise<UserRole>;
     /**
      * / Returns the canister's own id as text, so the VPS knows which canister
@@ -462,66 +465,51 @@ export interface backendInterface {
      * / core 2.6.1).
      */
     getCanisterIdText(): Promise<string>;
-    getMenu(): Promise<Array<MenuItem>>;
-    getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
-    getKmUsageCount(email: string, programCode: string): Promise<bigint>;
-    getKmDailyCount(programCode: string): Promise<bigint>;
-    countVouchersByProgram(programCode: string): Promise<bigint>;
-    createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_Promo>;
-    updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, termsUrl: string): Promise<Result_Promo>;
-    deletePromotion(code: string): Promise<Result_3>;
-    stopPromotion(code: string): Promise<Result_Promo>;
-    isPromotionUsed(code: string): Promise<Result_Bool>;
-    listPromotions(): Promise<Result_PromoList>;
     getCurrentPromotion(): Promise<Promotion | null>;
     getCurrentRegistrationPromo(): Promise<RegistrationPromo | null>;
-    applyPromotion(email: string, orderAmount: bigint, hmac: string): Promise<Result_Apply>;
-    applyVoucher(email: string, code: string, orderAmount: bigint, hmac: string): Promise<Result_Voucher>;
-    listMyVouchers(email: string): Promise<Array<Voucher>>;
-    createRegistrationPromo(name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, termsUrl: string): Promise<Result_RegPromo>;
-    updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_RegPromo>;
-    deleteRegistrationPromo(code: string): Promise<Result_3>;
-    stopRegistrationPromo(code: string): Promise<Result_RegPromo>;
-    isRegistrationPromoUsed(code: string): Promise<Result_Bool>;
-    listRegistrationPromos(): Promise<Result_RegPromoList>;
-    createSalesPromo(name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, termsUrl: string): Promise<Result_SalesPromo>;
-    updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_SalesPromo>;
-    deleteSalesPromo(code: string): Promise<Result_3>;
-    stopSalesPromo(code: string): Promise<Result_SalesPromo>;
-    isSalesPromoUsed(code: string): Promise<Result_Bool>;
-    listSalesPromos(): Promise<Result_SalesPromoList>;
     getCurrentSalesPromo(): Promise<SalesPromo | null>;
-    issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: string): Promise<Result_IssueSalesBonus>;
-    deactivateExpiredPromotions(hmac: string): Promise<Result_Km>;
     getItemImage(itemId: string): Promise<Uint8Array | null>;
+    getKmDailyCount(programCode: string): Promise<bigint>;
+    getKmUsageCount(email: string, programCode: string): Promise<bigint>;
+    getMenu(): Promise<Array<MenuItem>>;
+    getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
     getOrder(orderId: string): Promise<Result>;
-    getOrderStatus(orderId: string): Promise<Result_5>;
+    getOrderStatus(orderId: string): Promise<Result_14>;
+    getOrdersByEmail(email: string): Promise<Array<Order>>;
     getPaymentMode(): Promise<string>;
     getRestaurants(): Promise<Array<Restaurant>>;
     getStoreHours(): Promise<StoreHours>;
     getUpgradeState(): Promise<UpgradeState>;
     isCallerAdmin(): Promise<boolean>;
     isEmailVerified(email: Email): Promise<boolean>;
+    isPromotionUsed(code: string): Promise<Result_13>;
+    isRegistrationPromoUsed(code: string): Promise<Result_13>;
+    isSalesPromoUsed(code: string): Promise<Result_13>;
     isStoreOpen(): Promise<boolean>;
+    issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: Hmac): Promise<Result_12>;
     listDevicesByRestaurant(restaurantId: RestaurantId): Promise<Array<Device>>;
     listDevicesByRole(role: DeviceRole): Promise<Array<Device>>;
     listMenus(): Promise<Array<MenuItem>>;
+    listMyVouchers(email: string): Promise<Array<Voucher>>;
     listOrders(): Promise<Array<Order>>;
-    getOrdersByEmail(email: string): Promise<Array<Order>>;
     listPaidOrdersForPickup(): Promise<Array<Order>>;
     listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
+    listPromotions(): Promise<Result_11>;
+    listRegistrationPromos(): Promise<Result_10>;
     listRestaurants(): Promise<Array<Restaurant>>;
+    listSalesPromos(): Promise<Result_9>;
     markPaymentExpired(orderId: string, hmac: string): Promise<Result>;
-    pruneOldOrdersNow(hmac: string): Promise<Result_Km>;
     markPickedUp(orderId: string): Promise<Result>;
+    pruneOldOrdersNow(hmac: string): Promise<Result_6>;
     restoreUpgradeState(blob: Uint8Array): Promise<boolean>;
-    revokeDevice(deviceId: DeviceId): Promise<Result_4>;
+    revokeDevice(deviceId: DeviceId): Promise<Result_8>;
     schema(): Promise<string>;
     seedMenuItems(): Promise<boolean>;
     sendVerificationCode(email: Email): Promise<SendCodeResult>;
-    setPaymentMode(mode: string): Promise<Result_3>;
-    setRestaurantPriceOverride(restaurantId: string, itemId: string, price: bigint): Promise<Result_3>;
-    setStoreHours(hours: StoreHours): Promise<Result_3>;
+    setItemVisible(itemId: string, visible: boolean): Promise<Result_5>;
+    setPaymentMode(mode: string): Promise<Result_7>;
+    setRestaurantPriceOverride(restaurantId: string, itemId: string, price: bigint): Promise<Result_7>;
+    setStoreHours(hours: StoreHours): Promise<Result_7>;
     setVpsSecret(newSecret: string): Promise<{
         __kind__: "ok";
         ok: null;
@@ -530,13 +518,18 @@ export interface backendInterface {
         err: string;
     }>;
     snapshotUpgradeState(): Promise<Uint8Array>;
+    stopPromotion(code: string): Promise<Result_4>;
+    stopRegistrationPromo(code: string): Promise<Result_3>;
+    stopSalesPromo(code: string): Promise<Result_1>;
+    tryConsumeKmSlot(email: string, programCode: string, dailyLimit: bigint, hmac: Hmac): Promise<Result_6>;
     updateInvoiceStatus(orderId: OrderId, invoiceStatus: InvoiceStatus, invoiceId: string, pdfUrl: string, hmac: Hmac): Promise<Result>;
-    updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array, visible: boolean): Promise<Result_2>;
-    setItemVisible(itemId: string, visible: boolean): Promise<Result_2>;
+    updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array, visible: boolean): Promise<Result_5>;
     updateOrderQr(orderId: string, qrCode: string | null, billId: string | null, expireAt: bigint | null, hmac: string): Promise<Result>;
     updatePaymentStatus(orderId: OrderId, paymentStatus: PaymentStatus, hmac: Hmac): Promise<Result>;
-    updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_1>;
+    updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, termsUrl: string): Promise<Result_4>;
+    updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_3>;
+    updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_2>;
+    updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_1>;
     updateStatus(orderId: OrderId, bookingStatus: BookingStatus, hmac: Hmac): Promise<Result>;
-    tryConsumeKmSlot(email: string, programCode: string, dailyLimit: bigint, hmac: string): Promise<Result_Km>;
     verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }

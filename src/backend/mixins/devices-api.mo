@@ -66,14 +66,14 @@ mixin (
     DevicesLib.cleanupExpiredActivations(pendingActivations, Int.abs(Time.now()));
   };
 
-  // List active devices for a restaurant.
+  // List ALL devices (both active and revoked) for a restaurant.
   public query func listDevicesByRestaurant(
     restaurantId : Common.RestaurantId,
   ) : async [Devices.Device] {
     DevicesLib.listDevicesByRestaurant(devices, restaurantId);
   };
 
-  // List active devices for a role.
+  // List ALL devices (both active and revoked) for a role.
   public query func listDevicesByRole(
     role : Devices.DeviceRole,
   ) : async [Devices.Device] {

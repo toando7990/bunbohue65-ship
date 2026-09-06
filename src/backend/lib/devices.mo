@@ -158,26 +158,32 @@ module {
     count;
   };
 
-  // List active devices for a restaurant.
+  // List ALL devices (both active and revoked) for a restaurant. Revoked
+  // devices (active=false) are included so the admin UI can display their
+  // revoked state. The `active` field on each returned Device tells the caller
+  // whether it is currently usable.
   public func listDevicesByRestaurant(
     store : DevicesStore,
     restaurantId : Common.RestaurantId,
   ) : [Device] {
     store.toArray()
       .filter(func((_id, d) : (Common.DeviceId, Device)) : Bool {
-        Text.equal(d.restaurantId, restaurantId) and d.active;
+        Text.equal(d.restaurantId, restaurantId);
       })
       .map(func((_id, d) : (Common.DeviceId, Device)) : Device { d });
   };
 
-  // List active devices for a role.
+  // List ALL devices (both active and revoked) for a role. Revoked devices
+  // (active=false) are included so the admin UI can display their revoked
+  // state. The `active` field on each returned Device tells the caller whether
+  // it is currently usable.
   public func listDevicesByRole(
     store : DevicesStore,
     role : DeviceRole,
   ) : [Device] {
     store.toArray()
       .filter(func((_id, d) : (Common.DeviceId, Device)) : Bool {
-        d.role == role and d.active;
+        d.role == role;
       })
       .map(func((_id, d) : (Common.DeviceId, Device)) : Device { d });
   };

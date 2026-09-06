@@ -171,7 +171,7 @@ mixin (
     totalSales : Nat,
     hmac : Types.Hmac,
   ) : async Result.Result<?VoucherTypes.Voucher, Text> {
-    let payload = email # "|" # periodType # "|" # periodKey # "|" # Nat.toText(totalSales);
+    let payload = email # "|" # periodType # "|" # periodKey # "|" # totalSales.toText();
     if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
     };

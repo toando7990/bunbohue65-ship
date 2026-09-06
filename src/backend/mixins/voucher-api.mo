@@ -45,7 +45,7 @@ mixin (
     orderAmount : Nat,
     hmac : Types.Hmac,
   ) : async Result.Result<Nat, Text> {
-    let payload = email # "|" # code # "|" # Nat.toText(orderAmount);
+    let payload = email # "|" # code # "|" # orderAmount.toText();
     if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
     };

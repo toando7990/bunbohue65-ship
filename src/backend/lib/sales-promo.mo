@@ -25,7 +25,7 @@ module {
   };
 
   func padNat(n : Int, width : Nat) : Text {
-    var s = Int.toText(n);
+    var s = n.toText();
     while (s.size() < width) { s := "0" # s };
     s;
   };

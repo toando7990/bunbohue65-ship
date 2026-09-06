@@ -12,6 +12,7 @@ import MapEntity "mo:caffeineai-oql/MapEntity";
 
 import CoreApi "mixins/core-api";
 import HmacApi "mixins/hmac-api";
+import ApiDocMixin "mixins/api-doc";
 import DevicesApi "mixins/devices-api";
 import UpgradeApi "mixins/upgrade-api";
 import SecretApi "mixins/secret-api";
@@ -297,6 +298,7 @@ actor Main {
   };
 
   include MixinAuthorization(accessControlState, null);
+  include ApiDocMixin();
   include CoreApi(accessControlState, coreState);
   include HmacApi(orders, secretState);
   include DevicesApi(accessControlState, devices, pendingActivations);
