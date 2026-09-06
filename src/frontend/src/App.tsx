@@ -5,6 +5,7 @@ import { Layout } from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminPanel } from "@/pages/AdminPanel";
+import { AdminPromoDashboard } from "@/pages/AdminPromoDashboard";
 import { AnalyticsDashboard } from "@/pages/AnalyticsDashboard";
 import CounterOrder from "@/pages/CounterOrder";
 import CreateOrder from "@/pages/CreateOrder";
@@ -245,6 +246,16 @@ const adminAnalyticsRoute = createRoute({
   ),
 });
 
+const adminPromoDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin/theo-doi-km",
+  component: () => (
+    <AdminGate>
+      <AdminPromoDashboard />
+    </AdminGate>
+  ),
+});
+
 const router = createRouter({
   routeTree: rootRoute.addChildren([
     indexRoute,
@@ -265,6 +276,7 @@ const router = createRouter({
     adminRegistrationPromoRoute,
     adminSalesPromoRoute,
     adminAnalyticsRoute,
+    adminPromoDashboardRoute,
   ]),
   defaultPreload: "intent",
 });
