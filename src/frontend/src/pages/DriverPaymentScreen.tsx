@@ -9,9 +9,9 @@ import { DriverOrderHistory } from "@/components/DriverOrderHistory";
 import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
 import { usePendingOrders } from "@/hooks/usePendingOrders";
-import { useRestaurants } from "@/hooks/useQueries";
+import { useDevicesByRestaurant, useRestaurants } from "@/hooks/useQueries";
 import { History, ListOrdered, MapPin, Smartphone } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const DRIVER_STORAGE_KEY = "bbh_driver_activation";
@@ -52,6 +52,40 @@ export function DriverPaymentScreen() {
   const ordersQuery = usePendingOrders(restaurantId ?? undefined);
   const { data: restaurants } = useRestaurants();
   const restaurant = restaurants?.find((r) => r.restaurantId === restaurantId);
+
+  // Việc 9/9: kiểm tra định kỳ (15s) xem thiết bị này có bị admin "Thu
+  // hồi" (active=false) hay không — trước đây thiết bị đã kích hoạt hoạt
+  // động MÃI MÃI dựa hoàn toàn vào localStorage, KHÔNG BAO GIỜ tự biết đã
+  // bị thu hồi (không nơi nào re-check active sau lúc kích hoạt). Phát
+  // hiện đúng thiết bị (active=false) → tự đăng xuất về màn hình nhập mã
+  // kích hoạt lại. CHỈ đăng xuất khi TÌM THẤY RÕ RÀNG record active=false
+  // — không tự đăng xuất nếu danh sách rỗng/chưa tải xong (tránh false
+  // positive do lỗi mạng tạm thời).
+  const { data: devicesForActiveCheck } = useDevicesByRestaurant(
+    restaurantId ?? undefined,
+    15000,
+  );
+  useEffect(() => {
+    if (!deviceId || !devicesForActiveCheck) return;
+    const thisDevice = devicesForActiveCheck.find(
+      (d) => d.deviceId === deviceId,
+    );
+    if (thisDevice && !thisDevice.active) {
+      try {
+        localStorage.removeItem(DRIVER_STORAGE_KEY);
+      } catch {
+        // localStorage không khả dụng — vẫn tiếp tục đăng xuất bình
+        // thường trong phiên hiện tại.
+      }
+      setRestaurantId(null);
+      setDeviceId(null);
+      setDeviceName("");
+      setActiveOrder(null);
+      toast.error(
+        "Thiết bị này đã bị thu hồi quyền truy cập. Vui lòng kích hoạt lại.",
+      );
+    }
+  }, [deviceId, devicesForActiveCheck]);
 
   function handleActivated(restId: string, devId: string, name: string) {
     setRestaurantId(restId);

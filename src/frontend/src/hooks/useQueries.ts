@@ -277,7 +277,10 @@ export function useSetRestaurantPriceOverride() {
 }
 
 // ---- Devices ----
-export function useDevicesByRestaurant(restaurantId: string | undefined) {
+export function useDevicesByRestaurant(
+  restaurantId: string | undefined,
+  refetchIntervalMs?: number,
+) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
     queryKey: ["devices", restaurantId],
@@ -286,6 +289,7 @@ export function useDevicesByRestaurant(restaurantId: string | undefined) {
         ? listDevicesByRestaurantFn(actor, restaurantId)
         : Promise.resolve([]),
     enabled: !!actor && !isFetching && !!restaurantId,
+    refetchInterval: refetchIntervalMs,
   });
 }
 
