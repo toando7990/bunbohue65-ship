@@ -12,6 +12,7 @@
 const express = require('express');
 const { rateLimit } = require('../middleware/rate-limit');
 const cleanupCron = require('./cleanup-unpaid-orders-cron');
+const canister = require('../lib/canister');
 
 const router = express.Router();
 
@@ -28,7 +29,12 @@ router.use(
 // toán trước ngày hiện tại". Xoá MỌI đơn payment_status IN
 // ('unpaid','expired') có created_at TRƯỚC 00:00 hôm nay (giờ hệ thống
 // VPS) — rộng hơn cron tự động (chỉ đúng hôm qua), dùng chung hàm xoá cốt
-// lõi deleteOrdersByRange.
+// lõi deleteOrdersByRange. ĐỒNG THỜI gọi canister.pruneOldOrdersNow() để
+// xoá NGAY đơn ngày cũ ở canister (việc 8/9 — trước đây chỉ xoá ở VPS,
+// canister chỉ tự dọn khi CÓ ĐƠN MỚI được tạo, có thể trễ nhiều giờ nếu
+// quán chưa nhận đơn mới, khiến 2 nguồn dữ liệu tạm thời không khớp
+// nhau). 2 thao tác ĐỘC LẬP — nếu canister lỗi (mất kết nối...) vẫn trả
+// về kết quả xoá VPS bình thường (không chặn nhau), chỉ ghi log lỗi phụ.
 router.post('/admin/cleanup-unpaid-orders', async (req, res, next) => {
   try {
     const db = req.app.locals.db;
@@ -39,7 +45,20 @@ router.post('/admin/cleanup-unpaid-orders', async (req, res, next) => {
       endExclusive,
       'admin-manual-cleanup',
     );
-    res.json({ ok: true, ...result });
+
+    let canisterDeletedCount = 0;
+    try {
+      const canisterResult = await canister.pruneOldOrdersNow();
+      if ('ok' in canisterResult) {
+        canisterDeletedCount = Number(canisterResult.ok);
+      } else {
+        console.error('[admin-actions] pruneOldOrdersNow canister từ chối:', canisterResult.err);
+      }
+    } catch (e) {
+      console.error('[admin-actions] pruneOldOrdersNow lỗi:', e.message);
+    }
+
+    res.json({ ok: true, ...result, canisterDeletedCount });
   } catch (e) {
     next(e);
   }

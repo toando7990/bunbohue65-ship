@@ -165,6 +165,11 @@ const IDL_FACTORY = ({ IDL }) => {
       [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
       [],
     ),
+    pruneOldOrdersNow: IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
+      [],
+    ),
     applyVoucher: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
       [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
@@ -367,6 +372,18 @@ async function deactivateExpiredPromotions() {
   return await actor.deactivateExpiredPromotions(hmacSig);
 }
 
+// pruneOldOrdersNow — xoá NGAY LẬP TỨC mọi đơn của ngày trước hôm nay khỏi
+// canister (thay vì chờ đơn mới tiếp theo tự kích hoạt dọn dẹp — canister
+// vốn chỉ giữ đơn trong ngày, VPS mới là nơi lưu lịch sử lâu dài). Gọi từ
+// routes/admin-actions.js khi admin bấm "Xoá các đơn hàng chưa thanh toán
+// trước ngày hiện tại" — đồng bộ NGAY cả 2 nơi cùng lúc. Trả về { ok: Nat }
+// (số đơn vừa xoá ở canister) | { err: string } (chỉ khi HMAC sai).
+async function pruneOldOrdersNow() {
+  const actor = getActor();
+  const hmacSig = hmac.signPruneOldOrdersNow(VPS_SECRET);
+  return await actor.pruneOldOrdersNow(hmacSig);
+}
+
 // applyVoucher — kiểm tra + đánh dấu ĐÃ DÙNG 1 phiếu giảm giá (Giai đoạn
 // 3e). orderAmount PHẢI là số tiền CÒN LẠI sau khi đã trừ KM Hệ 1 (nếu có)
 // — phiếu áp vào phần còn lại, 2 loại chiết khấu CỘNG DỒN (không giới hạn
@@ -386,5 +403,6 @@ module.exports = {
   updateInvoiceStatus, updateOrderQr, markPaymentExpired, getOrderStatus, listPendingPaymentOrders, cancelOrder,
   getMenuForRestaurant, getPaymentMode, applyPromotion, issueSalesBonus, applyVoucher, changeOrderRestaurant,
   deactivateExpiredPromotions,
+  pruneOldOrdersNow,
   getCurrentPromotion,
 };

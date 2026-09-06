@@ -90,6 +90,12 @@ function signDeactivateExpiredPromotions(secret) {
   return sign(secret, 'deactivate-expired-promotions');
 }
 
+// pruneOldOrdersNow: payload cố định — khớp canister mixins/core-api.mo
+// (cùng nguyên tắc signDeactivateExpiredPromotions ở trên).
+function signPruneOldOrdersNow(secret) {
+  return sign(secret, 'prune-old-orders');
+}
+
 module.exports = {
   sign,
   signCreateOrder,
@@ -103,4 +109,5 @@ module.exports = {
   signApplyVoucher,
   signChangeOrderRestaurant,
   signDeactivateExpiredPromotions,
+  signPruneOldOrdersNow,
 };

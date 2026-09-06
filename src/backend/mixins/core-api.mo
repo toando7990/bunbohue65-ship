@@ -279,4 +279,25 @@ mixin (
     let now : Int = Time.now();
     HmacLib.applyExpired(state.orders, orderId, now);
   };
+
+  // Xoá NGAY LẬP TỨC mọi đơn của ngày TRƯỚC hôm nay khỏi canister (thay vì
+  // chờ đơn mới tiếp theo tự kích hoạt pruneOldOrders() — xem giải thích ở
+  // lib/core.mo — "the canister only ever serves today's orders"). Trả về
+  // số đơn vừa xoá. Việc 8/9: nút "Xoá các đơn hàng chưa thanh toán trước
+  // ngày hiện tại" (VPS) giờ gọi thêm hàm này để đồng bộ NGAY cả 2 nơi —
+  // trước đây chỉ xoá ở VPS SQLite, canister chỉ tự dọn khi CÓ ĐƠN MỚI
+  // được tạo (có thể trễ nhiều giờ nếu quán chưa nhận đơn mới), khiến 2
+  // nguồn dữ liệu tạm thời không khớp nhau. Xoá TOÀN BỘ đơn ngày cũ (không
+  // chỉ riêng đơn chưa thanh toán) — ĐÚNG THEO THIẾT KẾ GỐC của canister
+  // (chỉ giữ đơn trong ngày, VPS mới là nơi lưu lịch sử lâu dài), không
+  // phải hành vi mới/khác lạ — chỉ đẩy sớm thời điểm dọn dẹp vốn dĩ sẽ xảy
+  // ra tự nhiên ngay khi có đơn mới tiếp theo.
+  public shared func pruneOldOrdersNow(hmac : Text) : async Result.Result<Nat, Text> {
+    if (not HmacLib.verifyHmac(state.secretState.vpsSecret, state.secretState.vpsSecretPrevious, "prune-old-orders", hmac)) {
+      return #err("Invalid HMAC");
+    };
+    let before = state.orders.toArray().size();
+    CoreLib.pruneOldOrders(state);
+    #ok(before - state.orders.toArray().size());
+  };
 };

@@ -360,6 +360,7 @@ export interface _SERVICE {
   'listPendingPaymentOrders' : ActorMethod<[string], Array<Order>>,
   'listRestaurants' : ActorMethod<[], Array<Restaurant>>,
   'markPaymentExpired' : ActorMethod<[string, string], Result>,
+  'pruneOldOrdersNow' : ActorMethod<[string], Result_Km>,
   'markPickedUp' : ActorMethod<[string], Result>,
   'restoreUpgradeState' : ActorMethod<[Uint8Array], boolean>,
   'revokeDevice' : ActorMethod<[DeviceId], Result_4>,

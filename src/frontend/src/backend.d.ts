@@ -511,6 +511,7 @@ export interface backendInterface {
     listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
     listRestaurants(): Promise<Array<Restaurant>>;
     markPaymentExpired(orderId: string, hmac: string): Promise<Result>;
+    pruneOldOrdersNow(hmac: string): Promise<Result_Km>;
     markPickedUp(orderId: string): Promise<Result>;
     restoreUpgradeState(blob: Uint8Array): Promise<boolean>;
     revokeDevice(deviceId: DeviceId): Promise<Result_4>;

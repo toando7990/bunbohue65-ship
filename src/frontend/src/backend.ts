@@ -560,6 +560,7 @@ export interface backendInterface {
     listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
     listRestaurants(): Promise<Array<Restaurant>>;
     markPaymentExpired(orderId: string, hmac: string): Promise<Result>;
+    pruneOldOrdersNow(hmac: string): Promise<Result_Km>;
     markPickedUp(orderId: string): Promise<Result>;
     restoreUpgradeState(blob: Uint8Array): Promise<boolean>;
     revokeDevice(deviceId: DeviceId): Promise<Result_4>;
@@ -1512,6 +1513,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.markPaymentExpired(arg0, arg1);
             return from_candid_Result_n17(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async pruneOldOrdersNow(arg0: string): Promise<Result_Km> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.pruneOldOrdersNow(arg0);
+                return from_candid_Result_Km(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.pruneOldOrdersNow(arg0);
+            return from_candid_Result_Km(result);
         }
     }
     async markPickedUp(arg0: string): Promise<Result> {
