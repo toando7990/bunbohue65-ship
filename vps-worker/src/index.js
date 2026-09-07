@@ -108,6 +108,9 @@ cronJobs.push(startReconciliation(db));
 // Auto-cancel đơn unpaid hết hạn 1 phút (khớp expiry QR 15 phút)
 cronJobs.push(startUnpaidExpiry(db));
 
+// Poll Tingee 5s (backup cho webhook)
+cronJobs.push(webhooksRoutes.startTingeePoll(db));
+
 // Invoice cron 1 phút (tạo invoice cho completed + paid)
 cronJobs.push(invoiceRoutes.startInvoiceCron(db));
 cronJobs.push(salesBonusCron.startSalesBonusCron(db));

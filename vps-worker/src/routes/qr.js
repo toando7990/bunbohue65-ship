@@ -134,11 +134,6 @@ router.post('/order/:id/qr', async (req, res, next) => {
       qr = await tingee.generateDynamicQr({
         amount: Number(row.amount) || 0,
         expireInMinute: QR_EXPIRE_MINUTES,
-        // extraInfo — mã đơn hàng, gửi kèm để Tingee trả lại nguyên vẹn
-        // trong additionalData của webhook thanh toán, dùng để tra đúng
-        // đơn hàng (xem routes/webhooks.js — extractExtraInfo()). Theo
-        // kế hoạch chuyển sang xác nhận qua webhook đã duyệt.
-        extraInfo: orderId,
       });
     } catch (e) {
       console.error('[qr] generateDynamicQr error:', orderId, e.code, e.message);

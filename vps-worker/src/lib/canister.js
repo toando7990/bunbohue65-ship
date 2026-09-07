@@ -137,7 +137,7 @@ const IDL_FACTORY = ({ IDL }) => {
     markPaymentExpired: IDL.Func(
       [IDL.Text, IDL.Text], [ResultOrder], [],
     ),
-    listPendingPaymentOrders: IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
+    listPendingPaymentOrders: IDL.Func([IDL.Text], [IDL.Vec(Order)], ['query']),
     cancelOrder: IDL.Func([IDL.Text, IDL.Text], [ResultOrder], []),
     changeOrderRestaurant: IDL.Func([IDL.Text, IDL.Text, IDL.Text], [ResultOrder], []),
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
@@ -281,13 +281,7 @@ async function getOrderStatus(orderId) {
   return await actor.getOrderStatus(orderId);
 }
 
-// listPendingPaymentOrders — UPDATE (không phải query — hàm này gọi
-// pruneOldOrders(state) bên trong, ghi/xoá dữ liệu, bắt buộc phải là
-// update). SỬA LỖI: IDL trước đây khai sai ['query'] trong khi Motoko
-// khai public shared (update) — khiến agent gửi request dạng query,
-// canister từ chối với lỗi "no query method" (IC0536). File declarations
-// tự động sinh ở frontend (bindgen) đã luôn khai ĐÚNG [] — chỉ riêng file
-// viết tay này (không qua bindgen) từng sai.
+// listPendingPaymentOrders — query
 async function listPendingPaymentOrders(restaurantId) {
   const actor = getActor();
   return await actor.listPendingPaymentOrders(restaurantId);
