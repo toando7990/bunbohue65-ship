@@ -1,14 +1,37 @@
 // ============================================================
-// routes/webhooks.js — Tingee webhook + backup poll
+// routes/webhooks.js — Tingee webhook (nguồn xác nhận NHANH) + backup
+// poll (lưới an toàn dự phòng)
 // ============================================================
-// POST /webhook/tingee (rate-limit + verify signature) → ack only (poll là
-// nguồn trạng thái thanh toán duy nhất). Backup poll Tingee 5s.
-// Sau paid → Tingee delete-dynamic-qr.
+// LỊCH SỬ QUAN TRỌNG (để tránh lặp lại sự cố): patch trước đã chuyển
+// HẲN sang chỉ dùng webhook (bỏ polling) — sau đó BỊ 1 PHIÊN LÀM VIỆC
+// KHÁC (Composer/Caffeine UI trực tiếp, không qua patch git) "Export to
+// GitHub" ghi đè ngược lại đúng bản CŨ (header sai + webhook chỉ ack),
+// khiến toàn bộ nỗ lực debug webhook trước đó vô nghĩa mà không ai biết
+// — code THẬT trên VPS đã âm thầm quay về bản cũ ngay sau khi sửa xong.
+// Đây là RỦI RO CỐ HỮU khi có 2 kênh chỉnh sửa song song (patch git +
+// UI trực tiếp) — bất kỳ bên nào "Export"/"Import" mà KHÔNG đồng bộ
+// đúng thứ tự trước đó đều có thể ghi đè mất thay đổi của bên kia.
+//
+// Theo yêu cầu mới nhất: KHÔI PHỤC LẠI polling làm LƯỚI AN TOÀN DỰ
+// PHÒNG — cả 2 cơ chế (webhook + polling) CÙNG TỒN TẠI song song, độc
+// lập, đều tự kiểm tra payment_status hiện tại trước khi hành động
+// (idempotent) nên không xung đột nhau dù chạy đồng thời:
+//   - Webhook: xác nhận NGAY khi Tingee gửi tới (nhanh, tức thời).
+//   - Polling (5 giây): tự hỏi lại Tingee định kỳ — bắt được các giao
+//     dịch mà webhook vì bất kỳ lý do gì (mạng, cấu hình, lỗi nội bộ
+//     Tingee) không gửi tới được.
+//
+// SỬA LỖI NGHIÊM TRỌNG (đã xác nhận qua tài liệu chính thức
+// https://developers.tingee.vn/docs/webhook-ipn — PHẢI GIỮ ĐÚNG, đã bị
+// ghi đè sai 1 lần): middleware xác thực đọc ĐÚNG header
+// 'x-signature'/'x-request-timestamp' — KHÔNG PHẢI
+// 'X-Tingee-Signature'/'X-Tingee-Timestamp' (Tingee không có tiền tố
+// "Tingee" trong tên header — dùng sai tên khiến middleware LUÔN trả
+// 401, webhook "biến mất hoàn toàn" mà không ai biết tại sao).
 //
 // AhaMove ĐÃ GỠ HOÀN TOÀN (khách tự đặt tài xế bằng app ngoài — quote.js/
-// create.js không còn tạo đơn AhaMove từ trước) — xoá luôn webhook +
-// backup poll AhaMove vì không còn tác dụng, chỉ gây lỗi 401 lặp vô hạn
-// cho các đơn test cũ còn sót ahamove_order_id.
+// create.js không còn tạo đơn AhaMove từ trước) — không có webhook/poll
+// AhaMove trong file này.
 // ============================================================
 
 const express = require('express');
@@ -49,19 +72,20 @@ function safeEqualHex(a, b) {
   return crypto.timingSafeEqual(aBuf, bBuf);
 }
 
-// verifyTingeeWebhook: verify X-Tingee-Signature header.
-// Per Tingee spec: signature = HMAC_SHA512(x-request-timestamp + ':' + rawBody, TINGEE_SECRET).
-// Timestamp from X-Tingee-Timestamp (or x-request-timestamp) header.
+// verifyTingeeWebhook: verify x-signature header.
+// ĐÚNG theo tài liệu chính thức: signature = HMAC_SHA512(x-request-timestamp
+// + ':' + json_body, secretKey). Header ĐÚNG tên (KHÔNG tiền tố "Tingee"):
+// x-signature, x-request-timestamp. XEM COMMENT ĐẦU FILE — đã từng bị
+// ghi đè sai 1 lần, PHẢI giữ đúng như dưới đây.
 function verifyTingeeWebhook(req, res, next) {
-  const sig = req.get('X-Tingee-Signature');
-  const ts =
-    req.get('X-Tingee-Timestamp') || req.get('x-request-timestamp');
+  const sig = req.get('x-signature');
+  const ts = req.get('x-request-timestamp');
   if (!sig || !ts) {
     if (!IS_PROD && !TINGEE_SECRET) {
       console.warn('[webhook/tingee] skip signature verification (dev, no secret)');
       return next();
     }
-    return res.status(401).json({ error: 'missing X-Tingee-Signature or timestamp' });
+    return res.status(401).json({ error: 'missing x-signature or x-request-timestamp' });
   }
   if (!TINGEE_SECRET) {
     if (!IS_PROD) {
@@ -82,35 +106,114 @@ function verifyTingeeWebhook(req, res, next) {
   next();
 }
 
-// POST /webhook/tingee — body: { qr_id, status, ... }
-// KHÔNG còn dùng để xác định trạng thái thanh toán. get-status-dynamic-qr
-// (startTingeePoll) là nguồn trạng thái DUY NHẤT. Route này chỉ log và ack.
+// Tìm giá trị extraInfo (orderId) trong additionalData — tài liệu Tingee
+// chỉ mô tả "array, chứa thông tin bổ sung (ví dụ billId cho QR động)",
+// KHÔNG có ví dụ schema đầy đủ cho từng phần tử. Thử các cấu trúc phổ
+// biến nhất ({name,value} / {key,value} / {extraInfo} trực tiếp) — CẦN
+// ĐỐI CHIẾU LẠI với payload thật đầu tiên nhận được sau khi triển khai
+// (xem cột response_body trong tingee_logs, action='webhook') và điều
+// chỉnh hàm này nếu cấu trúc thật khác giả định dưới đây.
+function extractExtraInfo(body) {
+  const additionalData = body && body.additionalData;
+  if (!Array.isArray(additionalData)) return null;
+  for (const item of additionalData) {
+    if (!item || typeof item !== 'object') continue;
+    if (item.name === 'extraInfo' && typeof item.value === 'string') return item.value;
+    if (item.key === 'extraInfo' && typeof item.value === 'string') return item.value;
+    if (typeof item.extraInfo === 'string') return item.extraInfo;
+  }
+  return null;
+}
+
+// POST /webhook/tingee — body thật theo tài liệu chính thức:
+// { clientId, transactionCode, amount, content, bank, accountNumber,
+//   vaAccountNumber, transactionDate, type, additionalData: [...] }
 router.post('/webhook/tingee', verifyTingeeWebhook, async (req, res, next) => {
   try {
     const db = req.app.locals.db;
-    const { qr_id: tingeeQrId } = req.body || {};
-    if (!tingeeQrId) return res.status(400).json({ error: 'qr_id required' });
+    const body = req.body || {};
+    const { transactionCode, amount, type } = body;
 
-    db.prepare(`INSERT INTO tingee_logs (order_id, tingee_qr_id, action, response_body, created_at) VALUES (?, ?, 'webhook', ?, ?)`)
-      .run(tingeeQrId, tingeeQrId, JSON.stringify(req.body), Date.now());
+    // Ghi log TOÀN BỘ payload trước tiên — kể cả khi không xử lý được gì
+    // (order not found, amount không khớp...) — cần đầy đủ để tra soát
+    // và đối chiếu lại cấu trúc additionalData thật.
+    db.prepare(
+      `INSERT INTO tingee_logs (order_id, tingee_qr_id, action, response_body, created_at) VALUES (?, ?, 'webhook', ?, ?)`,
+    ).run(transactionCode || '', transactionCode || '', JSON.stringify(body), Date.now());
 
-    // Payment status được xác định bởi get-status-dynamic-qr (startTingeePoll),
-    // không phải webhook này. Ack để Tingee không retry.
-    res.json({ ok: true });
+    // type: 'debit' = ghi nợ (tiền RA — không phải giao dịch nhận tiền,
+    // bỏ qua). Không truyền hoặc 'credit' = ghi có (tiền VÀO — đúng
+    // giao dịch cần xử lý). Theo đúng mô tả tài liệu: "Nếu không truyền
+    // sang thì mặc định là Ghi có".
+    if (type === 'debit') {
+      return res.json({ code: '00', message: 'Success' });
+    }
+
+    const orderId = extractExtraInfo(body);
+    if (!orderId) {
+      console.warn('[webhook/tingee] không tìm thấy extraInfo trong additionalData:', JSON.stringify(body.additionalData));
+      return res.json({ code: '00', message: 'Success' });
+    }
+
+    const order = db.prepare(`SELECT order_id, amount, payment_status, tingee_qr_account, tingee_bill_id FROM orders WHERE order_id = ?`).get(orderId);
+    if (!order) {
+      console.warn('[webhook/tingee] order not found:', orderId, 'transactionCode:', transactionCode);
+      return res.json({ code: '00', message: 'Success' });
+    }
+
+    // Idempotency — đã xử lý paid trước đó (lần webhook gốc, lần retry
+    // trước, HOẶC đã được polling xác nhận trước — 2 cơ chế độc lập,
+    // đơn nào đã paid rồi thì bỏ qua ở CẢ 2 nơi) → bỏ qua.
+    if (order.payment_status === 'paid') {
+      return res.json({ code: '00', message: 'Success' });
+    }
+
+    // BẮT BUỘC so sánh số tiền THỰC NHẬN với số tiền hoá đơn TRƯỚC KHI
+    // xác nhận — đúng cảnh báo bảo mật chính thức từ Tingee: giao dịch
+    // QR ĐỘNG có thể bị người chuyển tự ý sửa số tiền ở 1 số ngân hàng
+    // chưa chặn; Tingee vẫn gửi webhook bình thường dù số tiền sai khác.
+    // KHÔNG tin payload một cách mù quáng.
+    const amountReceived = Number(amount || 0);
+    if (amountReceived < Number(order.amount || 0)) {
+      console.warn(
+        '[webhook/tingee] số tiền không khớp — KHÔNG xác nhận:',
+        orderId, 'nhận:', amountReceived, 'cần:', order.amount, 'transactionCode:', transactionCode,
+      );
+      return res.json({ code: '00', message: 'Success' });
+    }
+
+    await canister.updatePaymentStatus(orderId, 'paid');
+    db.prepare(`UPDATE orders SET payment_status = 'paid', updated_at = ? WHERE order_id = ?`)
+      .run(Date.now(), orderId);
+    if (order.tingee_qr_account && order.tingee_bill_id) {
+      try {
+        await tingee.deleteDynamicQr({ qrAccount: order.tingee_qr_account, billId: order.tingee_bill_id });
+      } catch (e) {
+        console.warn('[webhook/tingee] deleteDynamicQr failed:', e.message);
+      }
+    }
+    console.log('[webhook/tingee] xác nhận thanh toán:', orderId, 'transactionCode:', transactionCode);
+
+    res.json({ code: '00', message: 'Success' });
   } catch (e) {
     next(e);
   }
 });
 
 // ============================================================
-// Backup poll (cron) — bù webhooks bị miss
+// Backup poll (cron) — bù webhook bị miss vì bất kỳ lý do gì (mạng,
+// cấu hình webhook Tingee chưa đúng, lỗi nội bộ Tingee...). Chạy ĐỘC
+// LẬP với webhook — không tranh chấp vì cả 2 đều tự kiểm tra
+// payment_status hiện tại trước khi hành động.
 // ============================================================
 
-// Poll Tingee 5s — get-status-dynamic-qr là nguồn trạng thái thanh toán DUY NHẤT.
-// Cửa sổ poll khóa theo expire_at của QR (thời điểm QR hết hạn), KHÔNG theo
-// created_at của đơn — vì QR được tạo khi tài xế bấm 'Thanh toán' (thường lâu
-// sau khi tạo đơn). Poll các QR động còn hiệu lực (expire_at > now) và chưa
-// thanh toán cho đến khi xác định được trạng thái cuối.
+// Poll Tingee 5s — get-status-dynamic-qr làm nguồn XÁC NHẬN DỰ PHÒNG
+// (không còn là nguồn DUY NHẤT như trước — webhook mới là nguồn chính,
+// nhanh hơn). Cửa sổ poll khóa theo expire_at của QR (thời điểm QR hết
+// hạn), KHÔNG theo created_at của đơn — vì QR được tạo khi tài xế bấm
+// 'Thanh toán' (thường lâu sau khi tạo đơn). Poll các QR động còn hiệu
+// lực (expire_at > now) và chưa thanh toán cho đến khi xác định được
+// trạng thái cuối.
 function startTingeePoll(db) {
   // Backoff khi gặp code 1001 (thao tác quá nhanh / rate limit): tạm ngừng poll
   // đơn đó trong 60s để không làm Tingee chặn tốc độ lây sang request tạo QR mới.
@@ -155,12 +258,17 @@ function startTingeePoll(db) {
           const amountOk = Number(billInfo.totalAmountPaid || 0) >= Number(row.amount || 0);
           if (statusOk || amountOk) {
             // Đã thanh toán → push updatePaymentStatus('paid') + xoá QR.
+            // Kiểm tra lại payment_status TRƯỚC (có thể webhook đã xử lý
+            // xong ngay trước lúc poll này chạy) — tránh gọi trùng.
+            const fresh = db.prepare(`SELECT payment_status FROM orders WHERE order_id = ?`).get(row.order_id);
+            if (fresh && fresh.payment_status === 'paid') continue;
             await canister.updatePaymentStatus(row.order_id, 'paid');
             db.prepare(`UPDATE orders SET payment_status = 'paid', updated_at = ? WHERE order_id = ?`)
               .run(Date.now(), row.order_id);
             try {
               await tingee.deleteDynamicQr({ qrAccount: row.tingee_qr_account, billId: row.tingee_bill_id });
             } catch (e) { console.warn('[poll/tingee] deleteDynamicQr failed:', e.message); }
+            console.log('[poll/tingee] xác nhận thanh toán (dự phòng):', row.order_id);
           }
         } catch (e) {
           const code = e && e.code;
