@@ -113,21 +113,41 @@ function verifyTingeeWebhook(req, res, next) {
 // ĐỐI CHIẾU LẠI với payload thật đầu tiên nhận được sau khi triển khai
 // (xem cột response_body trong tingee_logs, action='webhook') và điều
 // chỉnh hàm này nếu cấu trúc thật khác giả định dưới đây.
-function extractExtraInfo(body) {
-  const additionalData = body && body.additionalData;
+// SỬA LẠI HOÀN TOÀN dựa trên PAYLOAD THẬT đã thu thập được (không còn
+// đoán mò như trước) — 2 nhóm payload thật đã quan sát:
+//   1. Giao dịch vào tài khoản ảo CỐ ĐỊNH (theo chi nhánh, vd
+//      VQRQADFRL6297) — additionalData = [] (mảng rỗng, KHÔNG PHẢI QR
+//      động của 1 đơn cụ thể — không khớp đơn nào, bỏ qua đúng).
+//   2. Giao dịch vào QR ĐỘNG (đúng luồng thanh toán đơn hàng) —
+//      additionalData là 1 CHUỖI JSON (KHÔNG PHẢI mảng thật — phải
+//      JSON.parse trước), nội dung dạng
+//      '[{"name":"billId","value":"..."},{"name":"qrAccount","value":"..."}]'
+//      — CÓ SẴN "qrAccount" khớp TRỰC TIẾP với cột tingee_qr_account đã
+//      lưu sẵn khi tạo QR — KHÔNG CẦN extraInfo nữa (field đó KHÔNG XUẤT
+//      HIỆN trong payload thật — giả định trước đây sai hoàn toàn).
+function extractQrAccount(body) {
+  let additionalData = body && body.additionalData;
+  if (typeof additionalData === 'string') {
+    try {
+      additionalData = JSON.parse(additionalData);
+    } catch {
+      return null;
+    }
+  }
   if (!Array.isArray(additionalData)) return null;
   for (const item of additionalData) {
     if (!item || typeof item !== 'object') continue;
-    if (item.name === 'extraInfo' && typeof item.value === 'string') return item.value;
-    if (item.key === 'extraInfo' && typeof item.value === 'string') return item.value;
-    if (typeof item.extraInfo === 'string') return item.extraInfo;
+    if (item.name === 'qrAccount' && typeof item.value === 'string') return item.value;
   }
   return null;
 }
 
-// POST /webhook/tingee — body thật theo tài liệu chính thức:
-// { clientId, transactionCode, amount, content, bank, accountNumber,
-//   vaAccountNumber, transactionDate, type, additionalData: [...] }
+// POST /webhook/tingee — body thật (đã xác nhận qua payload thu thập
+// được, KHÔNG CÒN theo giả định tài liệu chung chung ban đầu):
+// { clientId, transactionCode, amount, content, bank, bankBin,
+//   accountNumber, vaAccountNumber, transactionDate, type,
+//   additionalData: "[...]" (chuỗi JSON, có billId+qrAccount cho QR động,
+//   rỗng "[]" cho giao dịch vào tài khoản ảo cố định) }
 router.post('/webhook/tingee', verifyTingeeWebhook, async (req, res, next) => {
   try {
     const db = req.app.locals.db;
@@ -149,17 +169,20 @@ router.post('/webhook/tingee', verifyTingeeWebhook, async (req, res, next) => {
       return res.json({ code: '00', message: 'Success' });
     }
 
-    const orderId = extractExtraInfo(body);
-    if (!orderId) {
-      console.warn('[webhook/tingee] không tìm thấy extraInfo trong additionalData:', JSON.stringify(body.additionalData));
+    const qrAccount = extractQrAccount(body);
+    if (!qrAccount) {
+      // Giao dịch vào tài khoản ảo CỐ ĐỊNH (không phải QR động của 1
+      // đơn cụ thể) — bình thường, không phải lỗi (ví dụ khách chuyển
+      // thẳng vào tài khoản chi nhánh, không qua luồng đặt đơn).
       return res.json({ code: '00', message: 'Success' });
     }
 
-    const order = db.prepare(`SELECT order_id, amount, payment_status, tingee_qr_account, tingee_bill_id FROM orders WHERE order_id = ?`).get(orderId);
+    const order = db.prepare(`SELECT order_id, amount, payment_status, tingee_qr_account, tingee_bill_id FROM orders WHERE tingee_qr_account = ?`).get(qrAccount);
     if (!order) {
-      console.warn('[webhook/tingee] order not found:', orderId, 'transactionCode:', transactionCode);
+      console.warn('[webhook/tingee] order not found for qrAccount:', qrAccount, 'transactionCode:', transactionCode);
       return res.json({ code: '00', message: 'Success' });
     }
+    const orderId = order.order_id;
 
     // Idempotency — đã xử lý paid trước đó (lần webhook gốc, lần retry
     // trước, HOẶC đã được polling xác nhận trước — 2 cơ chế độc lập,
