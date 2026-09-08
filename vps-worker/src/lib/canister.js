@@ -137,7 +137,7 @@ const IDL_FACTORY = ({ IDL }) => {
     markPaymentExpired: IDL.Func(
       [IDL.Text, IDL.Text], [ResultOrder], [],
     ),
-    listPendingPaymentOrders: IDL.Func([IDL.Text], [IDL.Vec(Order)], ['query']),
+    listPendingPaymentOrders: IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
     cancelOrder: IDL.Func([IDL.Text, IDL.Text], [ResultOrder], []),
     changeOrderRestaurant: IDL.Func([IDL.Text, IDL.Text, IDL.Text], [ResultOrder], []),
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
@@ -281,7 +281,16 @@ async function getOrderStatus(orderId) {
   return await actor.getOrderStatus(orderId);
 }
 
-// listPendingPaymentOrders — query
+// listPendingPaymentOrders — UPDATE (KHÔNG PHẢI query — hàm này gọi
+// pruneOldOrders(state) bên trong, ghi/xoá dữ liệu, bắt buộc phải là
+// update). ĐÃ BỊ GHI SAI THÀNH ['query'] 2 LẦN (lần 1: lỗi có sẵn từ
+// trước; lần 2: bị 1 phiên "Update from Caffeine" khác ghi đè lại sau
+// khi đã sửa đúng — xem commit sửa lỗi nghiêm trọng trước đó) — nếu sai,
+// canister từ chối với lỗi "no query method" (IC0536), chặn HOÀN TOÀN
+// "Hàng đợi thanh toán" (/driver). File declarations tự động sinh ở
+// frontend (bindgen) LUÔN khai ĐÚNG [] — chỉ riêng file viết tay này
+// (không qua build tool tự động) mới có nguy cơ bị lệch mỗi khi bị ghi
+// đè từ nguồn khác.
 async function listPendingPaymentOrders(restaurantId) {
   const actor = getActor();
   return await actor.listPendingPaymentOrders(restaurantId);
