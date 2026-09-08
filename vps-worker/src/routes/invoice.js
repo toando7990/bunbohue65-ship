@@ -22,12 +22,29 @@ const shutdown = require('../lib/shutdown');
 
 const router = express.Router();
 
+// Constants dùng cho lọc "trong ngày hiện tại" (giờ VN tuyệt đối, không
+// phụ thuộc múi giờ máy chủ — cùng công thức đã dùng ở routes/order-
+// history.js/km-notify-cron.js/sales-bonus-cron.js/restaurant-history.js).
+const UTC7_OFFSET_MS = 7 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+function startOfTodayUtc7(nowMs) {
+  const shifted = nowMs + UTC7_OFFSET_MS;
+  const dayStartShifted = Math.floor(shifted / DAY_MS) * DAY_MS;
+  return dayStartShifted - UTC7_OFFSET_MS;
+}
+
 // Seri hoá đơn production Bkav — công ty đã có seri riêng (C26MAA), không
 // dùng seri demo/auto-assign. Đổi qua biến môi trường BKAV_PROD_INVOICE_SERIAL
 // nếu seri thay đổi sau này, không cần sửa code.
 const PROD_INVOICE_SERIAL = process.env.BKAV_PROD_INVOICE_SERIAL || 'C26MAA';
 
-// Cron 1 phút: tạo invoice cho các order completed + paid + chưa invoiced.
+// Cron 1 phút: tạo invoice cho các order ĐÃ THANH TOÁN + chưa invoiced,
+// trong NGÀY HIỆN TẠI. SỬA (theo yêu cầu đã duyệt): bỏ điều kiện
+// booking_status='completed' — trước đây hoá đơn CHỈ phát hành sau khi
+// tài xế bấm "Đã nhận hàng", nay phát hành NGAY KHI đã thanh toán, không
+// phụ thuộc đơn đã giao xong hay chưa. Thêm giới hạn "trong ngày hiện
+// tại" để tránh quét lại/phát hành muộn cho đơn cũ từ ngày trước (nếu vì
+// lý do nào đó invoice_status vẫn còn 'none' qua nhiều ngày).
 // Sau khi createInvoice thành công, gọi getInvoicePdf816(orderId) ngay để
 // lấy PDF URL (CmdType 816 theo PartnerInvoiceStringID = orderId).
 // Retry 3 lần cho getInvoicePdf816 — nếu retry thất bại, dùng pdfUrl="".
@@ -36,9 +53,10 @@ function startInvoiceCron(db) {
   const task = cron.schedule('* * * * *', async () => {
     if (shutdown.shuttingDown) return;
     try {
+      const todayStartMs = startOfTodayUtc7(Date.now());
       const rows = db.prepare(
-        `SELECT * FROM orders WHERE booking_status = 'completed' AND payment_status = 'paid' AND invoice_status = 'none'`,
-      ).all();
+        `SELECT * FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none' AND created_at >= ?`,
+      ).all(todayStartMs);
       for (const row of rows) {
         try {
           const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(row.order_id);

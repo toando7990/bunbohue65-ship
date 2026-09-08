@@ -98,11 +98,14 @@ router.post('/order/:id/qr', async (req, res, next) => {
 
     const row = db.prepare(
       `SELECT order_id, amount, tingee_qr_id, tingee_qr_account, tingee_bill_id,
-              tingee_qr_code, expire_at, pickup_code
+              tingee_qr_code, expire_at, pickup_code, booking_status
        FROM orders WHERE order_id = ?`,
     ).get(orderId);
     if (!row) {
       return res.status(404).json({ ok: false, retryable: false, message: 'Không tìm thấy đơn hàng.' });
+    }
+    if (row.booking_status === 'cancelled') {
+      return res.status(400).json({ ok: false, retryable: false, message: 'Đơn này đã bị huỷ, không thể tạo QR.' });
     }
 
     // Cổng "Mã nhận hàng" — chỉ áp dụng khi caller có gửi pickupCode (luồng

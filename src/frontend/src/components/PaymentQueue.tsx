@@ -2,7 +2,7 @@
 // Hiển thị hàng đợi đơn chờ thanh toán (FIFO theo createdAt), mỗi đơn có nút [Thanh toán].
 // Mobile-first cards, large touch targets, Vietnamese labels.
 
-import { type Order, PaymentStatus } from "@/backend";
+import { BookingStatus, type Order, PaymentStatus } from "@/backend";
 import { ManualPaymentPhotoDialog } from "@/components/ManualPaymentPhotoDialog";
 import { getManualPhotoConfirmEligibility } from "@/lib/vps-client";
 import { useQuery } from "@tanstack/react-query";
@@ -180,6 +180,7 @@ export function PaymentQueue({
           {sorted.map((order, idx) => {
             const isPaying = payingOrderId === order.orderId;
             const expired = isExpired(order);
+            const isCancelled = order.bookingStatus === BookingStatus.cancelled;
             const discounted = hasDiscount(order);
             return (
               <li
@@ -270,44 +271,55 @@ export function PaymentQueue({
                     <span className="font-display text-xl font-bold text-primary">
                       {formatVnd(order.amount - order.shippingFee)}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => onPay(order)}
-                      disabled={isPaying}
-                      data-ocid={`queue.pay_button.${idx + 1}`}
-                      aria-label={`Thanh toán đơn ${order.cusName || order.orderId}`}
-                      className="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isPaying ? (
-                        <>
-                          <Loader2
-                            className="h-4 w-4 animate-spin"
-                            aria-hidden="true"
-                          />
-                          Đang mở…
-                        </>
-                      ) : expired ? (
-                        "Tạo QR mới"
-                      ) : (
-                        "Thanh toán"
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPhotoConfirmOrder(order)}
-                      disabled={photoEligibility?.[order.orderId] !== true}
-                      data-ocid={`queue.manual_photo_button.${idx + 1}`}
-                      aria-label={`Xác nhận thanh toán bằng ảnh cho đơn ${order.cusName || order.orderId}`}
-                      title={
-                        photoEligibility?.[order.orderId] !== true
-                          ? "Chỉ dùng được sau khi đơn đã từng tạo QR"
-                          : undefined
-                      }
-                      className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-card"
-                    >
-                      <Camera className="h-3.5 w-3.5" aria-hidden="true" />
-                      Xác nhận thủ công bằng ảnh
-                    </button>
+                    {isCancelled ? (
+                      <span
+                        data-ocid={`queue.cancelled_badge.${idx + 1}`}
+                        className="inline-flex min-h-[36px] items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive"
+                      >
+                        Đơn đã huỷ
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onPay(order)}
+                          disabled={isPaying}
+                          data-ocid={`queue.pay_button.${idx + 1}`}
+                          aria-label={`Thanh toán đơn ${order.cusName || order.orderId}`}
+                          className="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isPaying ? (
+                            <>
+                              <Loader2
+                                className="h-4 w-4 animate-spin"
+                                aria-hidden="true"
+                              />
+                              Đang mở…
+                            </>
+                          ) : expired ? (
+                            "Tạo QR mới"
+                          ) : (
+                            "Thanh toán"
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPhotoConfirmOrder(order)}
+                          disabled={photoEligibility?.[order.orderId] !== true}
+                          data-ocid={`queue.manual_photo_button.${idx + 1}`}
+                          aria-label={`Xác nhận thanh toán bằng ảnh cho đơn ${order.cusName || order.orderId}`}
+                          title={
+                            photoEligibility?.[order.orderId] !== true
+                              ? "Chỉ dùng được sau khi đơn đã từng tạo QR"
+                              : undefined
+                          }
+                          className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-card"
+                        >
+                          <Camera className="h-3.5 w-3.5" aria-hidden="true" />
+                          Xác nhận thủ công bằng ảnh
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </li>

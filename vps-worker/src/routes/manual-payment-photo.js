@@ -112,10 +112,13 @@ router.post(
       }
 
       const order = db
-        .prepare(`SELECT order_id, amount, payment_status, tingee_qr_account, tingee_bill_id, qr_first_created_at FROM orders WHERE order_id = ?`)
+        .prepare(`SELECT order_id, amount, payment_status, tingee_qr_account, tingee_bill_id, qr_first_created_at, booking_status FROM orders WHERE order_id = ?`)
         .get(orderId);
       if (!order) {
         return res.status(404).json({ ok: false, message: 'Không tìm thấy đơn hàng.' });
+      }
+      if (order.booking_status === 'cancelled') {
+        return res.status(400).json({ ok: false, message: 'Đơn này đã bị huỷ, không thể xác nhận thanh toán.' });
       }
       if (order.payment_status === 'paid') {
         return res.status(400).json({ ok: false, message: 'Đơn này đã được xác nhận thanh toán rồi.' });

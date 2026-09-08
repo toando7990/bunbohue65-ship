@@ -141,6 +141,7 @@ const IDL_FACTORY = ({ IDL }) => {
     cancelOrder: IDL.Func([IDL.Text, IDL.Text], [ResultOrder], []),
     changeOrderRestaurant: IDL.Func([IDL.Text, IDL.Text, IDL.Text], [ResultOrder], []),
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
+    isStoreOpen: IDL.Func([], [IDL.Bool], ['query']),
     getMenuForRestaurant: IDL.Func([IDL.Text], [IDL.Vec(MenuItemRecord)], ['query']),
     getPaymentMode: IDL.Func([], [IDL.Text], ['query']),
     getCurrentPromotion: IDL.Func([], [IDL.Opt(Promotion)], ['query']),
@@ -281,6 +282,15 @@ async function getOrderStatus(orderId) {
   return await actor.getOrderStatus(orderId);
 }
 
+// isStoreOpen — query, đã có sẵn ở canister (mixins/store-hours-config-
+// api.mo), dùng cho lib/sync.js: KHÔNG auto-cancel đơn "chưa từng có QR"
+// khi đang trong giờ mở cửa (đợi khách/tài xế xử lý trong giờ hoạt động
+// bình thường) — chỉ huỷ khi NGOÀI giờ mở cửa.
+async function isStoreOpen() {
+  const actor = getActor();
+  return await actor.isStoreOpen();
+}
+
 // listPendingPaymentOrders — UPDATE (KHÔNG PHẢI query — hàm này gọi
 // pruneOldOrders(state) bên trong, ghi/xoá dữ liệu, bắt buộc phải là
 // update). ĐÃ BỊ GHI SAI THÀNH ['query'] 2 LẦN (lần 1: lỗi có sẵn từ
@@ -414,4 +424,5 @@ module.exports = {
   deactivateExpiredPromotions,
   pruneOldOrdersNow,
   getCurrentPromotion,
+  isStoreOpen,
 };

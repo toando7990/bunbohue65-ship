@@ -191,6 +191,19 @@ async function runUnpaidExpiryCheck(db) {
     }
 
     // 2) Đơn KHÔNG CÓ QR và quá hạn → cancelOrder (giữ nguyên hành vi cũ).
+    // SỬA (theo yêu cầu đã duyệt): gọi isStoreOpen() MỘT LẦN cho cả vòng
+    // lặp (không phải mỗi đơn — tránh gọi mạng lặp lại không cần thiết)
+    // — KHÔNG huỷ đơn CHƯA TỪNG CÓ QR khi đang trong giờ mở cửa (đợi
+    // khách/tài xế xử lý trong giờ hoạt động bình thường); CHỈ huỷ khi
+    // NGOÀI giờ mở cửa. Đơn #expired (đã từng có QR) KHÔNG bị ảnh hưởng
+    // bởi điều kiện này — vẫn xét huỷ như cũ bất kể giờ mở cửa.
+    let storeOpen = true;
+    try {
+      storeOpen = await canister.isStoreOpen();
+    } catch (e) {
+      console.error('[sync] isStoreOpen error (mặc định coi như đang mở cửa):', e.message);
+    }
+
     const restaurants = db.prepare(
       `SELECT DISTINCT restaurant_id FROM orders WHERE booking_status != 'cancelled'`,
     ).all();
@@ -228,11 +241,21 @@ async function runUnpaidExpiryCheck(db) {
           const expiredAgeMs = Date.now() - local.updated_at;
           if (expiredAgeMs <= UNPAID_EXPIRY_MS) continue;
         } else {
+          if (storeOpen) continue; // đơn chưa từng có QR — đang trong giờ mở cửa, không huỷ
           const createdAtNs = Number(order.createdAt);
           if (!createdAtNs) continue;
           const ageMs = Date.now() - createdAtNs / 1e6;
           if (ageMs <= UNPAID_EXPIRY_MS) continue;
         }
+
+        // Vá lỗ hổng race condition (giữ nguyên bảo vệ — không huỷ đơn
+        // vừa được thanh toán): đọc LẠI payment_status NGAY SÁT thời
+        // điểm gọi cancelOrder — không tin `local` đã đọc TRƯỚC các
+        // bước kiểm tra tuổi ở trên, vì webhook/polling có thể vừa xác
+        // nhận thanh toán ĐÚNG trong khoảng thời gian xử lý đơn trước
+        // đó trong vòng lặp này.
+        const fresh = db.prepare(`SELECT payment_status FROM orders WHERE order_id = ?`).get(order.orderId);
+        if (!fresh || fresh.payment_status === 'paid') continue;
 
         try {
           const cancelResult = await canister.cancelOrder(order.orderId);
