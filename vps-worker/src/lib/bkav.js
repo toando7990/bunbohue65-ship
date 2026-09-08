@@ -287,6 +287,18 @@ function buildJsonPayload(invoice, config) {
 // taxAmount tính trên phần trước thuế SAU KHI ĐÃ TRỪ chiết khấu của từng
 // món (thông lệ kế toán chuẩn — thuế GTGT áp trên giá trị chịu thuế thực
 // tế). Làm tròn VND nguyên đồng (không có phần lẻ) ở MỌI bước.
+//
+// SỬA LỖI (phát hiện qua đối chiếu với ảnh hoá đơn thật, hoá đơn số
+// 00008780 ngày 21/05/2026 — lệch đúng 1 đồng ở "Thành tiền" món có số
+// lượng > 1): Bkav tính "Thành tiền" = SỐ LƯỢNG × ĐƠN GIÁ ĐÃ LÀM TRÒN —
+// KHÔNG PHẢI làm tròn SAU KHI nhân số lượng như bản trước. Ví dụ đã xác
+// nhận: giá gốc 45.000đ, SL 2 → đơn giá trước thuế làm tròn =
+// round(45000/1.08) = 41.667, thành tiền = 41.667 × 2 = 83.334 (khớp
+// đúng ảnh) — KHÔNG PHẢI round(2×45000/1.08) = 83.333 (bản cũ tính ra,
+// sai 1 đồng so với hoá đơn Bkav thật). Giờ làm tròn ĐƠN GIÁ trước, dùng
+// đúng giá trị đã làm tròn đó cho MỌI phép tính tiếp theo của dòng đó
+// (thành tiền, chiết khấu, thuế) — đảm bảo nhất quán nội bộ (giá × số
+// lượng = thành tiền, khớp đúng số hiển thị).
 function buildInvoiceLines(invoice, taxRateID) {
   const items = invoice.items || [];
   const vatDivisor = 1 + invoice.taxRate / 100;
@@ -298,29 +310,52 @@ function buildInvoiceLines(invoice, taxRateID) {
   const discountPreTax =
     totalDiscountInclusiveVat > 0 ? totalDiscountInclusiveVat / vatDivisor : 0;
 
-  // Tổng tiền TRƯỚC THUẾ toàn đơn — mẫu số để phân bổ chiết khấu theo tỷ lệ.
-  const goodsAmountPreTax = items.reduce(
-    (s, it) => s + (it.quantity * it.price) / vatDivisor,
-    0,
-  );
+  // Làm tròn ĐƠN GIÁ trước (khớp Bkav), rồi nhân số lượng để ra thành
+  // tiền từng dòng — thay vì làm tròn SAU KHI nhân (bản cũ, sai).
+  const roundedLines = items.map((it) => {
+    const roundedUnitPrice = Math.round(it.price / vatDivisor);
+    return { it, roundedUnitPrice, preTaxAmount: roundedUnitPrice * it.quantity };
+  });
 
-  return items.map((it) => {
-    const preTaxUnitPrice = it.price / vatDivisor;
-    const preTaxAmount = (it.quantity * it.price) / vatDivisor;
+  // Tổng tiền TRƯỚC THUẾ toàn đơn (CỘNG DỒN từ thành tiền từng dòng ĐÃ
+  // LÀM TRÒN ở trên, không phải tính lại từ số thô) — mẫu số để phân bổ
+  // chiết khấu theo tỷ lệ, khớp đúng "Cộng tiền hàng" Bkav hiển thị.
+  const goodsAmountPreTax = roundedLines.reduce((s, l) => s + l.preTaxAmount, 0);
+
+  // SỬA LỖI (đối chiếu LẦN 2 với ảnh hoá đơn thật — lệch 1 đồng ở TỔNG
+  // tiền thuế): cộng dồn taxAmount ĐÃ LÀM TRÒN của TỪNG dòng riêng lẻ có
+  // thể lệch 1 đồng so với thuế tính trên TỔNG "Cộng tiền hàng" (làm
+  // tròn nhiều lần cộng dồn sai số) — ảnh hoá đơn thật xác nhận Bkav
+  // dùng đúng "thuế trên tổng", không phải "tổng của thuế từng dòng đã
+  // làm tròn riêng". Áp dụng kỹ thuật kế toán chuẩn "làm tròn TỔNG
+  // trước, dòng CUỐI CÙNG nhận phần dư" — đảm bảo tổng các taxAmount gửi
+  // lên LUÔN khớp CHÍNH XÁC với thuế tính trên tổng "Cộng tiền hàng",
+  // không phụ thuộc Bkav tự tính lại hay dùng đúng breakdown đã gửi.
+  const totalDiscountAllocated = Math.min(discountPreTax, goodsAmountPreTax);
+  const totalTaxableAmount = goodsAmountPreTax - totalDiscountAllocated;
+  const totalTaxExpected = Math.round(totalTaxableAmount * (invoice.taxRate / 100));
+  let taxAllocatedSoFar = 0;
+
+  return roundedLines.map(({ it, roundedUnitPrice, preTaxAmount }, index) => {
+    const isLastLine = index === roundedLines.length - 1;
     const itemDiscount =
       discountPreTax > 0 && goodsAmountPreTax > 0
         ? Math.round((discountPreTax / goodsAmountPreTax) * preTaxAmount)
         : 0;
     const taxableAmount = preTaxAmount - itemDiscount;
+    const lineTax = isLastLine
+      ? totalTaxExpected - taxAllocatedSoFar
+      : Math.round(taxableAmount * (invoice.taxRate / 100));
+    taxAllocatedSoFar += lineTax;
     return {
       itemTypeID: 0,
       itemName: it.name,
       unitName: it.unitName || '',
       qty: it.quantity,
-      price: Math.round(preTaxUnitPrice),
-      amount: Math.round(preTaxAmount),
+      price: roundedUnitPrice,
+      amount: preTaxAmount,
       taxRateID,
-      taxAmount: Math.round(taxableAmount * (invoice.taxRate / 100)),
+      taxAmount: lineTax,
       // discountRate chỉ để tham khảo/hiển thị (đúng quyết định đã chốt
       // cho tiers — "tỷ lệ chỉ để tham khảo"), KHÔNG dùng để tính toán.
       discountRate:
