@@ -3,7 +3,9 @@
 // Mobile-first cards, large touch targets, Vietnamese labels.
 
 import { type Order, PaymentStatus } from "@/backend";
-import { Clock, ListOrdered, Loader2, ShoppingBag } from "lucide-react";
+import { ManualPaymentPhotoDialog } from "@/components/ManualPaymentPhotoDialog";
+import { Camera, Clock, ListOrdered, Loader2, ShoppingBag } from "lucide-react";
+import { useState } from "react";
 
 interface PaymentQueueProps {
   orders: Order[];
@@ -82,6 +84,9 @@ export function PaymentQueue({
   onPay,
   payingOrderId,
 }: PaymentQueueProps) {
+  const [photoConfirmOrder, setPhotoConfirmOrder] = useState<Order | null>(
+    null,
+  );
   const pending = orders.filter((o) => isPending(o) && isToday(o.createdAt));
   // Đơn quá hạn (>60 phút) nổi lên đầu; trong cùng nhóm (quá hạn hoặc chưa),
   // vẫn giữ FIFO — createdAt ascending (cũ nhất trước).
@@ -271,12 +276,35 @@ export function PaymentQueue({
                         "Thanh toán"
                       )}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoConfirmOrder(order)}
+                      data-ocid={`queue.manual_photo_button.${idx + 1}`}
+                      aria-label={`Xác nhận thanh toán bằng ảnh cho đơn ${order.cusName || order.orderId}`}
+                      className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted"
+                    >
+                      <Camera className="h-3.5 w-3.5" aria-hidden="true" />
+                      Xác nhận thủ công bằng ảnh
+                    </button>
                   </div>
                 </div>
               </li>
             );
           })}
         </ul>
+      )}
+
+      {photoConfirmOrder && (
+        <ManualPaymentPhotoDialog
+          open={!!photoConfirmOrder}
+          onOpenChange={(open) => {
+            if (!open) setPhotoConfirmOrder(null);
+          }}
+          orderId={photoConfirmOrder.orderId}
+          cusName={photoConfirmOrder.cusName}
+          amount={photoConfirmOrder.amount - photoConfirmOrder.shippingFee}
+          onConfirmed={() => setPhotoConfirmOrder(null)}
+        />
       )}
     </section>
   );

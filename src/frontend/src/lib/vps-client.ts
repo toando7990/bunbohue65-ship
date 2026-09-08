@@ -206,6 +206,26 @@ export async function changeOrderRestaurant(
   });
 }
 
+// Xác nhận thanh toán thủ công bằng ảnh (khi webhook Tingee không hoạt
+// động) — VPS tự đọc chữ trong ảnh (OCR), CHỈ đánh dấu đã thanh toán nếu
+// khớp CẢ số tiền lẫn mã tài khoản QR của đơn — CHẶN HẲN nếu không khớp
+// (ném VpsHttpError với body chứa amountOk/accountOk/extractedText để
+// component hiển thị chi tiết lý do không khớp).
+export async function confirmManualPaymentByPhoto(
+  orderId: string,
+  imageFile: File,
+): Promise<{ ok: boolean; message: string }> {
+  const formData = new FormData();
+  formData.append("image", imageFile);
+  return vpsFetch<{ ok: boolean; message: string }>({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/manual-payment-photo`,
+    body: formData,
+    isFormData: true,
+    timeoutMs: 30000, // OCR có thể mất vài giây, dài hơn timeout mặc định
+  });
+}
+
 // Upsert a customer record by email — VPS POST /customers with { email }.
 // Creates the customer if it does not already exist (idempotent). This is
 // intentionally non-blocking and swallows every error (network slow, VPS
