@@ -47,4 +47,66 @@ async function extractTextFromImage(buffer) {
   return text;
 }
 
-module.exports = { extractTextFromImage };
+// Bỏ dấu tiếng Việt — gói OCR đang dùng ('eng', tiếng Anh) đã XÁC NHẬN
+// QUA TEST THẬT: đọc ĐÚNG từng chữ cái của text tiếng Việt có dấu,
+// nhưng MẤT SẠCH dấu (vd "Giao dịch thành công" → "Giao dich thanh
+// cong"). Chuẩn hoá bỏ dấu CẢ 2 phía (text OCR lẫn chuỗi tìm kiếm) trước
+// khi so sánh — không cần cài thêm gói OCR tiếng Việt phức tạp hơn.
+function stripDiacritics(s) {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, (m) => (m === 'đ' ? 'd' : 'D'));
+}
+
+// Kiểm tra ảnh có chứa xác nhận "(giao dịch) thành công" hay không — lớp
+// kiểm tra bổ sung, phân biệt ảnh CHỤP SAU KHI hoàn tất giao dịch (có
+// dòng xác nhận) với ảnh CHƯA hoàn tất (vd màn hình đang chờ bấm nút
+// "Chuyển khoản", không có xác nhận thành công).
+function hasSuccessConfirmation(text) {
+  return stripDiacritics(text).toLowerCase().includes('thanh cong');
+}
+
+// Trích ngày giờ giao dịch từ text OCR — thử NHIỀU định dạng khác nhau
+// (đã xác nhận qua ảnh biên lai thật của nhiều ngân hàng/app khác nhau):
+//   "08/09/2026 11:08:41"        (dd/mm/yyyy HH:mm:ss)
+//   "16:55 07/09/2026"           (HH:mm dd/mm/yyyy, không giây)
+//   "11:54 Thứ Sáu 04/09/2026"   (HH:mm [Thứ ...] dd/mm/yyyy)
+// Trả về Date hoặc null nếu không tìm thấy định dạng nào khớp. Lấy kết
+// quả khớp ĐẦU TIÊN trong text (ngày giờ giao dịch luôn xuất hiện gần
+// đầu biên lai, ngay dưới dòng xác nhận/số tiền, theo mọi mẫu đã thấy).
+//
+// QUAN TRỌNG (tránh lặp lại đúng lỗi múi giờ đã từng sửa ở cron trước
+// đây): giờ hiển thị trong ảnh LUÔN LÀ GIỜ VIỆT NAM (UTC+7) — dùng
+// Date.UTC(...) và TRỪ 7 GIỜ để quy đổi tuyệt đối, KHÔNG dùng
+// `new Date(y,m,d,hh,mm,ss)` (phụ thuộc múi giờ MÁY CHỦ đang chạy Node
+// — nếu VPS chạy UTC, giờ ảnh sẽ bị hiểu SAI LỆCH 7 TIẾNG).
+function extractTransactionDateTime(text) {
+  // Dạng 1: dd/mm/yyyy HH:mm:ss (có giây — ưu tiên vì chính xác nhất)
+  const withSeconds = text.match(
+    /(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/,
+  );
+  if (withSeconds) {
+    const [, d, m, y, hh, mm, ss] = withSeconds;
+    const ms = Date.UTC(Number(y), Number(m) - 1, Number(d), Number(hh) - 7, Number(mm), Number(ss));
+    if (!Number.isNaN(ms)) return new Date(ms);
+  }
+
+  // Dạng 2: HH:mm [Thứ ...] dd/mm/yyyy (không giây — giây coi là 0)
+  const noSeconds = text.match(
+    /(\d{1,2}):(\d{2})\s+(?:Th[uứ]\S*\s+\S+\s+)?(\d{1,2})\/(\d{1,2})\/(\d{4})/,
+  );
+  if (noSeconds) {
+    const [, hh, mm, d, m, y] = noSeconds;
+    const ms = Date.UTC(Number(y), Number(m) - 1, Number(d), Number(hh) - 7, Number(mm), 0);
+    if (!Number.isNaN(ms)) return new Date(ms);
+  }
+
+  return null;
+}
+
+module.exports = {
+  extractTextFromImage,
+  hasSuccessConfirmation,
+  extractTransactionDateTime,
+};

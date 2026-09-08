@@ -226,6 +226,20 @@ export async function confirmManualPaymentByPhoto(
   });
 }
 
+// Đơn nào đã TỪNG có QR (qr_first_created_at khác NULL ở VPS) — dùng để
+// bật/tắt nút "Xác nhận thủ công bằng ảnh" ở /driver (mặc định tắt, chỉ
+// bật sau khi đơn đã từng có QR). Order từ canister không lưu field
+// này, chỉ VPS SQLite biết — gọi API riêng, batch nhiều đơn 1 lần.
+export async function getManualPhotoConfirmEligibility(
+  orderIds: string[],
+): Promise<Record<string, boolean>> {
+  if (orderIds.length === 0) return {};
+  return vpsFetch<Record<string, boolean>>({
+    method: "GET",
+    path: `/orders/qr-status?ids=${orderIds.map(encodeURIComponent).join(",")}`,
+  });
+}
+
 // Upsert a customer record by email — VPS POST /customers with { email }.
 // Creates the customer if it does not already exist (idempotent). This is
 // intentionally non-blocking and swallows every error (network slow, VPS

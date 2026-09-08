@@ -187,6 +187,16 @@ function initSchema(db) {
   if (!colNames.has('expire_at')) {
     db.exec("ALTER TABLE orders ADD COLUMN expire_at INTEGER");
   }
+  // qr_first_created_at: Unix timestamp (ms) khi QR ĐẦU TIÊN được tạo cho
+  // đơn này — ghi 1 LẦN DUY NHẤT (chỉ khi còn NULL), GIỮ NGUYÊN dù QR
+  // được tạo lại nhiều lần sau đó (hết hạn rồi tạo mới). Dùng cho: (1)
+  // gate nút "Xác nhận thủ công bằng ảnh" ở /driver — mặc định tắt, chỉ
+  // bật sau khi đơn đã từng có QR; (2) so sánh với giờ giao dịch đọc
+  // được từ ảnh xác nhận thanh toán thủ công — ảnh phải chụp giao dịch
+  // xảy ra SAU thời điểm này, tránh nhầm ảnh cũ/đơn khác.
+  if (!colNames.has('qr_first_created_at')) {
+    db.exec("ALTER TABLE orders ADD COLUMN qr_first_created_at INTEGER");
+  }
   // pickup_code: mã 6 ký tự (chữ hoa + số, không có 0/O 1/I) sinh lúc tạo
   // đơn. Khách xem trong "Theo dõi đơn", tự báo tài xế bằng ngoài luồng
   // (gọi điện, nhắn tin...). Tài xế đọc mã này cho nhân viên quán khi đến

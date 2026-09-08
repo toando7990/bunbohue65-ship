@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const canister = require('../lib/canister');
 const tingee = require('../lib/tingee');
-const { extractTextFromImage } = require('../lib/ocr');
+const { extractTextFromImage, hasSuccessConfirmation, extractTransactionDateTime } = require('../lib/ocr');
 const { rateLimit } = require('../middleware/rate-limit');
 
 const router = express.Router();
@@ -41,6 +41,39 @@ router.use(
   '/order/:id/manual-payment-photo',
   rateLimit({ windowMs: 60000, max: 10, message: 'Too many manual payment photo requests' }),
 );
+router.use(
+  '/orders/qr-status',
+  rateLimit({ windowMs: 60000, max: 60, message: 'Too many qr-status requests' }),
+);
+
+// GET /orders/qr-status?ids=id1,id2,id3 — trả về đơn nào đã TỪNG có QR
+// (qr_first_created_at khác NULL, xem giải thích ở db.js) — dùng để BẬT/
+// TẮT nút "Xác nhận thủ công bằng ảnh" ở /driver: mặc định TẮT, chỉ bật
+// sau khi đơn đã từng có QR. Order từ canister KHÔNG lưu field này (chỉ
+// tồn tại ở VPS SQLite) — cần API riêng để frontend truy vấn. Batch
+// nhiều đơn 1 lần (tránh N+1 API call khi hiển thị cả danh sách).
+router.get('/orders/qr-status', (req, res, next) => {
+  try {
+    const db = req.app.locals.db;
+    const idsParam = req.query.ids;
+    if (!idsParam || typeof idsParam !== 'string') {
+      return res.json({});
+    }
+    const ids = idsParam.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 200);
+    if (ids.length === 0) return res.json({});
+    const placeholders = ids.map(() => '?').join(',');
+    const rows = db
+      .prepare(`SELECT order_id, qr_first_created_at FROM orders WHERE order_id IN (${placeholders})`)
+      .all(...ids);
+    const result = {};
+    for (const row of rows) {
+      result[row.order_id] = row.qr_first_created_at !== null;
+    }
+    res.json(result);
+  } catch (e) {
+    next(e);
+  }
+});
 
 // Chuẩn hoá số tiền tìm được trong text OCR thành các CHUỖI SỐ có thể
 // khớp — số tiền VN có thể viết "40,000" (dấu phẩy) hoặc "40.000" (dấu
@@ -79,7 +112,7 @@ router.post(
       }
 
       const order = db
-        .prepare(`SELECT order_id, amount, payment_status, tingee_qr_account, tingee_bill_id FROM orders WHERE order_id = ?`)
+        .prepare(`SELECT order_id, amount, payment_status, tingee_qr_account, tingee_bill_id, qr_first_created_at FROM orders WHERE order_id = ?`)
         .get(orderId);
       if (!order) {
         return res.status(404).json({ ok: false, message: 'Không tìm thấy đơn hàng.' });
@@ -101,13 +134,27 @@ router.post(
 
       const amountOk = amountFoundInText(extractedText, order.amount);
       const accountOk = accountFoundInText(extractedText, order.tingee_qr_account);
+      const successOk = hasSuccessConfirmation(extractedText);
 
-      if (!amountOk || !accountOk) {
+      // So sánh giờ giao dịch trong ảnh với thời điểm QR ĐẦU TIÊN được
+      // tạo cho đơn này — ảnh phải chụp giao dịch xảy ra SAU thời điểm
+      // đó (tránh nhầm ảnh cũ/đơn khác). KHÔNG cho phép sai lệch (đã
+      // chốt) — không tìm thấy ngày giờ hợp lệ trong ảnh CŨNG bị chặn
+      // (không đủ bằng chứng, không phải trường hợp "bỏ qua kiểm tra").
+      const transactionDateTime = extractTransactionDateTime(extractedText);
+      const dateTimeOk =
+        transactionDateTime !== null &&
+        order.qr_first_created_at !== null &&
+        transactionDateTime.getTime() > Number(order.qr_first_created_at);
+
+      if (!amountOk || !accountOk || !successOk || !dateTimeOk) {
         return res.status(400).json({
           ok: false,
           message: 'Không tìm thấy khớp trong ảnh — vui lòng kiểm tra lại ảnh chụp.',
           amountOk,
           accountOk,
+          successOk,
+          dateTimeOk,
           extractedText,
         });
       }

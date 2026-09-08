@@ -166,10 +166,13 @@ router.post('/order/:id/qr', async (req, res, next) => {
     }
 
     // Lưu vào SQLite (kể cả khi canister sync fail — retry queue sẽ xử lý sau).
+    // qr_first_created_at: COALESCE giữ nguyên giá trị cũ nếu đã có (chỉ
+    // ghi đúng 1 lần, lần QR đầu tiên) — xem giải thích ở db.js.
     db.prepare(
       `UPDATE orders SET
          tingee_qr_id = ?, tingee_qr_account = ?, tingee_bill_id = ?,
-         tingee_qr_code = ?, expire_at = ?, updated_at = ?
+         tingee_qr_code = ?, expire_at = ?, updated_at = ?,
+         qr_first_created_at = COALESCE(qr_first_created_at, ?)
        WHERE order_id = ?`,
     ).run(
       qr.qrAccount || '',
@@ -177,6 +180,7 @@ router.post('/order/:id/qr', async (req, res, next) => {
       qr.billId,
       qr.qrCode,
       expireAt,
+      Date.now(),
       Date.now(),
       orderId,
     );

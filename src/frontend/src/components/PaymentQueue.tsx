@@ -4,6 +4,8 @@
 
 import { type Order, PaymentStatus } from "@/backend";
 import { ManualPaymentPhotoDialog } from "@/components/ManualPaymentPhotoDialog";
+import { getManualPhotoConfirmEligibility } from "@/lib/vps-client";
+import { useQuery } from "@tanstack/react-query";
 import { Camera, Clock, ListOrdered, Loader2, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 
@@ -88,6 +90,20 @@ export function PaymentQueue({
     null,
   );
   const pending = orders.filter((o) => isPending(o) && isToday(o.createdAt));
+
+  // Đơn nào đã TỪNG có QR — dùng để bật/tắt nút "Xác nhận thủ công bằng
+  // ảnh" (mặc định TẮT, chỉ bật sau khi đơn đã từng có QR — theo đúng
+  // quyết định đã chốt, tránh nhân viên bấm nhầm khi đơn còn chưa từng
+  // tạo QR để đối chiếu). Batch 1 lần cho toàn bộ danh sách đang hiển
+  // thị, poll lại mỗi 15 giây (không cần dồn dập, chỉ ảnh hưởng bật/tắt
+  // nút, không phải dữ liệu tài chính).
+  const pendingOrderIds = pending.map((o) => o.orderId);
+  const { data: photoEligibility } = useQuery({
+    queryKey: ["manual-photo-eligibility", pendingOrderIds.join(",")],
+    queryFn: () => getManualPhotoConfirmEligibility(pendingOrderIds),
+    enabled: pendingOrderIds.length > 0,
+    refetchInterval: 15000,
+  });
   // Đơn quá hạn (>60 phút) nổi lên đầu; trong cùng nhóm (quá hạn hoặc chưa),
   // vẫn giữ FIFO — createdAt ascending (cũ nhất trước).
   const sorted = [...pending].sort((a, b) => {
@@ -279,9 +295,15 @@ export function PaymentQueue({
                     <button
                       type="button"
                       onClick={() => setPhotoConfirmOrder(order)}
+                      disabled={photoEligibility?.[order.orderId] !== true}
                       data-ocid={`queue.manual_photo_button.${idx + 1}`}
                       aria-label={`Xác nhận thanh toán bằng ảnh cho đơn ${order.cusName || order.orderId}`}
-                      className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted"
+                      title={
+                        photoEligibility?.[order.orderId] !== true
+                          ? "Chỉ dùng được sau khi đơn đã từng tạo QR"
+                          : undefined
+                      }
+                      className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-card"
                     >
                       <Camera className="h-3.5 w-3.5" aria-hidden="true" />
                       Xác nhận thủ công bằng ảnh
