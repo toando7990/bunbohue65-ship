@@ -1,9 +1,12 @@
 // Enterprise device activation storage — SINGLE consistent localStorage key
-// shared by the enterprise gate (App.tsx) and all three enterprise module pages
-// (PaymentQueuePage, AccountingPage, SalesPromoReportingPage). A device binds
-// to one enterprise role at activation time (via an admin-generated activation
-// code) and remembers its restaurantId + deviceId across reloads, mirroring the
-// bbh_driver_activation / bbh_counter_activation pattern for driver/cashier.
+// shared by the enterprise gate (App.tsx) and enterprise module pages
+// (EnterpriseManagementPage — gộp Kế toán + Báo cáo bán hàng & KM; vai trò
+// "Hàng đợi thanh toán"/PaymentQueuePage đã BỎ HẲN — /driver là nơi duy nhất
+// xử lý thanh toán, đúng cơ chế QR Tingee + webhook + xác nhận ảnh sẵn có).
+// A device binds to one enterprise role at activation time (via an admin-
+// generated activation code) and remembers its restaurantId + deviceId
+// across reloads, mirroring the bbh_driver_activation / bbh_counter_activation
+// pattern for driver/cashier.
 
 export const ENTERPRISE_STORAGE_KEY = "bbh_enterprise_activation";
 

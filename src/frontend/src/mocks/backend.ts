@@ -20,7 +20,6 @@ export const mockBackend: backendInterface = {
   changeOrderRestaurant: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   cleanupExpiredActivations: async () => BigInt(0),
   cleanupOrderByDevice: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
-  confirmPaymentByDevice: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   createOrder: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   deleteItem: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   deleteRestaurant: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),

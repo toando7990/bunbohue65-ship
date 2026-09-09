@@ -454,7 +454,6 @@ export interface backendInterface {
     changeOrderRestaurant(orderId: string, newRestaurantId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
     cleanupOrderByDevice(deviceId: string, orderId: string): Promise<Result>;
-    confirmPaymentByDevice(deviceId: string, orderId: string): Promise<Result>;
     countVouchersByProgram(programCode: string): Promise<bigint>;
     createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, kmDiscountAmount: bigint, voucherDiscountAmount: bigint, hmac: string): Promise<Result>;
     createPromotion(deviceId: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_4>;
@@ -506,7 +505,7 @@ export interface backendInterface {
     listMyVouchers(email: string): Promise<Array<Voucher>>;
     listOrders(deviceId: string): Promise<Array<Order>>;
     listPaidOrdersForPickup(): Promise<Array<Order>>;
-    listPendingPaymentOrders(restaurantId: string, deviceId: string): Promise<Array<Order>>;
+    listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
     listPromotions(deviceId: string): Promise<Result_11>;
     listRegistrationPromos(deviceId: string): Promise<Result_10>;
     listRestaurants(): Promise<Array<Restaurant>>;

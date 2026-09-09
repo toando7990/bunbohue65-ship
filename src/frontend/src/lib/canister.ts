@@ -75,9 +75,8 @@ export async function getOrderStatus(
 export async function listPendingPaymentOrders(
   actor: Backend,
   restaurantId: string,
-  deviceId = "",
 ): Promise<Order[]> {
-  return actor.listPendingPaymentOrders(restaurantId, deviceId);
+  return actor.listPendingPaymentOrders(restaurantId);
 }
 
 // ---- Driver pickup queue (today's paid+confirmed orders, no PII for non-admin) ----
@@ -99,15 +98,10 @@ export async function markPickedUp(
 // These are gated by the caller's device role (paymentQueue/accounting) instead
 // of HMAC, so the enterprise device pages can perform manual operations. Admin
 // passes regardless; enterprise devices pass their bound deviceId.
-
-// Payment-queue role: manually mark an order's payment as #paid.
-export async function confirmPaymentByDevice(
-  actor: Backend,
-  deviceId: string,
-  orderId: string,
-): Promise<Order> {
-  return unwrap(await actor.confirmPaymentByDevice(deviceId, orderId));
-}
+//
+// confirmPaymentByDevice (payment-queue role) đã XOÁ HẲN — xem giải thích ở
+// mixins/core-api.mo (lỗ hổng tài chính: đánh dấu #paid không qua bất kỳ đối
+// chiếu nào). /driver là nơi duy nhất xử lý thanh toán.
 
 // Accounting role: manually clean up (cancel) an order.
 export async function cleanupOrderByDevice(

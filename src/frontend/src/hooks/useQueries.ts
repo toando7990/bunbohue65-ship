@@ -9,7 +9,6 @@ import {
   addRestaurant as addRestaurantFn,
   cleanupExpiredActivations as cleanupFn,
   cleanupOrderByDevice as cleanupOrderByDeviceFn,
-  confirmPaymentByDevice as confirmPaymentByDeviceFn,
   countVouchersByProgram as countVouchersByProgramFn,
   createPromotion as createPromotionFn,
   createRegistrationPromo as createRegistrationPromoFn,
@@ -43,7 +42,6 @@ import {
   listMenus as listMenusFn,
   listMyVouchers as listMyVouchersFn,
   listOrders as listOrdersFn,
-  listPendingPaymentOrders as listPendingPaymentOrdersFn,
   listPromotions as listPromotionsFn,
   listRegistrationPromos as listRegistrationPromosFn,
   listRestaurants as listRestaurantsFn,
@@ -394,41 +392,11 @@ export function useCallerHasEnterpriseRole(
   });
 }
 
-// Orders awaiting payment for a restaurant — the payment-queue module's data
-// source. Scoped to the device's attached restaurant by the caller.
-export function useListPendingPaymentOrders(
-  restaurantId: string | undefined,
-  deviceId?: string,
-  refetchIntervalMs?: number,
-) {
-  const { actor, isFetching } = useActorOrNull();
-  return useQuery({
-    queryKey: ["pendingPaymentOrders", restaurantId, deviceId],
-    queryFn: () =>
-      actor && restaurantId
-        ? listPendingPaymentOrdersFn(actor, restaurantId, deviceId)
-        : Promise.resolve([]),
-    enabled: !!actor && !isFetching && !!restaurantId,
-    refetchInterval: refetchIntervalMs,
-  });
-}
-
-// Payment-queue role: manually mark an order's payment as #paid. deviceId is
-// the payment-queue device's bound id.
-export function useConfirmPaymentByDevice(deviceId?: string) {
-  const qc = useQueryClient();
-  const { actor } = useActorOrNull();
-  return useMutation({
-    mutationFn: (orderId: string) => {
-      if (!actor) throw new Error("Actor not ready");
-      return confirmPaymentByDeviceFn(actor, deviceId ?? "", orderId);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pendingPaymentOrders"] });
-      qc.invalidateQueries({ queryKey: ["orders"] });
-    },
-  });
-}
+// useListPendingPaymentOrders/useConfirmPaymentByDevice (vai trò "Hàng đợi
+// thanh toán") đã XOÁ HẲN — xem giải thích ở mixins/core-api.mo (lỗ hổng tài
+// chính: đánh dấu #paid không qua bất kỳ đối chiếu nào). /driver là nơi duy
+// nhất xử lý thanh toán, dùng listPendingPaymentOrders (canister, đã khôi
+// phục về đúng 1 tham số) qua VPS worker, không qua hook này.
 
 // Accounting role: manually clean up (cancel) an order.
 export function useCleanupOrderByDevice(deviceId?: string) {

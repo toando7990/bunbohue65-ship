@@ -5,13 +5,8 @@ import { EnterpriseActivationForm } from "@/components/EnterpriseActivationForm"
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Layout } from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
-import {
-  ENTERPRISE_ROLE_LABELS,
-  useAuth,
-  useEnterpriseRole,
-} from "@/hooks/useAuth";
+import { useAuth, useEnterpriseRole } from "@/hooks/useAuth";
 import { loadEnterpriseActivation } from "@/lib/enterprise-activation";
-import { AccountingPage } from "@/pages/AccountingPage";
 import { AdminPanel } from "@/pages/AdminPanel";
 import { AdminPromoDashboard } from "@/pages/AdminPromoDashboard";
 import { AnalyticsDashboard } from "@/pages/AnalyticsDashboard";
@@ -19,6 +14,7 @@ import CounterOrder from "@/pages/CounterOrder";
 import CreateOrder from "@/pages/CreateOrder";
 import { DeviceManager } from "@/pages/DeviceManager";
 import { DriverPaymentScreen } from "@/pages/DriverPaymentScreen";
+import { EnterpriseManagementPage } from "@/pages/EnterpriseManagementPage";
 import GioiThieu from "@/pages/GioiThieu";
 import GrabGuide from "@/pages/GrabGuide";
 import { MenuManager } from "@/pages/MenuManager";
@@ -26,13 +22,11 @@ import OrderHistory from "@/pages/OrderHistory";
 import OrderList from "@/pages/OrderList";
 import OrderTracker from "@/pages/OrderTracker";
 import OrderingPartners from "@/pages/OrderingPartners";
-import { PaymentQueuePage } from "@/pages/PaymentQueuePage";
 import Profile from "@/pages/Profile";
 import PromotionManager from "@/pages/PromotionManager";
 import RegistrationPromoManager from "@/pages/RegistrationPromoManager";
 import RestaurantManager from "@/pages/RestaurantManager";
 import SalesPromoManager from "@/pages/SalesPromoManager";
-import { SalesPromoReportingPage } from "@/pages/SalesPromoReportingPage";
 import {
   Outlet,
   RouterProvider,
@@ -102,24 +96,33 @@ function AdminGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Enterprise gate — device-role gated. Access is scoped to a single enterprise
-// device role: each enterprise role only sees its own module. A device that is
-// not yet activated sees the enterprise activation form; a device bound to a
-// different role (or a non-enterprise device) is blocked. Admin passes
-// regardless (the backend short-circuits isAdmin on empty deviceId). Unlike the
-// admin gate, this does NOT require Internet Identity — enterprise devices are
-// authorized by their bound device role, not by II auth.
+// Enterprise gate — device-role gated. Access is scoped to enterprise device
+// role(s): mỗi module chỉ cho phép 1 hoặc nhiều role cụ thể (requiredRole có
+// thể là 1 role hoặc mảng nhiều role — dùng cho trang gộp "Quản lý thiết bị
+// doanh nghiệp", nơi CẢ #accounting lẫn #salesPromoReporting đều vào được
+// cùng 1 route, nhưng mỗi thiết bị chỉ thấy đúng module theo role của nó,
+// xem EnterpriseManagementPage.tsx). A device that is not yet activated sees
+// the enterprise activation form; a device bound to a role NOT in the allowed
+// set (or a non-enterprise device) is blocked. Admin passes regardless (the
+// backend short-circuits isAdmin on empty deviceId). Unlike the admin gate,
+// this does NOT require Internet Identity — enterprise devices are authorized
+// by their bound device role, not by II auth.
 function EnterpriseGate({
   requiredRole,
   moduleTitle,
   moduleDescription,
   children,
 }: {
-  requiredRole: EnterpriseRole;
+  requiredRole: EnterpriseRole | EnterpriseRole[];
   moduleTitle: string;
   moduleDescription: string;
-  children?: React.ReactNode;
+  children?:
+    | React.ReactNode
+    | ((role: EnterpriseRole, isAdmin: boolean) => React.ReactNode);
 }) {
+  const allowedRoles = Array.isArray(requiredRole)
+    ? requiredRole
+    : [requiredRole];
   const { isAdmin, isAdminLoading } = useAuth();
   const [activationVersion, setActivationVersion] = useState(0);
   // activationVersion forces a re-render after the device is activated so the
@@ -142,56 +145,60 @@ function EnterpriseGate({
   }
 
   // Admin passes regardless of device binding (isAdmin short-circuits in the
-  // backend device-role gating methods).
+  // backend device-role gating methods). Admin sees the FIRST allowed role's
+  // module by default when children is a function (module gộp) — trang gộp
+  // tự cung cấp cách chuyển đổi giữa các role cho admin nếu cần.
   if (isAdmin) {
     return (
       <section
         className="bbh-enterprise-theme mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10"
         data-ocid="enterprise.page"
       >
-        {children ? (
-          children
-        ) : (
-          <>
-            <div className="flex flex-col gap-1">
-              <h1
-                className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
-                data-ocid="enterprise.title"
-              >
-                {moduleTitle}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {moduleDescription}
-              </p>
-            </div>
-            <div
-              className="mt-6 rounded-lg border border-border bg-card p-6 shadow-panel"
-              data-ocid="enterprise.placeholder"
-            >
-              <p className="text-sm text-muted-foreground">
-                Mô-đun {moduleTitle} đang được triển khai.
-              </p>
-            </div>
-          </>
-        )}
+        {typeof children === "function"
+          ? children(allowedRoles[0], true)
+          : (children ?? (
+              <>
+                <div className="flex flex-col gap-1">
+                  <h1
+                    className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
+                    data-ocid="enterprise.title"
+                  >
+                    {moduleTitle}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    {moduleDescription}
+                  </p>
+                </div>
+                <div
+                  className="mt-6 rounded-lg border border-border bg-card p-6 shadow-panel"
+                  data-ocid="enterprise.placeholder"
+                >
+                  <p className="text-sm text-muted-foreground">
+                    Mô-đun {moduleTitle} đang được triển khai.
+                  </p>
+                </div>
+              </>
+            ))}
       </section>
     );
   }
 
   // Non-admin enterprise device: must be activated first. Show the activation
-  // form (bound to this module's role) until the device is bound.
+  // form (bound to the FIRST allowed role as the displayed label — chỉ là
+  // nhãn hiển thị lúc chưa kích hoạt, role THẬT được server gán theo đúng mã
+  // admin đã tạo, không phụ thuộc nhãn này).
   if (!activation) {
     return (
       <EnterpriseActivationForm
-        expectedRole={requiredRole as unknown as DeviceRole}
-        expectedRoleLabel={ENTERPRISE_ROLE_LABELS[requiredRole]}
+        expectedRole={allowedRoles[0] as unknown as DeviceRole}
+        expectedRoleLabel={moduleTitle}
         onActivated={() => setActivationVersion((v) => v + 1)}
       />
     );
   }
 
-  // Device activated but bound to a different role — block.
-  if (enterpriseRole !== requiredRole) {
+  // Device activated but bound to a role NOT in the allowed set — block.
+  if (!enterpriseRole || !allowedRoles.includes(enterpriseRole)) {
     return (
       <section
         className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6"
@@ -201,11 +208,9 @@ function EnterpriseGate({
           Không có quyền truy cập
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Thiết bị của bạn không được gắn vai trò{" "}
-          <span className="font-semibold text-foreground">
-            {ENTERPRISE_ROLE_LABELS[requiredRole]}
-          </span>
-          . Vui lòng liên hệ quản trị viên.
+          Thiết bị của bạn không được gắn vai trò phù hợp để dùng{" "}
+          <span className="font-semibold text-foreground">{moduleTitle}</span>.
+          Vui lòng liên hệ quản trị viên.
         </p>
       </section>
     );
@@ -216,29 +221,31 @@ function EnterpriseGate({
       className="bbh-enterprise-theme mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10"
       data-ocid="enterprise.page"
     >
-      {children ? (
-        children
-      ) : (
-        <>
-          <div className="flex flex-col gap-1">
-            <h1
-              className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
-              data-ocid="enterprise.title"
-            >
-              {moduleTitle}
-            </h1>
-            <p className="text-sm text-muted-foreground">{moduleDescription}</p>
-          </div>
-          <div
-            className="mt-6 rounded-lg border border-border bg-card p-6 shadow-panel"
-            data-ocid="enterprise.placeholder"
-          >
-            <p className="text-sm text-muted-foreground">
-              Mô-đun {moduleTitle} đang được triển khai.
-            </p>
-          </div>
-        </>
-      )}
+      {typeof children === "function"
+        ? children(enterpriseRole, false)
+        : (children ?? (
+            <>
+              <div className="flex flex-col gap-1">
+                <h1
+                  className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
+                  data-ocid="enterprise.title"
+                >
+                  {moduleTitle}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {moduleDescription}
+                </p>
+              </div>
+              <div
+                className="mt-6 rounded-lg border border-border bg-card p-6 shadow-panel"
+                data-ocid="enterprise.placeholder"
+              >
+                <p className="text-sm text-muted-foreground">
+                  Mô-đun {moduleTitle} đang được triển khai.
+                </p>
+              </div>
+            </>
+          ))}
     </section>
   );
 }
@@ -408,44 +415,21 @@ const adminPromoDashboardRoute = createRoute({
   ),
 });
 
-const enterprisePaymentQueueRoute = createRoute({
+const enterpriseManagementRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/enterprise/payment-queue",
+  path: "/enterprise/management",
   component: () => (
     <EnterpriseGate
-      requiredRole={EnterpriseRole.paymentQueue}
-      moduleTitle="Hàng đợi thanh toán"
-      moduleDescription="Danh sách đơn chờ thanh toán của nhà hàng được gắn."
+      requiredRole={[
+        EnterpriseRole.accounting,
+        EnterpriseRole.salesPromoReporting,
+      ]}
+      moduleTitle="Quản lý thiết bị doanh nghiệp"
+      moduleDescription="Kế toán và báo cáo bán hàng & khuyến mại — số liệu tổng hợp trên toàn bộ nhà hàng."
     >
-      <PaymentQueuePage />
-    </EnterpriseGate>
-  ),
-});
-
-const enterpriseAccountingRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/enterprise/accounting",
-  component: () => (
-    <EnterpriseGate
-      requiredRole={EnterpriseRole.accounting}
-      moduleTitle="Kế toán"
-      moduleDescription="Dọn đơn, phát hành hoá đơn và tra cứu đơn hàng trong phạm vi nhà hàng được gắn."
-    >
-      <AccountingPage />
-    </EnterpriseGate>
-  ),
-});
-
-const enterpriseSalesReportingRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/enterprise/sales-reporting",
-  component: () => (
-    <EnterpriseGate
-      requiredRole={EnterpriseRole.salesPromoReporting}
-      moduleTitle="Báo cáo bán hàng & KM"
-      moduleDescription="Quản lý khuyến mại, theo dõi KM và báo cáo phân tích bán hàng."
-    >
-      <SalesPromoReportingPage />
+      {(role, isAdmin) => (
+        <EnterpriseManagementPage role={role} isAdmin={isAdmin} />
+      )}
     </EnterpriseGate>
   ),
 });
@@ -471,9 +455,7 @@ const router = createRouter({
     adminSalesPromoRoute,
     adminAnalyticsRoute,
     adminPromoDashboardRoute,
-    enterprisePaymentQueueRoute,
-    enterpriseAccountingRoute,
-    enterpriseSalesReportingRoute,
+    enterpriseManagementRoute,
   ]),
   defaultPreload: "intent",
 });

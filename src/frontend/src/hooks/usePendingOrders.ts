@@ -1,21 +1,25 @@
 // Poll listPendingPaymentOrders every 5s for DriverPaymentScreen.
 // Mobile-first: returns flat list ready for QR-focused driver UI.
+//
+// SỬA (đã bỏ vai trò doanh nghiệp "Hàng đợi thanh toán" — xem
+// mixins/core-api.mo): listPendingPaymentOrders khôi phục về ĐÚNG 1 tham
+// số (restaurantId), không còn deviceId/role gating nữa. Bản trước gọi
+// VỚI deviceId="" (không truyền) — dưới logic role-gating cũ, deviceId
+// rỗng KHÔNG CÓ role nào, khiến hàm LUÔN trả về mảng rỗng — đây chính là
+// nguyên nhân "Hàng đợi thanh toán" không hiển thị đơn nào ở /driver.
 
 import { createActor } from "@/backend";
 import { listPaidOrdersForPickup as listPaidOrdersForPickupFn } from "@/lib/canister";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 
-export function usePendingOrders(
-  restaurantId: string | undefined,
-  deviceId?: string,
-) {
+export function usePendingOrders(restaurantId: string | undefined) {
   const { actor, isFetching } = useActor(createActor);
   return useQuery({
-    queryKey: ["orders", "pending", restaurantId, deviceId],
+    queryKey: ["orders", "pending", restaurantId],
     queryFn: async () => {
       if (!actor || !restaurantId) return [];
-      return actor.listPendingPaymentOrders(restaurantId, deviceId ?? "");
+      return actor.listPendingPaymentOrders(restaurantId);
     },
     enabled: !!actor && !isFetching && !!restaurantId,
     refetchInterval: 5000,

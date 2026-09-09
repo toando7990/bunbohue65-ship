@@ -290,7 +290,6 @@ export interface _SERVICE {
   'changeOrderRestaurant' : ActorMethod<[string, string, string], Result>,
   'cleanupExpiredActivations' : ActorMethod<[], bigint>,
   'cleanupOrderByDevice' : ActorMethod<[string, string], Result>,
-  'confirmPaymentByDevice' : ActorMethod<[string, string], Result>,
   'countVouchersByProgram' : ActorMethod<[string], bigint>,
   'createOrder' : ActorMethod<
     [
@@ -401,7 +400,7 @@ export interface _SERVICE {
   'listMyVouchers' : ActorMethod<[string], Array<Voucher>>,
   'listOrders' : ActorMethod<[string], Array<Order>>,
   'listPaidOrdersForPickup' : ActorMethod<[], Array<Order>>,
-  'listPendingPaymentOrders' : ActorMethod<[string, string], Array<Order>>,
+  'listPendingPaymentOrders' : ActorMethod<[string], Array<Order>>,
   'listPromotions' : ActorMethod<[string], Result_11>,
   'listRegistrationPromos' : ActorMethod<[string], Result_10>,
   'listRestaurants' : ActorMethod<[], Array<Restaurant>>,

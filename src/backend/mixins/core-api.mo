@@ -180,18 +180,15 @@ mixin (
   // read it (staff must get it verbally from whoever is physically picking up
   // the order), so it is stripped server-side here, not just hidden in the UI.
   //
-  // Enterprise gating: this endpoint is owned by the payment-queue role. A
-  // device bound to #paymentQueue (or an admin) may call it; any other caller
-  // receives an empty list. The payment-queue device still gets pickupCode
-  // hidden (it is a non-admin caller), but sees the pending orders to confirm
-  // payment.
+  // KHÔI PHỤC (đã bỏ vai trò doanh nghiệp "Hàng đợi thanh toán" — route
+  // /enterprise/payment-queue + role #paymentQueue đã gỡ hoàn toàn): hàm
+  // này KHÔNG còn yêu cầu deviceId/role gating nữa — /driver (qua VPS
+  // worker, gọi ẩn danh, KHÔNG qua Internet Identity) là nguồn DUY NHẤT
+  // gọi hàm này cho luồng thanh toán thật, bảo vệ bằng pickupCode (ở
+  // routes/qr.js phía VPS) chứ không phải role thiết bị.
   public shared ({ caller }) func listPendingPaymentOrders(
     restaurantId : Text,
-    deviceId : Text,
   ) : async [CoreTypes.Order] {
-    if (not AccessControl.isAdmin(accessControlState, caller) and not DevicesLib.deviceHasRole(state.devices, deviceId, #paymentQueue)) {
-      return [];
-    };
     let raw = CoreLib.listPendingPaymentOrders(state, restaurantId);
     if (AccessControl.isAdmin(accessControlState, caller)) {
       raw;
@@ -329,20 +326,15 @@ mixin (
   // endpoints let the enterprise device roles perform their manual operations,
   // gated by the caller's device role instead of HMAC. The existing HMAC
   // endpoints are left unchanged for the VPS.
-
-  // Payment-queue role: mark an order's payment as #paid manually. Gated to a
-  // #paymentQueue device (or admin). Delegates to the same apply logic the VPS
-  // endpoint uses, so a manual confirmation transitions a #confirmed order to
-  // #pickedUp exactly like an automated #paid update.
-  public shared ({ caller }) func confirmPaymentByDevice(
-    deviceId : Text,
-    orderId : Text,
-  ) : async Result.Result<CoreTypes.Order, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller) and not DevicesLib.deviceHasRole(state.devices, deviceId, #paymentQueue)) {
-      return #err("Payment queue role required");
-    };
-    HmacLib.applyPaymentStatus(state.orders, orderId, #paid, Time.now());
-  };
+  //
+  // XOÁ (đã bỏ vai trò doanh nghiệp "Hàng đợi thanh toán" theo yêu cầu — xem
+  // listPendingPaymentOrders ở trên): confirmPaymentByDevice(deviceId, orderId)
+  // — hàm này KHÔNG CÓ BẤT KỲ đối chiếu nào (không QR, không webhook Tingee,
+  // không xác nhận ảnh) trước khi đánh dấu 1 đơn là #paid — chỉ dựa vào nhân
+  // viên tự bấm xác nhận. Đây là lỗ hổng tài chính thật (nhân viên có thể tự
+  // đánh dấu bất kỳ đơn nào "đã thanh toán" mà khách chưa hề chuyển khoản) —
+  // xoá hẳn khỏi canister, không chỉ ẩn giao diện, để không ai còn gọi được
+  // qua API dù không còn route UI nào dẫn tới nó.
 
   // Accounting role: manually clean up (cancel) an order. Gated to a
   // #accounting device (or admin). Delegates to the same cancel logic the VPS

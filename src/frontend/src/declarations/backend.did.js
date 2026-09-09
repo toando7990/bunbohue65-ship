@@ -349,7 +349,6 @@ export const idlService = IDL.Service({
     ),
   'cleanupExpiredActivations' : IDL.Func([], [IDL.Nat], []),
   'cleanupOrderByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
-  'confirmPaymentByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
   'countVouchersByProgram' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
   'createOrder' : IDL.Func(
       [
@@ -481,7 +480,7 @@ export const idlService = IDL.Service({
   'listOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
   'listPaidOrdersForPickup' : IDL.Func([], [IDL.Vec(Order)], []),
   'listPendingPaymentOrders' : IDL.Func(
-      [IDL.Text, IDL.Text],
+      [IDL.Text],
       [IDL.Vec(Order)],
       [],
     ),
@@ -944,7 +943,6 @@ export const idlFactory = ({ IDL }) => {
       ),
     'cleanupExpiredActivations' : IDL.Func([], [IDL.Nat], []),
     'cleanupOrderByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
-    'confirmPaymentByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'countVouchersByProgram' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     'createOrder' : IDL.Func(
         [
@@ -1080,7 +1078,7 @@ export const idlFactory = ({ IDL }) => {
     'listOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
     'listPaidOrdersForPickup' : IDL.Func([], [IDL.Vec(Order)], []),
     'listPendingPaymentOrders' : IDL.Func(
-        [IDL.Text, IDL.Text],
+        [IDL.Text],
         [IDL.Vec(Order)],
         [],
       ),

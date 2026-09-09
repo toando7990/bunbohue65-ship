@@ -503,7 +503,6 @@ export interface backendInterface {
     changeOrderRestaurant(orderId: string, newRestaurantId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
     cleanupOrderByDevice(deviceId: string, orderId: string): Promise<Result>;
-    confirmPaymentByDevice(deviceId: string, orderId: string): Promise<Result>;
     countVouchersByProgram(programCode: string): Promise<bigint>;
     createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, kmDiscountAmount: bigint, voucherDiscountAmount: bigint, hmac: string): Promise<Result>;
     createPromotion(deviceId: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_4>;
@@ -555,7 +554,7 @@ export interface backendInterface {
     listMyVouchers(email: string): Promise<Array<Voucher>>;
     listOrders(deviceId: string): Promise<Array<Order>>;
     listPaidOrdersForPickup(): Promise<Array<Order>>;
-    listPendingPaymentOrders(restaurantId: string, deviceId: string): Promise<Array<Order>>;
+    listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
     listPromotions(deviceId: string): Promise<Result_11>;
     listRegistrationPromos(deviceId: string): Promise<Result_10>;
     listRestaurants(): Promise<Array<Restaurant>>;
@@ -791,20 +790,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.cleanupOrderByDevice(arg0, arg1);
-            return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async confirmPaymentByDevice(arg0: string, arg1: string): Promise<Result> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.confirmPaymentByDevice(arg0, arg1);
-                return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.confirmPaymentByDevice(arg0, arg1);
             return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -1438,17 +1423,17 @@ export class Backend implements backendInterface {
             return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
         }
     }
-    async listPendingPaymentOrders(arg0: string, arg1: string): Promise<Array<Order>> {
+    async listPendingPaymentOrders(arg0: string): Promise<Array<Order>> {
         if (this.processError) {
             try {
-                const result = await this.actor.listPendingPaymentOrders(arg0, arg1);
+                const result = await this.actor.listPendingPaymentOrders(arg0);
                 return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.listPendingPaymentOrders(arg0, arg1);
+            const result = await this.actor.listPendingPaymentOrders(arg0);
             return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
         }
     }
