@@ -3,10 +3,11 @@
 // Mobile-first cards, large touch targets, Vietnamese labels.
 
 import { BookingStatus, type Order, PaymentStatus } from "@/backend";
+import { HighlightMatch, matchesQuery } from "@/components/HighlightMatch";
 import { ManualPaymentPhotoDialog } from "@/components/ManualPaymentPhotoDialog";
 import { getManualPhotoConfirmEligibility } from "@/lib/vps-client";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, Clock, ListOrdered, Loader2, ShoppingBag } from "lucide-react";
+import { Camera, Clock, Loader2, Search, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 
 interface PaymentQueueProps {
@@ -89,7 +90,13 @@ export function PaymentQueue({
   const [photoConfirmOrder, setPhotoConfirmOrder] = useState<Order | null>(
     null,
   );
+  const [searchQuery, setSearchQuery] = useState("");
   const pending = orders.filter((o) => isPending(o) && isToday(o.createdAt));
+  const filtered = pending.filter(
+    (o) =>
+      matchesQuery(o.cusName, searchQuery) ||
+      matchesQuery(o.cusPhone, searchQuery),
+  );
 
   // Đơn nào đã TỪNG có QR — dùng để bật/tắt nút "Xác nhận thủ công bằng
   // ảnh" (mặc định TẮT, chỉ bật sau khi đơn đã từng có QR — theo đúng
@@ -106,7 +113,7 @@ export function PaymentQueue({
   });
   // Đơn quá hạn (>60 phút) nổi lên đầu; trong cùng nhóm (quá hạn hoặc chưa),
   // vẫn giữ FIFO — createdAt ascending (cũ nhất trước).
-  const sorted = [...pending].sort((a, b) => {
+  const sorted = [...filtered].sort((a, b) => {
     const aOverdue = isOverdue(a.createdAt) ? 0 : 1;
     const bOverdue = isOverdue(b.createdAt) ? 0 : 1;
     if (aOverdue !== bOverdue) return aOverdue - bOverdue;
@@ -117,15 +124,23 @@ export function PaymentQueue({
       className="mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8"
       data-ocid="queue.section"
     >
-      <header className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <ListOrdered className="h-5 w-5 text-primary" aria-hidden="true" />
-          <h1 className="font-display text-xl font-bold tracking-tight md:text-2xl">
-            Hàng đợi thanh toán
-          </h1>
+      <header className="mb-4 flex items-center gap-3">
+        <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5">
+          <Search
+            className="h-4 w-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Tìm theo tên hoặc SĐT khách…"
+            data-ocid="queue.search_input"
+            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+          />
         </div>
         <span
-          className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary"
+          className="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary"
           data-ocid="queue.count"
         >
           {sorted.length} đơn
@@ -160,13 +175,21 @@ export function PaymentQueue({
             className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground"
             aria-hidden="true"
           >
-            <ShoppingBag className="h-7 w-7" />
+            {searchQuery.trim() ? (
+              <Search className="h-7 w-7" />
+            ) : (
+              <ShoppingBag className="h-7 w-7" />
+            )}
           </div>
           <h2 className="font-display text-lg font-semibold">
-            Không có đơn chờ thanh toán
+            {searchQuery.trim()
+              ? `Không tìm thấy đơn khớp "${searchQuery.trim()}"`
+              : "Không có đơn chờ thanh toán"}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Hàng đợi trống. Đơn mới sẽ xuất hiện tự động mỗi 5 giây.
+            {searchQuery.trim()
+              ? "Thử tìm theo tên hoặc SĐT khác."
+              : "Hàng đợi trống. Đơn mới sẽ xuất hiện tự động mỗi 5 giây."}
           </p>
         </div>
       )}
@@ -217,14 +240,25 @@ export function PaymentQueue({
                       )}
                     </div>
                     <h3 className="mt-2 truncate font-display text-base font-semibold text-foreground">
-                      {order.cusName || "Khách vãng lai"}
+                      {order.cusName ? (
+                        <HighlightMatch
+                          text={order.cusName}
+                          query={searchQuery}
+                        />
+                      ) : (
+                        "Khách vãng lai"
+                      )}
                     </h3>
                     <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
                       {order.orderId}
                     </p>
                     {order.cusPhone && (
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        SĐT: {order.cusPhone}
+                        SĐT:{" "}
+                        <HighlightMatch
+                          text={order.cusPhone}
+                          query={searchQuery}
+                        />
                       </p>
                     )}
                     {order.items && order.items.length > 0 && (

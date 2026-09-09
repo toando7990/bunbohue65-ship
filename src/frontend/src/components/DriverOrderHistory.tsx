@@ -1,7 +1,15 @@
-// DriverOrderHistory — tab "Lịch sử đơn hàng" trên /driver, cạnh "Hàng đợi
-// thanh toán". Cho nhân viên xem lại đơn của ĐÚNG nhà hàng mình đang trực,
-// theo 3 mốc: Hôm nay / Tuần này / Tháng này — không cần đăng nhập admin,
-// chỉ cần thiết bị đã kích hoạt (đã biết restaurantId).
+// DriverOrderHistory — nội dung 1 trong 3 mốc lịch sử (Hôm nay/Tuần này/
+// Tháng này) trên /driver. Cho nhân viên xem lại đơn của ĐÚNG nhà hàng
+// mình đang trực — không cần đăng nhập admin, chỉ cần thiết bị đã kích
+// hoạt (đã biết restaurantId).
+//
+// SỬA (theo yêu cầu tối ưu giao diện đã duyệt): 3 nút chọn mốc thời gian
+// KHÔNG CÒN nằm trong component này — đã chuyển ra thanh điều hướng dưới
+// dùng chung với "Hàng đợi" (xem DriverPaymentScreen.tsx). Component này
+// giờ CHỈ nhận `period` qua props (không tự quản lý state period nữa).
+// Thêm mới: ô tìm kiếm theo tên/SĐT (bôi sáng phần khớp — cùng cách đã
+// làm ở PaymentQueue.tsx), và tiêu đề trang + số liệu tổng hợp hiện GỌN
+// CÙNG 1 HÀNG (thay cho khối lưới 2 ô lớn trước đây).
 //
 // Nguồn dữ liệu: VPS GET /orders/restaurant-history (routes/restaurant-history.js)
 // — KHÔNG dùng canister vì canister chỉ giữ đơn trong ngày (pruneOldOrders),
@@ -10,12 +18,13 @@
 // totalOrders/orders: TẤT CẢ đơn trong khoảng (mọi trạng thái). totalPaidAmount:
 // CHỈ cộng đơn đã thanh toán — đúng nghĩa "tổng số tiền đơn đã thanh toán".
 
+import { matchesQuery } from "@/components/HighlightMatch";
 import { OrderCard } from "@/components/OrderCard";
 import { toOrder } from "@/lib/order-mapping";
 import { getRestaurantHistory } from "@/lib/vps-client";
 import type { RestaurantHistoryPeriod } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { History, Loader2, Receipt, Wallet } from "lucide-react";
+import { History, Loader2, Search } from "lucide-react";
 import { useState } from "react";
 
 const PERIOD_LABELS: Record<RestaurantHistoryPeriod, string> = {
@@ -34,10 +43,12 @@ function formatVnd(n: number): string {
 
 export function DriverOrderHistory({
   restaurantId,
+  period,
 }: {
   restaurantId: string;
+  period: RestaurantHistoryPeriod;
 }) {
-  const [period, setPeriod] = useState<RestaurantHistoryPeriod>("today");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["restaurantHistory", restaurantId, period],
@@ -46,74 +57,59 @@ export function DriverOrderHistory({
     refetchOnWindowFocus: false,
   });
 
-  const results = (data?.orders ?? []).map(toOrder);
+  const results = (data?.orders ?? [])
+    .map(toOrder)
+    .filter(
+      (o) =>
+        matchesQuery(o.cusName, searchQuery) ||
+        matchesQuery(o.cusPhone, searchQuery),
+    );
 
   return (
     <div
       className="mx-auto w-full max-w-2xl px-4 py-4 md:px-6"
       data-ocid="driver_history.page"
     >
-      {/* Chọn mốc thời gian */}
-      <div
-        className="mb-4 flex gap-1.5"
-        role="tablist"
-        aria-label="Chọn khoảng thời gian"
-        data-ocid="driver_history.period_tabs"
-      >
-        {(Object.keys(PERIOD_LABELS) as RestaurantHistoryPeriod[]).map((p) => {
-          const active = p === period;
-          return (
-            <button
-              key={p}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setPeriod(p)}
-              data-ocid={`driver_history.period_tab.${p}`}
-              className={`min-h-[40px] flex-1 rounded-full border px-3 py-2 text-sm font-medium transition-smooth ${
-                active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground hover:bg-secondary"
-              }`}
-            >
-              {PERIOD_LABELS[p]}
-            </button>
-          );
-        })}
+      {/* Tiêu đề trang + số liệu tổng hợp — cùng 1 hàng (thay khối lưới
+          2 ô lớn trước đây, gọn hơn nhiều). */}
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="font-display text-lg font-bold tracking-tight">
+          {PERIOD_LABELS[period]}
+        </h1>
+        <div
+          className="flex items-center gap-2 text-xs"
+          data-ocid="driver_history.stats"
+        >
+          <span
+            className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 font-semibold text-muted-foreground"
+            data-ocid="driver_history.total_orders"
+          >
+            {isLoading ? "…" : (data?.totalOrders ?? 0)} đơn
+          </span>
+          <span
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 font-semibold text-foreground"
+            data-ocid="driver_history.total_paid"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
+            {isLoading ? "…" : formatVnd(data?.totalPaidAmount ?? 0)} đã TT
+          </span>
+        </div>
       </div>
 
-      {/* Tổng hợp — số đơn + tổng tiền đã thanh toán */}
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <div
-          className="flex items-center gap-2.5 rounded-lg border border-border bg-card p-3"
-          data-ocid="driver_history.total_orders"
-        >
-          <Receipt
-            className="h-5 w-5 shrink-0 text-primary"
-            aria-hidden="true"
-          />
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">Tổng số đơn</p>
-            <p className="font-display text-lg font-bold text-foreground">
-              {isLoading ? "…" : (data?.totalOrders ?? 0)}
-            </p>
-          </div>
-        </div>
-        <div
-          className="flex items-center gap-2.5 rounded-lg border border-border bg-card p-3"
-          data-ocid="driver_history.total_paid"
-        >
-          <Wallet
-            className="h-5 w-5 shrink-0 text-success"
-            aria-hidden="true"
-          />
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">Đã thanh toán</p>
-            <p className="font-display text-lg font-bold text-foreground">
-              {isLoading ? "…" : formatVnd(data?.totalPaidAmount ?? 0)}
-            </p>
-          </div>
-        </div>
+      {/* Ô tìm kiếm — cùng cách đã làm ở PaymentQueue.tsx (Hàng đợi). */}
+      <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5">
+        <Search
+          className="h-4 w-4 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Tìm theo tên hoặc SĐT khách…"
+          data-ocid="driver_history.search_input"
+          className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+        />
       </div>
 
       {/* Danh sách đơn */}
@@ -162,12 +158,21 @@ export function DriverOrderHistory({
           className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center"
           data-ocid="driver_history.empty_state"
         >
-          <History
-            className="h-10 w-10 text-muted-foreground"
-            aria-hidden="true"
-          />
+          {searchQuery.trim() ? (
+            <Search
+              className="h-10 w-10 text-muted-foreground"
+              aria-hidden="true"
+            />
+          ) : (
+            <History
+              className="h-10 w-10 text-muted-foreground"
+              aria-hidden="true"
+            />
+          )}
           <p className="mt-3 text-sm text-muted-foreground">
-            Chưa có đơn hàng nào {PERIOD_LABELS[period].toLowerCase()}.
+            {searchQuery.trim()
+              ? `Không tìm thấy đơn khớp "${searchQuery.trim()}".`
+              : `Chưa có đơn hàng nào ${PERIOD_LABELS[period].toLowerCase()}.`}
           </p>
         </div>
       )}

@@ -10,11 +10,29 @@ import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
 import { usePendingOrders } from "@/hooks/usePendingOrders";
 import { useDevicesByRestaurant, useRestaurants } from "@/hooks/useQueries";
-import { History, ListOrdered, MapPin, Smartphone } from "lucide-react";
+import type { RestaurantHistoryPeriod } from "@/types";
+import {
+  Calendar,
+  CalendarDays,
+  CalendarRange,
+  ListOrdered,
+  MapPin,
+  Smartphone,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const DRIVER_STORAGE_KEY = "bbh_driver_activation";
+
+type DriverTab = "queue" | RestaurantHistoryPeriod;
+
+const NAV_ITEMS: { tab: DriverTab; label: string; icon: typeof ListOrdered }[] =
+  [
+    { tab: "queue", label: "Hàng đợi", icon: ListOrdered },
+    { tab: "today", label: "Hôm nay", icon: CalendarDays },
+    { tab: "week", label: "Tuần này", icon: CalendarRange },
+    { tab: "month", label: "Tháng này", icon: Calendar },
+  ];
 
 function loadStoredActivation(): {
   restaurantId: string;
@@ -47,7 +65,7 @@ export function DriverPaymentScreen() {
   );
   const [deviceName, setDeviceName] = useState<string>(stored?.name ?? "");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [activeTab, setActiveTab] = useState<"queue" | "history">("queue");
+  const [activeTab, setActiveTab] = useState<DriverTab>("queue");
 
   const ordersQuery = usePendingOrders(restaurantId ?? undefined);
   const { data: restaurants } = useRestaurants();
@@ -123,13 +141,10 @@ export function DriverPaymentScreen() {
   }
 
   return (
-    <div
-      className="flex min-h-[calc(100vh-4rem)] flex-col"
-      data-ocid="driver.page"
-    >
+    <div className="flex h-[calc(100vh-4rem)] flex-col" data-ocid="driver.page">
       {/* Device status bar */}
       <div
-        className="border-b border-border bg-card px-4 py-3 md:px-6"
+        className="shrink-0 border-b border-border bg-card px-4 py-3 md:px-6"
         data-ocid="driver.status_bar"
       >
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
@@ -166,47 +181,10 @@ export function DriverPaymentScreen() {
         </div>
       </div>
 
-      {/* Thanh tab: Hàng đợi thanh toán / Lịch sử đơn hàng */}
-      <div
-        className="border-b border-border bg-card px-4 md:px-6"
-        data-ocid="driver.tabs"
-      >
-        <div className="mx-auto flex w-full max-w-2xl gap-1">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "queue"}
-            onClick={() => setActiveTab("queue")}
-            data-ocid="driver.tab.queue"
-            className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-smooth ${
-              activeTab === "queue"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <ListOrdered className="h-4 w-4" aria-hidden="true" />
-            Hàng đợi thanh toán
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "history"}
-            onClick={() => setActiveTab("history")}
-            data-ocid="driver.tab.history"
-            className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-smooth ${
-              activeTab === "history"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <History className="h-4 w-4" aria-hidden="true" />
-            Lịch sử đơn hàng
-          </button>
-        </div>
-      </div>
-
-      {/* Bước 2: hàng đợi thanh toán — tài xế quét QR động Tingee thanh toán */}
-      <div className="flex-1">
+      {/* Bước 2/3: nội dung theo tab đang chọn (Hàng đợi hoặc 1 trong 3
+          mốc lịch sử) — cuộn RIÊNG trong khu vực này, để status bar +
+          bottom nav luôn cố định (không cuộn theo). */}
+      <div className="flex-1 overflow-y-auto">
         {activeTab === "queue" ? (
           <PaymentQueue
             orders={ordersQuery.data ?? []}
@@ -216,9 +194,37 @@ export function DriverPaymentScreen() {
             payingOrderId={activeOrder?.orderId ?? null}
           />
         ) : (
-          <DriverOrderHistory restaurantId={restaurantId} />
+          <DriverOrderHistory restaurantId={restaurantId} period={activeTab} />
         )}
       </div>
+
+      {/* Thanh điều hướng dưới — thay cho 2 tầng tab cũ (tab lớn "Hàng
+          đợi thanh toán"/"Lịch sử đơn hàng" ở đầu trang + 3 nút con
+          "Hôm nay/Tuần này/Tháng này" ẩn bên trong tab Lịch sử). Giờ gộp
+          thành 1 tầng — 4 mục ngang hàng, cố định ở cuối trang (theo
+          yêu cầu tối ưu giao diện đã duyệt). */}
+      <nav
+        className="flex shrink-0 border-t border-border bg-card"
+        data-ocid="driver.bottom_nav"
+      >
+        {NAV_ITEMS.map(({ tab, label, icon: Icon }) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            aria-current={activeTab === tab ? "page" : undefined}
+            data-ocid={`driver.bottom_nav.${tab}`}
+            className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition-smooth ${
+              activeTab === tab
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon className="h-5 w-5" aria-hidden="true" />
+            {label}
+          </button>
+        ))}
+      </nav>
 
       {/* Bước 3: QR full screen overlay — hoạt động mọi lúc */}
       {activeOrder && (
