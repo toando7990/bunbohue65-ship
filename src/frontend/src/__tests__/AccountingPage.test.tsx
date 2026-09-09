@@ -1,22 +1,18 @@
 // Cover tests for the enterprise "Kế toán" (accounting) module.
 //
-// Accepted behavior:
-//   - lookup by order code calls useGetOrder and shows the order's payment
-//     verification image for reconciliation;
+// Accepted behavior (sau khi đổi từ 3-tab tìm kiếm sang bộ lọc khoảng ngày +
+// trạng thái, đọc từ VPS thay vì canister):
+//   - date-range + status filter calls getEnterpriseHistory with the
+//     device's id, the selected date range, and the selected statuses;
 //   - manual cleanup by code calls useCleanupOrderByDevice with the order id;
 //   - manual invoice issuance calls useIssueInvoiceByDevice with
 //     (orderId, invoiceId, pdfUrl).
 //
-// The actor and React Query hooks are mocked; this is component-level coverage
-// of the accounting page, not a real backend call.
+// The actor and React Query hooks are mocked; this is component-level
+// coverage of the accounting page, not a real backend call.
 
-import {
-  BookingStatus,
-  InvoiceStatus,
-  type Order,
-  PaymentStatus,
-} from "@/backend";
 import { AccountingPage } from "@/pages/AccountingPage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   cleanup,
   fireEvent,
@@ -26,16 +22,11 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockGetOrder = vi.fn();
-const mockOrdersByEmail = vi.fn();
-const mockOrders = vi.fn();
 const mockCleanup = vi.fn();
 const mockIssueInvoice = vi.fn();
+const mockGetEnterpriseHistory = vi.fn();
 
 vi.mock("@/hooks/useQueries", () => ({
-  useGetOrder: (...args: unknown[]) => mockGetOrder(...args),
-  useOrdersByEmail: (...args: unknown[]) => mockOrdersByEmail(...args),
-  useOrders: (...args: unknown[]) => mockOrders(...args),
   useCleanupOrderByDevice: () => ({
     mutateAsync: mockCleanup,
     isPending: false,
@@ -44,40 +35,15 @@ vi.mock("@/hooks/useQueries", () => ({
     mutateAsync: mockIssueInvoice,
     isPending: false,
   }),
+  useRestaurants: () => ({
+    data: [{ restaurantId: "R1", name: "Đường Láng" }],
+  }),
 }));
 
-function makeOrder(overrides: Partial<Order> = {}): Order {
-  return {
-    orderId: "ORD-1",
-    restaurantId: "R1",
-    cusName: "Nguyen Van A",
-    cusPhone: "0901234567",
-    cusAddress: "123 Le Loi",
-    cusTaxCode: "",
-    receiverEmail: "a@example.com",
-    pickupCode: "AB23CD",
-    createdAt: 1_700_000_000_000_000_000n,
-    updatedAt: 1_700_000_000_000_000_000n,
-    amount: 100000n,
-    goodsAmount: 90000n,
-    shippingFee: 10000n,
-    taxTotal: 0n,
-    ahamoveOrderId: "AH-1",
-    items: [],
-    paymentStatus: PaymentStatus.paid,
-    bookingStatus: BookingStatus.confirmed,
-    invoiceStatus: InvoiceStatus.none,
-    tingeeQrCode: "",
-    tingeeQrId: "",
-    invoiceId: "",
-    sharedLink: "",
-    pdfUrl: "",
-    paymentVerificationImage: "",
-    kmDiscountAmount: 0n,
-    voucherDiscountAmount: 0n,
-    ...overrides,
-  };
-}
+vi.mock("@/lib/vps-client", () => ({
+  getEnterpriseHistory: (...args: unknown[]) =>
+    mockGetEnterpriseHistory(...args),
+}));
 
 function setActivation() {
   localStorage.setItem(
@@ -90,9 +56,25 @@ function setActivation() {
   );
 }
 
+function renderPage() {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={qc}>
+      <AccountingPage />
+    </QueryClientProvider>,
+  );
+}
+
 describe("AccountingPage enterprise accounting", () => {
   beforeEach(() => {
     localStorage.clear();
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [],
+      count: 0,
+      total: 0,
+    });
   });
 
   afterEach(() => {
@@ -100,37 +82,42 @@ describe("AccountingPage enterprise accounting", () => {
     vi.clearAllMocks();
   });
 
-  it("looks up an order by code and shows its payment verification image", async () => {
+  it("calls getEnterpriseHistory with the device id and default filters on mount", async () => {
     setActivation();
-    mockGetOrder.mockReturnValue({
-      data: makeOrder({
-        orderId: "ORD-1",
-        paymentVerificationImage: "https://img/payment.png",
-      }),
-      isLoading: false,
-    });
 
-    render(<AccountingPage />);
-
-    fireEvent.change(screen.getByTestId("accounting.code_input"), {
-      target: { value: "ORD-1" },
-    });
-    fireEvent.click(screen.getByTestId("accounting.code_search_button"));
+    renderPage();
 
     await waitFor(() => {
-      expect(mockGetOrder).toHaveBeenCalledWith("ORD-1", "dev-acc");
+      expect(mockGetEnterpriseHistory).toHaveBeenCalled();
     });
+    const [deviceIdArg, , , statusesArg] =
+      mockGetEnterpriseHistory.mock.calls[0];
+    expect(deviceIdArg).toBe("dev-acc");
+    // Mặc định: chỉ "Đã thanh toán" được chọn (theo mockup đã duyệt).
+    expect(statusesArg).toEqual(["paid"]);
+  });
 
-    // The order row shows the payment verification image button.
-    expect(screen.getByTestId("accounting.image_button.1")).toBeInTheDocument();
+  it("re-fetches with both statuses when the 'Đã huỷ' chip is toggled on", async () => {
+    setActivation();
+
+    renderPage();
+    await waitFor(() => expect(mockGetEnterpriseHistory).toHaveBeenCalled());
+    mockGetEnterpriseHistory.mockClear();
+
+    fireEvent.click(screen.getByTestId("accounting.status_chip.cancelled"));
+
+    await waitFor(() => {
+      expect(mockGetEnterpriseHistory).toHaveBeenCalled();
+    });
+    const [, , , statusesArg] = mockGetEnterpriseHistory.mock.calls[0];
+    expect(statusesArg.sort()).toEqual(["cancelled", "paid"]);
   });
 
   it("cleans up an order by code via useCleanupOrderByDevice", async () => {
     setActivation();
-    mockGetOrder.mockReturnValue({ data: undefined, isLoading: false });
-    mockCleanup.mockResolvedValue(makeOrder());
+    mockCleanup.mockResolvedValue({});
 
-    render(<AccountingPage />);
+    renderPage();
 
     fireEvent.change(screen.getByTestId("accounting.cleanup_input"), {
       target: { value: "ORD-1" },
@@ -144,10 +131,9 @@ describe("AccountingPage enterprise accounting", () => {
 
   it("issues an invoice manually via useIssueInvoiceByDevice", async () => {
     setActivation();
-    mockGetOrder.mockReturnValue({ data: undefined, isLoading: false });
-    mockIssueInvoice.mockResolvedValue(makeOrder());
+    mockIssueInvoice.mockResolvedValue({});
 
-    render(<AccountingPage />);
+    renderPage();
 
     // Open the invoice dialog by entering an order code.
     fireEvent.change(screen.getByTestId("accounting.invoice_code_input"), {

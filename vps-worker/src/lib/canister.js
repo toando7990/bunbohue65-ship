@@ -60,6 +60,11 @@ const IDL_FACTORY = ({ IDL }) => {
   const InvoiceStatus = IDL.Variant({
     none: IDL.Null, invoiced: IDL.Null, failed: IDL.Null,
   });
+  // EnterpriseRole — dùng cho callerHasEnterpriseRole (kiểm tra role trước
+  // khi trả dữ liệu toàn chuỗi cho route /orders/enterprise-history mới).
+  const EnterpriseRole = IDL.Variant({
+    paymentQueue: IDL.Null, accounting: IDL.Null, salesPromoReporting: IDL.Null,
+  });
   const Order = IDL.Record({
     orderId: IDL.Text,
     restaurantId: IDL.Text,
@@ -142,6 +147,7 @@ const IDL_FACTORY = ({ IDL }) => {
     changeOrderRestaurant: IDL.Func([IDL.Text, IDL.Text, IDL.Text], [ResultOrder], []),
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
     isStoreOpen: IDL.Func([], [IDL.Bool], ['query']),
+    callerHasEnterpriseRole: IDL.Func([IDL.Text, EnterpriseRole], [IDL.Bool], ['query']),
     getMenuForRestaurant: IDL.Func([IDL.Text], [IDL.Vec(MenuItemRecord)], ['query']),
     getPaymentMode: IDL.Func([], [IDL.Text], ['query']),
     getCurrentPromotion: IDL.Func([], [IDL.Opt(Promotion)], ['query']),
@@ -291,6 +297,22 @@ async function isStoreOpen() {
   return await actor.isStoreOpen();
 }
 
+// callerHasEnterpriseRole — query đã có sẵn ở canister (mixins/devices-
+// api.mo), dùng cho route mới /orders/enterprise-history: kiểm tra deviceId
+// có đúng role accounting HAY salesPromoReporting không, TRƯỚC KHI trả về
+// dữ liệu đơn hàng TOÀN BỘ chuỗi (nhạy cảm — tên khách, SĐT, doanh thu mọi
+// nhà hàng) — không dùng HMAC vì đây là thiết bị doanh nghiệp gọi trực tiếp
+// từ trình duyệt, không phải VPS-nội-bộ. Gọi CẢ 2 role (Promise.all) vì
+// canister method chỉ nhận đúng 1 role mỗi lần — chỉ cần 1 trong 2 đúng.
+async function callerHasEnterpriseRole(deviceId) {
+  const actor = getActor();
+  const [isAccounting, isSalesPromoReporting] = await Promise.all([
+    actor.callerHasEnterpriseRole(deviceId, { accounting: null }),
+    actor.callerHasEnterpriseRole(deviceId, { salesPromoReporting: null }),
+  ]);
+  return isAccounting || isSalesPromoReporting;
+}
+
 // listPendingPaymentOrders — UPDATE (KHÔNG PHẢI query — hàm này gọi
 // pruneOldOrders(state) bên trong, ghi/xoá dữ liệu, bắt buộc phải là
 // update). ĐÃ BỊ GHI SAI THÀNH ['query'] 2 LẦN (lần 1: lỗi có sẵn từ
@@ -425,4 +447,5 @@ module.exports = {
   pruneOldOrdersNow,
   getCurrentPromotion,
   isStoreOpen,
+  callerHasEnterpriseRole,
 };

@@ -1,14 +1,19 @@
 // AccountingPage — trang /enterprise/accounting (vai trò Kế toán).
-// 3 khả năng trong phạm vi nhà hàng được gắn:
-//  1. Tra cứu đơn hàng theo mã đơn / email / trạng thái, kèm ẢNH XÁC THỰC
-//     THANH TOÁN (paymentVerificationImage) để kế toán đối chiếu.
-//  2. Dọn dẹp đơn thủ công (cleanupOrderByDevice).
-//  3. Phát hành hoá đơn thủ công (issueInvoiceByDevice).
-// Tất cả gọi qua hook deviceId-scoped với deviceId của thiết bị kế toán
+// 3 khả năng, số liệu TOÀN BỘ chuỗi nhà hàng (KHÔNG gắn theo 1 nhà hàng cụ
+// thể — đã xác nhận: form tạo mã kích hoạt cho vai trò này không có bước
+// chọn nhà hàng, xem components/EnterpriseActivationCodeForm.tsx):
+//  1. Danh sách đơn theo khoảng ngày + trạng thái (Đã thanh toán/Đã huỷ) —
+//     đọc từ VPS (routes/enterprise-history.js, KHÔNG phải canister — canister
+//     chỉ giữ đơn trong ngày, không phù hợp cho khoảng ngày nhiều ngày).
+//     Danh sách tự cập nhật khi đổi bộ lọc, không cần bấm nút tìm kiếm.
+//  2. Dọn dẹp đơn thủ công (cleanupOrderByDevice) — không đổi.
+//  3. Phát hành hoá đơn thủ công (issueInvoiceByDevice) — không đổi.
+// Tất cả gọi qua hook/API deviceId-scoped với deviceId của thiết bị kế toán
 // (lưu trong localStorage theo mẫu bbh_*_activation). Admin gọi với deviceId
-// rỗng vẫn hợp lệ (isAdmin short-circuits ở canister).
+// rỗng vẫn hợp lệ (isAdmin short-circuits ở canister VÀ ở VPS route mới,
+// qua callerHasEnterpriseRole).
 
-import { InvoiceStatus, type Order, PaymentStatus } from "@/backend";
+import { InvoiceStatus, PaymentStatus } from "@/backend";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,13 +33,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -42,39 +40,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useCleanupOrderByDevice,
-  useGetOrder,
   useIssueInvoiceByDevice,
-  useOrders,
-  useOrdersByEmail,
+  useRestaurants,
 } from "@/hooks/useQueries";
 import { loadEnterpriseActivation } from "@/lib/enterprise-activation";
-import {
-  ImageIcon,
-  Loader2,
-  Receipt,
-  Search,
-  ShieldCheck,
-  Trash2,
-} from "lucide-react";
+import { getEnterpriseHistory } from "@/lib/vps-client";
+import { useQuery } from "@tanstack/react-query";
+import { CalendarRange, Loader2, Receipt, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 // Đọc deviceId của thiết bị kế toán đã kích hoạt từ khoá localStorage thống
 // nhất bbh_enterprise_activation (xem lib/enterprise-activation.ts). Rỗng →
-// admin gọi, canister tự cho qua (isAdmin short-circuits).
+// admin gọi, canister/VPS tự cho qua (isAdmin short-circuits).
 function readDeviceId(): string {
   return loadEnterpriseActivation()?.deviceId ?? "";
 }
 
-function formatVnd(amount: bigint): string {
-  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+function formatVnd(amount: number): string {
+  return `${new Intl.NumberFormat("vi-VN").format(amount)}đ`;
 }
 
-function formatDateTime(ns: bigint): string {
-  const ms = Number(ns) / 1_000_000;
+function formatDateTime(ms: number): string {
   return new Intl.DateTimeFormat("vi-VN", {
     day: "2-digit",
     month: "2-digit",
@@ -83,12 +72,19 @@ function formatDateTime(ns: bigint): string {
   }).format(new Date(ms));
 }
 
-const PAYMENT_LABELS: Record<PaymentStatus, string> = {
-  [PaymentStatus.paid]: "Đã thanh toán",
-  [PaymentStatus.unpaid]: "Chưa thanh toán",
-  [PaymentStatus.expired]: "Hết hạn",
-  [PaymentStatus.refunded]: "Đã hoàn tiền",
-};
+// dd/mm/yyyy — định dạng ngày cho <input type="date"> (yyyy-mm-dd) và cho
+// API (dd/mm/yyyy) — 2 chiều chuyển đổi.
+function toInputDateValue(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function inputDateToApiFormat(v: string): string {
+  const [y, m, d] = v.split("-");
+  return `${d}/${m}/${y}`;
+}
 
 const INVOICE_LABELS: Record<InvoiceStatus, string> = {
   [InvoiceStatus.none]: "Chưa phát hành",
@@ -96,29 +92,7 @@ const INVOICE_LABELS: Record<InvoiceStatus, string> = {
   [InvoiceStatus.failed]: "Thất bại",
 };
 
-type SearchMode = "code" | "email" | "status";
-
-const PAYMENT_OPTIONS: Array<{ value: PaymentStatus; label: string }> = [
-  { value: PaymentStatus.paid, label: "Đã thanh toán" },
-  { value: PaymentStatus.unpaid, label: "Chưa thanh toán" },
-  { value: PaymentStatus.expired, label: "Hết hạn" },
-  { value: PaymentStatus.refunded, label: "Đã hoàn tiền" },
-];
-
-function paymentBadgeClass(status: PaymentStatus): string {
-  switch (status) {
-    case PaymentStatus.paid:
-      return "badge-success";
-    case PaymentStatus.unpaid:
-      return "badge-warning";
-    case PaymentStatus.expired:
-      return "badge-destructive";
-    default:
-      return "badge-info";
-  }
-}
-
-function invoiceBadgeClass(status: InvoiceStatus): string {
+function invoiceBadgeClass(status: string): string {
   switch (status) {
     case InvoiceStatus.invoiced:
       return "badge-success";
@@ -131,64 +105,61 @@ function invoiceBadgeClass(status: InvoiceStatus): string {
 
 export function AccountingPage() {
   const deviceId = readDeviceId();
+  const { data: restaurants } = useRestaurants();
+  const restaurantNameById = new Map(
+    (restaurants ?? []).map((r) => [r.restaurantId, r.name]),
+  );
 
-  // ---- Tra cứu đơn hàng ----
-  const [mode, setMode] = useState<SearchMode>("code");
-  const [codeInput, setCodeInput] = useState("");
-  const [emailInput, setEmailInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "">("");
-  const [submittedCode, setSubmittedCode] = useState<string | null>(null);
-  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
+  // ---- Bộ lọc: khoảng ngày + trạng thái ----
+  const today = new Date();
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const [fromDate, setFromDate] = useState(toInputDateValue(sevenDaysAgo));
+  const [toDate, setToDate] = useState(toInputDateValue(today));
+  const [wantPaid, setWantPaid] = useState(true);
+  const [wantCancelled, setWantCancelled] = useState(false);
 
-  // ---- Hành động thủ công ----
+  // ---- Hành động thủ công (không đổi) ----
   const [cleanupCode, setCleanupCode] = useState("");
   const [invoiceManualCode, setInvoiceManualCode] = useState("");
   const [invoiceOrderId, setInvoiceOrderId] = useState<string | null>(null);
   const [invoiceId, setInvoiceId] = useState("");
   const [pdfUrl, setPdfUrl] = useState("");
-  const [imageOrder, setImageOrder] = useState<Order | null>(null);
 
-  const orderByCode = useGetOrder(submittedCode ?? undefined, deviceId);
-  const ordersByEmail = useOrdersByEmail(submittedEmail, deviceId);
-  const allOrders = useOrders(deviceId);
+  const statuses: Array<"paid" | "cancelled"> = [
+    ...(wantPaid ? (["paid"] as const) : []),
+    ...(wantCancelled ? (["cancelled"] as const) : []),
+  ];
+
+  const historyQuery = useQuery({
+    queryKey: [
+      "enterpriseHistory",
+      deviceId,
+      fromDate,
+      toDate,
+      statuses.join(","),
+    ],
+    queryFn: () =>
+      getEnterpriseHistory(
+        deviceId,
+        inputDateToApiFormat(fromDate),
+        inputDateToApiFormat(toDate),
+        statuses,
+      ),
+    enabled: statuses.length > 0,
+  });
+
+  const results = historyQuery.data?.orders ?? [];
+  const isLoading = historyQuery.isLoading;
+  const isError = historyQuery.isError;
 
   const cleanupMutation = useCleanupOrderByDevice(deviceId);
   const invoiceMutation = useIssueInvoiceByDevice(deviceId);
-
-  let results: Order[] = [];
-  let isLoading = false;
-  let isError = false;
-  if (mode === "code") {
-    isLoading = orderByCode.isLoading;
-    isError = orderByCode.isError;
-    if (orderByCode.data) results = [orderByCode.data];
-  } else if (mode === "email") {
-    isLoading = ordersByEmail.isLoading;
-    isError = ordersByEmail.isError;
-    results = ordersByEmail.data ?? [];
-  } else {
-    isLoading = allOrders.isLoading;
-    isError = allOrders.isError;
-    results = (allOrders.data ?? []).filter(
-      (o) => !statusFilter || o.paymentStatus === statusFilter,
-    );
-  }
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (mode === "code") {
-      setSubmittedCode(codeInput.trim() || null);
-      setSubmittedEmail(null);
-    } else if (mode === "email") {
-      setSubmittedEmail(emailInput.trim().toLowerCase() || null);
-      setSubmittedCode(null);
-    }
-  }
 
   async function handleCleanup(orderId: string) {
     try {
       await cleanupMutation.mutateAsync(orderId);
       toast.success("Đã dọn dẹp đơn.");
+      historyQuery.refetch();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Không thể dọn dẹp đơn.",
@@ -221,6 +192,7 @@ export function AccountingPage() {
       setInvoiceOrderId(null);
       setInvoiceId("");
       setPdfUrl("");
+      historyQuery.refetch();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Không thể phát hành hoá đơn.",
@@ -230,119 +202,111 @@ export function AccountingPage() {
 
   return (
     <section className="flex flex-col gap-6" data-ocid="accounting.page">
-      {/* Tra cứu đơn hàng */}
       <Card data-ocid="accounting.lookup_card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display">
-            <Search className="h-4 w-4 text-primary" aria-hidden="true" />
-            Tra cứu đơn hàng
+            <CalendarRange
+              className="h-4 w-4 text-primary"
+              aria-hidden="true"
+            />
+            Danh sách đơn
           </CardTitle>
           <CardDescription>
-            Tìm đơn theo mã đơn, email khách hàng hoặc trạng thái thanh toán.
-            Kết quả kèm ảnh xác thực thanh toán để đối chiếu.
+            Lọc theo khoảng thời gian và trạng thái — danh sách tự cập nhật ngay
+            khi đổi bộ lọc, không cần bấm nút tìm kiếm.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <Tabs
-            value={mode}
-            onValueChange={(v) => setMode(v as SearchMode)}
-            data-ocid="accounting.lookup_tabs"
-          >
-            <TabsList>
-              <TabsTrigger value="code" data-ocid="accounting.tab.code">
-                Mã đơn
-              </TabsTrigger>
-              <TabsTrigger value="email" data-ocid="accounting.tab.email">
-                Email
-              </TabsTrigger>
-              <TabsTrigger value="status" data-ocid="accounting.tab.status">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="from-date"
+                className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                Từ ngày
+              </Label>
+              <Input
+                id="from-date"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                data-ocid="accounting.from_date_input"
+                className="w-[150px]"
+              />
+            </div>
+            <span className="pb-2 text-muted-foreground">—</span>
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="to-date"
+                className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                Đến ngày
+              </Label>
+              <Input
+                id="to-date"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                data-ocid="accounting.to_date_input"
+                className="w-[150px]"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Trạng thái
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="code">
-              <form
-                onSubmit={handleSearch}
-                className="flex flex-col gap-3 sm:flex-row"
-                data-ocid="accounting.code_form"
-              >
-                <Input
-                  value={codeInput}
-                  onChange={(e) => setCodeInput(e.target.value)}
-                  placeholder="Nhập mã đơn…"
-                  aria-label="Mã đơn cần tra cứu"
-                  data-ocid="accounting.code_input"
-                  className="sm:max-w-xs"
-                />
-                <Button
-                  type="submit"
-                  disabled={!codeInput.trim()}
-                  data-ocid="accounting.code_search_button"
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWantPaid((v) => !v)}
+                  data-ocid="accounting.status_chip.paid"
+                  className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-smooth ${
+                    wantPaid
+                      ? "border-success bg-success/15 text-success"
+                      : "border-border bg-background text-muted-foreground"
+                  }`}
                 >
-                  <Search className="h-4 w-4" aria-hidden="true" />
-                  Tra cứu
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="email">
-              <form
-                onSubmit={handleSearch}
-                className="flex flex-col gap-3 sm:flex-row"
-                data-ocid="accounting.email_form"
-              >
-                <Input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="Nhập email khách hàng…"
-                  aria-label="Email khách hàng cần tra cứu"
-                  data-ocid="accounting.email_input"
-                  className="sm:max-w-xs"
-                />
-                <Button
-                  type="submit"
-                  disabled={!emailInput.trim()}
-                  data-ocid="accounting.email_search_button"
+                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                  Đã thanh toán
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWantCancelled((v) => !v)}
+                  data-ocid="accounting.status_chip.cancelled"
+                  className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-smooth ${
+                    wantCancelled
+                      ? "border-destructive bg-destructive/15 text-destructive"
+                      : "border-border bg-background text-muted-foreground"
+                  }`}
                 >
-                  <Search className="h-4 w-4" aria-hidden="true" />
-                  Tra cứu
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="status">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Select
-                  value={statusFilter || "all"}
-                  onValueChange={(v) =>
-                    setStatusFilter(v === "all" ? "" : (v as PaymentStatus))
-                  }
-                >
-                  <SelectTrigger
-                    className="sm:max-w-xs"
-                    data-ocid="accounting.status_select"
-                  >
-                    <SelectValue placeholder="Chọn trạng thái thanh toán" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                    {PAYMENT_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-muted-foreground">
-                  Hiển thị đơn theo trạng thái thanh toán đã chọn.
-                </span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+                  Đã huỷ
+                </button>
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
 
-          {/* Kết quả tra cứu */}
-          {isLoading ? (
+          {historyQuery.data && (
+            <div className="flex gap-2" data-ocid="accounting.summary">
+              <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                {historyQuery.data.count} đơn
+              </span>
+              <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                Tổng {formatVnd(historyQuery.data.total)}
+              </span>
+            </div>
+          )}
+
+          {statuses.length === 0 ? (
+            <div
+              className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-12 text-center"
+              data-ocid="accounting.no_status_state"
+            >
+              <p className="text-sm text-muted-foreground">
+                Chọn ít nhất 1 trạng thái để xem danh sách.
+              </p>
+            </div>
+          ) : isLoading ? (
             <div
               className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-8 text-sm text-muted-foreground"
               data-ocid="accounting.lookup.loading_state"
@@ -360,7 +324,7 @@ export function AccountingPage() {
                 Không tải được đơn hàng.
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Kiểm tra lại mã đơn hoặc thử lại sau.
+                Kiểm tra lại khoảng thời gian hoặc thử lại sau.
               </p>
             </div>
           ) : results.length === 0 ? (
@@ -373,11 +337,8 @@ export function AccountingPage() {
                 aria-hidden="true"
               />
               <h3 className="mt-3 font-display text-base font-semibold">
-                Chưa có kết quả
+                Không có đơn nào khớp bộ lọc
               </h3>
-              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                Nhập mã đơn, email hoặc chọn trạng thái để tra cứu đơn hàng.
-              </p>
             </div>
           ) : (
             <div
@@ -388,132 +349,119 @@ export function AccountingPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="ent-th">Mã đơn</TableHead>
+                    <TableHead className="ent-th">Nhà hàng</TableHead>
                     <TableHead className="ent-th">Khách hàng</TableHead>
                     <TableHead className="ent-th">Tổng tiền</TableHead>
-                    <TableHead className="ent-th">Thanh toán</TableHead>
+                    <TableHead className="ent-th">Trạng thái</TableHead>
                     <TableHead className="ent-th">Hoá đơn</TableHead>
-                    <TableHead className="ent-th">Ảnh xác thực</TableHead>
                     <TableHead className="ent-th text-right">
                       Thao tác
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {results.map((order, idx) => (
-                    <TableRow
-                      key={order.orderId}
-                      className="ent-table-row"
-                      data-ocid={`accounting.row.${idx + 1}`}
-                    >
-                      <TableCell className="ent-td">
-                        <div className="flex flex-col">
-                          <span className="font-mono text-xs font-semibold text-foreground">
-                            {order.orderId}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDateTime(order.createdAt)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="ent-td">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-foreground">
-                            {order.cusName || "Khách vãng lai"}
-                          </span>
-                          {order.cusPhone && (
-                            <span className="text-xs text-muted-foreground">
-                              {order.cusPhone}
+                  {results.map((order, idx) => {
+                    const isCancelled = order.bookingStatus === "cancelled";
+                    return (
+                      <TableRow
+                        key={order.orderId}
+                        className="ent-table-row"
+                        data-ocid={`accounting.row.${idx + 1}`}
+                      >
+                        <TableCell className="ent-td">
+                          <div className="flex flex-col">
+                            <span className="font-mono text-xs font-semibold text-foreground">
+                              {order.orderId}
                             </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="ent-td">
-                        <span className="font-mono text-sm font-semibold text-foreground">
-                          {formatVnd(order.amount)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="ent-td">
-                        <span
-                          className={`ent-pill ${paymentBadgeClass(order.paymentStatus)}`}
-                          data-ocid={`accounting.payment_badge.${idx + 1}`}
-                        >
-                          {PAYMENT_LABELS[order.paymentStatus]}
-                        </span>
-                      </TableCell>
-                      <TableCell className="ent-td">
-                        <span
-                          className={`ent-pill ${invoiceBadgeClass(order.invoiceStatus)}`}
-                          data-ocid={`accounting.invoice_badge.${idx + 1}`}
-                        >
-                          {INVOICE_LABELS[order.invoiceStatus]}
-                        </span>
-                      </TableCell>
-                      <TableCell className="ent-td">
-                        {order.paymentVerificationImage ? (
-                          <button
-                            type="button"
-                            onClick={() => setImageOrder(order)}
-                            data-ocid={`accounting.image_button.${idx + 1}`}
-                            aria-label={`Xem ảnh xác thực thanh toán đơn ${order.orderId}`}
-                            className="group inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40 transition-smooth hover:border-primary"
-                          >
-                            <img
-                              src={order.paymentVerificationImage}
-                              alt={`Ảnh xác thực thanh toán đơn ${order.orderId}`}
-                              className="h-full w-full object-cover"
-                            />
-                          </button>
-                        ) : (
-                          <span
-                            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
-                            data-ocid={`accounting.no_image.${idx + 1}`}
-                          >
-                            <ImageIcon
-                              className="h-3.5 w-3.5"
-                              aria-hidden="true"
-                            />
-                            Chưa có
+                            <span className="text-xs text-muted-foreground">
+                              {formatDateTime(order.createdAt)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="ent-td">
+                          <span className="text-xs text-muted-foreground">
+                            {restaurantNameById.get(order.restaurantId) ??
+                              order.restaurantId}
                           </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="ent-td">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={cleanupMutation.isPending}
-                            onClick={() => handleCleanup(order.orderId)}
-                            data-ocid={`accounting.cleanup_button.${idx + 1}`}
+                        </TableCell>
+                        <TableCell className="ent-td">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-foreground">
+                              {order.cusName || "Khách vãng lai"}
+                            </span>
+                            {order.cusPhone && (
+                              <span className="text-xs text-muted-foreground">
+                                {order.cusPhone}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="ent-td">
+                          <span className="font-mono text-sm font-semibold text-foreground">
+                            {formatVnd(order.amount)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="ent-td">
+                          <span
+                            className={`ent-pill ${isCancelled ? "badge-destructive" : "badge-success"}`}
+                            data-ocid={`accounting.status_badge.${idx + 1}`}
                           >
-                            <Trash2
-                              className="h-3.5 w-3.5"
-                              aria-hidden="true"
-                            />
-                            Dọn dẹp
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={invoiceMutation.isPending}
-                            onClick={() => {
-                              setInvoiceOrderId(order.orderId);
-                              setInvoiceId("");
-                              setPdfUrl("");
-                            }}
-                            data-ocid={`accounting.invoice_button.${idx + 1}`}
+                            {isCancelled ? "Đã huỷ" : "Đã thanh toán"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="ent-td">
+                          <span
+                            className={`ent-pill ${invoiceBadgeClass(order.invoiceStatus)}`}
+                            data-ocid={`accounting.invoice_badge.${idx + 1}`}
                           >
-                            <Receipt
-                              className="h-3.5 w-3.5"
-                              aria-hidden="true"
-                            />
-                            Hoá đơn
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            {INVOICE_LABELS[
+                              order.invoiceStatus as InvoiceStatus
+                            ] ?? order.invoiceStatus}
+                          </span>
+                        </TableCell>
+                        <TableCell className="ent-td">
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Ẩn nút "Dọn dẹp" cho đơn đã thanh toán (theo
+                                yêu cầu đã duyệt) — chỉ hiện cho đơn đã huỷ. */}
+                            {isCancelled && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={cleanupMutation.isPending}
+                                onClick={() => handleCleanup(order.orderId)}
+                                data-ocid={`accounting.cleanup_button.${idx + 1}`}
+                              >
+                                <Trash2
+                                  className="h-3.5 w-3.5"
+                                  aria-hidden="true"
+                                />
+                                Dọn dẹp
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={invoiceMutation.isPending}
+                              onClick={() => {
+                                setInvoiceOrderId(order.orderId);
+                                setInvoiceId("");
+                                setPdfUrl("");
+                              }}
+                              data-ocid={`accounting.invoice_button.${idx + 1}`}
+                            >
+                              <Receipt
+                                className="h-3.5 w-3.5"
+                                aria-hidden="true"
+                              />
+                              Hoá đơn
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -693,54 +641,6 @@ export function AccountingPage() {
                 <Receipt className="h-4 w-4" aria-hidden="true" />
               )}
               Phát hành
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog xem ảnh xác thực thanh toán */}
-      <Dialog
-        open={!!imageOrder}
-        onOpenChange={(open) => {
-          if (!open) setImageOrder(null);
-        }}
-      >
-        <DialogContent data-ocid="accounting.image_dialog">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-display">
-              <ShieldCheck
-                className="h-4 w-4 text-primary"
-                aria-hidden="true"
-              />
-              Ảnh xác thực thanh toán
-            </DialogTitle>
-            <DialogDescription>
-              Đơn{" "}
-              <span className="font-mono font-semibold text-foreground">
-                {imageOrder?.orderId}
-              </span>{" "}
-              — {imageOrder ? PAYMENT_LABELS[imageOrder.paymentStatus] : ""}
-            </DialogDescription>
-          </DialogHeader>
-          {imageOrder?.paymentVerificationImage ? (
-            <img
-              src={imageOrder.paymentVerificationImage}
-              alt={`Ảnh xác thực thanh toán đơn ${imageOrder.orderId}`}
-              className="mx-auto max-h-[60vh] w-auto rounded-md border border-border object-contain"
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Đơn này chưa có ảnh xác thực thanh toán.
-            </p>
-          )}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setImageOrder(null)}
-              data-ocid="accounting.image_close_button"
-            >
-              Đóng
             </Button>
           </DialogFooter>
         </DialogContent>

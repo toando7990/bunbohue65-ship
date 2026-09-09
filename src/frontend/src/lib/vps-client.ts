@@ -13,6 +13,7 @@ import type {
   QuoteResponse,
   RequestQrResponse,
   RestaurantHistoryPeriod,
+  VpsEnterpriseHistoryOrder,
   VpsHistoryOrder,
   VpsRestaurantHistory,
 } from "@/types";
@@ -334,6 +335,39 @@ export async function getRestaurantHistory(
   return vpsFetch<VpsRestaurantHistory>({
     method: "GET",
     path: `/orders/restaurant-history?restaurantId=${encodeURIComponent(restaurantId)}&period=${period}`,
+  });
+}
+
+// Danh sách đơn TOÀN BỘ chuỗi (không giới hạn theo 1 nhà hàng) theo khoảng
+// ngày + trạng thái — dùng cho trang "Quản lý thiết bị doanh nghiệp" (Kế
+// toán/Báo cáo). from/to định dạng "dd/mm/yyyy" (giờ VN). statuses: 1 hoặc
+// cả 2 trong "paid"/"cancelled". Yêu cầu deviceId đã được canister xác
+// nhận có role accounting/salesPromoReporting (VPS tự kiểm tra lại, xem
+// routes/enterprise-history.js — không tin deviceId phía client).
+export async function getEnterpriseHistory(
+  deviceId: string,
+  from: string,
+  to: string,
+  statuses: Array<"paid" | "cancelled">,
+): Promise<{
+  orders: VpsEnterpriseHistoryOrder[];
+  count: number;
+  total: number;
+}> {
+  const params = new URLSearchParams({
+    deviceId,
+    from,
+    to,
+    status: statuses.join(","),
+  });
+  return vpsFetch<{
+    ok: boolean;
+    orders: VpsEnterpriseHistoryOrder[];
+    count: number;
+    total: number;
+  }>({
+    method: "GET",
+    path: `/orders/enterprise-history?${params.toString()}`,
   });
 }
 

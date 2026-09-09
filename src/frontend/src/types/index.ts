@@ -213,3 +213,21 @@ export interface VpsRestaurantHistory {
 }
 
 export type RestaurantHistoryPeriod = "today" | "week" | "month";
+
+// VPS enterprise-history record — GET /orders/enterprise-history?deviceId=&
+// from=&to=&status=. Dùng cho trang "Quản lý thiết bị doanh nghiệp" (Kế
+// toán/Báo cáo bán hàng & KM) — KHÔNG giới hạn theo 1 nhà hàng (toàn bộ
+// chuỗi), khác VpsHistoryOrder/VpsRestaurantHistory ở trên. Không có
+// `items` (không cần cho mục đích đối soát/lọc danh sách), có thêm
+// invoiceStatus (kế toán cần biết đã phát hành hoá đơn chưa).
+export interface VpsEnterpriseHistoryOrder {
+  orderId: string;
+  restaurantId: string;
+  cusName: string;
+  cusPhone: string;
+  amount: number;
+  bookingStatus: string;
+  paymentStatus: string;
+  invoiceStatus: string;
+  createdAt: number;
+}
