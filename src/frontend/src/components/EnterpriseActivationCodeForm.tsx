@@ -1,9 +1,13 @@
-// ActivationCodeForm — form chọn restaurantId + role (Thu ngân/Tài xế/Quản
-// trị — vai trò CẤP NHÀ HÀNG), nút Tạo mã, hiển thị mã 6 ký tự + expiresAt.
-// UI tiếng Việt. 2 vai trò doanh nghiệp (Kế toán, Báo cáo bán hàng & KM)
-// KHÔNG nằm trong form này — chúng không gắn theo nhà hàng cụ thể (số liệu
-// toàn bộ chuỗi), có form riêng EnterpriseActivationCodeForm.tsx.
+// EnterpriseActivationCodeForm — form tạo mã kích hoạt CHO 2 VAI TRÒ DOANH
+// NGHIỆP (Kế toán, Báo cáo bán hàng & KM). KHÁC ActivationCodeForm.tsx: form
+// này KHÔNG có "Nhà hàng" — 2 vai trò doanh nghiệp không gắn theo nhà hàng cụ
+// thể nào, số liệu là toàn bộ chuỗi (đã xác nhận: AccountingPage.tsx và
+// SalesPromoReportingPage.tsx chỉ dùng deviceId, không đọc restaurantId của
+// thiết bị). Canister vẫn yêu cầu 1 giá trị restaurantId khi tạo mã (không
+// optional được ở tầng Device record) — truyền chuỗi rỗng, an toàn vì không
+// nơi nào đọc giá trị này cho 2 vai trò này.
 
+import { formatExpiry } from "@/components/ActivationCodeForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,65 +19,42 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useGenerateActivationCode } from "@/hooks/useQueries";
-import { useRestaurants } from "@/hooks/useQueries";
 import { DeviceRole } from "@/types";
 import { Copy, KeyRound, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const ROLE_OPTIONS: Array<{ value: DeviceRole; label: string }> = [
-  { value: DeviceRole.cashier, label: "Thu ngân" },
-  { value: DeviceRole.driver, label: "Tài xế" },
-  { value: DeviceRole.admin, label: "Quản trị" },
+const ENTERPRISE_ROLE_OPTIONS: Array<{ value: DeviceRole; label: string }> = [
+  { value: DeviceRole.accounting, label: "Kế toán" },
+  { value: DeviceRole.salesPromoReporting, label: "Báo cáo bán hàng & KM" },
 ];
 
-function formatExpiry(ns: bigint): string {
-  if (!ns || ns <= 0n) return "—";
-  try {
-    const ms = Number(ns / 1_000_000n);
-    if (!Number.isFinite(ms) || ms <= 0) return "—";
-    return new Date(ms).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "—";
-  }
-}
-
-export function ActivationCodeForm() {
-  const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
+export function EnterpriseActivationCodeForm() {
   const generateMutation = useGenerateActivationCode();
 
-  const [restaurantId, setRestaurantId] = useState<string>("");
-  const [role, setRole] = useState<DeviceRole>(DeviceRole.cashier);
+  const [role, setRole] = useState<DeviceRole>(DeviceRole.accounting);
   const [result, setResult] = useState<{
     code: string;
     expiresAt: bigint;
-    restaurantId: string;
     role: DeviceRole;
   } | null>(null);
 
-  const canSubmit = !!restaurantId && !!role && !generateMutation.isPending;
+  const canSubmit = !!role && !generateMutation.isPending;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!restaurantId || !role) {
-      toast.error("Vui lòng chọn nhà hàng và vai trò.");
+    if (!role) {
+      toast.error("Vui lòng chọn vai trò.");
       return;
     }
     try {
       const pending = await generateMutation.mutateAsync({
-        restaurantId,
+        restaurantId: "",
         role,
       });
       setResult({
         code: pending.code,
         expiresAt: pending.expiresAt,
-        restaurantId,
         role,
       });
       toast.success("Đã tạo mã kích hoạt thành công.");
@@ -98,51 +79,13 @@ export function ActivationCodeForm() {
     <form
       onSubmit={handleSubmit}
       className="flex flex-col gap-4"
-      data-ocid="activation.form"
+      data-ocid="enterprise_activation.form"
     >
       <div className="flex flex-col gap-2">
-        <Label htmlFor="activation-restaurant" className="text-sm font-medium">
-          Nhà hàng
-        </Label>
-        <Select
-          value={restaurantId}
-          onValueChange={(v) => {
-            setRestaurantId(v);
-            setResult(null);
-          }}
-          disabled={restaurantsLoading}
+        <Label
+          htmlFor="enterprise-activation-role"
+          className="text-sm font-medium"
         >
-          <SelectTrigger
-            id="activation-restaurant"
-            className="w-full"
-            data-ocid="activation.restaurant_select"
-          >
-            <SelectValue
-              placeholder={restaurantsLoading ? "Đang tải…" : "Chọn nhà hàng"}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {restaurants && restaurants.length > 0 ? (
-              restaurants.map((r) => (
-                <SelectItem
-                  key={r.restaurantId}
-                  value={r.restaurantId}
-                  data-ocid={`activation.restaurant_option.${r.restaurantId}`}
-                >
-                  {r.name || r.restaurantId}
-                </SelectItem>
-              ))
-            ) : (
-              <SelectItem value="__none" disabled>
-                Chưa có nhà hàng
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="activation-role" className="text-sm font-medium">
           Vai trò
         </Label>
         <Select
@@ -153,18 +96,18 @@ export function ActivationCodeForm() {
           }}
         >
           <SelectTrigger
-            id="activation-role"
+            id="enterprise-activation-role"
             className="w-full"
-            data-ocid="activation.role_select"
+            data-ocid="enterprise_activation.role_select"
           >
             <SelectValue placeholder="Chọn vai trò" />
           </SelectTrigger>
           <SelectContent>
-            {ROLE_OPTIONS.map((opt) => (
+            {ENTERPRISE_ROLE_OPTIONS.map((opt) => (
               <SelectItem
                 key={opt.value}
                 value={opt.value}
-                data-ocid={`activation.role_option.${opt.value}`}
+                data-ocid={`enterprise_activation.role_option.${opt.value}`}
               >
                 {opt.label}
               </SelectItem>
@@ -176,7 +119,7 @@ export function ActivationCodeForm() {
       <Button
         type="submit"
         disabled={!canSubmit}
-        data-ocid="activation.submit_button"
+        data-ocid="enterprise_activation.submit_button"
         className="w-full sm:w-auto"
       >
         {generateMutation.isPending ? (
@@ -190,7 +133,7 @@ export function ActivationCodeForm() {
       {result && (
         <div
           className="flex flex-col gap-3 rounded-lg border border-success/40 bg-success/10 p-4"
-          data-ocid="activation.result"
+          data-ocid="enterprise_activation.result"
         >
           <div className="flex flex-col gap-1">
             <span className="text-xs font-medium uppercase tracking-wide text-success">
@@ -201,7 +144,7 @@ export function ActivationCodeForm() {
                 readOnly
                 value={result.code}
                 className="font-mono text-lg font-semibold tracking-widest"
-                data-ocid="activation.code_input"
+                data-ocid="enterprise_activation.code_input"
                 aria-label="Mã kích hoạt 6 ký tự"
               />
               <Button
@@ -209,7 +152,7 @@ export function ActivationCodeForm() {
                 variant="outline"
                 size="icon"
                 onClick={copyCode}
-                data-ocid="activation.copy_button"
+                data-ocid="enterprise_activation.copy_button"
                 aria-label="Sao chép mã kích hoạt"
               >
                 <Copy className="h-4 w-4" aria-hidden="true" />
@@ -227,5 +170,3 @@ export function ActivationCodeForm() {
     </form>
   );
 }
-
-export { ROLE_OPTIONS as ACTIVATION_ROLE_OPTIONS, formatExpiry };

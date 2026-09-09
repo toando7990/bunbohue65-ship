@@ -1,10 +1,9 @@
 // Characterization tests for the admin activation-code generator
-// (ActivationCodeForm), the exact seam the enterprise-role request builds on.
-//
-// The request adds three enterprise roles (payment queue, accounting, sales
-// report & promo) to the activation-code model, so the existing admin/driver/
-// cashier flow must keep working. This protects the current observable
-// contract:
+// (ActivationCodeForm) — restaurant-scoped roles only (Thu ngân/Tài xế/
+// Quản trị). 2 vai trò doanh nghiệp (Kế toán, Báo cáo bán hàng & KM) đã
+// chuyển sang form riêng (EnterpriseActivationCodeForm.tsx, không có
+// restaurant selector) vì chúng không gắn theo nhà hàng cụ thể — xem
+// pages/DeviceManager.tsx. This protects the current observable contract:
 //   - the form offers a restaurant selector and a role selector;
 //   - submitting with a restaurant + role calls generateActivationCode with
 //     exactly those values;

@@ -5,6 +5,7 @@
 import { type Device, DeviceRole } from "@/backend";
 import { ActivationCodeForm } from "@/components/ActivationCodeForm";
 import { DeviceTable } from "@/components/DeviceTable";
+import { EnterpriseActivationCodeForm } from "@/components/EnterpriseActivationCodeForm";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,6 +30,7 @@ import {
   useRevokeDevice,
 } from "@/hooks/useQueries";
 import {
+  Building2,
   KeyRound,
   Loader2,
   ShieldOff,
@@ -299,6 +301,15 @@ export function DeviceManager() {
           testId="device.activation_card"
         >
           <ActivationCodeForm />
+        </SectionCard>
+
+        <SectionCard
+          icon={Building2}
+          title="Quản lý thiết bị doanh nghiệp"
+          description="Tạo mã kích hoạt cho vai trò Kế toán hoặc Báo cáo bán hàng & KM — không gắn theo nhà hàng cụ thể, số liệu tổng hợp toàn bộ chuỗi."
+          testId="device.enterprise_activation_card"
+        >
+          <EnterpriseActivationCodeForm />
         </SectionCard>
 
         <SectionCard
