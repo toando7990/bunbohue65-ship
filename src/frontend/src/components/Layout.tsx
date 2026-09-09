@@ -127,6 +127,24 @@ const ADMIN_NAV: NavItem[] = [
     icon: ShieldCheck,
     adminOnly: true,
   },
+  {
+    to: "/enterprise/payment-queue",
+    label: "Hàng đợi thanh toán",
+    icon: ShieldCheck,
+    adminOnly: true,
+  },
+  {
+    to: "/enterprise/accounting",
+    label: "Kế toán",
+    icon: ShieldCheck,
+    adminOnly: true,
+  },
+  {
+    to: "/enterprise/sales-reporting",
+    label: "Báo cáo bán hàng & KM",
+    icon: ShieldCheck,
+    adminOnly: true,
+  },
 ];
 
 function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {

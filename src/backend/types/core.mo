@@ -36,11 +36,19 @@ module {
     #failed;
   };
 
-  // Device role assigned to a registered POS/driver/cashier device
+  // Device role assigned to a registered POS/driver/cashier device.
+  // Extended with 3 enterprise roles: #paymentQueue (hàng đợi thanh toán),
+  // #accounting (kế toán), #salesPromoReporting (báo cáo bán hàng và KM).
+  // Enterprise roles are bound to a device at activation time via a
+  // restaurant+role activation code, consistent with the admin/driver/cashier
+  // flow. Menu/restaurant edit rights stay with #admin only.
   public type DeviceRole = {
     #admin;
     #driver;
     #cashier;
+    #paymentQueue;
+    #accounting;
+    #salesPromoReporting;
   };
 
   // Single line item inside an order
@@ -93,6 +101,11 @@ module {
     // Đây là field riêng, KHÔNG phải variant InvoiceStatus mới — giữ #invoiced
     // làm trạng thái đã xuất hoá đơn, pdfUrl chỉ bổ sung URL file PDF.
     pdfUrl : Text;
+    // URL ảnh xác thực thanh toán (ảnh chụp biên lai/QR đã thanh toán do nhân
+    // viên chụp qua "Xác nhận thủ công bằng ảnh" — VPS lưu ảnh và đẩy URL về
+    // canister). Rỗng khi chưa có ảnh. Vai trò Kế toán (accounting) hiển thị
+    // ảnh này khi tra cứu đơn để đối chiếu thanh toán.
+    paymentVerificationImage : Text;
     // billId: mã bill Tingee (cần để VPS worker poll getDynamicQrStatus).
     // Optional — null khi chưa tạo bill QR.
     billId : ?Text;

@@ -307,10 +307,10 @@ actor Main {
   include MenuApi(accessControlState, menus, restaurants, restaurantMenuOverrides);
   include MenuSeedApi(accessControlState, menus);
   include EmailVerificationApi(otpRecords, registrationPromos, registrationBonusIssued, vouchers);
-  include PromotionApi(accessControlState, kmUsage, kmDailyCount, promotions, secretState, otpRecords, promotionUsed);
+  include PromotionApi(accessControlState, devices, kmUsage, kmDailyCount, promotions, secretState, otpRecords, promotionUsed);
   include VoucherApi(vouchers, secretState);
-  include RegistrationPromoApi(accessControlState, registrationPromos, vouchers);
-  include SalesPromoApi(accessControlState, salesPromos, salesBonusIssued, vouchers, secretState);
+  include RegistrationPromoApi(accessControlState, devices, registrationPromos, vouchers);
+  include SalesPromoApi(accessControlState, devices, salesPromos, salesBonusIssued, vouchers, secretState);
   include PromoMaintenanceApi(promotions, registrationPromos, salesPromos, vouchers, secretState);
   include PaymentModeConfigApi(accessControlState, paymentModeState, coreState);
   include StoreHoursConfigApi(accessControlState, storeHoursState);
@@ -415,6 +415,7 @@ actor Main {
           sharedLink = "";
           invoiceId = "";
           pdfUrl = "";
+          paymentVerificationImage = "";
           billId = null;
           qrCode = null;
           expireAt = null;
@@ -447,6 +448,10 @@ actor Main {
         // pdfUrl: URL file PDF hoá đơn điện tử (do VPS lấy qua mã lệnh 818 và
         // đẩy ngược qua updateInvoiceStatus). Rỗng khi chưa có PDF.
         .payload("pdfUrl", func(o : CoreTypes.Order) : Text = o.pdfUrl)
+        // paymentVerificationImage: URL ảnh xác thực thanh toán (ảnh chụp
+        // biên lai/QR đã thanh toán) — vai trò Kế toán hiển thị khi tra cứu
+        // đơn. Rỗng khi chưa có ảnh.
+        .payload("paymentVerificationImage", func(o : CoreTypes.Order) : Text = o.paymentVerificationImage)
         // billId / qrCode / expireAt: optional QR fields (order-payment). OQL
         // manual payloads need a flat value, so options collapse to a sentinel
         // ("" / 0) when null.
@@ -595,6 +600,109 @@ actor Main {
         .payload("openMinute", func(_ : StoreHoursConfigTypes.StoreHoursState) : Nat = storeHoursState.storeHours.openMinute)
         .payload("closeHour", func(_ : StoreHoursConfigTypes.StoreHoursState) : Nat = storeHoursState.storeHours.closeHour)
         .payload("closeMinute", func(_ : StoreHoursConfigTypes.StoreHoursState) : Nat = storeHoursState.storeHours.closeMinute)
+        .controllerOnly()
+        .build(),
+
+      // promotions: manual mode because Promotion carries [TimeSlot] and
+      // [DiscountTier] collection fields plus a [Bool] daysOfWeek; auto-derive
+      // cannot flatten those. Promote each primitive/variant column explicitly;
+      // daysOfWeek/timeSlots/tiers are dropped. Queryable by the Data
+      // Intelligence agent for the salesPromoReporting (báo cáo bán hàng và KM)
+      // role's promotion management and promo tracking.
+      Entity.sample(
+        promotions.toEntityManual(
+          "promotion", "Promotion", "code",
+        ),
+        {
+          code = "";
+          name = "";
+          startDate = "";
+          endDate = "";
+          daysOfWeek = [];
+          timeSlots = [];
+          dailyOrderLimit = 0;
+          perCustomerDailyLimit = 0;
+          tiers = [];
+          active = false;
+          termsUrl = "";
+        },
+      )
+        .payload("code", func(p : PromotionTypes.Promotion) : Text = p.code)
+        .payload("name", func(p : PromotionTypes.Promotion) : Text = p.name)
+        .payload("startDate", func(p : PromotionTypes.Promotion) : Text = p.startDate)
+        .payload("endDate", func(p : PromotionTypes.Promotion) : Text = p.endDate)
+        .payload("dailyOrderLimit", func(p : PromotionTypes.Promotion) : Nat = p.dailyOrderLimit)
+        .payload("perCustomerDailyLimit", func(p : PromotionTypes.Promotion) : Nat = p.perCustomerDailyLimit)
+        .payload("active", func(p : PromotionTypes.Promotion) : Bool = p.active)
+        .payload("termsUrl", func(p : PromotionTypes.Promotion) : Text = p.termsUrl)
+        .controllerOnly()
+        .build(),
+
+      // vouchers: all-primitive record — auto-derive.
+      Entity.sample(
+        vouchers.toEntity(
+          "voucher", "Voucher", "code",
+        ),
+        {
+          code = "";
+          programCode = "";
+          email = "";
+          value = 0;
+          startDate = "";
+          endDate = "";
+          used = false;
+          issuedAt = 0;
+        },
+      )
+        .controllerOnly()
+        .build(),
+
+      // registrationPromos: all-primitive record — auto-derive.
+      Entity.sample(
+        registrationPromos.toEntity(
+          "registrationPromo", "RegistrationPromo", "code",
+        ),
+        {
+          code = "";
+          name = "";
+          startDate = "";
+          endDate = "";
+          voucherValue = 0;
+          voucherValidDays = 0;
+          active = false;
+          termsUrl = "";
+        },
+      )
+        .controllerOnly()
+        .build(),
+
+      // salesPromos: manual mode because SalesPromo carries [SalesTier]
+      // collection fields (weeklyTiers/monthlyTiers); auto-derive cannot
+      // flatten those. Promote each primitive column explicitly; the tier
+      // arrays are dropped.
+      Entity.sample(
+        salesPromos.toEntityManual(
+          "salesPromo", "SalesPromo", "code",
+        ),
+        {
+          code = "";
+          name = "";
+          startDate = "";
+          endDate = "";
+          weeklyTiers = [];
+          monthlyTiers = [];
+          voucherValidDays = 0;
+          active = false;
+          termsUrl = "";
+        },
+      )
+        .payload("code", func(s : SalesPromoTypes.SalesPromo) : Text = s.code)
+        .payload("name", func(s : SalesPromoTypes.SalesPromo) : Text = s.name)
+        .payload("startDate", func(s : SalesPromoTypes.SalesPromo) : Text = s.startDate)
+        .payload("endDate", func(s : SalesPromoTypes.SalesPromo) : Text = s.endDate)
+        .payload("voucherValidDays", func(s : SalesPromoTypes.SalesPromo) : Nat = s.voucherValidDays)
+        .payload("active", func(s : SalesPromoTypes.SalesPromo) : Bool = s.active)
+        .payload("termsUrl", func(s : SalesPromoTypes.SalesPromo) : Text = s.termsUrl)
         .controllerOnly()
         .build(),
     ];

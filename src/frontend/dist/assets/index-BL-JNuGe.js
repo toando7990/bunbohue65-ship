@@ -33364,7 +33364,10 @@ const Error$1 = Variant({
 const Result_17 = Variant({ "ok": Null, "err": Error$1 });
 const DeviceId = Text;
 const DeviceRole$1 = Variant({
+  "accounting": Null,
+  "paymentQueue": Null,
   "admin": Null,
+  "salesPromoReporting": Null,
   "cashier": Null,
   "driver": Null
 });
@@ -33407,6 +33410,11 @@ const UserRole = Variant({
   "admin": Null,
   "user": Null,
   "guest": Null
+});
+const EnterpriseRole$1 = Variant({
+  "accounting": Null,
+  "paymentQueue": Null,
+  "salesPromoReporting": Null
 });
 const PaymentStatus$1 = Variant({
   "expired": Null,
@@ -33461,6 +33469,7 @@ const Order = Record({
   "items": Vec(OrderItem),
   "voucherDiscountAmount": Nat,
   "amount": Nat,
+  "paymentVerificationImage": Text,
   "cusAddress": Text,
   "invoiceStatus": InvoiceStatus$1,
   "billId": Opt(Text),
@@ -33658,6 +33667,11 @@ Service({
     []
   ),
   "assignCallerUserRole": Func([Principal2, UserRole], [], []),
+  "callerHasEnterpriseRole": Func(
+    [DeviceId, EnterpriseRole$1],
+    [Bool],
+    ["query"]
+  ),
   "cancelOrder": Func([Text, Text], [Result], []),
   "changeOrderRestaurant": Func(
     [Text, Text, Text],
@@ -33665,6 +33679,8 @@ Service({
     []
   ),
   "cleanupExpiredActivations": Func([], [Nat], []),
+  "cleanupOrderByDevice": Func([Text, Text], [Result], []),
+  "confirmPaymentByDevice": Func([Text, Text], [Result], []),
   "countVouchersByProgram": Func([Text], [Nat], ["query"]),
   "createOrder": Func(
     [
@@ -33697,6 +33713,7 @@ Service({
       Text,
       Text,
       Text,
+      Text,
       Vec(Bool),
       Vec(TimeSlot),
       Nat,
@@ -33708,12 +33725,13 @@ Service({
     []
   ),
   "createRegistrationPromo": Func(
-    [Text, Text, Text, Nat, Nat, Text],
+    [Text, Text, Text, Text, Nat, Nat, Text],
     [Result_3],
     []
   ),
   "createSalesPromo": Func(
     [
+      Text,
       Text,
       Text,
       Text,
@@ -33727,10 +33745,10 @@ Service({
   ),
   "deactivateExpiredPromotions": Func([Hmac], [Result_6], []),
   "deleteItem": Func([Text], [Result_7], []),
-  "deletePromotion": Func([Text], [Result_7], []),
-  "deleteRegistrationPromo": Func([Text], [Result_7], []),
+  "deletePromotion": Func([Text, Text], [Result_7], []),
+  "deleteRegistrationPromo": Func([Text, Text], [Result_7], []),
   "deleteRestaurant": Func([Text], [Result_7], []),
-  "deleteSalesPromo": Func([Text], [Result_7], []),
+  "deleteSalesPromo": Func([Text, Text], [Result_7], []),
   "execute": Func([Text], [Result__1], ["query"]),
   "generateActivationCode": Func(
     [RestaurantId, DeviceRole$1],
@@ -33756,19 +33774,28 @@ Service({
   "getKmUsageCount": Func([Text, Text], [Nat], ["query"]),
   "getMenu": Func([], [Vec(MenuItem)], ["query"]),
   "getMenuForRestaurant": Func([Text], [Vec(MenuItem)], ["query"]),
-  "getOrder": Func([Text], [Result], []),
+  "getOrder": Func([Text, Text], [Result], []),
   "getOrderStatus": Func([Text], [Result_14], ["query"]),
-  "getOrdersByEmail": Func([Text], [Vec(Order)], []),
+  "getOrdersByEmail": Func([Text, Text], [Vec(Order)], []),
   "getPaymentMode": Func([], [Text], ["query"]),
   "getRestaurants": Func([], [Vec(Restaurant)], ["query"]),
   "getStoreHours": Func([], [StoreHours], ["query"]),
   "getUpgradeState": Func([], [UpgradeState], []),
   "isCallerAdmin": Func([], [Bool], ["query"]),
   "isEmailVerified": Func([Email], [Bool], ["query"]),
-  "isPromotionUsed": Func([Text], [Result_13], ["query"]),
-  "isRegistrationPromoUsed": Func([Text], [Result_13], ["query"]),
-  "isSalesPromoUsed": Func([Text], [Result_13], ["query"]),
+  "isPromotionUsed": Func([Text, Text], [Result_13], ["query"]),
+  "isRegistrationPromoUsed": Func(
+    [Text, Text],
+    [Result_13],
+    ["query"]
+  ),
+  "isSalesPromoUsed": Func([Text, Text], [Result_13], ["query"]),
   "isStoreOpen": Func([], [Bool], ["query"]),
+  "issueInvoiceByDevice": Func(
+    [Text, Text, Text, Text],
+    [Result],
+    []
+  ),
   "issueSalesBonus": Func(
     [Text, Text, Text, Nat, Hmac],
     [Result_12],
@@ -33782,13 +33809,17 @@ Service({
   "listDevicesByRole": Func([DeviceRole$1], [Vec(Device)], ["query"]),
   "listMenus": Func([], [Vec(MenuItem)], ["query"]),
   "listMyVouchers": Func([Text], [Vec(Voucher)], ["query"]),
-  "listOrders": Func([], [Vec(Order)], []),
+  "listOrders": Func([Text], [Vec(Order)], []),
   "listPaidOrdersForPickup": Func([], [Vec(Order)], []),
-  "listPendingPaymentOrders": Func([Text], [Vec(Order)], []),
-  "listPromotions": Func([], [Result_11], ["query"]),
-  "listRegistrationPromos": Func([], [Result_10], ["query"]),
+  "listPendingPaymentOrders": Func(
+    [Text, Text],
+    [Vec(Order)],
+    []
+  ),
+  "listPromotions": Func([Text], [Result_11], ["query"]),
+  "listRegistrationPromos": Func([Text], [Result_10], ["query"]),
   "listRestaurants": Func([], [Vec(Restaurant)], ["query"]),
-  "listSalesPromos": Func([], [Result_9], ["query"]),
+  "listSalesPromos": Func([Text], [Result_9], ["query"]),
   "markPaymentExpired": Func([Text, Text], [Result], []),
   "markPickedUp": Func([Text], [Result], []),
   "pruneOldOrdersNow": Func([Text], [Result_6], []),
@@ -33811,9 +33842,9 @@ Service({
     []
   ),
   "snapshotUpgradeState": Func([], [Vec(Nat8)], []),
-  "stopPromotion": Func([Text], [Result_4], []),
-  "stopRegistrationPromo": Func([Text], [Result_3], []),
-  "stopSalesPromo": Func([Text], [Result_1], []),
+  "stopPromotion": Func([Text, Text], [Result_4], []),
+  "stopRegistrationPromo": Func([Text, Text], [Result_3], []),
+  "stopSalesPromo": Func([Text, Text], [Result_1], []),
   "tryConsumeKmSlot": Func(
     [Text, Text, Nat, Hmac],
     [Result_6],
@@ -33860,6 +33891,7 @@ Service({
       Text,
       Text,
       Text,
+      Text,
       Vec(Bool),
       Vec(TimeSlot),
       Nat,
@@ -33873,6 +33905,7 @@ Service({
   ),
   "updateRegistrationPromo": Func(
     [
+      Text,
       Text,
       Text,
       Text,
@@ -33892,6 +33925,7 @@ Service({
   ),
   "updateSalesPromo": Func(
     [
+      Text,
       Text,
       Text,
       Text,
@@ -33933,7 +33967,10 @@ const idlFactory = ({ IDL: IDL2 }) => {
   const Result_172 = IDL2.Variant({ "ok": IDL2.Null, "err": Error2 });
   const DeviceId2 = IDL2.Text;
   const DeviceRole2 = IDL2.Variant({
+    "accounting": IDL2.Null,
+    "paymentQueue": IDL2.Null,
     "admin": IDL2.Null,
+    "salesPromoReporting": IDL2.Null,
     "cashier": IDL2.Null,
     "driver": IDL2.Null
   });
@@ -33979,6 +34016,11 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "admin": IDL2.Null,
     "user": IDL2.Null,
     "guest": IDL2.Null
+  });
+  const EnterpriseRole2 = IDL2.Variant({
+    "accounting": IDL2.Null,
+    "paymentQueue": IDL2.Null,
+    "salesPromoReporting": IDL2.Null
   });
   const PaymentStatus2 = IDL2.Variant({
     "expired": IDL2.Null,
@@ -34033,6 +34075,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "items": IDL2.Vec(OrderItem2),
     "voucherDiscountAmount": IDL2.Nat,
     "amount": IDL2.Nat,
+    "paymentVerificationImage": IDL2.Text,
     "cusAddress": IDL2.Text,
     "invoiceStatus": InvoiceStatus2,
     "billId": IDL2.Opt(IDL2.Text),
@@ -34215,6 +34258,11 @@ const idlFactory = ({ IDL: IDL2 }) => {
       []
     ),
     "assignCallerUserRole": IDL2.Func([IDL2.Principal, UserRole2], [], []),
+    "callerHasEnterpriseRole": IDL2.Func(
+      [DeviceId2, EnterpriseRole2],
+      [IDL2.Bool],
+      ["query"]
+    ),
     "cancelOrder": IDL2.Func([IDL2.Text, IDL2.Text], [Result2], []),
     "changeOrderRestaurant": IDL2.Func(
       [IDL2.Text, IDL2.Text, IDL2.Text],
@@ -34222,6 +34270,8 @@ const idlFactory = ({ IDL: IDL2 }) => {
       []
     ),
     "cleanupExpiredActivations": IDL2.Func([], [IDL2.Nat], []),
+    "cleanupOrderByDevice": IDL2.Func([IDL2.Text, IDL2.Text], [Result2], []),
+    "confirmPaymentByDevice": IDL2.Func([IDL2.Text, IDL2.Text], [Result2], []),
     "countVouchersByProgram": IDL2.Func([IDL2.Text], [IDL2.Nat], ["query"]),
     "createOrder": IDL2.Func(
       [
@@ -34254,6 +34304,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
         IDL2.Text,
         IDL2.Text,
         IDL2.Text,
+        IDL2.Text,
         IDL2.Vec(IDL2.Bool),
         IDL2.Vec(TimeSlot2),
         IDL2.Nat,
@@ -34265,12 +34316,13 @@ const idlFactory = ({ IDL: IDL2 }) => {
       []
     ),
     "createRegistrationPromo": IDL2.Func(
-      [IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Nat, IDL2.Nat, IDL2.Text],
+      [IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Nat, IDL2.Nat, IDL2.Text],
       [Result_32],
       []
     ),
     "createSalesPromo": IDL2.Func(
       [
+        IDL2.Text,
         IDL2.Text,
         IDL2.Text,
         IDL2.Text,
@@ -34284,10 +34336,10 @@ const idlFactory = ({ IDL: IDL2 }) => {
     ),
     "deactivateExpiredPromotions": IDL2.Func([Hmac2], [Result_62], []),
     "deleteItem": IDL2.Func([IDL2.Text], [Result_72], []),
-    "deletePromotion": IDL2.Func([IDL2.Text], [Result_72], []),
-    "deleteRegistrationPromo": IDL2.Func([IDL2.Text], [Result_72], []),
+    "deletePromotion": IDL2.Func([IDL2.Text, IDL2.Text], [Result_72], []),
+    "deleteRegistrationPromo": IDL2.Func([IDL2.Text, IDL2.Text], [Result_72], []),
     "deleteRestaurant": IDL2.Func([IDL2.Text], [Result_72], []),
-    "deleteSalesPromo": IDL2.Func([IDL2.Text], [Result_72], []),
+    "deleteSalesPromo": IDL2.Func([IDL2.Text, IDL2.Text], [Result_72], []),
     "execute": IDL2.Func([IDL2.Text], [Result__12], ["query"]),
     "generateActivationCode": IDL2.Func(
       [RestaurantId2, DeviceRole2],
@@ -34317,19 +34369,28 @@ const idlFactory = ({ IDL: IDL2 }) => {
       [IDL2.Vec(MenuItem2)],
       ["query"]
     ),
-    "getOrder": IDL2.Func([IDL2.Text], [Result2], []),
+    "getOrder": IDL2.Func([IDL2.Text, IDL2.Text], [Result2], []),
     "getOrderStatus": IDL2.Func([IDL2.Text], [Result_142], ["query"]),
-    "getOrdersByEmail": IDL2.Func([IDL2.Text], [IDL2.Vec(Order2)], []),
+    "getOrdersByEmail": IDL2.Func([IDL2.Text, IDL2.Text], [IDL2.Vec(Order2)], []),
     "getPaymentMode": IDL2.Func([], [IDL2.Text], ["query"]),
     "getRestaurants": IDL2.Func([], [IDL2.Vec(Restaurant2)], ["query"]),
     "getStoreHours": IDL2.Func([], [StoreHours2], ["query"]),
     "getUpgradeState": IDL2.Func([], [UpgradeState2], []),
     "isCallerAdmin": IDL2.Func([], [IDL2.Bool], ["query"]),
     "isEmailVerified": IDL2.Func([Email2], [IDL2.Bool], ["query"]),
-    "isPromotionUsed": IDL2.Func([IDL2.Text], [Result_132], ["query"]),
-    "isRegistrationPromoUsed": IDL2.Func([IDL2.Text], [Result_132], ["query"]),
-    "isSalesPromoUsed": IDL2.Func([IDL2.Text], [Result_132], ["query"]),
+    "isPromotionUsed": IDL2.Func([IDL2.Text, IDL2.Text], [Result_132], ["query"]),
+    "isRegistrationPromoUsed": IDL2.Func(
+      [IDL2.Text, IDL2.Text],
+      [Result_132],
+      ["query"]
+    ),
+    "isSalesPromoUsed": IDL2.Func([IDL2.Text, IDL2.Text], [Result_132], ["query"]),
     "isStoreOpen": IDL2.Func([], [IDL2.Bool], ["query"]),
+    "issueInvoiceByDevice": IDL2.Func(
+      [IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Text],
+      [Result2],
+      []
+    ),
     "issueSalesBonus": IDL2.Func(
       [IDL2.Text, IDL2.Text, IDL2.Text, IDL2.Nat, Hmac2],
       [Result_122],
@@ -34343,13 +34404,17 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "listDevicesByRole": IDL2.Func([DeviceRole2], [IDL2.Vec(Device2)], ["query"]),
     "listMenus": IDL2.Func([], [IDL2.Vec(MenuItem2)], ["query"]),
     "listMyVouchers": IDL2.Func([IDL2.Text], [IDL2.Vec(Voucher2)], ["query"]),
-    "listOrders": IDL2.Func([], [IDL2.Vec(Order2)], []),
+    "listOrders": IDL2.Func([IDL2.Text], [IDL2.Vec(Order2)], []),
     "listPaidOrdersForPickup": IDL2.Func([], [IDL2.Vec(Order2)], []),
-    "listPendingPaymentOrders": IDL2.Func([IDL2.Text], [IDL2.Vec(Order2)], []),
-    "listPromotions": IDL2.Func([], [Result_112], ["query"]),
-    "listRegistrationPromos": IDL2.Func([], [Result_102], ["query"]),
+    "listPendingPaymentOrders": IDL2.Func(
+      [IDL2.Text, IDL2.Text],
+      [IDL2.Vec(Order2)],
+      []
+    ),
+    "listPromotions": IDL2.Func([IDL2.Text], [Result_112], ["query"]),
+    "listRegistrationPromos": IDL2.Func([IDL2.Text], [Result_102], ["query"]),
     "listRestaurants": IDL2.Func([], [IDL2.Vec(Restaurant2)], ["query"]),
-    "listSalesPromos": IDL2.Func([], [Result_92], ["query"]),
+    "listSalesPromos": IDL2.Func([IDL2.Text], [Result_92], ["query"]),
     "markPaymentExpired": IDL2.Func([IDL2.Text, IDL2.Text], [Result2], []),
     "markPickedUp": IDL2.Func([IDL2.Text], [Result2], []),
     "pruneOldOrdersNow": IDL2.Func([IDL2.Text], [Result_62], []),
@@ -34372,9 +34437,9 @@ const idlFactory = ({ IDL: IDL2 }) => {
       []
     ),
     "snapshotUpgradeState": IDL2.Func([], [IDL2.Vec(IDL2.Nat8)], []),
-    "stopPromotion": IDL2.Func([IDL2.Text], [Result_42], []),
-    "stopRegistrationPromo": IDL2.Func([IDL2.Text], [Result_32], []),
-    "stopSalesPromo": IDL2.Func([IDL2.Text], [Result_18], []),
+    "stopPromotion": IDL2.Func([IDL2.Text, IDL2.Text], [Result_42], []),
+    "stopRegistrationPromo": IDL2.Func([IDL2.Text, IDL2.Text], [Result_32], []),
+    "stopSalesPromo": IDL2.Func([IDL2.Text, IDL2.Text], [Result_18], []),
     "tryConsumeKmSlot": IDL2.Func(
       [IDL2.Text, IDL2.Text, IDL2.Nat, Hmac2],
       [Result_62],
@@ -34421,6 +34486,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
         IDL2.Text,
         IDL2.Text,
         IDL2.Text,
+        IDL2.Text,
         IDL2.Vec(IDL2.Bool),
         IDL2.Vec(TimeSlot2),
         IDL2.Nat,
@@ -34434,6 +34500,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
     ),
     "updateRegistrationPromo": IDL2.Func(
       [
+        IDL2.Text,
         IDL2.Text,
         IDL2.Text,
         IDL2.Text,
@@ -34453,6 +34520,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
     ),
     "updateSalesPromo": IDL2.Func(
       [
+        IDL2.Text,
         IDL2.Text,
         IDL2.Text,
         IDL2.Text,
@@ -34491,11 +34559,20 @@ var BookingStatus = /* @__PURE__ */ ((BookingStatus2) => {
   return BookingStatus2;
 })(BookingStatus || {});
 var DeviceRole = /* @__PURE__ */ ((DeviceRole2) => {
+  DeviceRole2["accounting"] = "accounting";
+  DeviceRole2["paymentQueue"] = "paymentQueue";
   DeviceRole2["admin"] = "admin";
+  DeviceRole2["salesPromoReporting"] = "salesPromoReporting";
   DeviceRole2["cashier"] = "cashier";
   DeviceRole2["driver"] = "driver";
   return DeviceRole2;
 })(DeviceRole || {});
+var EnterpriseRole = /* @__PURE__ */ ((EnterpriseRole2) => {
+  EnterpriseRole2["accounting"] = "accounting";
+  EnterpriseRole2["paymentQueue"] = "paymentQueue";
+  EnterpriseRole2["salesPromoReporting"] = "salesPromoReporting";
+  return EnterpriseRole2;
+})(EnterpriseRole || {});
 var InvoiceStatus = /* @__PURE__ */ ((InvoiceStatus2) => {
   InvoiceStatus2["none"] = "none";
   InvoiceStatus2["invoiced"] = "invoiced";
@@ -34642,32 +34719,46 @@ class Backend {
       return result;
     }
   }
+  async callerHasEnterpriseRole(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.callerHasEnterpriseRole(arg0, to_candid_EnterpriseRole_n21(this._uploadFile, this._downloadFile, arg1));
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.callerHasEnterpriseRole(arg0, to_candid_EnterpriseRole_n21(this._uploadFile, this._downloadFile, arg1));
+      return result;
+    }
+  }
   async cancelOrder(arg0, arg1) {
     if (this.processError) {
       try {
         const result = await this.actor.cancelOrder(arg0, arg1);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.cancelOrder(arg0, arg1);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
   async changeOrderRestaurant(arg0, arg1, arg2) {
     if (this.processError) {
       try {
         const result = await this.actor.changeOrderRestaurant(arg0, arg1, arg2);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.changeOrderRestaurant(arg0, arg1, arg2);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
   async cleanupExpiredActivations() {
@@ -34682,6 +34773,34 @@ class Backend {
     } else {
       const result = await this.actor.cleanupExpiredActivations();
       return result;
+    }
+  }
+  async cleanupOrderByDevice(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.cleanupOrderByDevice(arg0, arg1);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.cleanupOrderByDevice(arg0, arg1);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async confirmPaymentByDevice(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.confirmPaymentByDevice(arg0, arg1);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.confirmPaymentByDevice(arg0, arg1);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
   async countVouchersByProgram(arg0) {
@@ -34702,56 +34821,56 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.createOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
-  async createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
+  async createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) {
     if (this.processError) {
       try {
-        const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-        return from_candid_Result_4_n33(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+        return from_candid_Result_4_n35(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-      return from_candid_Result_4_n33(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.createPromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+      return from_candid_Result_4_n35(this._uploadFile, this._downloadFile, result);
     }
   }
-  async createRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5) {
+  async createRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
     if (this.processError) {
       try {
-        const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5);
-        return from_candid_Result_3_n35(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+        return from_candid_Result_3_n37(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5);
-      return from_candid_Result_3_n35(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.createRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+      return from_candid_Result_3_n37(this._uploadFile, this._downloadFile, result);
     }
   }
-  async createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
+  async createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
     if (this.processError) {
       try {
-        const result = await this.actor.createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-        return from_candid_Result_1_n37(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+        return from_candid_Result_1_n39(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-      return from_candid_Result_1_n37(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.createSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+      return from_candid_Result_1_n39(this._uploadFile, this._downloadFile, result);
     }
   }
   async deactivateExpiredPromotions(arg0) {
@@ -34772,98 +34891,98 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.deleteItem(arg0);
-        return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.deleteItem(arg0);
-      return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
     }
   }
-  async deletePromotion(arg0) {
+  async deletePromotion(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.deletePromotion(arg0);
-        return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.deletePromotion(arg0, arg1);
+        return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.deletePromotion(arg0);
-      return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.deletePromotion(arg0, arg1);
+      return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
     }
   }
-  async deleteRegistrationPromo(arg0) {
+  async deleteRegistrationPromo(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.deleteRegistrationPromo(arg0);
-        return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.deleteRegistrationPromo(arg0, arg1);
+        return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.deleteRegistrationPromo(arg0);
-      return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.deleteRegistrationPromo(arg0, arg1);
+      return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
     }
   }
   async deleteRestaurant(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.deleteRestaurant(arg0);
-        return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.deleteRestaurant(arg0);
-      return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
     }
   }
-  async deleteSalesPromo(arg0) {
+  async deleteSalesPromo(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.deleteSalesPromo(arg0);
-        return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.deleteSalesPromo(arg0, arg1);
+        return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.deleteSalesPromo(arg0);
-      return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.deleteSalesPromo(arg0, arg1);
+      return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
     }
   }
   async execute(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.execute(arg0);
-        return from_candid_Result__1_n41(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result__1_n43(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.execute(arg0);
-      return from_candid_Result__1_n41(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result__1_n43(this._uploadFile, this._downloadFile, result);
     }
   }
   async generateActivationCode(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n49(this._uploadFile, this._downloadFile, arg1));
-        return from_candid_Result_15_n51(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n51(this._uploadFile, this._downloadFile, arg1));
+        return from_candid_Result_15_n53(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n49(this._uploadFile, this._downloadFile, arg1));
-      return from_candid_Result_15_n51(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.generateActivationCode(arg0, to_candid_DeviceRole_n51(this._uploadFile, this._downloadFile, arg1));
+      return from_candid_Result_15_n53(this._uploadFile, this._downloadFile, result);
     }
   }
   async getApiDoc() {
@@ -34884,14 +35003,14 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.getCallerUserRole();
-        return from_candid_UserRole_n55(this._uploadFile, this._downloadFile, result);
+        return from_candid_UserRole_n57(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getCallerUserRole();
-      return from_candid_UserRole_n55(this._uploadFile, this._downloadFile, result);
+      return from_candid_UserRole_n57(this._uploadFile, this._downloadFile, result);
     }
   }
   async getCanisterIdText() {
@@ -34912,56 +35031,56 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.getCurrentPromotion();
-        return from_candid_opt_n57(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getCurrentPromotion();
-      return from_candid_opt_n57(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async getCurrentRegistrationPromo() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getCurrentRegistrationPromo();
-        return from_candid_opt_n58(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getCurrentRegistrationPromo();
-      return from_candid_opt_n58(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async getCurrentSalesPromo() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getCurrentSalesPromo();
         return from_candid_opt_n59(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.getCurrentSalesPromo();
+      const result = await this.actor.getCurrentPromotion();
       return from_candid_opt_n59(this._uploadFile, this._downloadFile, result);
     }
   }
-  async getItemImage(arg0) {
+  async getCurrentRegistrationPromo() {
     if (this.processError) {
       try {
-        const result = await this.actor.getItemImage(arg0);
+        const result = await this.actor.getCurrentRegistrationPromo();
         return from_candid_opt_n60(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.getItemImage(arg0);
+      const result = await this.actor.getCurrentRegistrationPromo();
       return from_candid_opt_n60(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getCurrentSalesPromo() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getCurrentSalesPromo();
+        return from_candid_opt_n61(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getCurrentSalesPromo();
+      return from_candid_opt_n61(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getItemImage(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getItemImage(arg0);
+        return from_candid_opt_n62(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getItemImage(arg0);
+      return from_candid_opt_n62(this._uploadFile, this._downloadFile, result);
     }
   }
   async getKmDailyCount(arg0) {
@@ -35020,46 +35139,46 @@ class Backend {
       return result;
     }
   }
-  async getOrder(arg0) {
+  async getOrder(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.getOrder(arg0);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.getOrder(arg0, arg1);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.getOrder(arg0);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.getOrder(arg0, arg1);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
   async getOrderStatus(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.getOrderStatus(arg0);
-        return from_candid_Result_14_n61(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_14_n63(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getOrderStatus(arg0);
-      return from_candid_Result_14_n61(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_14_n63(this._uploadFile, this._downloadFile, result);
     }
   }
-  async getOrdersByEmail(arg0) {
+  async getOrdersByEmail(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.getOrdersByEmail(arg0);
-        return from_candid_vec_n65(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.getOrdersByEmail(arg0, arg1);
+        return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.getOrdersByEmail(arg0);
-      return from_candid_vec_n65(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.getOrdersByEmail(arg0, arg1);
+      return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
     }
   }
   async getPaymentMode() {
@@ -35108,14 +35227,14 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.getUpgradeState();
-        return from_candid_UpgradeState_n66(this._uploadFile, this._downloadFile, result);
+        return from_candid_UpgradeState_n68(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getUpgradeState();
-      return from_candid_UpgradeState_n66(this._uploadFile, this._downloadFile, result);
+      return from_candid_UpgradeState_n68(this._uploadFile, this._downloadFile, result);
     }
   }
   async isCallerAdmin() {
@@ -35146,46 +35265,46 @@ class Backend {
       return result;
     }
   }
-  async isPromotionUsed(arg0) {
+  async isPromotionUsed(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.isPromotionUsed(arg0);
-        return from_candid_Result_13_n77(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.isPromotionUsed(arg0, arg1);
+        return from_candid_Result_13_n79(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.isPromotionUsed(arg0);
-      return from_candid_Result_13_n77(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.isPromotionUsed(arg0, arg1);
+      return from_candid_Result_13_n79(this._uploadFile, this._downloadFile, result);
     }
   }
-  async isRegistrationPromoUsed(arg0) {
+  async isRegistrationPromoUsed(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.isRegistrationPromoUsed(arg0);
-        return from_candid_Result_13_n77(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.isRegistrationPromoUsed(arg0, arg1);
+        return from_candid_Result_13_n79(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.isRegistrationPromoUsed(arg0);
-      return from_candid_Result_13_n77(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.isRegistrationPromoUsed(arg0, arg1);
+      return from_candid_Result_13_n79(this._uploadFile, this._downloadFile, result);
     }
   }
-  async isSalesPromoUsed(arg0) {
+  async isSalesPromoUsed(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.isSalesPromoUsed(arg0);
-        return from_candid_Result_13_n77(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.isSalesPromoUsed(arg0, arg1);
+        return from_candid_Result_13_n79(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.isSalesPromoUsed(arg0);
-      return from_candid_Result_13_n77(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.isSalesPromoUsed(arg0, arg1);
+      return from_candid_Result_13_n79(this._uploadFile, this._downloadFile, result);
     }
   }
   async isStoreOpen() {
@@ -35202,46 +35321,60 @@ class Backend {
       return result;
     }
   }
+  async issueInvoiceByDevice(arg0, arg1, arg2, arg3) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.issueInvoiceByDevice(arg0, arg1, arg2, arg3);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.issueInvoiceByDevice(arg0, arg1, arg2, arg3);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
+    }
+  }
   async issueSalesBonus(arg0, arg1, arg2, arg3, arg4) {
     if (this.processError) {
       try {
         const result = await this.actor.issueSalesBonus(arg0, arg1, arg2, arg3, arg4);
-        return from_candid_Result_12_n79(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_12_n81(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.issueSalesBonus(arg0, arg1, arg2, arg3, arg4);
-      return from_candid_Result_12_n79(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_12_n81(this._uploadFile, this._downloadFile, result);
     }
   }
   async listDevicesByRestaurant(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.listDevicesByRestaurant(arg0);
-        return from_candid_vec_n82(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n84(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listDevicesByRestaurant(arg0);
-      return from_candid_vec_n82(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n84(this._uploadFile, this._downloadFile, result);
     }
   }
   async listDevicesByRole(arg0) {
     if (this.processError) {
       try {
-        const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n49(this._uploadFile, this._downloadFile, arg0));
-        return from_candid_vec_n82(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n51(this._uploadFile, this._downloadFile, arg0));
+        return from_candid_vec_n84(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n49(this._uploadFile, this._downloadFile, arg0));
-      return from_candid_vec_n82(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.listDevicesByRole(to_candid_DeviceRole_n51(this._uploadFile, this._downloadFile, arg0));
+      return from_candid_vec_n84(this._uploadFile, this._downloadFile, result);
     }
   }
   async listMenus() {
@@ -35272,74 +35405,74 @@ class Backend {
       return result;
     }
   }
-  async listOrders() {
+  async listOrders(arg0) {
     if (this.processError) {
       try {
-        const result = await this.actor.listOrders();
-        return from_candid_vec_n65(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.listOrders(arg0);
+        return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.listOrders();
-      return from_candid_vec_n65(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.listOrders(arg0);
+      return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
     }
   }
   async listPaidOrdersForPickup() {
     if (this.processError) {
       try {
         const result = await this.actor.listPaidOrdersForPickup();
-        return from_candid_vec_n65(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listPaidOrdersForPickup();
-      return from_candid_vec_n65(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
     }
   }
-  async listPendingPaymentOrders(arg0) {
+  async listPendingPaymentOrders(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.listPendingPaymentOrders(arg0);
-        return from_candid_vec_n65(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.listPendingPaymentOrders(arg0, arg1);
+        return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.listPendingPaymentOrders(arg0);
-      return from_candid_vec_n65(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.listPendingPaymentOrders(arg0, arg1);
+      return from_candid_vec_n67(this._uploadFile, this._downloadFile, result);
     }
   }
-  async listPromotions() {
+  async listPromotions(arg0) {
     if (this.processError) {
       try {
-        const result = await this.actor.listPromotions();
-        return from_candid_Result_11_n83(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.listPromotions(arg0);
+        return from_candid_Result_11_n85(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.listPromotions();
-      return from_candid_Result_11_n83(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.listPromotions(arg0);
+      return from_candid_Result_11_n85(this._uploadFile, this._downloadFile, result);
     }
   }
-  async listRegistrationPromos() {
+  async listRegistrationPromos(arg0) {
     if (this.processError) {
       try {
-        const result = await this.actor.listRegistrationPromos();
-        return from_candid_Result_10_n85(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.listRegistrationPromos(arg0);
+        return from_candid_Result_10_n87(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.listRegistrationPromos();
-      return from_candid_Result_10_n85(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.listRegistrationPromos(arg0);
+      return from_candid_Result_10_n87(this._uploadFile, this._downloadFile, result);
     }
   }
   async listRestaurants() {
@@ -35356,46 +35489,46 @@ class Backend {
       return result;
     }
   }
-  async listSalesPromos() {
+  async listSalesPromos(arg0) {
     if (this.processError) {
       try {
-        const result = await this.actor.listSalesPromos();
-        return from_candid_Result_9_n87(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.listSalesPromos(arg0);
+        return from_candid_Result_9_n89(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.listSalesPromos();
-      return from_candid_Result_9_n87(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.listSalesPromos(arg0);
+      return from_candid_Result_9_n89(this._uploadFile, this._downloadFile, result);
     }
   }
   async markPaymentExpired(arg0, arg1) {
     if (this.processError) {
       try {
         const result = await this.actor.markPaymentExpired(arg0, arg1);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.markPaymentExpired(arg0, arg1);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
   async markPickedUp(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.markPickedUp(arg0);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.markPickedUp(arg0);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
   async pruneOldOrdersNow(arg0) {
@@ -35472,14 +35605,14 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.sendVerificationCode(arg0);
-        return from_candid_SendCodeResult_n89(this._uploadFile, this._downloadFile, result);
+        return from_candid_SendCodeResult_n91(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.sendVerificationCode(arg0);
-      return from_candid_SendCodeResult_n89(this._uploadFile, this._downloadFile, result);
+      return from_candid_SendCodeResult_n91(this._uploadFile, this._downloadFile, result);
     }
   }
   async setItemVisible(arg0, arg1) {
@@ -35500,56 +35633,56 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.setPaymentMode(arg0);
-        return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.setPaymentMode(arg0);
-      return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
     }
   }
   async setRestaurantPriceOverride(arg0, arg1, arg2) {
     if (this.processError) {
       try {
         const result = await this.actor.setRestaurantPriceOverride(arg0, arg1, arg2);
-        return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.setRestaurantPriceOverride(arg0, arg1, arg2);
-      return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
     }
   }
   async setStoreHours(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.setStoreHours(arg0);
-        return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+        return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.setStoreHours(arg0);
-      return from_candid_Result_7_n39(this._uploadFile, this._downloadFile, result);
+      return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
     }
   }
   async setVpsSecret(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.setVpsSecret(arg0);
-        return from_candid_variant_n40(this._uploadFile, this._downloadFile, result);
+        return from_candid_variant_n42(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.setVpsSecret(arg0);
-      return from_candid_variant_n40(this._uploadFile, this._downloadFile, result);
+      return from_candid_variant_n42(this._uploadFile, this._downloadFile, result);
     }
   }
   async snapshotUpgradeState() {
@@ -35566,46 +35699,46 @@ class Backend {
       return result;
     }
   }
-  async stopPromotion(arg0) {
+  async stopPromotion(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.stopPromotion(arg0);
-        return from_candid_Result_4_n33(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.stopPromotion(arg0, arg1);
+        return from_candid_Result_4_n35(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.stopPromotion(arg0);
-      return from_candid_Result_4_n33(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.stopPromotion(arg0, arg1);
+      return from_candid_Result_4_n35(this._uploadFile, this._downloadFile, result);
     }
   }
-  async stopRegistrationPromo(arg0) {
+  async stopRegistrationPromo(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.stopRegistrationPromo(arg0);
-        return from_candid_Result_3_n35(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.stopRegistrationPromo(arg0, arg1);
+        return from_candid_Result_3_n37(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.stopRegistrationPromo(arg0);
-      return from_candid_Result_3_n35(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.stopRegistrationPromo(arg0, arg1);
+      return from_candid_Result_3_n37(this._uploadFile, this._downloadFile, result);
     }
   }
-  async stopSalesPromo(arg0) {
+  async stopSalesPromo(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.stopSalesPromo(arg0);
-        return from_candid_Result_1_n37(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.stopSalesPromo(arg0, arg1);
+        return from_candid_Result_1_n39(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.stopSalesPromo(arg0);
-      return from_candid_Result_1_n37(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.stopSalesPromo(arg0, arg1);
+      return from_candid_Result_1_n39(this._uploadFile, this._downloadFile, result);
     }
   }
   async tryConsumeKmSlot(arg0, arg1, arg2, arg3) {
@@ -35625,15 +35758,15 @@ class Backend {
   async updateInvoiceStatus(arg0, arg1, arg2, arg3, arg4) {
     if (this.processError) {
       try {
-        const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n90(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n92(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n90(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.updateInvoiceStatus(arg0, to_candid_InvoiceStatus_n92(this._uploadFile, this._downloadFile, arg1), arg2, arg3, arg4);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
   async updateItem(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
@@ -35653,57 +35786,57 @@ class Backend {
   async updateOrderQr(arg0, arg1, arg2, arg3, arg4) {
     if (this.processError) {
       try {
-        const result = await this.actor.updateOrderQr(arg0, to_candid_opt_n92(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n92(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n93(this._uploadFile, this._downloadFile, arg3), arg4);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.updateOrderQr(arg0, to_candid_opt_n94(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n94(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n95(this._uploadFile, this._downloadFile, arg3), arg4);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updateOrderQr(arg0, to_candid_opt_n92(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n92(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n93(this._uploadFile, this._downloadFile, arg3), arg4);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.updateOrderQr(arg0, to_candid_opt_n94(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n94(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n95(this._uploadFile, this._downloadFile, arg3), arg4);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
   async updatePaymentStatus(arg0, arg1, arg2) {
     if (this.processError) {
       try {
-        const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n94(this._uploadFile, this._downloadFile, arg1), arg2);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n96(this._uploadFile, this._downloadFile, arg1), arg2);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n94(this._uploadFile, this._downloadFile, arg1), arg2);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.updatePaymentStatus(arg0, to_candid_PaymentStatus_n96(this._uploadFile, this._downloadFile, arg1), arg2);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
-  async updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
+  async updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
     if (this.processError) {
       try {
-        const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
-        return from_candid_Result_4_n33(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+        return from_candid_Result_4_n35(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
-      return from_candid_Result_4_n33(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+      return from_candid_Result_4_n35(this._uploadFile, this._downloadFile, result);
     }
   }
-  async updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
+  async updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
     if (this.processError) {
       try {
-        const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-        return from_candid_Result_3_n35(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+        return from_candid_Result_3_n37(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-      return from_candid_Result_3_n35(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.updateRegistrationPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+      return from_candid_Result_3_n37(this._uploadFile, this._downloadFile, result);
     }
   }
   async updateRestaurant(arg0, arg1, arg2, arg3, arg4) {
@@ -35720,57 +35853,57 @@ class Backend {
       return from_candid_Result_2_n13(this._uploadFile, this._downloadFile, result);
     }
   }
-  async updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
+  async updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) {
     if (this.processError) {
       try {
-        const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-        return from_candid_Result_1_n37(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+        return from_candid_Result_1_n39(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-      return from_candid_Result_1_n37(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+      return from_candid_Result_1_n39(this._uploadFile, this._downloadFile, result);
     }
   }
   async updateStatus(arg0, arg1, arg2) {
     if (this.processError) {
       try {
-        const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n96(this._uploadFile, this._downloadFile, arg1), arg2);
-        return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+        const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n98(this._uploadFile, this._downloadFile, arg1), arg2);
+        return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n96(this._uploadFile, this._downloadFile, arg1), arg2);
-      return from_candid_Result_n21(this._uploadFile, this._downloadFile, result);
+      const result = await this.actor.updateStatus(arg0, to_candid_BookingStatus_n98(this._uploadFile, this._downloadFile, arg1), arg2);
+      return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
     }
   }
   async verifyEmailCode(arg0, arg1) {
     if (this.processError) {
       try {
         const result = await this.actor.verifyEmailCode(arg0, arg1);
-        return from_candid_VerifyResult_n98(this._uploadFile, this._downloadFile, result);
+        return from_candid_VerifyResult_n100(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.verifyEmailCode(arg0, arg1);
-      return from_candid_VerifyResult_n98(this._uploadFile, this._downloadFile, result);
+      return from_candid_VerifyResult_n100(this._uploadFile, this._downloadFile, result);
     }
   }
 }
-function from_candid_BookingStatus_n27(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n28(_uploadFile, _downloadFile, value);
+function from_candid_BookingStatus_n29(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n30(_uploadFile, _downloadFile, value);
 }
-function from_candid_Cell_n45(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n46(_uploadFile, _downloadFile, value);
+function from_candid_Cell_n47(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n48(_uploadFile, _downloadFile, value);
 }
-function from_candid_DeviceEntry_n72(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n73(_uploadFile, _downloadFile, value);
+function from_candid_DeviceEntry_n74(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n75(_uploadFile, _downloadFile, value);
 }
 function from_candid_DeviceRole_n9(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n10(_uploadFile, _downloadFile, value);
@@ -35781,44 +35914,44 @@ function from_candid_Device_n7(_uploadFile, _downloadFile, value) {
 function from_candid_Error_n3(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n4(_uploadFile, _downloadFile, value);
 }
-function from_candid_InvoiceStatus_n30(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n31(_uploadFile, _downloadFile, value);
+function from_candid_InvoiceStatus_n32(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n33(_uploadFile, _downloadFile, value);
 }
-function from_candid_OrderEntry_n69(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n70(_uploadFile, _downloadFile, value);
+function from_candid_OrderEntry_n71(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n72(_uploadFile, _downloadFile, value);
 }
-function from_candid_OrderStatus_n63(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n64(_uploadFile, _downloadFile, value);
+function from_candid_OrderStatus_n65(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n66(_uploadFile, _downloadFile, value);
 }
-function from_candid_Order_n23(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n24(_uploadFile, _downloadFile, value);
+function from_candid_Order_n25(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n26(_uploadFile, _downloadFile, value);
 }
-function from_candid_PaymentStatus_n25(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n26(_uploadFile, _downloadFile, value);
+function from_candid_PaymentStatus_n27(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n28(_uploadFile, _downloadFile, value);
 }
-function from_candid_PendingActivationEntry_n75(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n76(_uploadFile, _downloadFile, value);
+function from_candid_PendingActivationEntry_n77(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n78(_uploadFile, _downloadFile, value);
 }
-function from_candid_PendingActivation_n53(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n54(_uploadFile, _downloadFile, value);
+function from_candid_PendingActivation_n55(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n56(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_10_n85(_uploadFile, _downloadFile, value) {
+function from_candid_Result_10_n87(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n88(_uploadFile, _downloadFile, value);
+}
+function from_candid_Result_11_n85(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n86(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_11_n83(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n84(_uploadFile, _downloadFile, value);
+function from_candid_Result_12_n81(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n82(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_12_n79(_uploadFile, _downloadFile, value) {
+function from_candid_Result_13_n79(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n80(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_13_n77(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n78(_uploadFile, _downloadFile, value);
+function from_candid_Result_14_n63(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n64(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_14_n61(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n62(_uploadFile, _downloadFile, value);
-}
-function from_candid_Result_15_n51(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n52(_uploadFile, _downloadFile, value);
+function from_candid_Result_15_n53(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n54(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result_16_n15(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n16(_uploadFile, _downloadFile, value);
@@ -35826,17 +35959,17 @@ function from_candid_Result_16_n15(_uploadFile, _downloadFile, value) {
 function from_candid_Result_17_n1(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n2(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_1_n37(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n38(_uploadFile, _downloadFile, value);
+function from_candid_Result_1_n39(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n40(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result_2_n13(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n14(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_3_n35(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n36(_uploadFile, _downloadFile, value);
+function from_candid_Result_3_n37(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n38(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_4_n33(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n34(_uploadFile, _downloadFile, value);
+function from_candid_Result_4_n35(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n36(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result_5_n11(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n12(_uploadFile, _downloadFile, value);
@@ -35844,46 +35977,40 @@ function from_candid_Result_5_n11(_uploadFile, _downloadFile, value) {
 function from_candid_Result_6_n17(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n18(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_7_n39(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n40(_uploadFile, _downloadFile, value);
+function from_candid_Result_7_n41(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n42(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result_8_n5(_uploadFile, _downloadFile, value) {
   return from_candid_variant_n6(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_9_n87(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n88(_uploadFile, _downloadFile, value);
+function from_candid_Result_9_n89(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n90(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result__1_n41(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n42(_uploadFile, _downloadFile, value);
+function from_candid_Result__1_n43(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n44(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_n21(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n22(_uploadFile, _downloadFile, value);
+function from_candid_Result_n23(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n24(_uploadFile, _downloadFile, value);
 }
-function from_candid_SendCodeResult_n89(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n40(_uploadFile, _downloadFile, value);
+function from_candid_SendCodeResult_n91(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n42(_uploadFile, _downloadFile, value);
 }
-function from_candid_UpgradeState_n66(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n67(_uploadFile, _downloadFile, value);
+function from_candid_UpgradeState_n68(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n69(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n55(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n56(_uploadFile, _downloadFile, value);
+function from_candid_UserRole_n57(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n58(_uploadFile, _downloadFile, value);
 }
-function from_candid_Value_n47(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n48(_uploadFile, _downloadFile, value);
+function from_candid_Value_n49(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n50(_uploadFile, _downloadFile, value);
 }
-function from_candid_VerifyResult_n98(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n40(_uploadFile, _downloadFile, value);
+function from_candid_VerifyResult_n100(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n42(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n29(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n31(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n32(_uploadFile, _downloadFile, value) {
-  return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n57(_uploadFile, _downloadFile, value) {
-  return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n58(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n34(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n59(_uploadFile, _downloadFile, value) {
@@ -35892,12 +36019,18 @@ function from_candid_opt_n59(_uploadFile, _downloadFile, value) {
 function from_candid_opt_n60(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n81(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n61(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
-function from_candid_record_n24(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n62(_uploadFile, _downloadFile, value) {
+  return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n83(_uploadFile, _downloadFile, value) {
+  return value.length === 0 ? null : value[0];
+}
+function from_candid_record_n26(_uploadFile, _downloadFile, value) {
   return {
-    paymentStatus: from_candid_PaymentStatus_n25(_uploadFile, _downloadFile, value.paymentStatus),
+    paymentStatus: from_candid_PaymentStatus_n27(_uploadFile, _downloadFile, value.paymentStatus),
     cusTaxCode: value.cusTaxCode,
     cusName: value.cusName,
     createdAt: value.createdAt,
@@ -35911,10 +36044,10 @@ function from_candid_record_n24(_uploadFile, _downloadFile, value) {
     orderId: value.orderId,
     restaurantId: value.restaurantId,
     updatedAt: value.updatedAt,
-    bookingStatus: from_candid_BookingStatus_n27(_uploadFile, _downloadFile, value.bookingStatus),
+    bookingStatus: from_candid_BookingStatus_n29(_uploadFile, _downloadFile, value.bookingStatus),
     receiverEmail: value.receiverEmail,
     pickupCode: value.pickupCode,
-    expireAt: record_opt_to_undefined(from_candid_opt_n29(_uploadFile, _downloadFile, value.expireAt)),
+    expireAt: record_opt_to_undefined(from_candid_opt_n31(_uploadFile, _downloadFile, value.expireAt)),
     kmDiscountAmount: value.kmDiscountAmount,
     pdfUrl: value.pdfUrl,
     tingeeQrId: value.tingeeQrId,
@@ -35922,25 +36055,26 @@ function from_candid_record_n24(_uploadFile, _downloadFile, value) {
     items: value.items,
     voucherDiscountAmount: value.voucherDiscountAmount,
     amount: value.amount,
+    paymentVerificationImage: value.paymentVerificationImage,
     cusAddress: value.cusAddress,
-    invoiceStatus: from_candid_InvoiceStatus_n30(_uploadFile, _downloadFile, value.invoiceStatus),
-    billId: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.billId)),
-    qrCode: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.qrCode))
+    invoiceStatus: from_candid_InvoiceStatus_n32(_uploadFile, _downloadFile, value.invoiceStatus),
+    billId: record_opt_to_undefined(from_candid_opt_n34(_uploadFile, _downloadFile, value.billId)),
+    qrCode: record_opt_to_undefined(from_candid_opt_n34(_uploadFile, _downloadFile, value.qrCode))
   };
 }
-function from_candid_record_n42(_uploadFile, _downloadFile, value) {
+function from_candid_record_n44(_uploadFile, _downloadFile, value) {
   return {
     hasMore: value.hasMore,
-    rows: from_candid_vec_n43(_uploadFile, _downloadFile, value.rows)
+    rows: from_candid_vec_n45(_uploadFile, _downloadFile, value.rows)
   };
 }
-function from_candid_record_n46(_uploadFile, _downloadFile, value) {
+function from_candid_record_n48(_uploadFile, _downloadFile, value) {
   return {
-    value: from_candid_Value_n47(_uploadFile, _downloadFile, value.value),
+    value: from_candid_Value_n49(_uploadFile, _downloadFile, value.value),
     name: value.name
   };
 }
-function from_candid_record_n54(_uploadFile, _downloadFile, value) {
+function from_candid_record_n56(_uploadFile, _downloadFile, value) {
   return {
     expiresAt: value.expiresAt,
     code: value.code,
@@ -35950,44 +36084,44 @@ function from_candid_record_n54(_uploadFile, _downloadFile, value) {
     restaurantId: value.restaurantId
   };
 }
-function from_candid_record_n64(_uploadFile, _downloadFile, value) {
+function from_candid_record_n66(_uploadFile, _downloadFile, value) {
   return {
-    paymentStatus: from_candid_PaymentStatus_n25(_uploadFile, _downloadFile, value.paymentStatus),
+    paymentStatus: from_candid_PaymentStatus_n27(_uploadFile, _downloadFile, value.paymentStatus),
     tingeeQrCode: value.tingeeQrCode,
     invoiceId: value.invoiceId,
     sharedLink: value.sharedLink,
-    bookingStatus: from_candid_BookingStatus_n27(_uploadFile, _downloadFile, value.bookingStatus),
+    bookingStatus: from_candid_BookingStatus_n29(_uploadFile, _downloadFile, value.bookingStatus),
     pdfUrl: value.pdfUrl,
     tingeeQrId: value.tingeeQrId,
-    invoiceStatus: from_candid_InvoiceStatus_n30(_uploadFile, _downloadFile, value.invoiceStatus)
+    invoiceStatus: from_candid_InvoiceStatus_n32(_uploadFile, _downloadFile, value.invoiceStatus)
   };
 }
-function from_candid_record_n67(_uploadFile, _downloadFile, value) {
+function from_candid_record_n69(_uploadFile, _downloadFile, value) {
   return {
     menus: value.menus,
-    orders: from_candid_vec_n68(_uploadFile, _downloadFile, value.orders),
+    orders: from_candid_vec_n70(_uploadFile, _downloadFile, value.orders),
     restaurants: value.restaurants,
     restaurantMenuOverrides: value.restaurantMenuOverrides,
-    devices: from_candid_vec_n71(_uploadFile, _downloadFile, value.devices),
-    pendingActivations: from_candid_vec_n74(_uploadFile, _downloadFile, value.pendingActivations)
+    devices: from_candid_vec_n73(_uploadFile, _downloadFile, value.devices),
+    pendingActivations: from_candid_vec_n76(_uploadFile, _downloadFile, value.pendingActivations)
   };
 }
-function from_candid_record_n70(_uploadFile, _downloadFile, value) {
+function from_candid_record_n72(_uploadFile, _downloadFile, value) {
   return {
-    order: from_candid_Order_n23(_uploadFile, _downloadFile, value.order),
+    order: from_candid_Order_n25(_uploadFile, _downloadFile, value.order),
     orderId: value.orderId
   };
 }
-function from_candid_record_n73(_uploadFile, _downloadFile, value) {
+function from_candid_record_n75(_uploadFile, _downloadFile, value) {
   return {
     device: from_candid_Device_n7(_uploadFile, _downloadFile, value.device),
     deviceId: value.deviceId
   };
 }
-function from_candid_record_n76(_uploadFile, _downloadFile, value) {
+function from_candid_record_n78(_uploadFile, _downloadFile, value) {
   return {
     code: value.code,
-    activation: from_candid_PendingActivation_n53(_uploadFile, _downloadFile, value.activation)
+    activation: from_candid_PendingActivation_n55(_uploadFile, _downloadFile, value.activation)
   };
 }
 function from_candid_record_n8(_uploadFile, _downloadFile, value) {
@@ -36002,7 +36136,7 @@ function from_candid_record_n8(_uploadFile, _downloadFile, value) {
   };
 }
 function from_candid_variant_n10(_uploadFile, _downloadFile, value) {
-  return "admin" in value ? "admin" : "cashier" in value ? "cashier" : "driver" in value ? "driver" : value;
+  return "accounting" in value ? "accounting" : "paymentQueue" in value ? "paymentQueue" : "admin" in value ? "admin" : "salesPromoReporting" in value ? "salesPromoReporting" : "cashier" in value ? "cashier" : "driver" in value ? "driver" : value;
 }
 function from_candid_variant_n12(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
@@ -36049,32 +36183,23 @@ function from_candid_variant_n2(_uploadFile, _downloadFile, value) {
     err: from_candid_Error_n3(_uploadFile, _downloadFile, value.err)
   } : value;
 }
-function from_candid_variant_n22(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n24(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
     __kind__: "ok",
-    ok: from_candid_Order_n23(_uploadFile, _downloadFile, value.ok)
+    ok: from_candid_Order_n25(_uploadFile, _downloadFile, value.ok)
   } : "err" in value ? {
     __kind__: "err",
     err: value.err
   } : value;
-}
-function from_candid_variant_n26(_uploadFile, _downloadFile, value) {
-  return "expired" in value ? "expired" : "paid" in value ? "paid" : "refunded" in value ? "refunded" : "unpaid" in value ? "unpaid" : value;
 }
 function from_candid_variant_n28(_uploadFile, _downloadFile, value) {
+  return "expired" in value ? "expired" : "paid" in value ? "paid" : "refunded" in value ? "refunded" : "unpaid" in value ? "unpaid" : value;
+}
+function from_candid_variant_n30(_uploadFile, _downloadFile, value) {
   return "cancelled" in value ? "cancelled" : "pending" in value ? "pending" : "completed" in value ? "completed" : "shipping" in value ? "shipping" : "pickedUp" in value ? "pickedUp" : "confirmed" in value ? "confirmed" : value;
 }
-function from_candid_variant_n31(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n33(_uploadFile, _downloadFile, value) {
   return "none" in value ? "none" : "invoiced" in value ? "invoiced" : "failed" in value ? "failed" : value;
-}
-function from_candid_variant_n34(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: value.ok
-  } : "err" in value ? {
-    __kind__: "err",
-    err: value.err
-  } : value;
 }
 function from_candid_variant_n36(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
@@ -36136,7 +36261,16 @@ function from_candid_variant_n40(_uploadFile, _downloadFile, value) {
     err: value.err
   } : value;
 }
-function from_candid_variant_n48(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n42(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: value.ok
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n50(_uploadFile, _downloadFile, value) {
   return "int" in value ? {
     __kind__: "int",
     int: value.int
@@ -36157,16 +36291,16 @@ function from_candid_variant_n48(_uploadFile, _downloadFile, value) {
     text: value.text
   } : value;
 }
-function from_candid_variant_n52(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n54(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
     __kind__: "ok",
-    ok: from_candid_PendingActivation_n53(_uploadFile, _downloadFile, value.ok)
+    ok: from_candid_PendingActivation_n55(_uploadFile, _downloadFile, value.ok)
   } : "err" in value ? {
     __kind__: "err",
     err: value.err
   } : value;
 }
-function from_candid_variant_n56(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n58(_uploadFile, _downloadFile, value) {
   return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
 }
 function from_candid_variant_n6(_uploadFile, _downloadFile, value) {
@@ -36178,19 +36312,10 @@ function from_candid_variant_n6(_uploadFile, _downloadFile, value) {
     err: value.err
   } : value;
 }
-function from_candid_variant_n62(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n64(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
     __kind__: "ok",
-    ok: from_candid_OrderStatus_n63(_uploadFile, _downloadFile, value.ok)
-  } : "err" in value ? {
-    __kind__: "err",
-    err: value.err
-  } : value;
-}
-function from_candid_variant_n78(_uploadFile, _downloadFile, value) {
-  return "ok" in value ? {
-    __kind__: "ok",
-    ok: value.ok
+    ok: from_candid_OrderStatus_n65(_uploadFile, _downloadFile, value.ok)
   } : "err" in value ? {
     __kind__: "err",
     err: value.err
@@ -36199,16 +36324,16 @@ function from_candid_variant_n78(_uploadFile, _downloadFile, value) {
 function from_candid_variant_n80(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
     __kind__: "ok",
-    ok: from_candid_opt_n81(_uploadFile, _downloadFile, value.ok)
+    ok: value.ok
   } : "err" in value ? {
     __kind__: "err",
     err: value.err
   } : value;
 }
-function from_candid_variant_n84(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n82(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
     __kind__: "ok",
-    ok: value.ok
+    ok: from_candid_opt_n83(_uploadFile, _downloadFile, value.ok)
   } : "err" in value ? {
     __kind__: "err",
     err: value.err
@@ -36232,46 +36357,58 @@ function from_candid_variant_n88(_uploadFile, _downloadFile, value) {
     err: value.err
   } : value;
 }
-function from_candid_vec_n43(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_vec_n44(_uploadFile, _downloadFile, x3));
+function from_candid_variant_n90(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: value.ok
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
 }
-function from_candid_vec_n44(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_Cell_n45(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n45(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_vec_n46(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n65(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_Order_n23(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n46(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_Cell_n47(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n68(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_OrderEntry_n69(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n67(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_Order_n25(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n71(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_DeviceEntry_n72(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n70(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_OrderEntry_n71(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n74(_uploadFile, _downloadFile, value) {
-  return value.map((x3) => from_candid_PendingActivationEntry_n75(_uploadFile, _downloadFile, x3));
+function from_candid_vec_n73(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_DeviceEntry_n74(_uploadFile, _downloadFile, x3));
 }
-function from_candid_vec_n82(_uploadFile, _downloadFile, value) {
+function from_candid_vec_n76(_uploadFile, _downloadFile, value) {
+  return value.map((x3) => from_candid_PendingActivationEntry_n77(_uploadFile, _downloadFile, x3));
+}
+function from_candid_vec_n84(_uploadFile, _downloadFile, value) {
   return value.map((x3) => from_candid_Device_n7(_uploadFile, _downloadFile, x3));
 }
-function to_candid_BookingStatus_n96(_uploadFile, _downloadFile, value) {
+function to_candid_BookingStatus_n98(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n99(_uploadFile, _downloadFile, value);
+}
+function to_candid_DeviceRole_n51(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n52(_uploadFile, _downloadFile, value);
+}
+function to_candid_EnterpriseRole_n21(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n22(_uploadFile, _downloadFile, value);
+}
+function to_candid_InvoiceStatus_n92(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n93(_uploadFile, _downloadFile, value);
+}
+function to_candid_PaymentStatus_n96(_uploadFile, _downloadFile, value) {
   return to_candid_variant_n97(_uploadFile, _downloadFile, value);
-}
-function to_candid_DeviceRole_n49(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n50(_uploadFile, _downloadFile, value);
-}
-function to_candid_InvoiceStatus_n90(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n91(_uploadFile, _downloadFile, value);
-}
-function to_candid_PaymentStatus_n94(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n95(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n19(_uploadFile, _downloadFile, value) {
   return to_candid_variant_n20(_uploadFile, _downloadFile, value);
 }
-function to_candid_opt_n92(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n94(_uploadFile, _downloadFile, value) {
   return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n93(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n95(_uploadFile, _downloadFile, value) {
   return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_variant_n20(_uploadFile, _downloadFile, value) {
@@ -36283,16 +36420,31 @@ function to_candid_variant_n20(_uploadFile, _downloadFile, value) {
     guest: null
   } : value;
 }
-function to_candid_variant_n50(_uploadFile, _downloadFile, value) {
-  return value == "admin" ? {
+function to_candid_variant_n22(_uploadFile, _downloadFile, value) {
+  return value == "accounting" ? {
+    accounting: null
+  } : value == "paymentQueue" ? {
+    paymentQueue: null
+  } : value == "salesPromoReporting" ? {
+    salesPromoReporting: null
+  } : value;
+}
+function to_candid_variant_n52(_uploadFile, _downloadFile, value) {
+  return value == "accounting" ? {
+    accounting: null
+  } : value == "paymentQueue" ? {
+    paymentQueue: null
+  } : value == "admin" ? {
     admin: null
+  } : value == "salesPromoReporting" ? {
+    salesPromoReporting: null
   } : value == "cashier" ? {
     cashier: null
   } : value == "driver" ? {
     driver: null
   } : value;
 }
-function to_candid_variant_n91(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n93(_uploadFile, _downloadFile, value) {
   return value == "none" ? {
     none: null
   } : value == "invoiced" ? {
@@ -36301,7 +36453,7 @@ function to_candid_variant_n91(_uploadFile, _downloadFile, value) {
     failed: null
   } : value;
 }
-function to_candid_variant_n95(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n97(_uploadFile, _downloadFile, value) {
   return value == "expired" ? {
     expired: null
   } : value == "paid" ? {
@@ -36312,7 +36464,7 @@ function to_candid_variant_n95(_uploadFile, _downloadFile, value) {
     unpaid: null
   } : value;
 }
-function to_candid_variant_n97(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n99(_uploadFile, _downloadFile, value) {
   return value == "cancelled" ? {
     cancelled: null
   } : value == "pending" ? {
@@ -36341,31 +36493,6 @@ function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
   });
   return new Backend(actor, _uploadFile, _downloadFile, options.processError);
 }
-function useAuth() {
-  const ii = useInternetIdentity();
-  const { actor, isFetching } = useActor(createActor);
-  const adminQuery = useQuery({
-    queryKey: ["auth", "isAdmin", !!ii.identity],
-    queryFn: async () => {
-      if (!actor) return false;
-      try {
-        return await actor.isCallerAdmin();
-      } catch {
-        return false;
-      }
-    },
-    enabled: !!ii.identity && !!actor && !isFetching,
-    staleTime: 6e4
-  });
-  return {
-    isAuthenticated: ii.isAuthenticated,
-    isInitializing: ii.isInitializing,
-    login: ii.login,
-    clear: ii.clear,
-    isAdmin: Boolean(adminQuery.data),
-    isAdminLoading: adminQuery.isLoading && !!ii.identity
-  };
-}
 function useCanister() {
   const { actor, isFetching } = useActor(createActor);
   return { actor, isFetching };
@@ -36374,14 +36501,31 @@ function unwrap(result) {
   if (result.__kind__ === "ok") return result.ok;
   throw new Error(result.err);
 }
-async function listOrders(actor) {
-  return actor.listOrders();
+async function listOrders(actor, deviceId = "") {
+  return actor.listOrders(deviceId);
 }
-async function getOrder(actor, orderId) {
-  return unwrap(await actor.getOrder(orderId));
+async function getOrdersByEmail(actor, email, deviceId = "") {
+  return actor.getOrdersByEmail(email, deviceId);
+}
+async function getOrder(actor, orderId, deviceId = "") {
+  return unwrap(await actor.getOrder(orderId, deviceId));
 }
 async function getOrderStatus(actor, orderId) {
   return unwrap(await actor.getOrderStatus(orderId));
+}
+async function listPendingPaymentOrders(actor, restaurantId, deviceId = "") {
+  return actor.listPendingPaymentOrders(restaurantId, deviceId);
+}
+async function confirmPaymentByDevice(actor, deviceId, orderId) {
+  return unwrap(await actor.confirmPaymentByDevice(deviceId, orderId));
+}
+async function cleanupOrderByDevice(actor, deviceId, orderId) {
+  return unwrap(await actor.cleanupOrderByDevice(deviceId, orderId));
+}
+async function issueInvoiceByDevice(actor, deviceId, orderId, invoiceId, pdfUrl) {
+  return unwrap(
+    await actor.issueInvoiceByDevice(deviceId, orderId, invoiceId, pdfUrl)
+  );
 }
 async function generateActivationCode(actor, restaurantId, role) {
   return unwrap(await actor.generateActivationCode(restaurantId, role));
@@ -36518,12 +36662,13 @@ async function getKmUsageCount(actor, email, programCode) {
 async function getCurrentSalesPromo(actor) {
   return actor.getCurrentSalesPromo();
 }
-async function listPromotions(actor) {
-  return unwrap(await actor.listPromotions());
+async function listPromotions(actor, deviceId = "") {
+  return unwrap(await actor.listPromotions(deviceId));
 }
-async function createPromotion(actor, input) {
+async function createPromotion(actor, deviceId, input) {
   return unwrap(
     await actor.createPromotion(
+      deviceId,
       input.name,
       input.startDate,
       input.endDate,
@@ -36536,9 +36681,10 @@ async function createPromotion(actor, input) {
     )
   );
 }
-async function updatePromotion(actor, code, input, active) {
+async function updatePromotion(actor, deviceId, code, input, active) {
   return unwrap(
     await actor.updatePromotion(
+      deviceId,
       code,
       input.name,
       input.startDate,
@@ -36553,21 +36699,22 @@ async function updatePromotion(actor, code, input, active) {
     )
   );
 }
-async function deletePromotion(actor, code) {
-  unwrap(await actor.deletePromotion(code));
+async function deletePromotion(actor, deviceId, code) {
+  unwrap(await actor.deletePromotion(deviceId, code));
 }
-async function stopPromotion(actor, code) {
-  return unwrap(await actor.stopPromotion(code));
+async function stopPromotion(actor, deviceId, code) {
+  return unwrap(await actor.stopPromotion(deviceId, code));
 }
-async function isPromotionUsed(actor, code) {
-  return unwrap(await actor.isPromotionUsed(code));
+async function isPromotionUsed(actor, deviceId, code) {
+  return unwrap(await actor.isPromotionUsed(deviceId, code));
 }
-async function listRegistrationPromos(actor) {
-  return unwrap(await actor.listRegistrationPromos());
+async function listRegistrationPromos(actor, deviceId = "") {
+  return unwrap(await actor.listRegistrationPromos(deviceId));
 }
-async function createRegistrationPromo(actor, input) {
+async function createRegistrationPromo(actor, deviceId, input) {
   return unwrap(
     await actor.createRegistrationPromo(
+      deviceId,
       input.name,
       input.startDate,
       input.endDate,
@@ -36577,9 +36724,10 @@ async function createRegistrationPromo(actor, input) {
     )
   );
 }
-async function updateRegistrationPromo(actor, code, input, active) {
+async function updateRegistrationPromo(actor, deviceId, code, input, active) {
   return unwrap(
     await actor.updateRegistrationPromo(
+      deviceId,
       code,
       input.name,
       input.startDate,
@@ -36591,21 +36739,22 @@ async function updateRegistrationPromo(actor, code, input, active) {
     )
   );
 }
-async function deleteRegistrationPromo(actor, code) {
-  unwrap(await actor.deleteRegistrationPromo(code));
+async function deleteRegistrationPromo(actor, deviceId, code) {
+  unwrap(await actor.deleteRegistrationPromo(deviceId, code));
 }
-async function stopRegistrationPromo(actor, code) {
-  return unwrap(await actor.stopRegistrationPromo(code));
+async function stopRegistrationPromo(actor, deviceId, code) {
+  return unwrap(await actor.stopRegistrationPromo(deviceId, code));
 }
-async function isRegistrationPromoUsed(actor, code) {
-  return unwrap(await actor.isRegistrationPromoUsed(code));
+async function isRegistrationPromoUsed(actor, deviceId, code) {
+  return unwrap(await actor.isRegistrationPromoUsed(deviceId, code));
 }
-async function listSalesPromos(actor) {
-  return unwrap(await actor.listSalesPromos());
+async function listSalesPromos(actor, deviceId = "") {
+  return unwrap(await actor.listSalesPromos(deviceId));
 }
-async function createSalesPromo(actor, input) {
+async function createSalesPromo(actor, deviceId, input) {
   return unwrap(
     await actor.createSalesPromo(
+      deviceId,
       input.name,
       input.startDate,
       input.endDate,
@@ -36616,9 +36765,10 @@ async function createSalesPromo(actor, input) {
     )
   );
 }
-async function updateSalesPromo(actor, code, input, active) {
+async function updateSalesPromo(actor, deviceId, code, input, active) {
   return unwrap(
     await actor.updateSalesPromo(
+      deviceId,
       code,
       input.name,
       input.startDate,
@@ -36631,14 +36781,14 @@ async function updateSalesPromo(actor, code, input, active) {
     )
   );
 }
-async function deleteSalesPromo(actor, code) {
-  unwrap(await actor.deleteSalesPromo(code));
+async function deleteSalesPromo(actor, deviceId, code) {
+  unwrap(await actor.deleteSalesPromo(deviceId, code));
 }
-async function stopSalesPromo(actor, code) {
-  return unwrap(await actor.stopSalesPromo(code));
+async function stopSalesPromo(actor, deviceId, code) {
+  return unwrap(await actor.stopSalesPromo(deviceId, code));
 }
-async function isSalesPromoUsed(actor, code) {
-  return unwrap(await actor.isSalesPromoUsed(code));
+async function isSalesPromoUsed(actor, deviceId, code) {
+  return unwrap(await actor.isSalesPromoUsed(deviceId, code));
 }
 async function listMyVouchers(actor, email) {
   return actor.listMyVouchers(email);
@@ -36647,19 +36797,27 @@ function useActorOrNull() {
   const { actor, isFetching } = useActor(createActor);
   return { actor, isFetching };
 }
-function useOrders() {
+function useOrders(deviceId) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["orders"],
-    queryFn: () => actor ? listOrders(actor) : Promise.resolve([]),
+    queryKey: ["orders", deviceId],
+    queryFn: () => actor ? listOrders(actor, deviceId) : Promise.resolve([]),
     enabled: !!actor && !isFetching
   });
 }
-function useGetOrder(orderId) {
+function useOrdersByEmail(email, deviceId) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["order", orderId],
-    queryFn: () => actor && orderId ? getOrder(actor, orderId) : Promise.resolve(null),
+    queryKey: ["ordersByEmail", email, deviceId],
+    queryFn: () => actor && email ? getOrdersByEmail(actor, email, deviceId) : Promise.resolve([]),
+    enabled: !!actor && !isFetching && !!email
+  });
+}
+function useGetOrder(orderId, deviceId) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["order", orderId, deviceId],
+    queryFn: () => actor && orderId ? getOrder(actor, orderId, deviceId) : Promise.resolve(null),
     enabled: !!actor && !isFetching && !!orderId,
     // Poll every 5s so order.paymentStatus (which drives the QrPayment
     // 'Thanh toán' button) refreshes live after a customer pays while on the
@@ -36812,6 +36970,23 @@ function useGenerateActivationCode() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] })
   });
 }
+function useActivateDevice() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args) => {
+      if (!actor) throw new Error("Actor not ready");
+      return activateDevice(
+        actor,
+        args.code,
+        args.deviceId,
+        args.name,
+        args.phone
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] })
+  });
+}
 function useRevokeDevice() {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
@@ -36829,6 +37004,61 @@ function useCleanupExpiredActivations() {
     mutationFn: () => {
       if (!actor) throw new Error("Actor not ready");
       return cleanupExpiredActivations(actor);
+    }
+  });
+}
+function useListPendingPaymentOrders(restaurantId, deviceId, refetchIntervalMs) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["pendingPaymentOrders", restaurantId, deviceId],
+    queryFn: () => actor && restaurantId ? listPendingPaymentOrders(actor, restaurantId, deviceId) : Promise.resolve([]),
+    enabled: !!actor && !isFetching && !!restaurantId,
+    refetchInterval: refetchIntervalMs
+  });
+}
+function useConfirmPaymentByDevice(deviceId) {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (orderId) => {
+      if (!actor) throw new Error("Actor not ready");
+      return confirmPaymentByDevice(actor, deviceId ?? "", orderId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pendingPaymentOrders"] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    }
+  });
+}
+function useCleanupOrderByDevice(deviceId) {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (orderId) => {
+      if (!actor) throw new Error("Actor not ready");
+      return cleanupOrderByDevice(actor, deviceId ?? "", orderId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    }
+  });
+}
+function useIssueInvoiceByDevice(deviceId) {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args) => {
+      if (!actor) throw new Error("Actor not ready");
+      return issueInvoiceByDevice(
+        actor,
+        deviceId ?? "",
+        args.orderId,
+        args.invoiceId,
+        args.pdfUrl
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
     }
   });
 }
@@ -36957,21 +37187,21 @@ function useCurrentSalesPromo() {
     enabled: !!actor && !isFetching
   });
 }
-function usePromotions() {
+function usePromotions(deviceId) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["promotions"],
-    queryFn: () => actor ? listPromotions(actor) : Promise.resolve([]),
+    queryKey: ["promotions", deviceId],
+    queryFn: () => actor ? listPromotions(actor, deviceId) : Promise.resolve([]),
     enabled: !!actor && !isFetching
   });
 }
-function useCreatePromotion() {
+function useCreatePromotion(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (input) => {
       if (!actor) throw new Error("Actor not ready");
-      return createPromotion(actor, input);
+      return createPromotion(actor, deviceId ?? "", input);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });
@@ -36979,13 +37209,19 @@ function useCreatePromotion() {
     }
   });
 }
-function useUpdatePromotion() {
+function useUpdatePromotion(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (args) => {
       if (!actor) throw new Error("Actor not ready");
-      return updatePromotion(actor, args.code, args.input, args.active);
+      return updatePromotion(
+        actor,
+        deviceId ?? "",
+        args.code,
+        args.input,
+        args.active
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });
@@ -36993,13 +37229,13 @@ function useUpdatePromotion() {
     }
   });
 }
-function useDeletePromotion() {
+function useDeletePromotion(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code) => {
       if (!actor) throw new Error("Actor not ready");
-      return deletePromotion(actor, code);
+      return deletePromotion(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });
@@ -37007,21 +37243,21 @@ function useDeletePromotion() {
     }
   });
 }
-function useIsPromotionUsed(code) {
+function useIsPromotionUsed(code, deviceId) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["promotionUsed", code],
-    queryFn: () => actor ? isPromotionUsed(actor, code) : Promise.resolve(false),
+    queryKey: ["promotionUsed", code, deviceId],
+    queryFn: () => actor ? isPromotionUsed(actor, "", code) : Promise.resolve(false),
     enabled: !!actor && !isFetching && !!code
   });
 }
-function useStopPromotion() {
+function useStopPromotion(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code) => {
       if (!actor) throw new Error("Actor not ready");
-      return stopPromotion(actor, code);
+      return stopPromotion(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });
@@ -37029,28 +37265,28 @@ function useStopPromotion() {
     }
   });
 }
-function useRegistrationPromos() {
+function useRegistrationPromos(deviceId) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["registrationPromos"],
-    queryFn: () => actor ? listRegistrationPromos(actor) : Promise.resolve([]),
+    queryKey: ["registrationPromos", deviceId],
+    queryFn: () => actor ? listRegistrationPromos(actor, deviceId) : Promise.resolve([]),
     enabled: !!actor && !isFetching
   });
 }
-function useCreateRegistrationPromo() {
+function useCreateRegistrationPromo(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (input) => {
       if (!actor) throw new Error("Actor not ready");
-      return createRegistrationPromo(actor, input);
+      return createRegistrationPromo(actor, deviceId ?? "", input);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["registrationPromos"] });
     }
   });
 }
-function useUpdateRegistrationPromo() {
+function useUpdateRegistrationPromo(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
@@ -37058,6 +37294,7 @@ function useUpdateRegistrationPromo() {
       if (!actor) throw new Error("Actor not ready");
       return updateRegistrationPromo(
         actor,
+        deviceId ?? "",
         args.code,
         args.input,
         args.active
@@ -37068,102 +37305,108 @@ function useUpdateRegistrationPromo() {
     }
   });
 }
-function useDeleteRegistrationPromo() {
+function useDeleteRegistrationPromo(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code) => {
       if (!actor) throw new Error("Actor not ready");
-      return deleteRegistrationPromo(actor, code);
+      return deleteRegistrationPromo(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["registrationPromos"] });
     }
   });
 }
-function useIsRegistrationPromoUsed(code) {
+function useIsRegistrationPromoUsed(code, deviceId) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["registrationPromoUsed", code],
-    queryFn: () => actor ? isRegistrationPromoUsed(actor, code) : Promise.resolve(false),
+    queryKey: ["registrationPromoUsed", code, deviceId],
+    queryFn: () => actor ? isRegistrationPromoUsed(actor, "", code) : Promise.resolve(false),
     enabled: !!actor && !isFetching && !!code
   });
 }
-function useStopRegistrationPromo() {
+function useStopRegistrationPromo(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code) => {
       if (!actor) throw new Error("Actor not ready");
-      return stopRegistrationPromo(actor, code);
+      return stopRegistrationPromo(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["registrationPromos"] });
     }
   });
 }
-function useSalesPromos() {
+function useSalesPromos(deviceId) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["salesPromos"],
-    queryFn: () => actor ? listSalesPromos(actor) : Promise.resolve([]),
+    queryKey: ["salesPromos", deviceId],
+    queryFn: () => actor ? listSalesPromos(actor, deviceId) : Promise.resolve([]),
     enabled: !!actor && !isFetching
   });
 }
-function useCreateSalesPromo() {
+function useCreateSalesPromo(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (input) => {
       if (!actor) throw new Error("Actor not ready");
-      return createSalesPromo(actor, input);
+      return createSalesPromo(actor, deviceId ?? "", input);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesPromos"] });
     }
   });
 }
-function useUpdateSalesPromo() {
+function useUpdateSalesPromo(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (args) => {
       if (!actor) throw new Error("Actor not ready");
-      return updateSalesPromo(actor, args.code, args.input, args.active);
+      return updateSalesPromo(
+        actor,
+        deviceId ?? "",
+        args.code,
+        args.input,
+        args.active
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesPromos"] });
     }
   });
 }
-function useDeleteSalesPromo() {
+function useDeleteSalesPromo(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code) => {
       if (!actor) throw new Error("Actor not ready");
-      return deleteSalesPromo(actor, code);
+      return deleteSalesPromo(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesPromos"] });
     }
   });
 }
-function useIsSalesPromoUsed(code) {
+function useIsSalesPromoUsed(code, deviceId) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["salesPromoUsed", code],
-    queryFn: () => actor ? isSalesPromoUsed(actor, code) : Promise.resolve(false),
+    queryKey: ["salesPromoUsed", code, deviceId],
+    queryFn: () => actor ? isSalesPromoUsed(actor, "", code) : Promise.resolve(false),
     enabled: !!actor && !isFetching && !!code
   });
 }
-function useStopSalesPromo() {
+function useStopSalesPromo(deviceId) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code) => {
       if (!actor) throw new Error("Actor not ready");
-      return stopSalesPromo(actor, code);
+      return stopSalesPromo(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesPromos"] });
@@ -37177,6 +37420,1748 @@ function useMyVouchers(email) {
     queryFn: () => actor && email ? listMyVouchers(actor, email) : Promise.resolve([]),
     enabled: !!actor && !isFetching && !!email
   });
+}
+const ENTERPRISE_STORAGE_KEY = "bbh_enterprise_activation";
+function loadEnterpriseActivation() {
+  try {
+    const raw = localStorage.getItem(ENTERPRISE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if ((parsed == null ? void 0 : parsed.restaurantId) && (parsed == null ? void 0 : parsed.deviceId)) {
+      return {
+        restaurantId: parsed.restaurantId,
+        deviceId: parsed.deviceId,
+        name: typeof parsed.name === "string" ? parsed.name : ""
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+function saveEnterpriseActivation(activation) {
+  try {
+    localStorage.setItem(ENTERPRISE_STORAGE_KEY, JSON.stringify(activation));
+  } catch {
+  }
+}
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+const toCamelCase = (string) => string.replace(
+  /^([A-Z])|[\s-_]+(\w)/g,
+  (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase()
+);
+const toPascalCase = (string) => {
+  const camelCase = toCamelCase(string);
+  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
+};
+const mergeClasses = (...classes) => classes.filter((className, index2, array) => {
+  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index2;
+}).join(" ").trim();
+const hasA11yProp = (props) => {
+  for (const prop in props) {
+    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
+      return true;
+    }
+  }
+};
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+var defaultAttributes = {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: 24,
+  height: 24,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+};
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const Icon$1 = reactExports.forwardRef(
+  ({
+    color = "currentColor",
+    size: size2 = 24,
+    strokeWidth = 2,
+    absoluteStrokeWidth,
+    className = "",
+    children,
+    iconNode,
+    ...rest
+  }, ref) => reactExports.createElement(
+    "svg",
+    {
+      ref,
+      ...defaultAttributes,
+      width: size2,
+      height: size2,
+      stroke: color,
+      strokeWidth: absoluteStrokeWidth ? Number(strokeWidth) * 24 / Number(size2) : strokeWidth,
+      className: mergeClasses("lucide", className),
+      ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
+      ...rest
+    },
+    [
+      ...iconNode.map(([tag, attrs]) => reactExports.createElement(tag, attrs)),
+      ...Array.isArray(children) ? children : [children]
+    ]
+  )
+);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const createLucideIcon = (iconName, iconNode) => {
+  const Component2 = reactExports.forwardRef(
+    ({ className, ...props }, ref) => reactExports.createElement(Icon$1, {
+      ref,
+      iconNode,
+      className: mergeClasses(
+        `lucide-${toKebabCase(toPascalCase(iconName))}`,
+        `lucide-${iconName}`,
+        className
+      ),
+      ...props
+    })
+  );
+  Component2.displayName = toPascalCase(iconName);
+  return Component2;
+};
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$18 = [
+  ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
+  ["path", { d: "M19 12H5", key: "x3x0zl" }]
+];
+const ArrowLeft = createLucideIcon("arrow-left", __iconNode$18);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$17 = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+];
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$17);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$16 = [
+  ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }],
+  ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }],
+  ["path", { d: "M6 12h.01M18 12h.01", key: "113zkx" }]
+];
+const Banknote = createLucideIcon("banknote", __iconNode$16);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$15 = [
+  ["circle", { cx: "18.5", cy: "17.5", r: "3.5", key: "15x4ox" }],
+  ["circle", { cx: "5.5", cy: "17.5", r: "3.5", key: "1noe27" }],
+  ["circle", { cx: "15", cy: "5", r: "1", key: "19l28e" }],
+  ["path", { d: "M12 17.5V14l-3-3 4-3 2 3h2", key: "1npguv" }]
+];
+const Bike = createLucideIcon("bike", __iconNode$15);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$14 = [
+  ["path", { d: "M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z", key: "1b4qmf" }],
+  ["path", { d: "M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2", key: "i71pzd" }],
+  ["path", { d: "M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2", key: "10jefs" }],
+  ["path", { d: "M10 6h4", key: "1itunk" }],
+  ["path", { d: "M10 10h4", key: "tcdvrf" }],
+  ["path", { d: "M10 14h4", key: "kelpxr" }],
+  ["path", { d: "M10 18h4", key: "1ulq68" }]
+];
+const Building2 = createLucideIcon("building-2", __iconNode$14);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$13 = [
+  ["path", { d: "M8 2v4", key: "1cmpym" }],
+  ["path", { d: "M16 2v4", key: "4m81vk" }],
+  ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
+  ["path", { d: "M3 10h18", key: "8toen8" }],
+  ["path", { d: "M8 14h.01", key: "6423bh" }],
+  ["path", { d: "M12 14h.01", key: "1etili" }],
+  ["path", { d: "M16 14h.01", key: "1gbofw" }],
+  ["path", { d: "M8 18h.01", key: "lrp35t" }],
+  ["path", { d: "M12 18h.01", key: "mhygvu" }],
+  ["path", { d: "M16 18h.01", key: "kzsmim" }]
+];
+const CalendarDays = createLucideIcon("calendar-days", __iconNode$13);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$12 = [
+  ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
+  ["path", { d: "M16 2v4", key: "4m81vk" }],
+  ["path", { d: "M3 10h18", key: "8toen8" }],
+  ["path", { d: "M8 2v4", key: "1cmpym" }],
+  ["path", { d: "M17 14h-6", key: "bkmgh3" }],
+  ["path", { d: "M13 18H7", key: "bb0bb7" }],
+  ["path", { d: "M7 14h.01", key: "1qa3f1" }],
+  ["path", { d: "M17 18h.01", key: "1bdyru" }]
+];
+const CalendarRange = createLucideIcon("calendar-range", __iconNode$12);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$11 = [
+  ["path", { d: "M8 2v4", key: "1cmpym" }],
+  ["path", { d: "M16 2v4", key: "4m81vk" }],
+  ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
+  ["path", { d: "M3 10h18", key: "8toen8" }]
+];
+const Calendar = createLucideIcon("calendar", __iconNode$11);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$10 = [
+  [
+    "path",
+    {
+      d: "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z",
+      key: "1tc9qg"
+    }
+  ],
+  ["circle", { cx: "12", cy: "13", r: "3", key: "1vg3eu" }]
+];
+const Camera = createLucideIcon("camera", __iconNode$10);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$$ = [
+  ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
+  ["path", { d: "M18 17V9", key: "2bz60n" }],
+  ["path", { d: "M13 17V5", key: "1frdt8" }],
+  ["path", { d: "M8 17v-3", key: "17ska0" }]
+];
+const ChartColumn = createLucideIcon("chart-column", __iconNode$$);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$_ = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$_);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$Z = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$Z);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$Y = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+const ChevronUp = createLucideIcon("chevron-up", __iconNode$Y);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$X = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
+  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+];
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$X);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$W = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+];
+const CircleCheck = createLucideIcon("circle-check", __iconNode$W);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$V = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["rect", { x: "9", y: "9", width: "6", height: "6", rx: "1", key: "1ssd4o" }]
+];
+const CircleStop = createLucideIcon("circle-stop", __iconNode$V);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$U = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
+  ["path", { d: "m9 9 6 6", key: "z0biqf" }]
+];
+const CircleX = createLucideIcon("circle-x", __iconNode$U);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$T = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
+];
+const Clock = createLucideIcon("clock", __iconNode$T);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$S = [
+  ["path", { d: "M12 13v8", key: "1l5pq0" }],
+  ["path", { d: "M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242", key: "1pljnt" }],
+  ["path", { d: "m8 17 4-4 4 4", key: "1quai1" }]
+];
+const CloudUpload = createLucideIcon("cloud-upload", __iconNode$S);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$R = [
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
+];
+const Copy = createLucideIcon("copy", __iconNode$R);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$Q = [
+  ["rect", { width: "20", height: "14", x: "2", y: "5", rx: "2", key: "ynyp8z" }],
+  ["line", { x1: "2", x2: "22", y1: "10", y2: "10", key: "1b3vmo" }]
+];
+const CreditCard = createLucideIcon("credit-card", __iconNode$Q);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$P = [
+  ["path", { d: "M12 15V3", key: "m9g1x1" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
+  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
+];
+const Download = createLucideIcon("download", __iconNode$P);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$O = [
+  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
+  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
+  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
+];
+const ExternalLink = createLucideIcon("external-link", __iconNode$O);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$N = [
+  [
+    "path",
+    {
+      d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
+      key: "ct8e1f"
+    }
+  ],
+  ["path", { d: "M14.084 14.158a3 3 0 0 1-4.242-4.242", key: "151rxh" }],
+  [
+    "path",
+    {
+      d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
+      key: "13bj9a"
+    }
+  ],
+  ["path", { d: "m2 2 20 20", key: "1ooewy" }]
+];
+const EyeOff = createLucideIcon("eye-off", __iconNode$N);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$M = [
+  [
+    "path",
+    {
+      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+      key: "1nclc0"
+    }
+  ],
+  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
+];
+const Eye = createLucideIcon("eye", __iconNode$M);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$L = [
+  ["path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", key: "1rqfz7" }],
+  ["path", { d: "M14 2v4a2 2 0 0 0 2 2h4", key: "tnqrlb" }],
+  ["path", { d: "M10 9H8", key: "b1mrlr" }],
+  ["path", { d: "M16 13H8", key: "t4e002" }],
+  ["path", { d: "M16 17H8", key: "z1uh3a" }]
+];
+const FileText = createLucideIcon("file-text", __iconNode$L);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$K = [
+  [
+    "path",
+    {
+      d: "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z",
+      key: "96xj49"
+    }
+  ]
+];
+const Flame = createLucideIcon("flame", __iconNode$K);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$J = [
+  ["rect", { x: "3", y: "8", width: "18", height: "4", rx: "1", key: "bkv52" }],
+  ["path", { d: "M12 8v13", key: "1c76mn" }],
+  ["path", { d: "M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7", key: "6wjy6b" }],
+  [
+    "path",
+    {
+      d: "M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5",
+      key: "1ihvrl"
+    }
+  ]
+];
+const Gift = createLucideIcon("gift", __iconNode$J);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$I = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
+  ["path", { d: "M2 12h20", key: "9i4pu4" }]
+];
+const Globe = createLucideIcon("globe", __iconNode$I);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$H = [
+  ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
+  ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
+  ["path", { d: "M12 7v5l4 2", key: "1fdv2h" }]
+];
+const History = createLucideIcon("history", __iconNode$H);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$G = [
+  ["path", { d: "M16 5h6", key: "1vod17" }],
+  ["path", { d: "M19 2v6", key: "4bpg5p" }],
+  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
+];
+const ImagePlus = createLucideIcon("image-plus", __iconNode$G);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$F = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
+];
+const Image$1 = createLucideIcon("image", __iconNode$F);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$E = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "M12 16v-4", key: "1dtifu" }],
+  ["path", { d: "M12 8h.01", key: "e9boi3" }]
+];
+const Info = createLucideIcon("info", __iconNode$E);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$D = [
+  [
+    "path",
+    {
+      d: "M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z",
+      key: "1s6t7t"
+    }
+  ],
+  ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
+];
+const KeyRound = createLucideIcon("key-round", __iconNode$D);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$C = [
+  ["path", { d: "M10 12h11", key: "6m4ad9" }],
+  ["path", { d: "M10 18h11", key: "11hvi2" }],
+  ["path", { d: "M10 6h11", key: "c7qv1k" }],
+  ["path", { d: "M4 10h2", key: "16xx2s" }],
+  ["path", { d: "M4 6h1v4", key: "cnovpq" }],
+  ["path", { d: "M6 18H4c0-1 2-2 2-3s-1-1.5-2-1", key: "m9a95d" }]
+];
+const ListOrdered = createLucideIcon("list-ordered", __iconNode$C);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$B = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+const LoaderCircle = createLucideIcon("loader-circle", __iconNode$B);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$A = [
+  ["path", { d: "m16 17 5-5-5-5", key: "1bji2h" }],
+  ["path", { d: "M21 12H9", key: "dn1m92" }],
+  ["path", { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", key: "1uf3rs" }]
+];
+const LogOut = createLucideIcon("log-out", __iconNode$A);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$z = [
+  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
+  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
+];
+const Mail = createLucideIcon("mail", __iconNode$z);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$y = [
+  [
+    "path",
+    {
+      d: "M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",
+      key: "1r0f0z"
+    }
+  ],
+  ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }]
+];
+const MapPin = createLucideIcon("map-pin", __iconNode$y);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$x = [["path", { d: "M5 12h14", key: "1ays0h" }]];
+const Minus = createLucideIcon("minus", __iconNode$x);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$w = [
+  [
+    "path",
+    {
+      d: "M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14",
+      key: "e7tb2h"
+    }
+  ],
+  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }],
+  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
+  ["line", { x1: "12", x2: "12", y1: "22", y2: "12", key: "a4e8g8" }],
+  ["circle", { cx: "18.5", cy: "15.5", r: "2.5", key: "b5zd12" }],
+  ["path", { d: "M20.27 17.27 22 19", key: "1l4muz" }]
+];
+const PackageSearch = createLucideIcon("package-search", __iconNode$w);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$v = [
+  [
+    "path",
+    {
+      d: "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z",
+      key: "1a0edw"
+    }
+  ],
+  ["path", { d: "M12 22V12", key: "d0xqtd" }],
+  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
+  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
+];
+const Package = createLucideIcon("package", __iconNode$v);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$u = [
+  ["path", { d: "M5.8 11.3 2 22l10.7-3.79", key: "gwxi1d" }],
+  ["path", { d: "M4 3h.01", key: "1vcuye" }],
+  ["path", { d: "M22 8h.01", key: "1mrtc2" }],
+  ["path", { d: "M15 2h.01", key: "1cjtqr" }],
+  ["path", { d: "M22 20h.01", key: "1mrys2" }],
+  [
+    "path",
+    {
+      d: "m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10",
+      key: "hbicv8"
+    }
+  ],
+  [
+    "path",
+    { d: "m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17", key: "1i94pl" }
+  ],
+  ["path", { d: "m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7", key: "1cofks" }],
+  [
+    "path",
+    {
+      d: "M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z",
+      key: "4kbmks"
+    }
+  ]
+];
+const PartyPopper = createLucideIcon("party-popper", __iconNode$u);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$t = [
+  [
+    "path",
+    {
+      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+      key: "1a8usu"
+    }
+  ],
+  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
+];
+const Pencil = createLucideIcon("pencil", __iconNode$t);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$s = [
+  ["line", { x1: "19", x2: "5", y1: "5", y2: "19", key: "1x9vlm" }],
+  ["circle", { cx: "6.5", cy: "6.5", r: "2.5", key: "4mh3h7" }],
+  ["circle", { cx: "17.5", cy: "17.5", r: "2.5", key: "1mdrzq" }]
+];
+const Percent = createLucideIcon("percent", __iconNode$s);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$r = [
+  [
+    "path",
+    {
+      d: "M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384",
+      key: "9njp5v"
+    }
+  ]
+];
+const Phone = createLucideIcon("phone", __iconNode$r);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$q = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
+];
+const Plus = createLucideIcon("plus", __iconNode$q);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$p = [
+  [
+    "path",
+    { d: "M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", key: "q3az6g" }
+  ],
+  ["path", { d: "M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8", key: "1h4pet" }],
+  ["path", { d: "M12 17.5v-11", key: "1jc1ny" }]
+];
+const Receipt = createLucideIcon("receipt", __iconNode$p);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$o = [
+  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+  ["path", { d: "M8 16H3v5", key: "1cv678" }]
+];
+const RefreshCw = createLucideIcon("refresh-cw", __iconNode$o);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$n = [
+  [
+    "path",
+    {
+      d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+      key: "1c8476"
+    }
+  ],
+  ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7", key: "1ydtos" }],
+  ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7", key: "t51u73" }]
+];
+const Save = createLucideIcon("save", __iconNode$n);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$m = [
+  ["path", { d: "M15 12h-5", key: "r7krc0" }],
+  ["path", { d: "M15 8h-5", key: "1khuty" }],
+  ["path", { d: "M19 17V5a2 2 0 0 0-2-2H4", key: "zz82l3" }],
+  [
+    "path",
+    {
+      d: "M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3",
+      key: "1ph1d7"
+    }
+  ]
+];
+const ScrollText = createLucideIcon("scroll-text", __iconNode$m);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$l = [
+  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
+  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
+];
+const Search = createLucideIcon("search", __iconNode$l);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$k = [
+  [
+    "path",
+    {
+      d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+      key: "oel41y"
+    }
+  ],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+];
+const ShieldCheck = createLucideIcon("shield-check", __iconNode$k);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$j = [
+  ["path", { d: "m2 2 20 20", key: "1ooewy" }],
+  [
+    "path",
+    {
+      d: "M5 5a1 1 0 0 0-1 1v7c0 5 3.5 7.5 7.67 8.94a1 1 0 0 0 .67.01c2.35-.82 4.48-1.97 5.9-3.71",
+      key: "1jlk70"
+    }
+  ],
+  [
+    "path",
+    {
+      d: "M9.309 3.652A12.252 12.252 0 0 0 11.24 2.28a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7a9.784 9.784 0 0 1-.08 1.264",
+      key: "18rp1v"
+    }
+  ]
+];
+const ShieldOff = createLucideIcon("shield-off", __iconNode$j);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$i = [
+  ["path", { d: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z", key: "hou9p0" }],
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M16 10a4 4 0 0 1-8 0", key: "1ltviw" }]
+];
+const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$i);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$h = [
+  ["circle", { cx: "8", cy: "21", r: "1", key: "jimo8o" }],
+  ["circle", { cx: "19", cy: "21", r: "1", key: "13723u" }],
+  [
+    "path",
+    {
+      d: "M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12",
+      key: "9zh506"
+    }
+  ]
+];
+const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$h);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$g = [
+  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
+  ["path", { d: "M12 18h.01", key: "mhygvu" }]
+];
+const Smartphone = createLucideIcon("smartphone", __iconNode$g);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$f = [
+  [
+    "path",
+    {
+      d: "M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z",
+      key: "4pj2yx"
+    }
+  ],
+  ["path", { d: "M20 3v4", key: "1olli1" }],
+  ["path", { d: "M22 5h-4", key: "1gvqau" }],
+  ["path", { d: "M4 17v2", key: "vumght" }],
+  ["path", { d: "M5 18H3", key: "zchphs" }]
+];
+const Sparkles = createLucideIcon("sparkles", __iconNode$f);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$e = [
+  ["path", { d: "m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7", key: "ztvudi" }],
+  ["path", { d: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8", key: "1b2hhj" }],
+  ["path", { d: "M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4", key: "2ebpfo" }],
+  ["path", { d: "M2 7h20", key: "1fcdvo" }],
+  [
+    "path",
+    {
+      d: "M22 7v3a2 2 0 0 1-2 2a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7",
+      key: "6c3vgh"
+    }
+  ]
+];
+const Store$1 = createLucideIcon("store", __iconNode$e);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$d = [
+  [
+    "path",
+    {
+      d: "M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z",
+      key: "vktsd0"
+    }
+  ],
+  ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
+];
+const Tag = createLucideIcon("tag", __iconNode$d);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$c = [
+  [
+    "path",
+    {
+      d: "M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z",
+      key: "qn84l0"
+    }
+  ],
+  ["path", { d: "M13 5v2", key: "dyzc3o" }],
+  ["path", { d: "M13 17v2", key: "1ont0d" }],
+  ["path", { d: "M13 11v2", key: "1wjjxi" }]
+];
+const Ticket = createLucideIcon("ticket", __iconNode$c);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$b = [
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
+  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
+  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
+  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
+];
+const Trash2 = createLucideIcon("trash-2", __iconNode$b);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$a = [
+  ["path", { d: "M16 7h6v6", key: "box55l" }],
+  ["path", { d: "m22 7-8.5 8.5-5-5L2 17", key: "1t1m79" }]
+];
+const TrendingUp = createLucideIcon("trending-up", __iconNode$a);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$9 = [
+  [
+    "path",
+    {
+      d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3",
+      key: "wmoenq"
+    }
+  ],
+  ["path", { d: "M12 9v4", key: "juzpu7" }],
+  ["path", { d: "M12 17h.01", key: "p32p05" }]
+];
+const TriangleAlert = createLucideIcon("triangle-alert", __iconNode$9);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$8 = [
+  ["path", { d: "M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2", key: "wrbu53" }],
+  ["path", { d: "M15 18H9", key: "1lyqi6" }],
+  [
+    "path",
+    {
+      d: "M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14",
+      key: "lysw3i"
+    }
+  ],
+  ["circle", { cx: "17", cy: "18", r: "2", key: "332jqn" }],
+  ["circle", { cx: "7", cy: "18", r: "2", key: "19iecd" }]
+];
+const Truck = createLucideIcon("truck", __iconNode$8);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$7 = [
+  ["path", { d: "M12 3v12", key: "1x0j5s" }],
+  ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
+];
+const Upload = createLucideIcon("upload", __iconNode$7);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$6 = [
+  ["path", { d: "m16 11 2 2 4-4", key: "9rsbq5" }],
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+];
+const UserCheck = createLucideIcon("user-check", __iconNode$6);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$5 = [
+  ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
+  ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }]
+];
+const User = createLucideIcon("user", __iconNode$5);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$4 = [
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
+  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+];
+const Users = createLucideIcon("users", __iconNode$4);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$3 = [
+  ["path", { d: "m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8", key: "n7qcjb" }],
+  [
+    "path",
+    { d: "M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7", key: "d0u48b" }
+  ],
+  ["path", { d: "m2.1 21.8 6.4-6.3", key: "yn04lh" }],
+  ["path", { d: "m19 5-7 7", key: "194lzd" }]
+];
+const UtensilsCrossed = createLucideIcon("utensils-crossed", __iconNode$3);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$2 = [
+  [
+    "path",
+    {
+      d: "m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",
+      key: "ftymec"
+    }
+  ],
+  ["rect", { x: "2", y: "6", width: "14", height: "12", rx: "2", key: "158x01" }]
+];
+const Video = createLucideIcon("video", __iconNode$2);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$1 = [
+  [
+    "path",
+    {
+      d: "M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1",
+      key: "18etb6"
+    }
+  ],
+  ["path", { d: "M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4", key: "xoc0q4" }]
+];
+const Wallet = createLucideIcon("wallet", __iconNode$1);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode = [
+  ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
+  ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
+];
+const X = createLucideIcon("x", __iconNode);
+var jt = (n) => {
+  switch (n) {
+    case "success":
+      return ee;
+    case "info":
+      return ae;
+    case "warning":
+      return oe;
+    case "error":
+      return se;
+    default:
+      return null;
+  }
+}, te = Array(12).fill(0), Yt = ({ visible: n, className: e }) => React$4.createElement("div", { className: ["sonner-loading-wrapper", e].filter(Boolean).join(" "), "data-visible": n }, React$4.createElement("div", { className: "sonner-spinner" }, te.map((t, a2) => React$4.createElement("div", { className: "sonner-loading-bar", key: `spinner-bar-${a2}` })))), ee = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z", clipRule: "evenodd" })), oe = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z", clipRule: "evenodd" })), ae = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z", clipRule: "evenodd" })), se = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z", clipRule: "evenodd" })), Ot = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }, React$4.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }), React$4.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" }));
+var Ft = () => {
+  let [n, e] = React$4.useState(document.hidden);
+  return React$4.useEffect(() => {
+    let t = () => {
+      e(document.hidden);
+    };
+    return document.addEventListener("visibilitychange", t), () => window.removeEventListener("visibilitychange", t);
+  }, []), n;
+};
+var bt = 1, yt = class {
+  constructor() {
+    this.subscribe = (e) => (this.subscribers.push(e), () => {
+      let t = this.subscribers.indexOf(e);
+      this.subscribers.splice(t, 1);
+    });
+    this.publish = (e) => {
+      this.subscribers.forEach((t) => t(e));
+    };
+    this.addToast = (e) => {
+      this.publish(e), this.toasts = [...this.toasts, e];
+    };
+    this.create = (e) => {
+      var S2;
+      let { message: t, ...a2 } = e, u2 = typeof (e == null ? void 0 : e.id) == "number" || ((S2 = e.id) == null ? void 0 : S2.length) > 0 ? e.id : bt++, f2 = this.toasts.find((g2) => g2.id === u2), w2 = e.dismissible === void 0 ? true : e.dismissible;
+      return this.dismissedToasts.has(u2) && this.dismissedToasts.delete(u2), f2 ? this.toasts = this.toasts.map((g2) => g2.id === u2 ? (this.publish({ ...g2, ...e, id: u2, title: t }), { ...g2, ...e, id: u2, dismissible: w2, title: t }) : g2) : this.addToast({ title: t, ...a2, dismissible: w2, id: u2 }), u2;
+    };
+    this.dismiss = (e) => (this.dismissedToasts.add(e), e || this.toasts.forEach((t) => {
+      this.subscribers.forEach((a2) => a2({ id: t.id, dismiss: true }));
+    }), this.subscribers.forEach((t) => t({ id: e, dismiss: true })), e);
+    this.message = (e, t) => this.create({ ...t, message: e });
+    this.error = (e, t) => this.create({ ...t, message: e, type: "error" });
+    this.success = (e, t) => this.create({ ...t, type: "success", message: e });
+    this.info = (e, t) => this.create({ ...t, type: "info", message: e });
+    this.warning = (e, t) => this.create({ ...t, type: "warning", message: e });
+    this.loading = (e, t) => this.create({ ...t, type: "loading", message: e });
+    this.promise = (e, t) => {
+      if (!t) return;
+      let a2;
+      t.loading !== void 0 && (a2 = this.create({ ...t, promise: e, type: "loading", message: t.loading, description: typeof t.description != "function" ? t.description : void 0 }));
+      let u2 = e instanceof Promise ? e : e(), f2 = a2 !== void 0, w2, S2 = u2.then(async (i) => {
+        if (w2 = ["resolve", i], React$4.isValidElement(i)) f2 = false, this.create({ id: a2, type: "default", message: i });
+        else if (ie(i) && !i.ok) {
+          f2 = false;
+          let T2 = typeof t.error == "function" ? await t.error(`HTTP error! status: ${i.status}`) : t.error, F2 = typeof t.description == "function" ? await t.description(`HTTP error! status: ${i.status}`) : t.description;
+          this.create({ id: a2, type: "error", message: T2, description: F2 });
+        } else if (t.success !== void 0) {
+          f2 = false;
+          let T2 = typeof t.success == "function" ? await t.success(i) : t.success, F2 = typeof t.description == "function" ? await t.description(i) : t.description;
+          this.create({ id: a2, type: "success", message: T2, description: F2 });
+        }
+      }).catch(async (i) => {
+        if (w2 = ["reject", i], t.error !== void 0) {
+          f2 = false;
+          let D = typeof t.error == "function" ? await t.error(i) : t.error, T2 = typeof t.description == "function" ? await t.description(i) : t.description;
+          this.create({ id: a2, type: "error", message: D, description: T2 });
+        }
+      }).finally(() => {
+        var i;
+        f2 && (this.dismiss(a2), a2 = void 0), (i = t.finally) == null || i.call(t);
+      }), g2 = () => new Promise((i, D) => S2.then(() => w2[0] === "reject" ? D(w2[1]) : i(w2[1])).catch(D));
+      return typeof a2 != "string" && typeof a2 != "number" ? { unwrap: g2 } : Object.assign(a2, { unwrap: g2 });
+    };
+    this.custom = (e, t) => {
+      let a2 = (t == null ? void 0 : t.id) || bt++;
+      return this.create({ jsx: e(a2), id: a2, ...t }), a2;
+    };
+    this.getActiveToasts = () => this.toasts.filter((e) => !this.dismissedToasts.has(e.id));
+    this.subscribers = [], this.toasts = [], this.dismissedToasts = /* @__PURE__ */ new Set();
+  }
+}, v = new yt(), ne = (n, e) => {
+  let t = (e == null ? void 0 : e.id) || bt++;
+  return v.addToast({ title: n, ...e, id: t }), t;
+}, ie = (n) => n && typeof n == "object" && "ok" in n && typeof n.ok == "boolean" && "status" in n && typeof n.status == "number", le = ne, ce = () => v.toasts, de = () => v.getActiveToasts(), ue = Object.assign(le, { success: v.success, info: v.info, warning: v.warning, error: v.error, custom: v.custom, message: v.message, promise: v.promise, dismiss: v.dismiss, loading: v.loading }, { getHistory: ce, getToasts: de });
+function wt(n, { insertAt: e } = {}) {
+  if (typeof document == "undefined") return;
+  let t = document.head || document.getElementsByTagName("head")[0], a2 = document.createElement("style");
+  a2.type = "text/css", e === "top" && t.firstChild ? t.insertBefore(a2, t.firstChild) : t.appendChild(a2), a2.styleSheet ? a2.styleSheet.cssText = n : a2.appendChild(document.createTextNode(n));
+}
+wt(`:where(html[dir="ltr"]),:where([data-sonner-toaster][dir="ltr"]){--toast-icon-margin-start: -3px;--toast-icon-margin-end: 4px;--toast-svg-margin-start: -1px;--toast-svg-margin-end: 0px;--toast-button-margin-start: auto;--toast-button-margin-end: 0;--toast-close-button-start: 0;--toast-close-button-end: unset;--toast-close-button-transform: translate(-35%, -35%)}:where(html[dir="rtl"]),:where([data-sonner-toaster][dir="rtl"]){--toast-icon-margin-start: 4px;--toast-icon-margin-end: -3px;--toast-svg-margin-start: 0px;--toast-svg-margin-end: -1px;--toast-button-margin-start: 0;--toast-button-margin-end: auto;--toast-close-button-start: unset;--toast-close-button-end: 0;--toast-close-button-transform: translate(35%, -35%)}:where([data-sonner-toaster]){position:fixed;width:var(--width);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;--gray1: hsl(0, 0%, 99%);--gray2: hsl(0, 0%, 97.3%);--gray3: hsl(0, 0%, 95.1%);--gray4: hsl(0, 0%, 93%);--gray5: hsl(0, 0%, 90.9%);--gray6: hsl(0, 0%, 88.7%);--gray7: hsl(0, 0%, 85.8%);--gray8: hsl(0, 0%, 78%);--gray9: hsl(0, 0%, 56.1%);--gray10: hsl(0, 0%, 52.3%);--gray11: hsl(0, 0%, 43.5%);--gray12: hsl(0, 0%, 9%);--border-radius: 8px;box-sizing:border-box;padding:0;margin:0;list-style:none;outline:none;z-index:999999999;transition:transform .4s ease}:where([data-sonner-toaster][data-lifted="true"]){transform:translateY(-10px)}@media (hover: none) and (pointer: coarse){:where([data-sonner-toaster][data-lifted="true"]){transform:none}}:where([data-sonner-toaster][data-x-position="right"]){right:var(--offset-right)}:where([data-sonner-toaster][data-x-position="left"]){left:var(--offset-left)}:where([data-sonner-toaster][data-x-position="center"]){left:50%;transform:translate(-50%)}:where([data-sonner-toaster][data-y-position="top"]){top:var(--offset-top)}:where([data-sonner-toaster][data-y-position="bottom"]){bottom:var(--offset-bottom)}:where([data-sonner-toast]){--y: translateY(100%);--lift-amount: calc(var(--lift) * var(--gap));z-index:var(--z-index);position:absolute;opacity:0;transform:var(--y);filter:blur(0);touch-action:none;transition:transform .4s,opacity .4s,height .4s,box-shadow .2s;box-sizing:border-box;outline:none;overflow-wrap:anywhere}:where([data-sonner-toast][data-styled="true"]){padding:16px;background:var(--normal-bg);border:1px solid var(--normal-border);color:var(--normal-text);border-radius:var(--border-radius);box-shadow:0 4px 12px #0000001a;width:var(--width);font-size:13px;display:flex;align-items:center;gap:6px}:where([data-sonner-toast]:focus-visible){box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast][data-y-position="top"]){top:0;--y: translateY(-100%);--lift: 1;--lift-amount: calc(1 * var(--gap))}:where([data-sonner-toast][data-y-position="bottom"]){bottom:0;--y: translateY(100%);--lift: -1;--lift-amount: calc(var(--lift) * var(--gap))}:where([data-sonner-toast]) :where([data-description]){font-weight:400;line-height:1.4;color:inherit}:where([data-sonner-toast]) :where([data-title]){font-weight:500;line-height:1.5;color:inherit}:where([data-sonner-toast]) :where([data-icon]){display:flex;height:16px;width:16px;position:relative;justify-content:flex-start;align-items:center;flex-shrink:0;margin-left:var(--toast-icon-margin-start);margin-right:var(--toast-icon-margin-end)}:where([data-sonner-toast][data-promise="true"]) :where([data-icon])>svg{opacity:0;transform:scale(.8);transform-origin:center;animation:sonner-fade-in .3s ease forwards}:where([data-sonner-toast]) :where([data-icon])>*{flex-shrink:0}:where([data-sonner-toast]) :where([data-icon]) svg{margin-left:var(--toast-svg-margin-start);margin-right:var(--toast-svg-margin-end)}:where([data-sonner-toast]) :where([data-content]){display:flex;flex-direction:column;gap:2px}[data-sonner-toast][data-styled=true] [data-button]{border-radius:4px;padding-left:8px;padding-right:8px;height:24px;font-size:12px;color:var(--normal-bg);background:var(--normal-text);margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end);border:none;cursor:pointer;outline:none;display:flex;align-items:center;flex-shrink:0;transition:opacity .4s,box-shadow .2s}:where([data-sonner-toast]) :where([data-button]):focus-visible{box-shadow:0 0 0 2px #0006}:where([data-sonner-toast]) :where([data-button]):first-of-type{margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end)}:where([data-sonner-toast]) :where([data-cancel]){color:var(--normal-text);background:rgba(0,0,0,.08)}:where([data-sonner-toast][data-theme="dark"]) :where([data-cancel]){background:rgba(255,255,255,.3)}:where([data-sonner-toast]) :where([data-close-button]){position:absolute;left:var(--toast-close-button-start);right:var(--toast-close-button-end);top:0;height:20px;width:20px;display:flex;justify-content:center;align-items:center;padding:0;color:var(--gray12);border:1px solid var(--gray4);transform:var(--toast-close-button-transform);border-radius:50%;cursor:pointer;z-index:1;transition:opacity .1s,background .2s,border-color .2s}[data-sonner-toast] [data-close-button]{background:var(--gray1)}:where([data-sonner-toast]) :where([data-close-button]):focus-visible{box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast]) :where([data-disabled="true"]){cursor:not-allowed}:where([data-sonner-toast]):hover :where([data-close-button]):hover{background:var(--gray2);border-color:var(--gray5)}:where([data-sonner-toast][data-swiping="true"]):before{content:"";position:absolute;left:-50%;right:-50%;height:100%;z-index:-1}:where([data-sonner-toast][data-y-position="top"][data-swiping="true"]):before{bottom:50%;transform:scaleY(3) translateY(50%)}:where([data-sonner-toast][data-y-position="bottom"][data-swiping="true"]):before{top:50%;transform:scaleY(3) translateY(-50%)}:where([data-sonner-toast][data-swiping="false"][data-removed="true"]):before{content:"";position:absolute;inset:0;transform:scaleY(2)}:where([data-sonner-toast]):after{content:"";position:absolute;left:0;height:calc(var(--gap) + 1px);bottom:100%;width:100%}:where([data-sonner-toast][data-mounted="true"]){--y: translateY(0);opacity:1}:where([data-sonner-toast][data-expanded="false"][data-front="false"]){--scale: var(--toasts-before) * .05 + 1;--y: translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)));height:var(--front-toast-height)}:where([data-sonner-toast])>*{transition:opacity .4s}:where([data-sonner-toast][data-expanded="false"][data-front="false"][data-styled="true"])>*{opacity:0}:where([data-sonner-toast][data-visible="false"]){opacity:0;pointer-events:none}:where([data-sonner-toast][data-mounted="true"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset)));height:var(--initial-height)}:where([data-sonner-toast][data-removed="true"][data-front="true"][data-swipe-out="false"]){--y: translateY(calc(var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="false"]){--y: translateY(40%);opacity:0;transition:transform .5s,opacity .2s}:where([data-sonner-toast][data-removed="true"][data-front="false"]):before{height:calc(var(--initial-height) + 20%)}[data-sonner-toast][data-swiping=true]{transform:var(--y) translateY(var(--swipe-amount-y, 0px)) translate(var(--swipe-amount-x, 0px));transition:none}[data-sonner-toast][data-swiped=true]{user-select:none}[data-sonner-toast][data-swipe-out=true][data-y-position=bottom],[data-sonner-toast][data-swipe-out=true][data-y-position=top]{animation-duration:.2s;animation-timing-function:ease-out;animation-fill-mode:forwards}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=left]{animation-name:swipe-out-left}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=right]{animation-name:swipe-out-right}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=up]{animation-name:swipe-out-up}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=down]{animation-name:swipe-out-down}@keyframes swipe-out-left{0%{transform:var(--y) translate(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translate(calc(var(--swipe-amount-x) - 100%));opacity:0}}@keyframes swipe-out-right{0%{transform:var(--y) translate(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translate(calc(var(--swipe-amount-x) + 100%));opacity:0}}@keyframes swipe-out-up{0%{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) - 100%));opacity:0}}@keyframes swipe-out-down{0%{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) + 100%));opacity:0}}@media (max-width: 600px){[data-sonner-toaster]{position:fixed;right:var(--mobile-offset-right);left:var(--mobile-offset-left);width:100%}[data-sonner-toaster][dir=rtl]{left:calc(var(--mobile-offset-left) * -1)}[data-sonner-toaster] [data-sonner-toast]{left:0;right:0;width:calc(100% - var(--mobile-offset-left) * 2)}[data-sonner-toaster][data-x-position=left]{left:var(--mobile-offset-left)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--mobile-offset-bottom)}[data-sonner-toaster][data-y-position=top]{top:var(--mobile-offset-top)}[data-sonner-toaster][data-x-position=center]{left:var(--mobile-offset-left);right:var(--mobile-offset-right);transform:none}}[data-sonner-toaster][data-theme=light]{--normal-bg: #fff;--normal-border: var(--gray4);--normal-text: var(--gray12);--success-bg: hsl(143, 85%, 96%);--success-border: hsl(145, 92%, 91%);--success-text: hsl(140, 100%, 27%);--info-bg: hsl(208, 100%, 97%);--info-border: hsl(221, 91%, 91%);--info-text: hsl(210, 92%, 45%);--warning-bg: hsl(49, 100%, 97%);--warning-border: hsl(49, 91%, 91%);--warning-text: hsl(31, 92%, 45%);--error-bg: hsl(359, 100%, 97%);--error-border: hsl(359, 100%, 94%);--error-text: hsl(360, 100%, 45%)}[data-sonner-toaster][data-theme=light] [data-sonner-toast][data-invert=true]{--normal-bg: #000;--normal-border: hsl(0, 0%, 20%);--normal-text: var(--gray1)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast][data-invert=true]{--normal-bg: #fff;--normal-border: var(--gray3);--normal-text: var(--gray12)}[data-sonner-toaster][data-theme=dark]{--normal-bg: #000;--normal-bg-hover: hsl(0, 0%, 12%);--normal-border: hsl(0, 0%, 20%);--normal-border-hover: hsl(0, 0%, 25%);--normal-text: var(--gray1);--success-bg: hsl(150, 100%, 6%);--success-border: hsl(147, 100%, 12%);--success-text: hsl(150, 86%, 65%);--info-bg: hsl(215, 100%, 6%);--info-border: hsl(223, 100%, 12%);--info-text: hsl(216, 87%, 65%);--warning-bg: hsl(64, 100%, 6%);--warning-border: hsl(60, 100%, 12%);--warning-text: hsl(46, 87%, 65%);--error-bg: hsl(358, 76%, 10%);--error-border: hsl(357, 89%, 16%);--error-text: hsl(358, 100%, 81%)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast] [data-close-button]{background:var(--normal-bg);border-color:var(--normal-border);color:var(--normal-text)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast] [data-close-button]:hover{background:var(--normal-bg-hover);border-color:var(--normal-border-hover)}[data-rich-colors=true][data-sonner-toast][data-type=success],[data-rich-colors=true][data-sonner-toast][data-type=success] [data-close-button]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=info],[data-rich-colors=true][data-sonner-toast][data-type=info] [data-close-button]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning],[data-rich-colors=true][data-sonner-toast][data-type=warning] [data-close-button]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=error],[data-rich-colors=true][data-sonner-toast][data-type=error] [data-close-button]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}.sonner-loading-wrapper{--size: 16px;height:var(--size);width:var(--size);position:absolute;inset:0;z-index:10}.sonner-loading-wrapper[data-visible=false]{transform-origin:center;animation:sonner-fade-out .2s ease forwards}.sonner-spinner{position:relative;top:50%;left:50%;height:var(--size);width:var(--size)}.sonner-loading-bar{animation:sonner-spin 1.2s linear infinite;background:var(--gray11);border-radius:6px;height:8%;left:-10%;position:absolute;top:-3.9%;width:24%}.sonner-loading-bar:nth-child(1){animation-delay:-1.2s;transform:rotate(.0001deg) translate(146%)}.sonner-loading-bar:nth-child(2){animation-delay:-1.1s;transform:rotate(30deg) translate(146%)}.sonner-loading-bar:nth-child(3){animation-delay:-1s;transform:rotate(60deg) translate(146%)}.sonner-loading-bar:nth-child(4){animation-delay:-.9s;transform:rotate(90deg) translate(146%)}.sonner-loading-bar:nth-child(5){animation-delay:-.8s;transform:rotate(120deg) translate(146%)}.sonner-loading-bar:nth-child(6){animation-delay:-.7s;transform:rotate(150deg) translate(146%)}.sonner-loading-bar:nth-child(7){animation-delay:-.6s;transform:rotate(180deg) translate(146%)}.sonner-loading-bar:nth-child(8){animation-delay:-.5s;transform:rotate(210deg) translate(146%)}.sonner-loading-bar:nth-child(9){animation-delay:-.4s;transform:rotate(240deg) translate(146%)}.sonner-loading-bar:nth-child(10){animation-delay:-.3s;transform:rotate(270deg) translate(146%)}.sonner-loading-bar:nth-child(11){animation-delay:-.2s;transform:rotate(300deg) translate(146%)}.sonner-loading-bar:nth-child(12){animation-delay:-.1s;transform:rotate(330deg) translate(146%)}@keyframes sonner-fade-in{0%{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}@keyframes sonner-fade-out{0%{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.8)}}@keyframes sonner-spin{0%{opacity:1}to{opacity:.15}}@media (prefers-reduced-motion){[data-sonner-toast],[data-sonner-toast]>*,.sonner-loading-bar{transition:none!important;animation:none!important}}.sonner-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transform-origin:center;transition:opacity .2s,transform .2s}.sonner-loader[data-visible=false]{opacity:0;transform:scale(.8) translate(-50%,-50%)}
+`);
+function tt(n) {
+  return n.label !== void 0;
+}
+var pe = 3, me = "32px", ge = "16px", Wt = 4e3, he = 356, be = 14, ye = 20, we = 200;
+function M$1(...n) {
+  return n.filter(Boolean).join(" ");
+}
+function xe(n) {
+  let [e, t] = n.split("-"), a2 = [];
+  return e && a2.push(e), t && a2.push(t), a2;
+}
+var ve = (n) => {
+  var Dt, Pt, Nt, Bt, Ct, kt, It, Mt, Ht, At, Lt;
+  let { invert: e, toast: t, unstyled: a2, interacting: u2, setHeights: f2, visibleToasts: w2, heights: S2, index: g2, toasts: i, expanded: D, removeToast: T2, defaultRichColors: F2, closeButton: et2, style: ut2, cancelButtonStyle: ft2, actionButtonStyle: l2, className: ot2 = "", descriptionClassName: at = "", duration: X2, position: st2, gap: pt, loadingIcon: rt2, expandByDefault: B2, classNames: s, icons: P2, closeButtonAriaLabel: nt2 = "Close toast", pauseWhenPageIsHidden: it2 } = n, [Y2, C2] = React$4.useState(null), [lt, J2] = React$4.useState(null), [W2, H2] = React$4.useState(false), [A, mt] = React$4.useState(false), [L2, z2] = React$4.useState(false), [ct2, d2] = React$4.useState(false), [h2, y2] = React$4.useState(false), [R2, j2] = React$4.useState(0), [p2, _2] = React$4.useState(0), O2 = React$4.useRef(t.duration || X2 || Wt), G2 = React$4.useRef(null), k2 = React$4.useRef(null), Vt = g2 === 0, Ut = g2 + 1 <= w2, N2 = t.type, V2 = t.dismissible !== false, Kt = t.className || "", Xt = t.descriptionClassName || "", dt = React$4.useMemo(() => S2.findIndex((r2) => r2.toastId === t.id) || 0, [S2, t.id]), Jt = React$4.useMemo(() => {
+    var r2;
+    return (r2 = t.closeButton) != null ? r2 : et2;
+  }, [t.closeButton, et2]), Tt = React$4.useMemo(() => t.duration || X2 || Wt, [t.duration, X2]), gt2 = React$4.useRef(0), U2 = React$4.useRef(0), St = React$4.useRef(0), K2 = React$4.useRef(null), [Gt, Qt] = st2.split("-"), Rt = React$4.useMemo(() => S2.reduce((r2, m2, c2) => c2 >= dt ? r2 : r2 + m2.height, 0), [S2, dt]), Et = Ft(), qt = t.invert || e, ht = N2 === "loading";
+  U2.current = React$4.useMemo(() => dt * pt + Rt, [dt, Rt]), React$4.useEffect(() => {
+    O2.current = Tt;
+  }, [Tt]), React$4.useEffect(() => {
+    H2(true);
+  }, []), React$4.useEffect(() => {
+    let r2 = k2.current;
+    if (r2) {
+      let m2 = r2.getBoundingClientRect().height;
+      return _2(m2), f2((c2) => [{ toastId: t.id, height: m2, position: t.position }, ...c2]), () => f2((c2) => c2.filter((b2) => b2.toastId !== t.id));
+    }
+  }, [f2, t.id]), React$4.useLayoutEffect(() => {
+    if (!W2) return;
+    let r2 = k2.current, m2 = r2.style.height;
+    r2.style.height = "auto";
+    let c2 = r2.getBoundingClientRect().height;
+    r2.style.height = m2, _2(c2), f2((b2) => b2.find((x3) => x3.toastId === t.id) ? b2.map((x3) => x3.toastId === t.id ? { ...x3, height: c2 } : x3) : [{ toastId: t.id, height: c2, position: t.position }, ...b2]);
+  }, [W2, t.title, t.description, f2, t.id]);
+  let $2 = React$4.useCallback(() => {
+    mt(true), j2(U2.current), f2((r2) => r2.filter((m2) => m2.toastId !== t.id)), setTimeout(() => {
+      T2(t);
+    }, we);
+  }, [t, T2, f2, U2]);
+  React$4.useEffect(() => {
+    if (t.promise && N2 === "loading" || t.duration === 1 / 0 || t.type === "loading") return;
+    let r2;
+    return D || u2 || it2 && Et ? (() => {
+      if (St.current < gt2.current) {
+        let b2 = (/* @__PURE__ */ new Date()).getTime() - gt2.current;
+        O2.current = O2.current - b2;
+      }
+      St.current = (/* @__PURE__ */ new Date()).getTime();
+    })() : (() => {
+      O2.current !== 1 / 0 && (gt2.current = (/* @__PURE__ */ new Date()).getTime(), r2 = setTimeout(() => {
+        var b2;
+        (b2 = t.onAutoClose) == null || b2.call(t, t), $2();
+      }, O2.current));
+    })(), () => clearTimeout(r2);
+  }, [D, u2, t, N2, it2, Et, $2]), React$4.useEffect(() => {
+    t.delete && $2();
+  }, [$2, t.delete]);
+  function Zt() {
+    var r2, m2, c2;
+    return P2 != null && P2.loading ? React$4.createElement("div", { className: M$1(s == null ? void 0 : s.loader, (r2 = t == null ? void 0 : t.classNames) == null ? void 0 : r2.loader, "sonner-loader"), "data-visible": N2 === "loading" }, P2.loading) : rt2 ? React$4.createElement("div", { className: M$1(s == null ? void 0 : s.loader, (m2 = t == null ? void 0 : t.classNames) == null ? void 0 : m2.loader, "sonner-loader"), "data-visible": N2 === "loading" }, rt2) : React$4.createElement(Yt, { className: M$1(s == null ? void 0 : s.loader, (c2 = t == null ? void 0 : t.classNames) == null ? void 0 : c2.loader), visible: N2 === "loading" });
+  }
+  return React$4.createElement("li", { tabIndex: 0, ref: k2, className: M$1(ot2, Kt, s == null ? void 0 : s.toast, (Dt = t == null ? void 0 : t.classNames) == null ? void 0 : Dt.toast, s == null ? void 0 : s.default, s == null ? void 0 : s[N2], (Pt = t == null ? void 0 : t.classNames) == null ? void 0 : Pt[N2]), "data-sonner-toast": "", "data-rich-colors": (Nt = t.richColors) != null ? Nt : F2, "data-styled": !(t.jsx || t.unstyled || a2), "data-mounted": W2, "data-promise": !!t.promise, "data-swiped": h2, "data-removed": A, "data-visible": Ut, "data-y-position": Gt, "data-x-position": Qt, "data-index": g2, "data-front": Vt, "data-swiping": L2, "data-dismissible": V2, "data-type": N2, "data-invert": qt, "data-swipe-out": ct2, "data-swipe-direction": lt, "data-expanded": !!(D || B2 && W2), style: { "--index": g2, "--toasts-before": g2, "--z-index": i.length - g2, "--offset": `${A ? R2 : U2.current}px`, "--initial-height": B2 ? "auto" : `${p2}px`, ...ut2, ...t.style }, onDragEnd: () => {
+    z2(false), C2(null), K2.current = null;
+  }, onPointerDown: (r2) => {
+    ht || !V2 || (G2.current = /* @__PURE__ */ new Date(), j2(U2.current), r2.target.setPointerCapture(r2.pointerId), r2.target.tagName !== "BUTTON" && (z2(true), K2.current = { x: r2.clientX, y: r2.clientY }));
+  }, onPointerUp: () => {
+    var x3, Q2, q2, Z2;
+    if (ct2 || !V2) return;
+    K2.current = null;
+    let r2 = Number(((x3 = k2.current) == null ? void 0 : x3.style.getPropertyValue("--swipe-amount-x").replace("px", "")) || 0), m2 = Number(((Q2 = k2.current) == null ? void 0 : Q2.style.getPropertyValue("--swipe-amount-y").replace("px", "")) || 0), c2 = (/* @__PURE__ */ new Date()).getTime() - ((q2 = G2.current) == null ? void 0 : q2.getTime()), b2 = Y2 === "x" ? r2 : m2, I = Math.abs(b2) / c2;
+    if (Math.abs(b2) >= ye || I > 0.11) {
+      j2(U2.current), (Z2 = t.onDismiss) == null || Z2.call(t, t), J2(Y2 === "x" ? r2 > 0 ? "right" : "left" : m2 > 0 ? "down" : "up"), $2(), d2(true), y2(false);
+      return;
+    }
+    z2(false), C2(null);
+  }, onPointerMove: (r2) => {
+    var Q2, q2, Z2, zt;
+    if (!K2.current || !V2 || ((Q2 = window.getSelection()) == null ? void 0 : Q2.toString().length) > 0) return;
+    let c2 = r2.clientY - K2.current.y, b2 = r2.clientX - K2.current.x, I = (q2 = n.swipeDirections) != null ? q2 : xe(st2);
+    !Y2 && (Math.abs(b2) > 1 || Math.abs(c2) > 1) && C2(Math.abs(b2) > Math.abs(c2) ? "x" : "y");
+    let x3 = { x: 0, y: 0 };
+    Y2 === "y" ? (I.includes("top") || I.includes("bottom")) && (I.includes("top") && c2 < 0 || I.includes("bottom") && c2 > 0) && (x3.y = c2) : Y2 === "x" && (I.includes("left") || I.includes("right")) && (I.includes("left") && b2 < 0 || I.includes("right") && b2 > 0) && (x3.x = b2), (Math.abs(x3.x) > 0 || Math.abs(x3.y) > 0) && y2(true), (Z2 = k2.current) == null || Z2.style.setProperty("--swipe-amount-x", `${x3.x}px`), (zt = k2.current) == null || zt.style.setProperty("--swipe-amount-y", `${x3.y}px`);
+  } }, Jt && !t.jsx ? React$4.createElement("button", { "aria-label": nt2, "data-disabled": ht, "data-close-button": true, onClick: ht || !V2 ? () => {
+  } : () => {
+    var r2;
+    $2(), (r2 = t.onDismiss) == null || r2.call(t, t);
+  }, className: M$1(s == null ? void 0 : s.closeButton, (Bt = t == null ? void 0 : t.classNames) == null ? void 0 : Bt.closeButton) }, (Ct = P2 == null ? void 0 : P2.close) != null ? Ct : Ot) : null, t.jsx || reactExports.isValidElement(t.title) ? t.jsx ? t.jsx : typeof t.title == "function" ? t.title() : t.title : React$4.createElement(React$4.Fragment, null, N2 || t.icon || t.promise ? React$4.createElement("div", { "data-icon": "", className: M$1(s == null ? void 0 : s.icon, (kt = t == null ? void 0 : t.classNames) == null ? void 0 : kt.icon) }, t.promise || t.type === "loading" && !t.icon ? t.icon || Zt() : null, t.type !== "loading" ? t.icon || (P2 == null ? void 0 : P2[N2]) || jt(N2) : null) : null, React$4.createElement("div", { "data-content": "", className: M$1(s == null ? void 0 : s.content, (It = t == null ? void 0 : t.classNames) == null ? void 0 : It.content) }, React$4.createElement("div", { "data-title": "", className: M$1(s == null ? void 0 : s.title, (Mt = t == null ? void 0 : t.classNames) == null ? void 0 : Mt.title) }, typeof t.title == "function" ? t.title() : t.title), t.description ? React$4.createElement("div", { "data-description": "", className: M$1(at, Xt, s == null ? void 0 : s.description, (Ht = t == null ? void 0 : t.classNames) == null ? void 0 : Ht.description) }, typeof t.description == "function" ? t.description() : t.description) : null), reactExports.isValidElement(t.cancel) ? t.cancel : t.cancel && tt(t.cancel) ? React$4.createElement("button", { "data-button": true, "data-cancel": true, style: t.cancelButtonStyle || ft2, onClick: (r2) => {
+    var m2, c2;
+    tt(t.cancel) && V2 && ((c2 = (m2 = t.cancel).onClick) == null || c2.call(m2, r2), $2());
+  }, className: M$1(s == null ? void 0 : s.cancelButton, (At = t == null ? void 0 : t.classNames) == null ? void 0 : At.cancelButton) }, t.cancel.label) : null, reactExports.isValidElement(t.action) ? t.action : t.action && tt(t.action) ? React$4.createElement("button", { "data-button": true, "data-action": true, style: t.actionButtonStyle || l2, onClick: (r2) => {
+    var m2, c2;
+    tt(t.action) && ((c2 = (m2 = t.action).onClick) == null || c2.call(m2, r2), !r2.defaultPrevented && $2());
+  }, className: M$1(s == null ? void 0 : s.actionButton, (Lt = t == null ? void 0 : t.classNames) == null ? void 0 : Lt.actionButton) }, t.action.label) : null));
+};
+function _t() {
+  if (typeof window == "undefined" || typeof document == "undefined") return "ltr";
+  let n = document.documentElement.getAttribute("dir");
+  return n === "auto" || !n ? window.getComputedStyle(document.documentElement).direction : n;
+}
+function Te(n, e) {
+  let t = {};
+  return [n, e].forEach((a2, u2) => {
+    let f2 = u2 === 1, w2 = f2 ? "--mobile-offset" : "--offset", S2 = f2 ? ge : me;
+    function g2(i) {
+      ["top", "right", "bottom", "left"].forEach((D) => {
+        t[`${w2}-${D}`] = typeof i == "number" ? `${i}px` : i;
+      });
+    }
+    typeof a2 == "number" || typeof a2 == "string" ? g2(a2) : typeof a2 == "object" ? ["top", "right", "bottom", "left"].forEach((i) => {
+      a2[i] === void 0 ? t[`${w2}-${i}`] = S2 : t[`${w2}-${i}`] = typeof a2[i] == "number" ? `${a2[i]}px` : a2[i];
+    }) : g2(S2);
+  }), t;
+}
+var $e = reactExports.forwardRef(function(e, t) {
+  let { invert: a2, position: u2 = "bottom-right", hotkey: f2 = ["altKey", "KeyT"], expand: w2, closeButton: S2, className: g2, offset: i, mobileOffset: D, theme: T2 = "light", richColors: F2, duration: et2, style: ut2, visibleToasts: ft2 = pe, toastOptions: l2, dir: ot2 = _t(), gap: at = be, loadingIcon: X2, icons: st2, containerAriaLabel: pt = "Notifications", pauseWhenPageIsHidden: rt2 } = e, [B2, s] = React$4.useState([]), P2 = React$4.useMemo(() => Array.from(new Set([u2].concat(B2.filter((d2) => d2.position).map((d2) => d2.position)))), [B2, u2]), [nt2, it2] = React$4.useState([]), [Y2, C2] = React$4.useState(false), [lt, J2] = React$4.useState(false), [W2, H2] = React$4.useState(T2 !== "system" ? T2 : typeof window != "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"), A = React$4.useRef(null), mt = f2.join("+").replace(/Key/g, "").replace(/Digit/g, ""), L2 = React$4.useRef(null), z2 = React$4.useRef(false), ct2 = React$4.useCallback((d2) => {
+    s((h2) => {
+      var y2;
+      return (y2 = h2.find((R2) => R2.id === d2.id)) != null && y2.delete || v.dismiss(d2.id), h2.filter(({ id: R2 }) => R2 !== d2.id);
+    });
+  }, []);
+  return React$4.useEffect(() => v.subscribe((d2) => {
+    if (d2.dismiss) {
+      s((h2) => h2.map((y2) => y2.id === d2.id ? { ...y2, delete: true } : y2));
+      return;
+    }
+    setTimeout(() => {
+      ReactDOM$2.flushSync(() => {
+        s((h2) => {
+          let y2 = h2.findIndex((R2) => R2.id === d2.id);
+          return y2 !== -1 ? [...h2.slice(0, y2), { ...h2[y2], ...d2 }, ...h2.slice(y2 + 1)] : [d2, ...h2];
+        });
+      });
+    });
+  }), []), React$4.useEffect(() => {
+    if (T2 !== "system") {
+      H2(T2);
+      return;
+    }
+    if (T2 === "system" && (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? H2("dark") : H2("light")), typeof window == "undefined") return;
+    let d2 = window.matchMedia("(prefers-color-scheme: dark)");
+    try {
+      d2.addEventListener("change", ({ matches: h2 }) => {
+        H2(h2 ? "dark" : "light");
+      });
+    } catch (h2) {
+      d2.addListener(({ matches: y2 }) => {
+        try {
+          H2(y2 ? "dark" : "light");
+        } catch (R2) {
+          console.error(R2);
+        }
+      });
+    }
+  }, [T2]), React$4.useEffect(() => {
+    B2.length <= 1 && C2(false);
+  }, [B2]), React$4.useEffect(() => {
+    let d2 = (h2) => {
+      var R2, j2;
+      f2.every((p2) => h2[p2] || h2.code === p2) && (C2(true), (R2 = A.current) == null || R2.focus()), h2.code === "Escape" && (document.activeElement === A.current || (j2 = A.current) != null && j2.contains(document.activeElement)) && C2(false);
+    };
+    return document.addEventListener("keydown", d2), () => document.removeEventListener("keydown", d2);
+  }, [f2]), React$4.useEffect(() => {
+    if (A.current) return () => {
+      L2.current && (L2.current.focus({ preventScroll: true }), L2.current = null, z2.current = false);
+    };
+  }, [A.current]), React$4.createElement("section", { ref: t, "aria-label": `${pt} ${mt}`, tabIndex: -1, "aria-live": "polite", "aria-relevant": "additions text", "aria-atomic": "false", suppressHydrationWarning: true }, P2.map((d2, h2) => {
+    var j2;
+    let [y2, R2] = d2.split("-");
+    return B2.length ? React$4.createElement("ol", { key: d2, dir: ot2 === "auto" ? _t() : ot2, tabIndex: -1, ref: A, className: g2, "data-sonner-toaster": true, "data-theme": W2, "data-y-position": y2, "data-lifted": Y2 && B2.length > 1 && !w2, "data-x-position": R2, style: { "--front-toast-height": `${((j2 = nt2[0]) == null ? void 0 : j2.height) || 0}px`, "--width": `${he}px`, "--gap": `${at}px`, ...ut2, ...Te(i, D) }, onBlur: (p2) => {
+      z2.current && !p2.currentTarget.contains(p2.relatedTarget) && (z2.current = false, L2.current && (L2.current.focus({ preventScroll: true }), L2.current = null));
+    }, onFocus: (p2) => {
+      p2.target instanceof HTMLElement && p2.target.dataset.dismissible === "false" || z2.current || (z2.current = true, L2.current = p2.relatedTarget);
+    }, onMouseEnter: () => C2(true), onMouseMove: () => C2(true), onMouseLeave: () => {
+      lt || C2(false);
+    }, onDragEnd: () => C2(false), onPointerDown: (p2) => {
+      p2.target instanceof HTMLElement && p2.target.dataset.dismissible === "false" || J2(true);
+    }, onPointerUp: () => J2(false) }, B2.filter((p2) => !p2.position && h2 === 0 || p2.position === d2).map((p2, _2) => {
+      var O2, G2;
+      return React$4.createElement(ve, { key: p2.id, icons: st2, index: _2, toast: p2, defaultRichColors: F2, duration: (O2 = l2 == null ? void 0 : l2.duration) != null ? O2 : et2, className: l2 == null ? void 0 : l2.className, descriptionClassName: l2 == null ? void 0 : l2.descriptionClassName, invert: a2, visibleToasts: ft2, closeButton: (G2 = l2 == null ? void 0 : l2.closeButton) != null ? G2 : S2, interacting: lt, position: d2, style: l2 == null ? void 0 : l2.style, unstyled: l2 == null ? void 0 : l2.unstyled, classNames: l2 == null ? void 0 : l2.classNames, cancelButtonStyle: l2 == null ? void 0 : l2.cancelButtonStyle, actionButtonStyle: l2 == null ? void 0 : l2.actionButtonStyle, removeToast: ct2, toasts: B2.filter((k2) => k2.position == p2.position), heights: nt2.filter((k2) => k2.position == p2.position), setHeights: it2, expandByDefault: w2, gap: at, loadingIcon: X2, expanded: Y2, pauseWhenPageIsHidden: rt2, swipeDirections: e.swipeDirections });
+    })) : null;
+  }));
+});
+function getDeviceId$1() {
+  const KEY = "bb65.deviceId";
+  try {
+    const existing = localStorage.getItem(KEY);
+    if (existing) return existing;
+    const id = `dev-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+    localStorage.setItem(KEY, id);
+    return id;
+  } catch {
+    return `dev-session-${Date.now().toString(36)}`;
+  }
+}
+const PHONE_RE$3 = /^0\d{9,10}$/;
+function EnterpriseActivationForm({
+  expectedRole,
+  expectedRoleLabel,
+  onActivated
+}) {
+  const activateMutation = useActivateDevice();
+  const [code, setCode] = reactExports.useState("");
+  const [name, setName] = reactExports.useState("");
+  const [phone, setPhone] = reactExports.useState("");
+  const [error, setError] = reactExports.useState(null);
+  const normalized = code.trim().toUpperCase();
+  const nameValid = name.trim().length >= 2;
+  const phoneValid = PHONE_RE$3.test(phone.trim());
+  const isValid = normalized.length === 6 && nameValid && phoneValid;
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (activateMutation.isPending || !isValid) return;
+    setError(null);
+    try {
+      const deviceId = getDeviceId$1();
+      const device = await activateMutation.mutateAsync({
+        code: normalized,
+        deviceId,
+        name: name.trim(),
+        phone: phone.trim()
+      });
+      if (device.role !== expectedRole) {
+        setError(
+          `Mã này không dành cho thiết bị ${expectedRoleLabel}. Vui lòng dùng đúng mã vai trò.`
+        );
+        return;
+      }
+      if (!device.active) {
+        setError("Thiết bị chưa được kích hoạt. Vui lòng thử lại.");
+        return;
+      }
+      saveEnterpriseActivation({
+        restaurantId: device.restaurantId,
+        deviceId: device.deviceId,
+        name: name.trim()
+      });
+      ue.success("Kích hoạt thiết bị doanh nghiệp thành công");
+      onActivated();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/expir|hết hạn|expired/i.test(msg)) {
+        setError("Mã kích hoạt đã hết hạn (15 phút). Vui lòng yêu cầu mã mới.");
+      } else if (/used|đã dùng/i.test(msg)) {
+        setError("Mã kích hoạt đã được sử dụng. Vui lòng yêu cầu mã mới.");
+      } else if (/not found|không tìm/i.test(msg)) {
+        setError("Mã kích hoạt không đúng. Vui lòng kiểm tra lại.");
+      } else {
+        setError(`Kích hoạt thất bại: ${msg}`);
+      }
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8 md:px-6 md:py-12",
+      "data-ocid": "enterprise_activation.section",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "flex flex-col items-center gap-3 text-center", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary",
+              "aria-hidden": "true",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "h-8 w-8" })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-bold tracking-tight md:text-3xl", children: "Kích hoạt thiết bị doanh nghiệp" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground", children: [
+            "Nhập mã kích hoạt 6 ký tự do quản trị viên cấp cho vai trò",
+            " ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-foreground", children: expectedRoleLabel }),
+            ". Mã có hiệu lực 15 phút."
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "form",
+          {
+            onSubmit: handleSubmit,
+            className: "flex flex-col gap-5",
+            "data-ocid": "enterprise_activation.form",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "label",
+                  {
+                    htmlFor: "ent-name",
+                    className: "text-sm font-semibold text-foreground",
+                    children: "Tên của bạn"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    id: "ent-name",
+                    type: "text",
+                    autoComplete: "name",
+                    value: name,
+                    onChange: (e) => {
+                      setName(e.target.value);
+                      setError(null);
+                    },
+                    disabled: activateMutation.isPending,
+                    placeholder: "Nguyễn Văn A",
+                    "aria-label": "Tên nhân viên",
+                    "data-ocid": "enterprise_activation.name_input",
+                    className: "min-h-[44px] w-full rounded-lg border border-input bg-card px-3 py-2 text-base text-foreground shadow-sm outline-none transition-smooth focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "label",
+                  {
+                    htmlFor: "ent-phone",
+                    className: "text-sm font-semibold text-foreground",
+                    children: "Số điện thoại của bạn"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    id: "ent-phone",
+                    type: "tel",
+                    inputMode: "tel",
+                    autoComplete: "tel",
+                    value: phone,
+                    onChange: (e) => {
+                      setPhone(e.target.value);
+                      setError(null);
+                    },
+                    disabled: activateMutation.isPending,
+                    placeholder: "0912345678",
+                    "aria-label": "Số điện thoại nhân viên",
+                    "data-ocid": "enterprise_activation.phone_input",
+                    className: "min-h-[44px] w-full rounded-lg border border-input bg-card px-3 py-2 text-base text-foreground shadow-sm outline-none transition-smooth focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "label",
+                  {
+                    htmlFor: "ent-code",
+                    className: "text-sm font-semibold text-foreground",
+                    children: "Mã kích hoạt"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    id: "ent-code",
+                    type: "text",
+                    inputMode: "text",
+                    autoComplete: "one-time-code",
+                    autoCapitalize: "characters",
+                    autoCorrect: "off",
+                    spellCheck: false,
+                    value: code,
+                    onChange: (e) => {
+                      setCode(e.target.value.replace(/[^A-Za-z0-9]/g, "").slice(0, 6));
+                      setError(null);
+                    },
+                    disabled: activateMutation.isPending,
+                    placeholder: "ABC123",
+                    "aria-label": "Mã kích hoạt 6 ký tự",
+                    "aria-invalid": !!error,
+                    "aria-describedby": error ? "ent-error" : void 0,
+                    "data-ocid": "enterprise_activation.code_input",
+                    className: "mx-auto w-full max-w-[16rem] rounded-lg border border-input bg-card px-3 py-4 text-center font-mono text-3xl font-bold tracking-[0.4em] uppercase text-foreground shadow-sm outline-none transition-smooth placeholder:text-2xl placeholder:tracking-[0.3em] placeholder:font-normal placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-center text-xs text-muted-foreground", children: [
+                  normalized.length,
+                  "/6 ký tự"
+                ] })
+              ] }),
+              error && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "p",
+                {
+                  id: "ent-error",
+                  role: "alert",
+                  "data-ocid": "enterprise_activation.error_state",
+                  className: "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-center text-sm font-medium text-destructive",
+                  children: error
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "submit",
+                  disabled: activateMutation.isPending || !isValid,
+                  "data-ocid": "enterprise_activation.submit_button",
+                  className: "inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-base font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  children: activateMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin", "aria-hidden": "true" }),
+                    "Đang kích hoạt…"
+                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                    "Kích hoạt",
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "h-5 w-5", "aria-hidden": "true" })
+                  ] })
+                }
+              )
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Không có mã? Liên hệ quản trị viên nhà hàng để được cấp mã kích hoạt cho vai trò doanh nghiệp." })
+      ]
+    }
+  );
+}
+function useAuth() {
+  const ii = useInternetIdentity();
+  const { actor, isFetching } = useActor(createActor);
+  const adminQuery = useQuery({
+    queryKey: ["auth", "isAdmin", !!ii.identity],
+    queryFn: async () => {
+      if (!actor) return false;
+      try {
+        return await actor.isCallerAdmin();
+      } catch {
+        return false;
+      }
+    },
+    enabled: !!ii.identity && !!actor && !isFetching,
+    staleTime: 6e4
+  });
+  return {
+    isAuthenticated: ii.isAuthenticated,
+    isInitializing: ii.isInitializing,
+    login: ii.login,
+    clear: ii.clear,
+    isAdmin: Boolean(adminQuery.data),
+    isAdminLoading: adminQuery.isLoading && !!ii.identity
+  };
+}
+const ENTERPRISE_ROLES = [
+  EnterpriseRole.paymentQueue,
+  EnterpriseRole.accounting,
+  EnterpriseRole.salesPromoReporting
+];
+const ENTERPRISE_ROLE_LABELS = {
+  [EnterpriseRole.paymentQueue]: "Hàng đợi thanh toán",
+  [EnterpriseRole.accounting]: "Kế toán",
+  [EnterpriseRole.salesPromoReporting]: "Báo cáo bán hàng & KM"
+};
+function useEnterpriseRole(deviceId) {
+  const { actor, isFetching } = useActor(createActor);
+  const roleQuery = useQuery({
+    queryKey: ["auth", "enterpriseRole", deviceId],
+    queryFn: async () => {
+      if (!actor) return null;
+      for (const role of ENTERPRISE_ROLES) {
+        try {
+          if (await actor.callerHasEnterpriseRole(deviceId ?? "", role))
+            return role;
+        } catch {
+        }
+      }
+      return null;
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 6e4
+  });
+  return {
+    enterpriseRole: roleQuery.data ?? null,
+    isEnterpriseRoleLoading: roleQuery.isLoading && !!actor
+  };
 }
 function r(e) {
   var t, f2, n = "";
@@ -39772,7 +41757,7 @@ function batch(fn) {
 function isUpdaterFunction(updater) {
   return typeof updater === "function";
 }
-let Store$1 = class Store {
+class Store {
   constructor(initialState, options) {
     this.listeners = /* @__PURE__ */ new Set();
     this.subscribe = (listener) => {
@@ -39803,7 +41788,7 @@ let Store$1 = class Store {
     (_c2 = (_b2 = this.options) == null ? void 0 : _b2.onUpdate) == null ? void 0 : _c2.call(_b2);
     __flush(this);
   }
-};
+}
 class Derived {
   constructor(options) {
     this.listeners = /* @__PURE__ */ new Set();
@@ -39882,7 +41867,7 @@ class Derived {
       if (dep instanceof Derived) {
         dep.registerOnGraph();
         this.registerOnGraph(dep.options.deps);
-      } else if (dep instanceof Store$1) {
+      } else if (dep instanceof Store) {
         let relatedLinkedDerivedVals = __storeToDerived.get(dep);
         if (!relatedLinkedDerivedVals) {
           relatedLinkedDerivedVals = /* @__PURE__ */ new Set();
@@ -39902,7 +41887,7 @@ class Derived {
     for (const dep of deps) {
       if (dep instanceof Derived) {
         this.unregisterFromGraph(dep.options.deps);
-      } else if (dep instanceof Store$1) {
+      } else if (dep instanceof Store) {
         const relatedLinkedDerivedVals = __storeToDerived.get(dep);
         if (relatedLinkedDerivedVals) {
           relatedLinkedDerivedVals.delete(this);
@@ -42216,7 +44201,7 @@ class RouterCore {
         this.buildRouteTree();
       }
       if (!this.__store) {
-        this.__store = new Store$1(getInitialRouterState(this.latestLocation), {
+        this.__store = new Store(getInitialRouterState(this.latestLocation), {
           onUpdate: () => {
             this.__store.state = {
               ...this.state,
@@ -44876,1071 +46861,6 @@ function RouterContextProvider({
 function RouterProvider({ router: router2, ...rest }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(RouterContextProvider, { router: router2, ...rest, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Matches, {}) });
 }
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-const toCamelCase = (string) => string.replace(
-  /^([A-Z])|[\s-_]+(\w)/g,
-  (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase()
-);
-const toPascalCase = (string) => {
-  const camelCase = toCamelCase(string);
-  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
-};
-const mergeClasses = (...classes) => classes.filter((className, index2, array) => {
-  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index2;
-}).join(" ").trim();
-const hasA11yProp = (props) => {
-  for (const prop in props) {
-    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
-      return true;
-    }
-  }
-};
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-var defaultAttributes = {
-  xmlns: "http://www.w3.org/2000/svg",
-  width: 24,
-  height: 24,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round"
-};
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const Icon$1 = reactExports.forwardRef(
-  ({
-    color = "currentColor",
-    size: size2 = 24,
-    strokeWidth = 2,
-    absoluteStrokeWidth,
-    className = "",
-    children,
-    iconNode,
-    ...rest
-  }, ref) => reactExports.createElement(
-    "svg",
-    {
-      ref,
-      ...defaultAttributes,
-      width: size2,
-      height: size2,
-      stroke: color,
-      strokeWidth: absoluteStrokeWidth ? Number(strokeWidth) * 24 / Number(size2) : strokeWidth,
-      className: mergeClasses("lucide", className),
-      ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
-      ...rest
-    },
-    [
-      ...iconNode.map(([tag, attrs]) => reactExports.createElement(tag, attrs)),
-      ...Array.isArray(children) ? children : [children]
-    ]
-  )
-);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const createLucideIcon = (iconName, iconNode) => {
-  const Component2 = reactExports.forwardRef(
-    ({ className, ...props }, ref) => reactExports.createElement(Icon$1, {
-      ref,
-      iconNode,
-      className: mergeClasses(
-        `lucide-${toKebabCase(toPascalCase(iconName))}`,
-        `lucide-${iconName}`,
-        className
-      ),
-      ...props
-    })
-  );
-  Component2.displayName = toPascalCase(iconName);
-  return Component2;
-};
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$12 = [
-  ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
-  ["path", { d: "M19 12H5", key: "x3x0zl" }]
-];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$12);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$11 = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
-];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$11);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$10 = [
-  ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }],
-  ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }],
-  ["path", { d: "M6 12h.01M18 12h.01", key: "113zkx" }]
-];
-const Banknote = createLucideIcon("banknote", __iconNode$10);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$$ = [
-  ["circle", { cx: "18.5", cy: "17.5", r: "3.5", key: "15x4ox" }],
-  ["circle", { cx: "5.5", cy: "17.5", r: "3.5", key: "1noe27" }],
-  ["circle", { cx: "15", cy: "5", r: "1", key: "19l28e" }],
-  ["path", { d: "M12 17.5V14l-3-3 4-3 2 3h2", key: "1npguv" }]
-];
-const Bike = createLucideIcon("bike", __iconNode$$);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$_ = [
-  ["path", { d: "M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z", key: "1b4qmf" }],
-  ["path", { d: "M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2", key: "i71pzd" }],
-  ["path", { d: "M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2", key: "10jefs" }],
-  ["path", { d: "M10 6h4", key: "1itunk" }],
-  ["path", { d: "M10 10h4", key: "tcdvrf" }],
-  ["path", { d: "M10 14h4", key: "kelpxr" }],
-  ["path", { d: "M10 18h4", key: "1ulq68" }]
-];
-const Building2 = createLucideIcon("building-2", __iconNode$_);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$Z = [
-  ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
-  ["path", { d: "M16 2v4", key: "4m81vk" }],
-  ["path", { d: "M3 10h18", key: "8toen8" }],
-  ["path", { d: "M8 2v4", key: "1cmpym" }],
-  ["path", { d: "M17 14h-6", key: "bkmgh3" }],
-  ["path", { d: "M13 18H7", key: "bb0bb7" }],
-  ["path", { d: "M7 14h.01", key: "1qa3f1" }],
-  ["path", { d: "M17 18h.01", key: "1bdyru" }]
-];
-const CalendarRange = createLucideIcon("calendar-range", __iconNode$Z);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$Y = [
-  ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
-  ["path", { d: "M18 17V9", key: "2bz60n" }],
-  ["path", { d: "M13 17V5", key: "1frdt8" }],
-  ["path", { d: "M8 17v-3", key: "17ska0" }]
-];
-const ChartColumn = createLucideIcon("chart-column", __iconNode$Y);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$X = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$X);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$W = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$W);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$V = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-const ChevronUp = createLucideIcon("chevron-up", __iconNode$V);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$U = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
-  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
-];
-const CircleAlert = createLucideIcon("circle-alert", __iconNode$U);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$T = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
-];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$T);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$S = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["rect", { x: "9", y: "9", width: "6", height: "6", rx: "1", key: "1ssd4o" }]
-];
-const CircleStop = createLucideIcon("circle-stop", __iconNode$S);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$R = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
-  ["path", { d: "m9 9 6 6", key: "z0biqf" }]
-];
-const CircleX = createLucideIcon("circle-x", __iconNode$R);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$Q = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
-];
-const Clock = createLucideIcon("clock", __iconNode$Q);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$P = [
-  ["path", { d: "M12 13v8", key: "1l5pq0" }],
-  ["path", { d: "M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242", key: "1pljnt" }],
-  ["path", { d: "m8 17 4-4 4 4", key: "1quai1" }]
-];
-const CloudUpload = createLucideIcon("cloud-upload", __iconNode$P);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$O = [
-  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
-  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
-];
-const Copy = createLucideIcon("copy", __iconNode$O);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$N = [
-  ["rect", { width: "20", height: "14", x: "2", y: "5", rx: "2", key: "ynyp8z" }],
-  ["line", { x1: "2", x2: "22", y1: "10", y2: "10", key: "1b3vmo" }]
-];
-const CreditCard = createLucideIcon("credit-card", __iconNode$N);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$M = [
-  ["path", { d: "M12 15V3", key: "m9g1x1" }],
-  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
-  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
-];
-const Download = createLucideIcon("download", __iconNode$M);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$L = [
-  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
-  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
-  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
-];
-const ExternalLink = createLucideIcon("external-link", __iconNode$L);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$K = [
-  [
-    "path",
-    {
-      d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
-      key: "ct8e1f"
-    }
-  ],
-  ["path", { d: "M14.084 14.158a3 3 0 0 1-4.242-4.242", key: "151rxh" }],
-  [
-    "path",
-    {
-      d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
-      key: "13bj9a"
-    }
-  ],
-  ["path", { d: "m2 2 20 20", key: "1ooewy" }]
-];
-const EyeOff = createLucideIcon("eye-off", __iconNode$K);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$J = [
-  [
-    "path",
-    {
-      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
-      key: "1nclc0"
-    }
-  ],
-  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
-];
-const Eye = createLucideIcon("eye", __iconNode$J);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$I = [
-  ["path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", key: "1rqfz7" }],
-  ["path", { d: "M14 2v4a2 2 0 0 0 2 2h4", key: "tnqrlb" }],
-  ["path", { d: "M10 9H8", key: "b1mrlr" }],
-  ["path", { d: "M16 13H8", key: "t4e002" }],
-  ["path", { d: "M16 17H8", key: "z1uh3a" }]
-];
-const FileText = createLucideIcon("file-text", __iconNode$I);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$H = [
-  [
-    "path",
-    {
-      d: "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z",
-      key: "96xj49"
-    }
-  ]
-];
-const Flame = createLucideIcon("flame", __iconNode$H);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$G = [
-  ["rect", { x: "3", y: "8", width: "18", height: "4", rx: "1", key: "bkv52" }],
-  ["path", { d: "M12 8v13", key: "1c76mn" }],
-  ["path", { d: "M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7", key: "6wjy6b" }],
-  [
-    "path",
-    {
-      d: "M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5",
-      key: "1ihvrl"
-    }
-  ]
-];
-const Gift = createLucideIcon("gift", __iconNode$G);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$F = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
-  ["path", { d: "M2 12h20", key: "9i4pu4" }]
-];
-const Globe = createLucideIcon("globe", __iconNode$F);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$E = [
-  ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
-  ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
-  ["path", { d: "M12 7v5l4 2", key: "1fdv2h" }]
-];
-const History = createLucideIcon("history", __iconNode$E);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$D = [
-  ["path", { d: "M16 5h6", key: "1vod17" }],
-  ["path", { d: "M19 2v6", key: "4bpg5p" }],
-  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
-];
-const ImagePlus = createLucideIcon("image-plus", __iconNode$D);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$C = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "M12 16v-4", key: "1dtifu" }],
-  ["path", { d: "M12 8h.01", key: "e9boi3" }]
-];
-const Info = createLucideIcon("info", __iconNode$C);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$B = [
-  [
-    "path",
-    {
-      d: "M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z",
-      key: "1s6t7t"
-    }
-  ],
-  ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
-];
-const KeyRound = createLucideIcon("key-round", __iconNode$B);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$A = [
-  ["path", { d: "M10 12h11", key: "6m4ad9" }],
-  ["path", { d: "M10 18h11", key: "11hvi2" }],
-  ["path", { d: "M10 6h11", key: "c7qv1k" }],
-  ["path", { d: "M4 10h2", key: "16xx2s" }],
-  ["path", { d: "M4 6h1v4", key: "cnovpq" }],
-  ["path", { d: "M6 18H4c0-1 2-2 2-3s-1-1.5-2-1", key: "m9a95d" }]
-];
-const ListOrdered = createLucideIcon("list-ordered", __iconNode$A);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$z = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-const LoaderCircle = createLucideIcon("loader-circle", __iconNode$z);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$y = [
-  ["path", { d: "m16 17 5-5-5-5", key: "1bji2h" }],
-  ["path", { d: "M21 12H9", key: "dn1m92" }],
-  ["path", { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", key: "1uf3rs" }]
-];
-const LogOut = createLucideIcon("log-out", __iconNode$y);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$x = [
-  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
-  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
-];
-const Mail = createLucideIcon("mail", __iconNode$x);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$w = [
-  [
-    "path",
-    {
-      d: "M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",
-      key: "1r0f0z"
-    }
-  ],
-  ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }]
-];
-const MapPin = createLucideIcon("map-pin", __iconNode$w);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$v = [["path", { d: "M5 12h14", key: "1ays0h" }]];
-const Minus = createLucideIcon("minus", __iconNode$v);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$u = [
-  [
-    "path",
-    {
-      d: "M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14",
-      key: "e7tb2h"
-    }
-  ],
-  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }],
-  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
-  ["line", { x1: "12", x2: "12", y1: "22", y2: "12", key: "a4e8g8" }],
-  ["circle", { cx: "18.5", cy: "15.5", r: "2.5", key: "b5zd12" }],
-  ["path", { d: "M20.27 17.27 22 19", key: "1l4muz" }]
-];
-const PackageSearch = createLucideIcon("package-search", __iconNode$u);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$t = [
-  [
-    "path",
-    {
-      d: "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z",
-      key: "1a0edw"
-    }
-  ],
-  ["path", { d: "M12 22V12", key: "d0xqtd" }],
-  ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
-  ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
-];
-const Package = createLucideIcon("package", __iconNode$t);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$s = [
-  ["path", { d: "M5.8 11.3 2 22l10.7-3.79", key: "gwxi1d" }],
-  ["path", { d: "M4 3h.01", key: "1vcuye" }],
-  ["path", { d: "M22 8h.01", key: "1mrtc2" }],
-  ["path", { d: "M15 2h.01", key: "1cjtqr" }],
-  ["path", { d: "M22 20h.01", key: "1mrys2" }],
-  [
-    "path",
-    {
-      d: "m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10",
-      key: "hbicv8"
-    }
-  ],
-  [
-    "path",
-    { d: "m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17", key: "1i94pl" }
-  ],
-  ["path", { d: "m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7", key: "1cofks" }],
-  [
-    "path",
-    {
-      d: "M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z",
-      key: "4kbmks"
-    }
-  ]
-];
-const PartyPopper = createLucideIcon("party-popper", __iconNode$s);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$r = [
-  [
-    "path",
-    {
-      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
-      key: "1a8usu"
-    }
-  ],
-  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
-];
-const Pencil = createLucideIcon("pencil", __iconNode$r);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$q = [
-  ["line", { x1: "19", x2: "5", y1: "5", y2: "19", key: "1x9vlm" }],
-  ["circle", { cx: "6.5", cy: "6.5", r: "2.5", key: "4mh3h7" }],
-  ["circle", { cx: "17.5", cy: "17.5", r: "2.5", key: "1mdrzq" }]
-];
-const Percent = createLucideIcon("percent", __iconNode$q);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$p = [
-  [
-    "path",
-    {
-      d: "M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384",
-      key: "9njp5v"
-    }
-  ]
-];
-const Phone = createLucideIcon("phone", __iconNode$p);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$o = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "M12 5v14", key: "s699le" }]
-];
-const Plus = createLucideIcon("plus", __iconNode$o);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$n = [
-  [
-    "path",
-    { d: "M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", key: "q3az6g" }
-  ],
-  ["path", { d: "M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8", key: "1h4pet" }],
-  ["path", { d: "M12 17.5v-11", key: "1jc1ny" }]
-];
-const Receipt = createLucideIcon("receipt", __iconNode$n);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$m = [
-  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
-  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
-  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
-  ["path", { d: "M8 16H3v5", key: "1cv678" }]
-];
-const RefreshCw = createLucideIcon("refresh-cw", __iconNode$m);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$l = [
-  [
-    "path",
-    {
-      d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
-      key: "1c8476"
-    }
-  ],
-  ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7", key: "1ydtos" }],
-  ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7", key: "t51u73" }]
-];
-const Save = createLucideIcon("save", __iconNode$l);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$k = [
-  ["path", { d: "M15 12h-5", key: "r7krc0" }],
-  ["path", { d: "M15 8h-5", key: "1khuty" }],
-  ["path", { d: "M19 17V5a2 2 0 0 0-2-2H4", key: "zz82l3" }],
-  [
-    "path",
-    {
-      d: "M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3",
-      key: "1ph1d7"
-    }
-  ]
-];
-const ScrollText = createLucideIcon("scroll-text", __iconNode$k);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$j = [
-  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
-  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
-];
-const Search = createLucideIcon("search", __iconNode$j);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$i = [
-  [
-    "path",
-    {
-      d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
-      key: "oel41y"
-    }
-  ],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
-];
-const ShieldCheck = createLucideIcon("shield-check", __iconNode$i);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$h = [
-  ["path", { d: "m2 2 20 20", key: "1ooewy" }],
-  [
-    "path",
-    {
-      d: "M5 5a1 1 0 0 0-1 1v7c0 5 3.5 7.5 7.67 8.94a1 1 0 0 0 .67.01c2.35-.82 4.48-1.97 5.9-3.71",
-      key: "1jlk70"
-    }
-  ],
-  [
-    "path",
-    {
-      d: "M9.309 3.652A12.252 12.252 0 0 0 11.24 2.28a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7a9.784 9.784 0 0 1-.08 1.264",
-      key: "18rp1v"
-    }
-  ]
-];
-const ShieldOff = createLucideIcon("shield-off", __iconNode$h);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$g = [
-  ["path", { d: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z", key: "hou9p0" }],
-  ["path", { d: "M3 6h18", key: "d0wm0j" }],
-  ["path", { d: "M16 10a4 4 0 0 1-8 0", key: "1ltviw" }]
-];
-const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$g);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$f = [
-  ["circle", { cx: "8", cy: "21", r: "1", key: "jimo8o" }],
-  ["circle", { cx: "19", cy: "21", r: "1", key: "13723u" }],
-  [
-    "path",
-    {
-      d: "M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12",
-      key: "9zh506"
-    }
-  ]
-];
-const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$f);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$e = [
-  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
-  ["path", { d: "M12 18h.01", key: "mhygvu" }]
-];
-const Smartphone = createLucideIcon("smartphone", __iconNode$e);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$d = [
-  [
-    "path",
-    {
-      d: "M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z",
-      key: "4pj2yx"
-    }
-  ],
-  ["path", { d: "M20 3v4", key: "1olli1" }],
-  ["path", { d: "M22 5h-4", key: "1gvqau" }],
-  ["path", { d: "M4 17v2", key: "vumght" }],
-  ["path", { d: "M5 18H3", key: "zchphs" }]
-];
-const Sparkles = createLucideIcon("sparkles", __iconNode$d);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$c = [
-  ["path", { d: "m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7", key: "ztvudi" }],
-  ["path", { d: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8", key: "1b2hhj" }],
-  ["path", { d: "M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4", key: "2ebpfo" }],
-  ["path", { d: "M2 7h20", key: "1fcdvo" }],
-  [
-    "path",
-    {
-      d: "M22 7v3a2 2 0 0 1-2 2a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7",
-      key: "6c3vgh"
-    }
-  ]
-];
-const Store2 = createLucideIcon("store", __iconNode$c);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$b = [
-  [
-    "path",
-    {
-      d: "M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z",
-      key: "vktsd0"
-    }
-  ],
-  ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
-];
-const Tag = createLucideIcon("tag", __iconNode$b);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$a = [
-  [
-    "path",
-    {
-      d: "M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z",
-      key: "qn84l0"
-    }
-  ],
-  ["path", { d: "M13 5v2", key: "dyzc3o" }],
-  ["path", { d: "M13 17v2", key: "1ont0d" }],
-  ["path", { d: "M13 11v2", key: "1wjjxi" }]
-];
-const Ticket = createLucideIcon("ticket", __iconNode$a);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$9 = [
-  ["path", { d: "M3 6h18", key: "d0wm0j" }],
-  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
-  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
-  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
-  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
-];
-const Trash2 = createLucideIcon("trash-2", __iconNode$9);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$8 = [
-  ["path", { d: "M16 7h6v6", key: "box55l" }],
-  ["path", { d: "m22 7-8.5 8.5-5-5L2 17", key: "1t1m79" }]
-];
-const TrendingUp = createLucideIcon("trending-up", __iconNode$8);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$7 = [
-  ["path", { d: "M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2", key: "wrbu53" }],
-  ["path", { d: "M15 18H9", key: "1lyqi6" }],
-  [
-    "path",
-    {
-      d: "M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14",
-      key: "lysw3i"
-    }
-  ],
-  ["circle", { cx: "17", cy: "18", r: "2", key: "332jqn" }],
-  ["circle", { cx: "7", cy: "18", r: "2", key: "19iecd" }]
-];
-const Truck = createLucideIcon("truck", __iconNode$7);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$6 = [
-  ["path", { d: "m16 11 2 2 4-4", key: "9rsbq5" }],
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
-];
-const UserCheck = createLucideIcon("user-check", __iconNode$6);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$5 = [
-  ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
-  ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }]
-];
-const User = createLucideIcon("user", __iconNode$5);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$4 = [
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
-  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
-];
-const Users = createLucideIcon("users", __iconNode$4);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$3 = [
-  ["path", { d: "m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8", key: "n7qcjb" }],
-  [
-    "path",
-    { d: "M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7", key: "d0u48b" }
-  ],
-  ["path", { d: "m2.1 21.8 6.4-6.3", key: "yn04lh" }],
-  ["path", { d: "m19 5-7 7", key: "194lzd" }]
-];
-const UtensilsCrossed = createLucideIcon("utensils-crossed", __iconNode$3);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$2 = [
-  [
-    "path",
-    {
-      d: "m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",
-      key: "ftymec"
-    }
-  ],
-  ["rect", { x: "2", y: "6", width: "14", height: "12", rx: "2", key: "158x01" }]
-];
-const Video = createLucideIcon("video", __iconNode$2);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$1 = [
-  [
-    "path",
-    {
-      d: "M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1",
-      key: "18etb6"
-    }
-  ],
-  ["path", { d: "M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4", key: "xoc0q4" }]
-];
-const Wallet = createLucideIcon("wallet", __iconNode$1);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode = [
-  ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
-  ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
-];
-const X = createLucideIcon("x", __iconNode);
 const PRIMARY_NAV = [
   {
     to: "/",
@@ -45967,7 +46887,7 @@ const PRIMARY_NAV = [
     hideOnPrefixes: ["/driver"]
   },
   { to: "/grab-guide", label: "Hướng dẫn đặt Grab giao hàng", icon: Video },
-  { to: "/ordering-partners", label: "Đối tác đặt món", icon: Store2 },
+  { to: "/ordering-partners", label: "Đối tác đặt món", icon: Store$1 },
   { to: "/gioi-thieu", label: "Giới thiệu", icon: Info }
 ];
 const BOTTOM_NAV = [
@@ -46019,6 +46939,24 @@ const ADMIN_NAV = [
   {
     to: "/admin/analytics",
     label: "Báo cáo",
+    icon: ShieldCheck,
+    adminOnly: true
+  },
+  {
+    to: "/enterprise/payment-queue",
+    label: "Hàng đợi thanh toán",
+    icon: ShieldCheck,
+    adminOnly: true
+  },
+  {
+    to: "/enterprise/accounting",
+    label: "Kế toán",
+    icon: ShieldCheck,
+    adminOnly: true
+  },
+  {
+    to: "/enterprise/sales-reporting",
+    label: "Báo cáo bán hàng & KM",
     icon: ShieldCheck,
     adminOnly: true
   }
@@ -46287,7 +47225,7 @@ function Layout({ children }) {
     )
   ] });
 }
-var M$1 = (e, i, s, u2, m2, a2, l2, h2) => {
+var M = (e, i, s, u2, m2, a2, l2, h2) => {
   let d2 = document.documentElement, w2 = ["light", "dark"];
   function p2(n) {
     (Array.isArray(e) ? e : [e]).forEach((y2) => {
@@ -46315,283 +47253,7 @@ var x2 = reactExports.createContext(void 0), U = { setTheme: (e) => {
 };
 reactExports.memo(({ forcedTheme: e, storageKey: i, attribute: s, enableSystem: u2, enableColorScheme: m2, defaultTheme: a2, value: l2, themes: h2, nonce: d2, scriptProps: w2 }) => {
   let p2 = JSON.stringify([s, i, a2, e, h2, l2, u2, m2]).slice(1, -1);
-  return reactExports.createElement("script", { ...w2, suppressHydrationWarning: true, nonce: typeof window == "undefined" ? d2 : "", dangerouslySetInnerHTML: { __html: `(${M$1.toString()})(${p2})` } });
-});
-var jt = (n) => {
-  switch (n) {
-    case "success":
-      return ee;
-    case "info":
-      return ae;
-    case "warning":
-      return oe;
-    case "error":
-      return se;
-    default:
-      return null;
-  }
-}, te = Array(12).fill(0), Yt = ({ visible: n, className: e }) => React$4.createElement("div", { className: ["sonner-loading-wrapper", e].filter(Boolean).join(" "), "data-visible": n }, React$4.createElement("div", { className: "sonner-spinner" }, te.map((t, a2) => React$4.createElement("div", { className: "sonner-loading-bar", key: `spinner-bar-${a2}` })))), ee = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z", clipRule: "evenodd" })), oe = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z", clipRule: "evenodd" })), ae = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z", clipRule: "evenodd" })), se = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, React$4.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z", clipRule: "evenodd" })), Ot = React$4.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }, React$4.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }), React$4.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" }));
-var Ft = () => {
-  let [n, e] = React$4.useState(document.hidden);
-  return React$4.useEffect(() => {
-    let t = () => {
-      e(document.hidden);
-    };
-    return document.addEventListener("visibilitychange", t), () => window.removeEventListener("visibilitychange", t);
-  }, []), n;
-};
-var bt = 1, yt = class {
-  constructor() {
-    this.subscribe = (e) => (this.subscribers.push(e), () => {
-      let t = this.subscribers.indexOf(e);
-      this.subscribers.splice(t, 1);
-    });
-    this.publish = (e) => {
-      this.subscribers.forEach((t) => t(e));
-    };
-    this.addToast = (e) => {
-      this.publish(e), this.toasts = [...this.toasts, e];
-    };
-    this.create = (e) => {
-      var S2;
-      let { message: t, ...a2 } = e, u2 = typeof (e == null ? void 0 : e.id) == "number" || ((S2 = e.id) == null ? void 0 : S2.length) > 0 ? e.id : bt++, f2 = this.toasts.find((g2) => g2.id === u2), w2 = e.dismissible === void 0 ? true : e.dismissible;
-      return this.dismissedToasts.has(u2) && this.dismissedToasts.delete(u2), f2 ? this.toasts = this.toasts.map((g2) => g2.id === u2 ? (this.publish({ ...g2, ...e, id: u2, title: t }), { ...g2, ...e, id: u2, dismissible: w2, title: t }) : g2) : this.addToast({ title: t, ...a2, dismissible: w2, id: u2 }), u2;
-    };
-    this.dismiss = (e) => (this.dismissedToasts.add(e), e || this.toasts.forEach((t) => {
-      this.subscribers.forEach((a2) => a2({ id: t.id, dismiss: true }));
-    }), this.subscribers.forEach((t) => t({ id: e, dismiss: true })), e);
-    this.message = (e, t) => this.create({ ...t, message: e });
-    this.error = (e, t) => this.create({ ...t, message: e, type: "error" });
-    this.success = (e, t) => this.create({ ...t, type: "success", message: e });
-    this.info = (e, t) => this.create({ ...t, type: "info", message: e });
-    this.warning = (e, t) => this.create({ ...t, type: "warning", message: e });
-    this.loading = (e, t) => this.create({ ...t, type: "loading", message: e });
-    this.promise = (e, t) => {
-      if (!t) return;
-      let a2;
-      t.loading !== void 0 && (a2 = this.create({ ...t, promise: e, type: "loading", message: t.loading, description: typeof t.description != "function" ? t.description : void 0 }));
-      let u2 = e instanceof Promise ? e : e(), f2 = a2 !== void 0, w2, S2 = u2.then(async (i) => {
-        if (w2 = ["resolve", i], React$4.isValidElement(i)) f2 = false, this.create({ id: a2, type: "default", message: i });
-        else if (ie(i) && !i.ok) {
-          f2 = false;
-          let T2 = typeof t.error == "function" ? await t.error(`HTTP error! status: ${i.status}`) : t.error, F2 = typeof t.description == "function" ? await t.description(`HTTP error! status: ${i.status}`) : t.description;
-          this.create({ id: a2, type: "error", message: T2, description: F2 });
-        } else if (t.success !== void 0) {
-          f2 = false;
-          let T2 = typeof t.success == "function" ? await t.success(i) : t.success, F2 = typeof t.description == "function" ? await t.description(i) : t.description;
-          this.create({ id: a2, type: "success", message: T2, description: F2 });
-        }
-      }).catch(async (i) => {
-        if (w2 = ["reject", i], t.error !== void 0) {
-          f2 = false;
-          let D = typeof t.error == "function" ? await t.error(i) : t.error, T2 = typeof t.description == "function" ? await t.description(i) : t.description;
-          this.create({ id: a2, type: "error", message: D, description: T2 });
-        }
-      }).finally(() => {
-        var i;
-        f2 && (this.dismiss(a2), a2 = void 0), (i = t.finally) == null || i.call(t);
-      }), g2 = () => new Promise((i, D) => S2.then(() => w2[0] === "reject" ? D(w2[1]) : i(w2[1])).catch(D));
-      return typeof a2 != "string" && typeof a2 != "number" ? { unwrap: g2 } : Object.assign(a2, { unwrap: g2 });
-    };
-    this.custom = (e, t) => {
-      let a2 = (t == null ? void 0 : t.id) || bt++;
-      return this.create({ jsx: e(a2), id: a2, ...t }), a2;
-    };
-    this.getActiveToasts = () => this.toasts.filter((e) => !this.dismissedToasts.has(e.id));
-    this.subscribers = [], this.toasts = [], this.dismissedToasts = /* @__PURE__ */ new Set();
-  }
-}, v = new yt(), ne = (n, e) => {
-  let t = (e == null ? void 0 : e.id) || bt++;
-  return v.addToast({ title: n, ...e, id: t }), t;
-}, ie = (n) => n && typeof n == "object" && "ok" in n && typeof n.ok == "boolean" && "status" in n && typeof n.status == "number", le = ne, ce = () => v.toasts, de = () => v.getActiveToasts(), ue = Object.assign(le, { success: v.success, info: v.info, warning: v.warning, error: v.error, custom: v.custom, message: v.message, promise: v.promise, dismiss: v.dismiss, loading: v.loading }, { getHistory: ce, getToasts: de });
-function wt(n, { insertAt: e } = {}) {
-  if (typeof document == "undefined") return;
-  let t = document.head || document.getElementsByTagName("head")[0], a2 = document.createElement("style");
-  a2.type = "text/css", e === "top" && t.firstChild ? t.insertBefore(a2, t.firstChild) : t.appendChild(a2), a2.styleSheet ? a2.styleSheet.cssText = n : a2.appendChild(document.createTextNode(n));
-}
-wt(`:where(html[dir="ltr"]),:where([data-sonner-toaster][dir="ltr"]){--toast-icon-margin-start: -3px;--toast-icon-margin-end: 4px;--toast-svg-margin-start: -1px;--toast-svg-margin-end: 0px;--toast-button-margin-start: auto;--toast-button-margin-end: 0;--toast-close-button-start: 0;--toast-close-button-end: unset;--toast-close-button-transform: translate(-35%, -35%)}:where(html[dir="rtl"]),:where([data-sonner-toaster][dir="rtl"]){--toast-icon-margin-start: 4px;--toast-icon-margin-end: -3px;--toast-svg-margin-start: 0px;--toast-svg-margin-end: -1px;--toast-button-margin-start: 0;--toast-button-margin-end: auto;--toast-close-button-start: unset;--toast-close-button-end: 0;--toast-close-button-transform: translate(35%, -35%)}:where([data-sonner-toaster]){position:fixed;width:var(--width);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;--gray1: hsl(0, 0%, 99%);--gray2: hsl(0, 0%, 97.3%);--gray3: hsl(0, 0%, 95.1%);--gray4: hsl(0, 0%, 93%);--gray5: hsl(0, 0%, 90.9%);--gray6: hsl(0, 0%, 88.7%);--gray7: hsl(0, 0%, 85.8%);--gray8: hsl(0, 0%, 78%);--gray9: hsl(0, 0%, 56.1%);--gray10: hsl(0, 0%, 52.3%);--gray11: hsl(0, 0%, 43.5%);--gray12: hsl(0, 0%, 9%);--border-radius: 8px;box-sizing:border-box;padding:0;margin:0;list-style:none;outline:none;z-index:999999999;transition:transform .4s ease}:where([data-sonner-toaster][data-lifted="true"]){transform:translateY(-10px)}@media (hover: none) and (pointer: coarse){:where([data-sonner-toaster][data-lifted="true"]){transform:none}}:where([data-sonner-toaster][data-x-position="right"]){right:var(--offset-right)}:where([data-sonner-toaster][data-x-position="left"]){left:var(--offset-left)}:where([data-sonner-toaster][data-x-position="center"]){left:50%;transform:translate(-50%)}:where([data-sonner-toaster][data-y-position="top"]){top:var(--offset-top)}:where([data-sonner-toaster][data-y-position="bottom"]){bottom:var(--offset-bottom)}:where([data-sonner-toast]){--y: translateY(100%);--lift-amount: calc(var(--lift) * var(--gap));z-index:var(--z-index);position:absolute;opacity:0;transform:var(--y);filter:blur(0);touch-action:none;transition:transform .4s,opacity .4s,height .4s,box-shadow .2s;box-sizing:border-box;outline:none;overflow-wrap:anywhere}:where([data-sonner-toast][data-styled="true"]){padding:16px;background:var(--normal-bg);border:1px solid var(--normal-border);color:var(--normal-text);border-radius:var(--border-radius);box-shadow:0 4px 12px #0000001a;width:var(--width);font-size:13px;display:flex;align-items:center;gap:6px}:where([data-sonner-toast]:focus-visible){box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast][data-y-position="top"]){top:0;--y: translateY(-100%);--lift: 1;--lift-amount: calc(1 * var(--gap))}:where([data-sonner-toast][data-y-position="bottom"]){bottom:0;--y: translateY(100%);--lift: -1;--lift-amount: calc(var(--lift) * var(--gap))}:where([data-sonner-toast]) :where([data-description]){font-weight:400;line-height:1.4;color:inherit}:where([data-sonner-toast]) :where([data-title]){font-weight:500;line-height:1.5;color:inherit}:where([data-sonner-toast]) :where([data-icon]){display:flex;height:16px;width:16px;position:relative;justify-content:flex-start;align-items:center;flex-shrink:0;margin-left:var(--toast-icon-margin-start);margin-right:var(--toast-icon-margin-end)}:where([data-sonner-toast][data-promise="true"]) :where([data-icon])>svg{opacity:0;transform:scale(.8);transform-origin:center;animation:sonner-fade-in .3s ease forwards}:where([data-sonner-toast]) :where([data-icon])>*{flex-shrink:0}:where([data-sonner-toast]) :where([data-icon]) svg{margin-left:var(--toast-svg-margin-start);margin-right:var(--toast-svg-margin-end)}:where([data-sonner-toast]) :where([data-content]){display:flex;flex-direction:column;gap:2px}[data-sonner-toast][data-styled=true] [data-button]{border-radius:4px;padding-left:8px;padding-right:8px;height:24px;font-size:12px;color:var(--normal-bg);background:var(--normal-text);margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end);border:none;cursor:pointer;outline:none;display:flex;align-items:center;flex-shrink:0;transition:opacity .4s,box-shadow .2s}:where([data-sonner-toast]) :where([data-button]):focus-visible{box-shadow:0 0 0 2px #0006}:where([data-sonner-toast]) :where([data-button]):first-of-type{margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end)}:where([data-sonner-toast]) :where([data-cancel]){color:var(--normal-text);background:rgba(0,0,0,.08)}:where([data-sonner-toast][data-theme="dark"]) :where([data-cancel]){background:rgba(255,255,255,.3)}:where([data-sonner-toast]) :where([data-close-button]){position:absolute;left:var(--toast-close-button-start);right:var(--toast-close-button-end);top:0;height:20px;width:20px;display:flex;justify-content:center;align-items:center;padding:0;color:var(--gray12);border:1px solid var(--gray4);transform:var(--toast-close-button-transform);border-radius:50%;cursor:pointer;z-index:1;transition:opacity .1s,background .2s,border-color .2s}[data-sonner-toast] [data-close-button]{background:var(--gray1)}:where([data-sonner-toast]) :where([data-close-button]):focus-visible{box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast]) :where([data-disabled="true"]){cursor:not-allowed}:where([data-sonner-toast]):hover :where([data-close-button]):hover{background:var(--gray2);border-color:var(--gray5)}:where([data-sonner-toast][data-swiping="true"]):before{content:"";position:absolute;left:-50%;right:-50%;height:100%;z-index:-1}:where([data-sonner-toast][data-y-position="top"][data-swiping="true"]):before{bottom:50%;transform:scaleY(3) translateY(50%)}:where([data-sonner-toast][data-y-position="bottom"][data-swiping="true"]):before{top:50%;transform:scaleY(3) translateY(-50%)}:where([data-sonner-toast][data-swiping="false"][data-removed="true"]):before{content:"";position:absolute;inset:0;transform:scaleY(2)}:where([data-sonner-toast]):after{content:"";position:absolute;left:0;height:calc(var(--gap) + 1px);bottom:100%;width:100%}:where([data-sonner-toast][data-mounted="true"]){--y: translateY(0);opacity:1}:where([data-sonner-toast][data-expanded="false"][data-front="false"]){--scale: var(--toasts-before) * .05 + 1;--y: translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)));height:var(--front-toast-height)}:where([data-sonner-toast])>*{transition:opacity .4s}:where([data-sonner-toast][data-expanded="false"][data-front="false"][data-styled="true"])>*{opacity:0}:where([data-sonner-toast][data-visible="false"]){opacity:0;pointer-events:none}:where([data-sonner-toast][data-mounted="true"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset)));height:var(--initial-height)}:where([data-sonner-toast][data-removed="true"][data-front="true"][data-swipe-out="false"]){--y: translateY(calc(var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="false"]){--y: translateY(40%);opacity:0;transition:transform .5s,opacity .2s}:where([data-sonner-toast][data-removed="true"][data-front="false"]):before{height:calc(var(--initial-height) + 20%)}[data-sonner-toast][data-swiping=true]{transform:var(--y) translateY(var(--swipe-amount-y, 0px)) translate(var(--swipe-amount-x, 0px));transition:none}[data-sonner-toast][data-swiped=true]{user-select:none}[data-sonner-toast][data-swipe-out=true][data-y-position=bottom],[data-sonner-toast][data-swipe-out=true][data-y-position=top]{animation-duration:.2s;animation-timing-function:ease-out;animation-fill-mode:forwards}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=left]{animation-name:swipe-out-left}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=right]{animation-name:swipe-out-right}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=up]{animation-name:swipe-out-up}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=down]{animation-name:swipe-out-down}@keyframes swipe-out-left{0%{transform:var(--y) translate(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translate(calc(var(--swipe-amount-x) - 100%));opacity:0}}@keyframes swipe-out-right{0%{transform:var(--y) translate(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translate(calc(var(--swipe-amount-x) + 100%));opacity:0}}@keyframes swipe-out-up{0%{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) - 100%));opacity:0}}@keyframes swipe-out-down{0%{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) + 100%));opacity:0}}@media (max-width: 600px){[data-sonner-toaster]{position:fixed;right:var(--mobile-offset-right);left:var(--mobile-offset-left);width:100%}[data-sonner-toaster][dir=rtl]{left:calc(var(--mobile-offset-left) * -1)}[data-sonner-toaster] [data-sonner-toast]{left:0;right:0;width:calc(100% - var(--mobile-offset-left) * 2)}[data-sonner-toaster][data-x-position=left]{left:var(--mobile-offset-left)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--mobile-offset-bottom)}[data-sonner-toaster][data-y-position=top]{top:var(--mobile-offset-top)}[data-sonner-toaster][data-x-position=center]{left:var(--mobile-offset-left);right:var(--mobile-offset-right);transform:none}}[data-sonner-toaster][data-theme=light]{--normal-bg: #fff;--normal-border: var(--gray4);--normal-text: var(--gray12);--success-bg: hsl(143, 85%, 96%);--success-border: hsl(145, 92%, 91%);--success-text: hsl(140, 100%, 27%);--info-bg: hsl(208, 100%, 97%);--info-border: hsl(221, 91%, 91%);--info-text: hsl(210, 92%, 45%);--warning-bg: hsl(49, 100%, 97%);--warning-border: hsl(49, 91%, 91%);--warning-text: hsl(31, 92%, 45%);--error-bg: hsl(359, 100%, 97%);--error-border: hsl(359, 100%, 94%);--error-text: hsl(360, 100%, 45%)}[data-sonner-toaster][data-theme=light] [data-sonner-toast][data-invert=true]{--normal-bg: #000;--normal-border: hsl(0, 0%, 20%);--normal-text: var(--gray1)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast][data-invert=true]{--normal-bg: #fff;--normal-border: var(--gray3);--normal-text: var(--gray12)}[data-sonner-toaster][data-theme=dark]{--normal-bg: #000;--normal-bg-hover: hsl(0, 0%, 12%);--normal-border: hsl(0, 0%, 20%);--normal-border-hover: hsl(0, 0%, 25%);--normal-text: var(--gray1);--success-bg: hsl(150, 100%, 6%);--success-border: hsl(147, 100%, 12%);--success-text: hsl(150, 86%, 65%);--info-bg: hsl(215, 100%, 6%);--info-border: hsl(223, 100%, 12%);--info-text: hsl(216, 87%, 65%);--warning-bg: hsl(64, 100%, 6%);--warning-border: hsl(60, 100%, 12%);--warning-text: hsl(46, 87%, 65%);--error-bg: hsl(358, 76%, 10%);--error-border: hsl(357, 89%, 16%);--error-text: hsl(358, 100%, 81%)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast] [data-close-button]{background:var(--normal-bg);border-color:var(--normal-border);color:var(--normal-text)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast] [data-close-button]:hover{background:var(--normal-bg-hover);border-color:var(--normal-border-hover)}[data-rich-colors=true][data-sonner-toast][data-type=success],[data-rich-colors=true][data-sonner-toast][data-type=success] [data-close-button]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=info],[data-rich-colors=true][data-sonner-toast][data-type=info] [data-close-button]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning],[data-rich-colors=true][data-sonner-toast][data-type=warning] [data-close-button]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=error],[data-rich-colors=true][data-sonner-toast][data-type=error] [data-close-button]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}.sonner-loading-wrapper{--size: 16px;height:var(--size);width:var(--size);position:absolute;inset:0;z-index:10}.sonner-loading-wrapper[data-visible=false]{transform-origin:center;animation:sonner-fade-out .2s ease forwards}.sonner-spinner{position:relative;top:50%;left:50%;height:var(--size);width:var(--size)}.sonner-loading-bar{animation:sonner-spin 1.2s linear infinite;background:var(--gray11);border-radius:6px;height:8%;left:-10%;position:absolute;top:-3.9%;width:24%}.sonner-loading-bar:nth-child(1){animation-delay:-1.2s;transform:rotate(.0001deg) translate(146%)}.sonner-loading-bar:nth-child(2){animation-delay:-1.1s;transform:rotate(30deg) translate(146%)}.sonner-loading-bar:nth-child(3){animation-delay:-1s;transform:rotate(60deg) translate(146%)}.sonner-loading-bar:nth-child(4){animation-delay:-.9s;transform:rotate(90deg) translate(146%)}.sonner-loading-bar:nth-child(5){animation-delay:-.8s;transform:rotate(120deg) translate(146%)}.sonner-loading-bar:nth-child(6){animation-delay:-.7s;transform:rotate(150deg) translate(146%)}.sonner-loading-bar:nth-child(7){animation-delay:-.6s;transform:rotate(180deg) translate(146%)}.sonner-loading-bar:nth-child(8){animation-delay:-.5s;transform:rotate(210deg) translate(146%)}.sonner-loading-bar:nth-child(9){animation-delay:-.4s;transform:rotate(240deg) translate(146%)}.sonner-loading-bar:nth-child(10){animation-delay:-.3s;transform:rotate(270deg) translate(146%)}.sonner-loading-bar:nth-child(11){animation-delay:-.2s;transform:rotate(300deg) translate(146%)}.sonner-loading-bar:nth-child(12){animation-delay:-.1s;transform:rotate(330deg) translate(146%)}@keyframes sonner-fade-in{0%{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}@keyframes sonner-fade-out{0%{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.8)}}@keyframes sonner-spin{0%{opacity:1}to{opacity:.15}}@media (prefers-reduced-motion){[data-sonner-toast],[data-sonner-toast]>*,.sonner-loading-bar{transition:none!important;animation:none!important}}.sonner-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transform-origin:center;transition:opacity .2s,transform .2s}.sonner-loader[data-visible=false]{opacity:0;transform:scale(.8) translate(-50%,-50%)}
-`);
-function tt(n) {
-  return n.label !== void 0;
-}
-var pe = 3, me = "32px", ge = "16px", Wt = 4e3, he = 356, be = 14, ye = 20, we = 200;
-function M(...n) {
-  return n.filter(Boolean).join(" ");
-}
-function xe(n) {
-  let [e, t] = n.split("-"), a2 = [];
-  return e && a2.push(e), t && a2.push(t), a2;
-}
-var ve = (n) => {
-  var Dt, Pt, Nt, Bt, Ct, kt, It, Mt, Ht, At, Lt;
-  let { invert: e, toast: t, unstyled: a2, interacting: u2, setHeights: f2, visibleToasts: w2, heights: S2, index: g2, toasts: i, expanded: D, removeToast: T2, defaultRichColors: F2, closeButton: et2, style: ut2, cancelButtonStyle: ft2, actionButtonStyle: l2, className: ot2 = "", descriptionClassName: at = "", duration: X2, position: st2, gap: pt, loadingIcon: rt2, expandByDefault: B2, classNames: s, icons: P2, closeButtonAriaLabel: nt2 = "Close toast", pauseWhenPageIsHidden: it2 } = n, [Y2, C2] = React$4.useState(null), [lt, J2] = React$4.useState(null), [W2, H2] = React$4.useState(false), [A, mt] = React$4.useState(false), [L2, z2] = React$4.useState(false), [ct2, d2] = React$4.useState(false), [h2, y2] = React$4.useState(false), [R2, j2] = React$4.useState(0), [p2, _2] = React$4.useState(0), O2 = React$4.useRef(t.duration || X2 || Wt), G2 = React$4.useRef(null), k2 = React$4.useRef(null), Vt = g2 === 0, Ut = g2 + 1 <= w2, N2 = t.type, V2 = t.dismissible !== false, Kt = t.className || "", Xt = t.descriptionClassName || "", dt = React$4.useMemo(() => S2.findIndex((r2) => r2.toastId === t.id) || 0, [S2, t.id]), Jt = React$4.useMemo(() => {
-    var r2;
-    return (r2 = t.closeButton) != null ? r2 : et2;
-  }, [t.closeButton, et2]), Tt = React$4.useMemo(() => t.duration || X2 || Wt, [t.duration, X2]), gt2 = React$4.useRef(0), U2 = React$4.useRef(0), St = React$4.useRef(0), K2 = React$4.useRef(null), [Gt, Qt] = st2.split("-"), Rt = React$4.useMemo(() => S2.reduce((r2, m2, c2) => c2 >= dt ? r2 : r2 + m2.height, 0), [S2, dt]), Et = Ft(), qt = t.invert || e, ht = N2 === "loading";
-  U2.current = React$4.useMemo(() => dt * pt + Rt, [dt, Rt]), React$4.useEffect(() => {
-    O2.current = Tt;
-  }, [Tt]), React$4.useEffect(() => {
-    H2(true);
-  }, []), React$4.useEffect(() => {
-    let r2 = k2.current;
-    if (r2) {
-      let m2 = r2.getBoundingClientRect().height;
-      return _2(m2), f2((c2) => [{ toastId: t.id, height: m2, position: t.position }, ...c2]), () => f2((c2) => c2.filter((b2) => b2.toastId !== t.id));
-    }
-  }, [f2, t.id]), React$4.useLayoutEffect(() => {
-    if (!W2) return;
-    let r2 = k2.current, m2 = r2.style.height;
-    r2.style.height = "auto";
-    let c2 = r2.getBoundingClientRect().height;
-    r2.style.height = m2, _2(c2), f2((b2) => b2.find((x3) => x3.toastId === t.id) ? b2.map((x3) => x3.toastId === t.id ? { ...x3, height: c2 } : x3) : [{ toastId: t.id, height: c2, position: t.position }, ...b2]);
-  }, [W2, t.title, t.description, f2, t.id]);
-  let $2 = React$4.useCallback(() => {
-    mt(true), j2(U2.current), f2((r2) => r2.filter((m2) => m2.toastId !== t.id)), setTimeout(() => {
-      T2(t);
-    }, we);
-  }, [t, T2, f2, U2]);
-  React$4.useEffect(() => {
-    if (t.promise && N2 === "loading" || t.duration === 1 / 0 || t.type === "loading") return;
-    let r2;
-    return D || u2 || it2 && Et ? (() => {
-      if (St.current < gt2.current) {
-        let b2 = (/* @__PURE__ */ new Date()).getTime() - gt2.current;
-        O2.current = O2.current - b2;
-      }
-      St.current = (/* @__PURE__ */ new Date()).getTime();
-    })() : (() => {
-      O2.current !== 1 / 0 && (gt2.current = (/* @__PURE__ */ new Date()).getTime(), r2 = setTimeout(() => {
-        var b2;
-        (b2 = t.onAutoClose) == null || b2.call(t, t), $2();
-      }, O2.current));
-    })(), () => clearTimeout(r2);
-  }, [D, u2, t, N2, it2, Et, $2]), React$4.useEffect(() => {
-    t.delete && $2();
-  }, [$2, t.delete]);
-  function Zt() {
-    var r2, m2, c2;
-    return P2 != null && P2.loading ? React$4.createElement("div", { className: M(s == null ? void 0 : s.loader, (r2 = t == null ? void 0 : t.classNames) == null ? void 0 : r2.loader, "sonner-loader"), "data-visible": N2 === "loading" }, P2.loading) : rt2 ? React$4.createElement("div", { className: M(s == null ? void 0 : s.loader, (m2 = t == null ? void 0 : t.classNames) == null ? void 0 : m2.loader, "sonner-loader"), "data-visible": N2 === "loading" }, rt2) : React$4.createElement(Yt, { className: M(s == null ? void 0 : s.loader, (c2 = t == null ? void 0 : t.classNames) == null ? void 0 : c2.loader), visible: N2 === "loading" });
-  }
-  return React$4.createElement("li", { tabIndex: 0, ref: k2, className: M(ot2, Kt, s == null ? void 0 : s.toast, (Dt = t == null ? void 0 : t.classNames) == null ? void 0 : Dt.toast, s == null ? void 0 : s.default, s == null ? void 0 : s[N2], (Pt = t == null ? void 0 : t.classNames) == null ? void 0 : Pt[N2]), "data-sonner-toast": "", "data-rich-colors": (Nt = t.richColors) != null ? Nt : F2, "data-styled": !(t.jsx || t.unstyled || a2), "data-mounted": W2, "data-promise": !!t.promise, "data-swiped": h2, "data-removed": A, "data-visible": Ut, "data-y-position": Gt, "data-x-position": Qt, "data-index": g2, "data-front": Vt, "data-swiping": L2, "data-dismissible": V2, "data-type": N2, "data-invert": qt, "data-swipe-out": ct2, "data-swipe-direction": lt, "data-expanded": !!(D || B2 && W2), style: { "--index": g2, "--toasts-before": g2, "--z-index": i.length - g2, "--offset": `${A ? R2 : U2.current}px`, "--initial-height": B2 ? "auto" : `${p2}px`, ...ut2, ...t.style }, onDragEnd: () => {
-    z2(false), C2(null), K2.current = null;
-  }, onPointerDown: (r2) => {
-    ht || !V2 || (G2.current = /* @__PURE__ */ new Date(), j2(U2.current), r2.target.setPointerCapture(r2.pointerId), r2.target.tagName !== "BUTTON" && (z2(true), K2.current = { x: r2.clientX, y: r2.clientY }));
-  }, onPointerUp: () => {
-    var x3, Q2, q2, Z2;
-    if (ct2 || !V2) return;
-    K2.current = null;
-    let r2 = Number(((x3 = k2.current) == null ? void 0 : x3.style.getPropertyValue("--swipe-amount-x").replace("px", "")) || 0), m2 = Number(((Q2 = k2.current) == null ? void 0 : Q2.style.getPropertyValue("--swipe-amount-y").replace("px", "")) || 0), c2 = (/* @__PURE__ */ new Date()).getTime() - ((q2 = G2.current) == null ? void 0 : q2.getTime()), b2 = Y2 === "x" ? r2 : m2, I = Math.abs(b2) / c2;
-    if (Math.abs(b2) >= ye || I > 0.11) {
-      j2(U2.current), (Z2 = t.onDismiss) == null || Z2.call(t, t), J2(Y2 === "x" ? r2 > 0 ? "right" : "left" : m2 > 0 ? "down" : "up"), $2(), d2(true), y2(false);
-      return;
-    }
-    z2(false), C2(null);
-  }, onPointerMove: (r2) => {
-    var Q2, q2, Z2, zt;
-    if (!K2.current || !V2 || ((Q2 = window.getSelection()) == null ? void 0 : Q2.toString().length) > 0) return;
-    let c2 = r2.clientY - K2.current.y, b2 = r2.clientX - K2.current.x, I = (q2 = n.swipeDirections) != null ? q2 : xe(st2);
-    !Y2 && (Math.abs(b2) > 1 || Math.abs(c2) > 1) && C2(Math.abs(b2) > Math.abs(c2) ? "x" : "y");
-    let x3 = { x: 0, y: 0 };
-    Y2 === "y" ? (I.includes("top") || I.includes("bottom")) && (I.includes("top") && c2 < 0 || I.includes("bottom") && c2 > 0) && (x3.y = c2) : Y2 === "x" && (I.includes("left") || I.includes("right")) && (I.includes("left") && b2 < 0 || I.includes("right") && b2 > 0) && (x3.x = b2), (Math.abs(x3.x) > 0 || Math.abs(x3.y) > 0) && y2(true), (Z2 = k2.current) == null || Z2.style.setProperty("--swipe-amount-x", `${x3.x}px`), (zt = k2.current) == null || zt.style.setProperty("--swipe-amount-y", `${x3.y}px`);
-  } }, Jt && !t.jsx ? React$4.createElement("button", { "aria-label": nt2, "data-disabled": ht, "data-close-button": true, onClick: ht || !V2 ? () => {
-  } : () => {
-    var r2;
-    $2(), (r2 = t.onDismiss) == null || r2.call(t, t);
-  }, className: M(s == null ? void 0 : s.closeButton, (Bt = t == null ? void 0 : t.classNames) == null ? void 0 : Bt.closeButton) }, (Ct = P2 == null ? void 0 : P2.close) != null ? Ct : Ot) : null, t.jsx || reactExports.isValidElement(t.title) ? t.jsx ? t.jsx : typeof t.title == "function" ? t.title() : t.title : React$4.createElement(React$4.Fragment, null, N2 || t.icon || t.promise ? React$4.createElement("div", { "data-icon": "", className: M(s == null ? void 0 : s.icon, (kt = t == null ? void 0 : t.classNames) == null ? void 0 : kt.icon) }, t.promise || t.type === "loading" && !t.icon ? t.icon || Zt() : null, t.type !== "loading" ? t.icon || (P2 == null ? void 0 : P2[N2]) || jt(N2) : null) : null, React$4.createElement("div", { "data-content": "", className: M(s == null ? void 0 : s.content, (It = t == null ? void 0 : t.classNames) == null ? void 0 : It.content) }, React$4.createElement("div", { "data-title": "", className: M(s == null ? void 0 : s.title, (Mt = t == null ? void 0 : t.classNames) == null ? void 0 : Mt.title) }, typeof t.title == "function" ? t.title() : t.title), t.description ? React$4.createElement("div", { "data-description": "", className: M(at, Xt, s == null ? void 0 : s.description, (Ht = t == null ? void 0 : t.classNames) == null ? void 0 : Ht.description) }, typeof t.description == "function" ? t.description() : t.description) : null), reactExports.isValidElement(t.cancel) ? t.cancel : t.cancel && tt(t.cancel) ? React$4.createElement("button", { "data-button": true, "data-cancel": true, style: t.cancelButtonStyle || ft2, onClick: (r2) => {
-    var m2, c2;
-    tt(t.cancel) && V2 && ((c2 = (m2 = t.cancel).onClick) == null || c2.call(m2, r2), $2());
-  }, className: M(s == null ? void 0 : s.cancelButton, (At = t == null ? void 0 : t.classNames) == null ? void 0 : At.cancelButton) }, t.cancel.label) : null, reactExports.isValidElement(t.action) ? t.action : t.action && tt(t.action) ? React$4.createElement("button", { "data-button": true, "data-action": true, style: t.actionButtonStyle || l2, onClick: (r2) => {
-    var m2, c2;
-    tt(t.action) && ((c2 = (m2 = t.action).onClick) == null || c2.call(m2, r2), !r2.defaultPrevented && $2());
-  }, className: M(s == null ? void 0 : s.actionButton, (Lt = t == null ? void 0 : t.classNames) == null ? void 0 : Lt.actionButton) }, t.action.label) : null));
-};
-function _t() {
-  if (typeof window == "undefined" || typeof document == "undefined") return "ltr";
-  let n = document.documentElement.getAttribute("dir");
-  return n === "auto" || !n ? window.getComputedStyle(document.documentElement).direction : n;
-}
-function Te(n, e) {
-  let t = {};
-  return [n, e].forEach((a2, u2) => {
-    let f2 = u2 === 1, w2 = f2 ? "--mobile-offset" : "--offset", S2 = f2 ? ge : me;
-    function g2(i) {
-      ["top", "right", "bottom", "left"].forEach((D) => {
-        t[`${w2}-${D}`] = typeof i == "number" ? `${i}px` : i;
-      });
-    }
-    typeof a2 == "number" || typeof a2 == "string" ? g2(a2) : typeof a2 == "object" ? ["top", "right", "bottom", "left"].forEach((i) => {
-      a2[i] === void 0 ? t[`${w2}-${i}`] = S2 : t[`${w2}-${i}`] = typeof a2[i] == "number" ? `${a2[i]}px` : a2[i];
-    }) : g2(S2);
-  }), t;
-}
-var $e = reactExports.forwardRef(function(e, t) {
-  let { invert: a2, position: u2 = "bottom-right", hotkey: f2 = ["altKey", "KeyT"], expand: w2, closeButton: S2, className: g2, offset: i, mobileOffset: D, theme: T2 = "light", richColors: F2, duration: et2, style: ut2, visibleToasts: ft2 = pe, toastOptions: l2, dir: ot2 = _t(), gap: at = be, loadingIcon: X2, icons: st2, containerAriaLabel: pt = "Notifications", pauseWhenPageIsHidden: rt2 } = e, [B2, s] = React$4.useState([]), P2 = React$4.useMemo(() => Array.from(new Set([u2].concat(B2.filter((d2) => d2.position).map((d2) => d2.position)))), [B2, u2]), [nt2, it2] = React$4.useState([]), [Y2, C2] = React$4.useState(false), [lt, J2] = React$4.useState(false), [W2, H2] = React$4.useState(T2 !== "system" ? T2 : typeof window != "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"), A = React$4.useRef(null), mt = f2.join("+").replace(/Key/g, "").replace(/Digit/g, ""), L2 = React$4.useRef(null), z2 = React$4.useRef(false), ct2 = React$4.useCallback((d2) => {
-    s((h2) => {
-      var y2;
-      return (y2 = h2.find((R2) => R2.id === d2.id)) != null && y2.delete || v.dismiss(d2.id), h2.filter(({ id: R2 }) => R2 !== d2.id);
-    });
-  }, []);
-  return React$4.useEffect(() => v.subscribe((d2) => {
-    if (d2.dismiss) {
-      s((h2) => h2.map((y2) => y2.id === d2.id ? { ...y2, delete: true } : y2));
-      return;
-    }
-    setTimeout(() => {
-      ReactDOM$2.flushSync(() => {
-        s((h2) => {
-          let y2 = h2.findIndex((R2) => R2.id === d2.id);
-          return y2 !== -1 ? [...h2.slice(0, y2), { ...h2[y2], ...d2 }, ...h2.slice(y2 + 1)] : [d2, ...h2];
-        });
-      });
-    });
-  }), []), React$4.useEffect(() => {
-    if (T2 !== "system") {
-      H2(T2);
-      return;
-    }
-    if (T2 === "system" && (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? H2("dark") : H2("light")), typeof window == "undefined") return;
-    let d2 = window.matchMedia("(prefers-color-scheme: dark)");
-    try {
-      d2.addEventListener("change", ({ matches: h2 }) => {
-        H2(h2 ? "dark" : "light");
-      });
-    } catch (h2) {
-      d2.addListener(({ matches: y2 }) => {
-        try {
-          H2(y2 ? "dark" : "light");
-        } catch (R2) {
-          console.error(R2);
-        }
-      });
-    }
-  }, [T2]), React$4.useEffect(() => {
-    B2.length <= 1 && C2(false);
-  }, [B2]), React$4.useEffect(() => {
-    let d2 = (h2) => {
-      var R2, j2;
-      f2.every((p2) => h2[p2] || h2.code === p2) && (C2(true), (R2 = A.current) == null || R2.focus()), h2.code === "Escape" && (document.activeElement === A.current || (j2 = A.current) != null && j2.contains(document.activeElement)) && C2(false);
-    };
-    return document.addEventListener("keydown", d2), () => document.removeEventListener("keydown", d2);
-  }, [f2]), React$4.useEffect(() => {
-    if (A.current) return () => {
-      L2.current && (L2.current.focus({ preventScroll: true }), L2.current = null, z2.current = false);
-    };
-  }, [A.current]), React$4.createElement("section", { ref: t, "aria-label": `${pt} ${mt}`, tabIndex: -1, "aria-live": "polite", "aria-relevant": "additions text", "aria-atomic": "false", suppressHydrationWarning: true }, P2.map((d2, h2) => {
-    var j2;
-    let [y2, R2] = d2.split("-");
-    return B2.length ? React$4.createElement("ol", { key: d2, dir: ot2 === "auto" ? _t() : ot2, tabIndex: -1, ref: A, className: g2, "data-sonner-toaster": true, "data-theme": W2, "data-y-position": y2, "data-lifted": Y2 && B2.length > 1 && !w2, "data-x-position": R2, style: { "--front-toast-height": `${((j2 = nt2[0]) == null ? void 0 : j2.height) || 0}px`, "--width": `${he}px`, "--gap": `${at}px`, ...ut2, ...Te(i, D) }, onBlur: (p2) => {
-      z2.current && !p2.currentTarget.contains(p2.relatedTarget) && (z2.current = false, L2.current && (L2.current.focus({ preventScroll: true }), L2.current = null));
-    }, onFocus: (p2) => {
-      p2.target instanceof HTMLElement && p2.target.dataset.dismissible === "false" || z2.current || (z2.current = true, L2.current = p2.relatedTarget);
-    }, onMouseEnter: () => C2(true), onMouseMove: () => C2(true), onMouseLeave: () => {
-      lt || C2(false);
-    }, onDragEnd: () => C2(false), onPointerDown: (p2) => {
-      p2.target instanceof HTMLElement && p2.target.dataset.dismissible === "false" || J2(true);
-    }, onPointerUp: () => J2(false) }, B2.filter((p2) => !p2.position && h2 === 0 || p2.position === d2).map((p2, _2) => {
-      var O2, G2;
-      return React$4.createElement(ve, { key: p2.id, icons: st2, index: _2, toast: p2, defaultRichColors: F2, duration: (O2 = l2 == null ? void 0 : l2.duration) != null ? O2 : et2, className: l2 == null ? void 0 : l2.className, descriptionClassName: l2 == null ? void 0 : l2.descriptionClassName, invert: a2, visibleToasts: ft2, closeButton: (G2 = l2 == null ? void 0 : l2.closeButton) != null ? G2 : S2, interacting: lt, position: d2, style: l2 == null ? void 0 : l2.style, unstyled: l2 == null ? void 0 : l2.unstyled, classNames: l2 == null ? void 0 : l2.classNames, cancelButtonStyle: l2 == null ? void 0 : l2.cancelButtonStyle, actionButtonStyle: l2 == null ? void 0 : l2.actionButtonStyle, removeToast: ct2, toasts: B2.filter((k2) => k2.position == p2.position), heights: nt2.filter((k2) => k2.position == p2.position), setHeights: it2, expandByDefault: w2, gap: at, loadingIcon: X2, expanded: Y2, pauseWhenPageIsHidden: rt2, swipeDirections: e.swipeDirections });
-    })) : null;
-  }));
+  return reactExports.createElement("script", { ...w2, suppressHydrationWarning: true, nonce: typeof window == "undefined" ? d2 : "", dangerouslySetInnerHTML: { __html: `(${M.toString()})(${p2})` } });
 });
 const Toaster = ({ ...props }) => {
   const { theme = "system" } = z();
@@ -46879,1324 +47541,6 @@ function CardContent({ className, ...props }) {
     }
   );
 }
-function Input({ className, type, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "input",
-    {
-      type,
-      "data-slot": "input",
-      className: cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-        className
-      ),
-      ...props
-    }
-  );
-}
-var NODES$1 = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "select",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive$1 = NODES$1.reduce((primitive, node) => {
-  const Slot2 = /* @__PURE__ */ createSlot$1(`Primitive.${node}`);
-  const Node2 = reactExports.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot2 : node;
-    if (typeof window !== "undefined") {
-      window[Symbol.for("radix-ui")] = true;
-    }
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node2.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node2 };
-}, {});
-var NAME$3 = "Label";
-var Label$1 = reactExports.forwardRef((props, forwardedRef) => {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive$1.label,
-    {
-      ...props,
-      ref: forwardedRef,
-      onMouseDown: (event) => {
-        var _a2;
-        const target = event.target;
-        if (target.closest("button, input, select, textarea")) return;
-        (_a2 = props.onMouseDown) == null ? void 0 : _a2.call(props, event);
-        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
-      }
-    }
-  );
-});
-Label$1.displayName = NAME$3;
-var Root$5 = Label$1;
-function Label({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Root$5,
-    {
-      "data-slot": "label",
-      className: cn(
-        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function pad2$1(n) {
-  return n.toString().padStart(2, "0");
-}
-function formatTime$1(hour, minute) {
-  return `${pad2$1(hour)}:${pad2$1(minute)}`;
-}
-function SectionCard$1({
-  icon: Icon2,
-  title,
-  description,
-  children,
-  testId
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": testId, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
-        title
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: description })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children })
-  ] });
-}
-function AdminPanel() {
-  const [newSecret, setNewSecret] = reactExports.useState("");
-  const [secretInputKey, setSecretInputKey] = reactExports.useState(0);
-  const [paymentModeDraft, setPaymentModeDraft] = reactExports.useState(
-    null
-  );
-  const [openHour, setOpenHour] = reactExports.useState("");
-  const [openMinute, setOpenMinute] = reactExports.useState("");
-  const [closeHour, setCloseHour] = reactExports.useState("");
-  const [closeMinute, setCloseMinute] = reactExports.useState("");
-  const setSecretMutation = useSetVpsSecret();
-  const canisterIdQuery = useCanisterIdText();
-  const paymentModeQuery = useGetPaymentMode();
-  const setPaymentModeMutation = useSetPaymentMode();
-  const storeHoursQuery = useGetStoreHours();
-  const setStoreHoursMutation = useSetStoreHours();
-  reactExports.useEffect(() => {
-    if (storeHoursQuery.data) {
-      setOpenHour(storeHoursQuery.data.openHour.toString());
-      setOpenMinute(storeHoursQuery.data.openMinute.toString());
-      setCloseHour(storeHoursQuery.data.closeHour.toString());
-      setCloseMinute(storeHoursQuery.data.closeMinute.toString());
-    }
-  }, [storeHoursQuery.data]);
-  const currentPaymentMode = paymentModeDraft ?? (paymentModeQuery.data === "customer" ? "customer" : "driver");
-  async function handleSetSecret(e) {
-    e.preventDefault();
-    if (!newSecret.trim()) {
-      ue.error("Vui lòng nhập secret mới.");
-      return;
-    }
-    if (newSecret.length < 8) {
-      ue.error("Secret phải có ít nhất 8 ký tự.");
-      return;
-    }
-    try {
-      await setSecretMutation.mutateAsync(newSecret.trim());
-      ue.success("Đã cập nhật secret VPS.");
-      setNewSecret("");
-      setSecretInputKey((k2) => k2 + 1);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể cập nhật secret.";
-      ue.error(message);
-    }
-  }
-  async function copyCanisterId() {
-    const id = canisterIdQuery.data;
-    if (!id) return;
-    try {
-      await navigator.clipboard.writeText(id);
-      ue.success("Đã sao chép Canister ID.");
-    } catch {
-      ue.error("Không sao chép được. Vui lòng sao chép thủ công.");
-    }
-  }
-  async function handleUpdatePaymentMode(e) {
-    e.preventDefault();
-    try {
-      await setPaymentModeMutation.mutateAsync(currentPaymentMode);
-      ue.success("Đã cập nhật chế độ thanh toán đơn.");
-      setPaymentModeDraft(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể cập nhật chế độ thanh toán.";
-      ue.error(message);
-    }
-  }
-  async function handleUpdateStoreHours(e) {
-    e.preventDefault();
-    const oh = Number(openHour);
-    const om = Number(openMinute);
-    const ch = Number(closeHour);
-    const cm = Number(closeMinute);
-    if (!Number.isInteger(oh) || oh < 0 || oh > 23 || !Number.isInteger(om) || om < 0 || om > 59 || !Number.isInteger(ch) || ch < 0 || ch > 23 || !Number.isInteger(cm) || cm < 0 || cm > 59) {
-      ue.error("Giờ phải nằm trong khoảng hợp lệ (00:00 – 23:59).");
-      return;
-    }
-    try {
-      await setStoreHoursMutation.mutateAsync({
-        openHour: BigInt(oh),
-        openMinute: BigInt(om),
-        closeHour: BigInt(ch),
-        closeMinute: BigInt(cm)
-      });
-      ue.success("Đã cập nhật giờ mở/đóng cửa hàng.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Không thể cập nhật giờ mở/đóng cửa hàng.";
-      ue.error(message);
-    }
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-5xl px-4 py-8 md:px-6 md:py-10",
-      "data-ocid": "admin.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "h1",
-            {
-              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
-              "data-ocid": "admin.title",
-              children: "Quản lý"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Cấu hình hệ thống, mã kích hoạt, thiết bị và canister." })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard$1,
-            {
-              icon: KeyRound,
-              title: "Canister ID",
-              description: "Định danh canister dùng để VPS xác thực HMAC.",
-              testId: "admin.canister_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-col gap-3", children: canisterIdQuery.isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "div",
-                {
-                  className: "flex items-center gap-2 text-sm text-muted-foreground",
-                  "data-ocid": "admin.canister.loading_state",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
-                    "Đang tải Canister ID…"
-                  ]
-                }
-              ) : canisterIdQuery.isError ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "p",
-                {
-                  className: "text-sm text-destructive",
-                  "data-ocid": "admin.canister.error_state",
-                  children: "Không tải được Canister ID."
-                }
-              ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "code",
-                  {
-                    className: "min-w-0 flex-1 truncate rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs text-foreground",
-                    title: canisterIdQuery.data ?? "",
-                    "data-ocid": "admin.canister.id_value",
-                    children: canisterIdQuery.data || "—"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  Button,
-                  {
-                    type: "button",
-                    variant: "outline",
-                    size: "icon",
-                    onClick: copyCanisterId,
-                    disabled: !canisterIdQuery.data,
-                    "data-ocid": "admin.canister.copy_button",
-                    "aria-label": "Sao chép Canister ID",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
-                  }
-                )
-              ] }) })
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard$1,
-            {
-              icon: ShieldOff,
-              title: "Cập nhật secret VPS",
-              description: "Đặt lại khóa bí mật dùng để ký HMAC giữa canister và VPS worker.",
-              testId: "admin.secret_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "form",
-                {
-                  onSubmit: handleSetSecret,
-                  className: "flex flex-col gap-3",
-                  "data-ocid": "admin.secret_form",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "vps-secret", className: "text-sm font-medium", children: "Secret mới" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        Input,
-                        {
-                          id: "vps-secret",
-                          type: "password",
-                          value: newSecret,
-                          onChange: (e) => setNewSecret(e.target.value),
-                          placeholder: "Ít nhất 8 ký tự",
-                          minLength: 8,
-                          autoComplete: "off",
-                          "data-ocid": "admin.secret_input"
-                        },
-                        secretInputKey
-                      )
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      Button,
-                      {
-                        type: "submit",
-                        disabled: setSecretMutation.isPending || !newSecret.trim(),
-                        "data-ocid": "admin.secret.submit_button",
-                        className: "w-full sm:w-auto",
-                        children: [
-                          setSecretMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-4 w-4", "aria-hidden": "true" }),
-                          "Cập nhật secret"
-                        ]
-                      }
-                    )
-                  ]
-                }
-              )
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard$1,
-            {
-              icon: Wallet,
-              title: "Chế độ thanh toán đơn",
-              description: "Chọn ai là người thanh toán tiền đơn: tài xế trả trước rồi thanh toán lại, hoặc khách trả trực tiếp cho tài xế khi nhận hàng.",
-              testId: "admin.payment_mode_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "form",
-                {
-                  onSubmit: handleUpdatePaymentMode,
-                  className: "flex flex-col gap-3",
-                  "data-ocid": "admin.payment_mode_form",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      "fieldset",
-                      {
-                        className: "flex flex-col gap-2",
-                        "data-ocid": "admin.payment_mode_fieldset",
-                        children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("legend", { className: "sr-only", children: "Chế độ thanh toán đơn" }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            "label",
-                            {
-                              className: "flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-smooth hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5",
-                              "data-ocid": "admin.payment_mode.option.driver",
-                              children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                  "input",
-                                  {
-                                    type: "radio",
-                                    name: "paymentMode",
-                                    value: "driver",
-                                    checked: currentPaymentMode === "driver",
-                                    onChange: () => setPaymentModeDraft("driver"),
-                                    className: "mt-0.5 h-4 w-4 accent-primary",
-                                    "data-ocid": "admin.payment_mode.radio.driver"
-                                  }
-                                ),
-                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex flex-col", children: [
-                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-foreground", children: "Tài xế trả tiền đơn" }),
-                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Tài xế thanh toán trước cho đơn, sau đó quyết toán với nhà." })
-                                ] })
-                              ]
-                            }
-                          ),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            "label",
-                            {
-                              className: "flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-smooth hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5",
-                              "data-ocid": "admin.payment_mode.option.customer",
-                              children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                  "input",
-                                  {
-                                    type: "radio",
-                                    name: "paymentMode",
-                                    value: "customer",
-                                    checked: currentPaymentMode === "customer",
-                                    onChange: () => setPaymentModeDraft("customer"),
-                                    className: "mt-0.5 h-4 w-4 accent-primary",
-                                    "data-ocid": "admin.payment_mode.radio.customer"
-                                  }
-                                ),
-                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex flex-col", children: [
-                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-foreground", children: "Khách trả tiền đơn" }),
-                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Khách thanh toán trực tiếp cho tài xế khi nhận hàng." })
-                                ] })
-                              ]
-                            }
-                          )
-                        ]
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      "div",
-                      {
-                        className: "text-xs text-muted-foreground",
-                        "data-ocid": "admin.payment_mode.current_value",
-                        children: paymentModeQuery.isLoading ? "Đang tải chế độ hiện tại…" : `Chế độ hiện tại: ${currentPaymentMode === "driver" ? "Tài xế trả tiền đơn" : "Khách trả tiền đơn"}`
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      Button,
-                      {
-                        type: "submit",
-                        disabled: setPaymentModeMutation.isPending || paymentModeQuery.isLoading || paymentModeDraft === null,
-                        "data-ocid": "admin.payment_mode.submit_button",
-                        className: "w-full sm:w-auto",
-                        children: [
-                          setPaymentModeMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Wallet, { className: "h-4 w-4", "aria-hidden": "true" }),
-                          "Cập nhật"
-                        ]
-                      }
-                    )
-                  ]
-                }
-              )
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            SectionCard$1,
-            {
-              icon: Clock,
-              title: "Giờ mở/đóng cửa hàng",
-              description: "Cấu hình giờ mở và đóng cửa toàn cục, áp dụng chung cho tất cả cửa hàng. Ngoài giờ này, cả tài xế và khách đều không thể đặt hàng.",
-              testId: "admin.store_hours_card",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "form",
-                {
-                  onSubmit: handleUpdateStoreHours,
-                  className: "flex flex-col gap-3",
-                  "data-ocid": "admin.store_hours_form",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          Label,
-                          {
-                            htmlFor: "store-open-hour",
-                            className: "text-sm font-medium",
-                            children: "Giờ mở cửa"
-                          }
-                        ),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            Input,
-                            {
-                              id: "store-open-hour",
-                              type: "number",
-                              min: 0,
-                              max: 23,
-                              value: openHour,
-                              onChange: (e) => setOpenHour(e.target.value),
-                              placeholder: "08",
-                              inputMode: "numeric",
-                              "aria-label": "Giờ mở cửa",
-                              "data-ocid": "admin.store_hours.open_hour_input",
-                              className: "text-center font-mono"
-                            }
-                          ),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: ":" }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            Input,
-                            {
-                              type: "number",
-                              min: 0,
-                              max: 59,
-                              value: openMinute,
-                              onChange: (e) => setOpenMinute(e.target.value),
-                              placeholder: "00",
-                              inputMode: "numeric",
-                              "aria-label": "Phút mở cửa",
-                              "data-ocid": "admin.store_hours.open_minute_input",
-                              className: "text-center font-mono"
-                            }
-                          )
-                        ] })
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          Label,
-                          {
-                            htmlFor: "store-close-hour",
-                            className: "text-sm font-medium",
-                            children: "Giờ đóng cửa"
-                          }
-                        ),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            Input,
-                            {
-                              id: "store-close-hour",
-                              type: "number",
-                              min: 0,
-                              max: 23,
-                              value: closeHour,
-                              onChange: (e) => setCloseHour(e.target.value),
-                              placeholder: "22",
-                              inputMode: "numeric",
-                              "aria-label": "Giờ đóng cửa",
-                              "data-ocid": "admin.store_hours.close_hour_input",
-                              className: "text-center font-mono"
-                            }
-                          ),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: ":" }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            Input,
-                            {
-                              type: "number",
-                              min: 0,
-                              max: 59,
-                              value: closeMinute,
-                              onChange: (e) => setCloseMinute(e.target.value),
-                              placeholder: "00",
-                              inputMode: "numeric",
-                              "aria-label": "Phút đóng cửa",
-                              "data-ocid": "admin.store_hours.close_minute_input",
-                              className: "text-center font-mono"
-                            }
-                          )
-                        ] })
-                      ] })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      "div",
-                      {
-                        className: "text-xs text-muted-foreground",
-                        "data-ocid": "admin.store_hours.current_value",
-                        children: storeHoursQuery.isLoading ? "Đang tải giờ hiện tại…" : storeHoursQuery.data ? `Giờ hiện tại: ${formatTime$1(
-                          Number(storeHoursQuery.data.openHour),
-                          Number(storeHoursQuery.data.openMinute)
-                        )} – ${formatTime$1(
-                          Number(storeHoursQuery.data.closeHour),
-                          Number(storeHoursQuery.data.closeMinute)
-                        )}` : "Chưa cấu hình giờ mở/đóng."
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      Button,
-                      {
-                        type: "submit",
-                        disabled: setStoreHoursMutation.isPending || storeHoursQuery.isLoading || !openHour || !openMinute || !closeHour || !closeMinute,
-                        "data-ocid": "admin.store_hours.submit_button",
-                        className: "w-full sm:w-auto",
-                        children: [
-                          setStoreHoursMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-4 w-4", "aria-hidden": "true" }),
-                          "Lưu giờ mở/đóng"
-                        ]
-                      }
-                    )
-                  ]
-                }
-              )
-            }
-          )
-        ] })
-      ]
-    }
-  );
-}
-function todayKey() {
-  const d2 = /* @__PURE__ */ new Date();
-  const y2 = d2.getFullYear();
-  const m2 = String(d2.getMonth() + 1).padStart(2, "0");
-  const day = String(d2.getDate()).padStart(2, "0");
-  return `${y2}${m2}${day}`;
-}
-function formatDate$5(yyyymmdd) {
-  if (yyyymmdd.length !== 8) return yyyymmdd;
-  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}`;
-}
-function computeStatus(row, today) {
-  if (!row.active || today > row.endDate) return "off";
-  if (today < row.startDate) return "upcoming";
-  return "active";
-}
-function StatusBadge$1({
-  status,
-  expired
-}) {
-  if (status === "active") {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10.5px] font-bold text-success", children: "● Đang chạy" });
-  }
-  if (status === "upcoming") {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-[10.5px] font-bold text-warning", children: "● Sắp diễn ra" });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center gap-1 rounded-full bg-muted-foreground/15 px-2 py-0.5 text-[10.5px] font-bold text-muted-foreground", children: [
-    "● ",
-    expired ? "Tắt (hết hạn)" : "Tắt"
-  ] });
-}
-function KindLabel({ kind }) {
-  const label = kind === "he1" ? "Hệ 1" : kind === "dangky" ? "Đăng ký" : "Doanh số";
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[10.5px] text-muted-foreground", children: label });
-}
-function He1UsageCell({
-  code,
-  dailyLimit
-}) {
-  const { data: count2 } = useKmDailyCount(code);
-  if (count2 === void 0)
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" });
-  const percent = dailyLimit > 0n ? Math.min(100, Number(count2) / Number(dailyLimit) * 100) : 0;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center whitespace-nowrap text-[11px] text-muted-foreground", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mr-1.5 inline-block h-[5px] w-16 overflow-hidden rounded-full bg-foreground/10 align-middle", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "span",
-      {
-        className: "block h-full rounded-full bg-primary",
-        style: { width: `${percent}%` }
-      }
-    ) }),
-    count2.toString(),
-    "/",
-    dailyLimit.toString(),
-    " đơn/ngày"
-  ] });
-}
-function VoucherCountCell({ code }) {
-  const { data: count2 } = useVoucherCountByProgram(code);
-  if (count2 === void 0)
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" });
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[11px] text-muted-foreground", children: [
-    count2.toString(),
-    " phiếu đã phát"
-  ] });
-}
-function OverviewCard({
-  icon,
-  label,
-  running,
-  value,
-  sub
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border bg-card p-3.5", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-1.5 flex items-center gap-1.5 text-[11.5px] text-muted-foreground", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "span",
-        {
-          className: `h-1.5 w-1.5 shrink-0 rounded-full ${running ? "bg-success" : "bg-muted-foreground"}`
-        }
-      ),
-      icon,
-      label
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-xl font-bold text-foreground", children: value }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 text-[10.5px] text-muted-foreground", children: sub })
-  ] });
-}
-function AdminPromoDashboard() {
-  const { data: promotions } = usePromotions();
-  const { data: registrationPromos } = useRegistrationPromos();
-  const { data: salesPromos } = useSalesPromos();
-  const today = todayKey();
-  const rows = [
-    ...(promotions ?? []).map((p2) => ({
-      code: p2.code,
-      name: p2.name,
-      kind: "he1",
-      active: p2.active,
-      startDate: p2.startDate,
-      endDate: p2.endDate
-    })),
-    ...(registrationPromos ?? []).map((p2) => ({
-      code: p2.code,
-      name: p2.name,
-      kind: "dangky",
-      active: p2.active,
-      startDate: p2.startDate,
-      endDate: p2.endDate
-    })),
-    ...(salesPromos ?? []).map((p2) => ({
-      code: p2.code,
-      name: p2.name,
-      kind: "doanhso",
-      active: p2.active,
-      startDate: p2.startDate,
-      endDate: p2.endDate
-    }))
-  ].sort(
-    (a2, b2) => a2.startDate < b2.startDate ? 1 : a2.startDate > b2.startDate ? -1 : 0
-  );
-  const he1Running = (promotions ?? []).some(
-    (p2) => computeStatus(
-      {
-        code: p2.code,
-        name: p2.name,
-        active: p2.active,
-        startDate: p2.startDate,
-        endDate: p2.endDate
-      },
-      today
-    ) === "active"
-  );
-  const dangKyRunning = (registrationPromos ?? []).some(
-    (p2) => computeStatus(
-      {
-        code: p2.code,
-        name: p2.name,
-        active: p2.active,
-        startDate: p2.startDate,
-        endDate: p2.endDate
-      },
-      today
-    ) === "active"
-  );
-  const doanhSoRunning = (salesPromos ?? []).some(
-    (p2) => computeStatus(
-      {
-        code: p2.code,
-        name: p2.name,
-        active: p2.active,
-        startDate: p2.startDate,
-        endDate: p2.endDate
-      },
-      today
-    ) === "active"
-  );
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "section",
-    {
-      className: "mx-auto w-full max-w-5xl px-4 py-8 md:px-6",
-      "data-ocid": "admin_promo_dashboard.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-semibold tracking-tight", children: "Theo dõi khuyến mại" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-muted-foreground", children: "Tổng hợp và chi tiết tất cả chương trình khuyến mại (Hệ 1 · Đăng ký · Doanh số)." }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            OverviewCard,
-            {
-              icon: /* @__PURE__ */ jsxRuntimeExports.jsx(ChartColumn, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-              label: "Hệ 1 (theo khung giờ)",
-              running: he1Running,
-              value: (promotions ?? []).length.toString(),
-              sub: "chương trình đã tạo"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            OverviewCard,
-            {
-              icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Gift, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-              label: "Khuyến mại đăng ký",
-              running: dangKyRunning,
-              value: (registrationPromos ?? []).length.toString(),
-              sub: "chương trình đã tạo"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            OverviewCard,
-            {
-              icon: /* @__PURE__ */ jsxRuntimeExports.jsx(TrendingUp, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
-              label: "Doanh số tuần/tháng",
-              running: doanhSoRunning,
-              value: (salesPromos ?? []).length.toString(),
-              sub: "chương trình đã tạo"
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-5 overflow-x-auto rounded-lg border border-border bg-card", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "bg-secondary text-left text-[11px] font-bold uppercase tracking-wide text-muted-foreground", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Chương trình" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Trạng thái" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Thời hạn" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Mức sử dụng" })
-          ] }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("tbody", { children: [
-            rows.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("tr", { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "td",
-              {
-                colSpan: 4,
-                className: "px-3 py-6 text-center text-sm text-muted-foreground",
-                children: "Chưa có chương trình khuyến mại nào."
-              }
-            ) }),
-            rows.map((row) => {
-              const status = computeStatus(row, today);
-              const expired = today > row.endDate;
-              const promo = row.kind === "he1" ? (promotions ?? []).find((p2) => p2.code === row.code) : void 0;
-              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "tr",
-                {
-                  className: "border-t border-border",
-                  "data-ocid": "admin_promo_dashboard.row",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "px-3 py-2.5", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium text-foreground", children: row.name }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(KindLabel, { kind: row.kind })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5", children: /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge$1, { status, expired }) }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground", children: [
-                      formatDate$5(row.startDate),
-                      " – ",
-                      formatDate$5(row.endDate)
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5", children: row.kind === "he1" && promo ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      He1UsageCell,
-                      {
-                        code: row.code,
-                        dailyLimit: promo.dailyOrderLimit
-                      }
-                    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(VoucherCountCell, { code: row.code }) })
-                  ]
-                },
-                `${row.kind}-${row.code}`
-              );
-            })
-          ] })
-        ] }) })
-      ]
-    }
-  );
-}
-function Table({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "table-container",
-      className: "relative w-full overflow-x-auto",
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "table",
-        {
-          "data-slot": "table",
-          className: cn("w-full caption-bottom text-sm", className),
-          ...props
-        }
-      )
-    }
-  );
-}
-function TableHeader({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "thead",
-    {
-      "data-slot": "table-header",
-      className: cn("[&_tr]:border-b", className),
-      ...props
-    }
-  );
-}
-function TableBody({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "tbody",
-    {
-      "data-slot": "table-body",
-      className: cn("[&_tr:last-child]:border-0", className),
-      ...props
-    }
-  );
-}
-function TableRow({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "tr",
-    {
-      "data-slot": "table-row",
-      className: cn(
-        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function TableHead({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "th",
-    {
-      "data-slot": "table-head",
-      className: cn(
-        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function TableCell({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "td",
-    {
-      "data-slot": "table-cell",
-      className: cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function formatVnd$j(n) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0
-  }).format(n);
-}
-function BranchTable({ data, testId }) {
-  if (data.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        "data-ocid": testId ?? "branch_table.empty_state",
-        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
-        children: "Chưa có dữ liệu chi nhánh."
-      }
-    );
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "data-ocid": testId ?? "branch_table", className: "w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "w-[40%]", children: "Chi nhánh" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Địa chỉ" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Số đơn" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Doanh thu" })
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: data.map((row, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      TableRow,
-      {
-        "data-ocid": `branch_table.row.${i + 1}`,
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium text-foreground", children: row.name }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-muted-foreground", children: row.address || "—" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono", children: row.orderCount }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$j(row.totalRevenue) })
-        ]
-      },
-      row.restaurantId
-    )) })
-  ] }) });
-}
-function formatVnd$i(n) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0
-  }).format(n);
-}
-function CustomerTable({ data, testId }) {
-  if (data.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        "data-ocid": testId ?? "customer_table.empty_state",
-        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
-        children: "Chưa có dữ liệu khách hàng."
-      }
-    );
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "data-ocid": testId ?? "customer_table", className: "w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "w-[40%]", children: "Khách hàng" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Số điện thoại" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Số đơn" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Tổng chi" })
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: data.map((row, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { "data-ocid": `customer_table.row.${i + 1}`, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium text-foreground", children: row.name || "Khách vãng lai" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-sm text-muted-foreground", children: row.phone }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono", children: row.orderCount }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$i(row.totalSpent) })
-    ] }, row.phone)) })
-  ] }) });
-}
-const STATUS_STYLES = {
-  paid: {
-    label: "Đã thanh toán",
-    barClass: "fill-success",
-    textClass: "text-success"
-  },
-  pending: {
-    label: "Đang chờ",
-    barClass: "fill-warning",
-    textClass: "text-warning-foreground"
-  },
-  shipping: {
-    label: "Đang giao",
-    barClass: "fill-info",
-    textClass: "text-info"
-  },
-  cancelled: {
-    label: "Đã hủy",
-    barClass: "fill-destructive",
-    textClass: "text-destructive"
-  }
-};
-function styleFor(status) {
-  return STATUS_STYLES[status] ?? {
-    label: status,
-    barClass: "fill-primary",
-    textClass: "text-primary"
-  };
-}
-function OrdersChart({ data, testId }) {
-  const { rows, maxCount } = reactExports.useMemo(() => {
-    const max2 = data.reduce((m2, d2) => Math.max(m2, d2.count), 0);
-    return { rows: data, maxCount: max2 };
-  }, [data]);
-  if (data.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        "data-ocid": testId ?? "orders_chart.empty_state",
-        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
-        children: "Chưa có dữ liệu đơn hàng theo trạng thái."
-      }
-    );
-  }
-  const total = data.reduce((s, d2) => s + d2.count, 0);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-ocid": testId ?? "orders_chart",
-      className: "flex flex-col gap-3",
-      role: "img",
-      "aria-label": "Biểu đồ đơn hàng theo trạng thái",
-      children: rows.map((row, i) => {
-        const style2 = styleFor(row.status);
-        const pct = maxCount <= 0 ? 0 : row.count / maxCount * 100;
-        const sharePct = total <= 0 ? 0 : row.count / total * 100;
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            "data-ocid": `orders_chart.row.${i + 1}`,
-            className: "flex flex-col gap-1.5",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2 text-sm", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: style2.label }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-mono text-xs text-muted-foreground", children: [
-                  row.count,
-                  " (",
-                  sharePct.toFixed(0),
-                  "%)"
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-3 w-full overflow-hidden rounded-full bg-secondary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "div",
-                {
-                  className: cn(
-                    "h-full rounded-full transition-smooth",
-                    style2.barClass.replace("fill-", "bg-")
-                  ),
-                  style: { width: `${pct}%` },
-                  "data-ocid": `orders_chart.bar.${i + 1}`
-                }
-              ) })
-            ]
-          },
-          row.status
-        );
-      })
-    }
-  );
-}
-function formatVndShort(n) {
-  if (n >= 1e9) return `${(n / 1e9).toFixed(1)} tỷ`;
-  if (n >= 1e6) return `${(n / 1e6).toFixed(1)} tr`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(0)}k`;
-  return `${n}`;
-}
-function formatVnd$h(n) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0
-  }).format(n);
-}
-function formatDayLabel(iso) {
-  const [y2, m2, d2] = iso.split("-");
-  if (!y2 || !m2 || !d2) return iso;
-  return `${d2}/${m2}`;
-}
-const VIEW_WIDTH = 640;
-const VIEW_HEIGHT = 240;
-const PAD_LEFT = 8;
-const PAD_RIGHT = 8;
-const PAD_TOP = 16;
-const PAD_BOTTOM = 28;
-const PLOT_WIDTH = VIEW_WIDTH - PAD_LEFT - PAD_RIGHT;
-const PLOT_HEIGHT = VIEW_HEIGHT - PAD_TOP - PAD_BOTTOM;
-function RevenueChart({ data, testId }) {
-  const { bars, yTicks } = reactExports.useMemo(() => {
-    const max2 = data.reduce((m2, d2) => Math.max(m2, d2.revenue), 0);
-    const niceMax = max2 <= 0 ? 1 : Math.ceil(max2 * 1.1);
-    const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => ({
-      ratio: t,
-      value: Math.round(niceMax * t)
-    }));
-    const n = data.length;
-    const slot = n > 0 ? PLOT_WIDTH / n : PLOT_WIDTH;
-    const barW = Math.min(slot * 0.62, 36);
-    const computed = data.map((d2, i) => {
-      const h2 = max2 <= 0 ? 0 : d2.revenue / niceMax * PLOT_HEIGHT;
-      const x3 = PAD_LEFT + i * slot + (slot - barW) / 2;
-      const y2 = PAD_TOP + (PLOT_HEIGHT - h2);
-      return { ...d2, x: x3, y: y2, w: barW, h: h2 };
-    });
-    return { bars: computed, yTicks: ticks };
-  }, [data]);
-  if (data.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        "data-ocid": testId ?? "revenue_chart.empty_state",
-        className: "flex h-[240px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
-        children: "Chưa có dữ liệu doanh thu trong khoảng đã chọn."
-      }
-    );
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-ocid": testId ?? "revenue_chart",
-      className: "w-full",
-      role: "img",
-      "aria-label": "Biểu đồ doanh thu theo thời gian",
-      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "svg",
-        {
-          viewBox: `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`,
-          className: "w-full",
-          preserveAspectRatio: "xMidYMid meet",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: "Biểu đồ doanh thu" }),
-            yTicks.map((t) => {
-              const y2 = PAD_TOP + PLOT_HEIGHT - t.ratio * PLOT_HEIGHT;
-              return /* @__PURE__ */ jsxRuntimeExports.jsxs("g", { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "line",
-                  {
-                    x1: PAD_LEFT,
-                    x2: VIEW_WIDTH - PAD_RIGHT,
-                    y1: y2,
-                    y2,
-                    stroke: "currentColor",
-                    strokeWidth: 1,
-                    className: "text-border",
-                    strokeDasharray: t.ratio === 0 ? "0" : "3 3"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "text",
-                  {
-                    x: PAD_LEFT + 2,
-                    y: y2 - 2,
-                    fontSize: 10,
-                    className: "fill-muted-foreground",
-                    children: formatVndShort(t.value)
-                  }
-                )
-              ] }, `y-${t.ratio}`);
-            }),
-            bars.map((b2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              "g",
-              {
-                "data-ocid": `revenue_chart.point.${i + 1}`,
-                className: "transition-smooth",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "rect",
-                    {
-                      x: b2.x,
-                      y: b2.y,
-                      width: b2.w,
-                      height: Math.max(b2.h, 0),
-                      rx: 3,
-                      className: "fill-primary transition-smooth hover:fill-primary/80",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: `${formatDayLabel(b2.date)}: ${formatVnd$h(b2.revenue)}` })
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "text",
-                    {
-                      x: b2.x + b2.w / 2,
-                      y: VIEW_HEIGHT - 10,
-                      fontSize: 10,
-                      textAnchor: "middle",
-                      className: "fill-muted-foreground",
-                      children: formatDayLabel(b2.date)
-                    }
-                  )
-                ]
-              },
-              b2.date
-            ))
-          ]
-        }
-      )
-    }
-  );
-}
-const TONE_STYLES = {
-  primary: {
-    iconWrap: "bg-primary/10 text-primary",
-    value: "text-primary"
-  },
-  success: {
-    iconWrap: "bg-success/15 text-success",
-    value: "text-success"
-  },
-  warning: {
-    iconWrap: "bg-warning/20 text-warning-foreground",
-    value: "text-warning-foreground"
-  },
-  info: {
-    iconWrap: "bg-info/15 text-info",
-    value: "text-info"
-  }
-};
-function StatCard({
-  label,
-  value,
-  icon: Icon2,
-  hint,
-  tone = "primary",
-  testId
-}) {
-  const styles = TONE_STYLES[tone];
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "div",
-    {
-      "data-ocid": testId ?? "stat.card",
-      className: "flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-smooth hover:shadow-md",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-muted-foreground", children: label }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "span",
-            {
-              className: cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                styles.iconWrap
-              ),
-              "aria-hidden": "true",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4" })
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "span",
-            {
-              className: cn(
-                "font-display text-2xl font-bold tracking-tight md:text-3xl",
-                styles.value
-              ),
-              children: value
-            }
-          ),
-          hint ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: hint }) : null
-        ] })
-      ]
-    }
-  );
-}
-function formatVnd$g(n) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0
-  }).format(n);
-}
-function TopItemsChart({ data, testId }) {
-  if (data.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        "data-ocid": testId ?? "top_items_chart.empty_state",
-        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
-        children: "Chưa có dữ liệu món ăn."
-      }
-    );
-  }
-  const maxQuantity = data.reduce((m2, d2) => Math.max(m2, d2.quantity), 0);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-ocid": testId ?? "top_items_chart",
-      className: "flex flex-col gap-3",
-      role: "img",
-      "aria-label": "Biểu đồ món bán chạy nhất",
-      children: data.map((row, i) => {
-        const pct = maxQuantity <= 0 ? 0 : row.quantity / maxQuantity * 100;
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            "data-ocid": `top_items_chart.row.${i + 1}`,
-            className: "flex flex-col gap-1.5",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2 text-sm", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex min-w-0 items-center gap-2 font-medium text-foreground", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "span",
-                    {
-                      className: cn(
-                        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
-                        i === 0 ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                      ),
-                      children: i + 1
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "truncate", children: row.name })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "shrink-0 whitespace-nowrap font-mono text-xs text-muted-foreground", children: [
-                  row.quantity,
-                  " phần · ",
-                  formatVnd$g(row.revenue)
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-3 w-full overflow-hidden rounded-full bg-secondary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "div",
-                {
-                  className: "h-full rounded-full bg-primary transition-smooth",
-                  style: { width: `${pct}%` },
-                  "data-ocid": `top_items_chart.bar.${i + 1}`
-                }
-              ) })
-            ]
-          },
-          row.itemId
-        );
-      })
-    }
-  );
-}
-function clamp$1(value, [min2, max2]) {
-  return Math.min(max2, Math.max(min2, value));
-}
 function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
   return function handleEvent(event) {
     originalEventHandler == null ? void 0 : originalEventHandler(event);
@@ -48279,6 +47623,83 @@ function composeContextScopes(...scopes) {
   };
   createScope.scopeName = baseScope.scopeName;
   return createScope;
+}
+var useLayoutEffect2 = (globalThis == null ? void 0 : globalThis.document) ? reactExports.useLayoutEffect : () => {
+};
+var useReactId = React$5[" useId ".trim().toString()] || (() => void 0);
+var count$1 = 0;
+function useId(deterministicId) {
+  const [id, setId] = reactExports.useState(useReactId());
+  useLayoutEffect2(() => {
+    setId((reactId) => reactId ?? String(count$1++));
+  }, [deterministicId]);
+  return deterministicId || (id ? `radix-${id}` : "");
+}
+var useInsertionEffect = React$5[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
+function useControllableState({
+  prop,
+  defaultProp,
+  onChange = () => {
+  },
+  caller
+}) {
+  const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
+    defaultProp,
+    onChange
+  });
+  const isControlled = prop !== void 0;
+  const value = isControlled ? prop : uncontrolledProp;
+  {
+    const isControlledRef = reactExports.useRef(prop !== void 0);
+    reactExports.useEffect(() => {
+      const wasControlled = isControlledRef.current;
+      if (wasControlled !== isControlled) {
+        const from = wasControlled ? "controlled" : "uncontrolled";
+        const to = isControlled ? "controlled" : "uncontrolled";
+        console.warn(
+          `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
+        );
+      }
+      isControlledRef.current = isControlled;
+    }, [isControlled, caller]);
+  }
+  const setValue = reactExports.useCallback(
+    (nextValue) => {
+      var _a2;
+      if (isControlled) {
+        const value2 = isFunction(nextValue) ? nextValue(prop) : nextValue;
+        if (value2 !== prop) {
+          (_a2 = onChangeRef.current) == null ? void 0 : _a2.call(onChangeRef, value2);
+        }
+      } else {
+        setUncontrolledProp(nextValue);
+      }
+    },
+    [isControlled, prop, setUncontrolledProp, onChangeRef]
+  );
+  return [value, setValue];
+}
+function useUncontrolledState({
+  defaultProp,
+  onChange
+}) {
+  const [value, setValue] = reactExports.useState(defaultProp);
+  const prevValueRef = reactExports.useRef(value);
+  const onChangeRef = reactExports.useRef(onChange);
+  useInsertionEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  reactExports.useEffect(() => {
+    var _a2;
+    if (prevValueRef.current !== value) {
+      (_a2 = onChangeRef.current) == null ? void 0 : _a2.call(onChangeRef, value);
+      prevValueRef.current = value;
+    }
+  }, [value, prevValueRef]);
+  return [value, setValue, onChangeRef];
+}
+function isFunction(value) {
+  return typeof value === "function";
 }
 // @__NO_SIDE_EFFECTS__
 function createSlot(ownerName) {
@@ -48372,74 +47793,7 @@ function getElementRef$1(element) {
   }
   return element.props.ref || element.ref;
 }
-function createCollection(name) {
-  const PROVIDER_NAME = name + "CollectionProvider";
-  const [createCollectionContext, createCollectionScope2] = createContextScope(PROVIDER_NAME);
-  const [CollectionProviderImpl, useCollectionContext] = createCollectionContext(
-    PROVIDER_NAME,
-    { collectionRef: { current: null }, itemMap: /* @__PURE__ */ new Map() }
-  );
-  const CollectionProvider = (props) => {
-    const { scope, children } = props;
-    const ref = React$4.useRef(null);
-    const itemMap = React$4.useRef(/* @__PURE__ */ new Map()).current;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionProviderImpl, { scope, itemMap, collectionRef: ref, children });
-  };
-  CollectionProvider.displayName = PROVIDER_NAME;
-  const COLLECTION_SLOT_NAME = name + "CollectionSlot";
-  const CollectionSlotImpl = /* @__PURE__ */ createSlot(COLLECTION_SLOT_NAME);
-  const CollectionSlot = React$4.forwardRef(
-    (props, forwardedRef) => {
-      const { scope, children } = props;
-      const context = useCollectionContext(COLLECTION_SLOT_NAME, scope);
-      const composedRefs = useComposedRefs(forwardedRef, context.collectionRef);
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionSlotImpl, { ref: composedRefs, children });
-    }
-  );
-  CollectionSlot.displayName = COLLECTION_SLOT_NAME;
-  const ITEM_SLOT_NAME = name + "CollectionItemSlot";
-  const ITEM_DATA_ATTR = "data-radix-collection-item";
-  const CollectionItemSlotImpl = /* @__PURE__ */ createSlot(ITEM_SLOT_NAME);
-  const CollectionItemSlot = React$4.forwardRef(
-    (props, forwardedRef) => {
-      const { scope, children, ...itemData } = props;
-      const ref = React$4.useRef(null);
-      const composedRefs = useComposedRefs(forwardedRef, ref);
-      const context = useCollectionContext(ITEM_SLOT_NAME, scope);
-      React$4.useEffect(() => {
-        context.itemMap.set(ref, { ref, ...itemData });
-        return () => void context.itemMap.delete(ref);
-      });
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionItemSlotImpl, { ...{ [ITEM_DATA_ATTR]: "" }, ref: composedRefs, children });
-    }
-  );
-  CollectionItemSlot.displayName = ITEM_SLOT_NAME;
-  function useCollection2(scope) {
-    const context = useCollectionContext(name + "CollectionConsumer", scope);
-    const getItems = React$4.useCallback(() => {
-      const collectionNode = context.collectionRef.current;
-      if (!collectionNode) return [];
-      const orderedNodes = Array.from(collectionNode.querySelectorAll(`[${ITEM_DATA_ATTR}]`));
-      const items = Array.from(context.itemMap.values());
-      const orderedItems = items.sort(
-        (a2, b2) => orderedNodes.indexOf(a2.ref.current) - orderedNodes.indexOf(b2.ref.current)
-      );
-      return orderedItems;
-    }, [context.collectionRef, context.itemMap]);
-    return getItems;
-  }
-  return [
-    { Provider: CollectionProvider, Slot: CollectionSlot, ItemSlot: CollectionItemSlot },
-    useCollection2,
-    createCollectionScope2
-  ];
-}
-var DirectionContext = reactExports.createContext(void 0);
-function useDirection(localDir) {
-  const globalDir = reactExports.useContext(DirectionContext);
-  return localDir || globalDir || "ltr";
-}
-var NODES = [
+var NODES$1 = [
   "a",
   "button",
   "div",
@@ -48458,7 +47812,7 @@ var NODES = [
   "svg",
   "ul"
 ];
-var Primitive = NODES.reduce((primitive, node) => {
+var Primitive$1 = NODES$1.reduce((primitive, node) => {
   const Slot2 = /* @__PURE__ */ createSlot(`Primitive.${node}`);
   const Node2 = reactExports.forwardRef((props, forwardedRef) => {
     const { asChild, ...primitiveProps } = props;
@@ -48584,7 +47938,7 @@ var DismissableLayer = reactExports.forwardRef(
       return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
     }, []);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.div,
+      Primitive$1.div,
       {
         ...layerProps,
         ref: composedRefs,
@@ -48617,7 +47971,7 @@ var DismissableLayerBranch = reactExports.forwardRef((props, forwardedRef) => {
       };
     }
   }, [context.branches]);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...props, ref: composedRefs });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.div, { ...props, ref: composedRefs });
 });
 DismissableLayerBranch.displayName = BRANCH_NAME;
 function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis == null ? void 0 : globalThis.document) {
@@ -48696,31 +48050,6 @@ function handleAndDispatchCustomEvent(name, handler, detail, { discrete }) {
   } else {
     target.dispatchEvent(event);
   }
-}
-var count$1 = 0;
-function useFocusGuards() {
-  reactExports.useEffect(() => {
-    const edgeGuards = document.querySelectorAll("[data-radix-focus-guard]");
-    document.body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
-    document.body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
-    count$1++;
-    return () => {
-      if (count$1 === 1) {
-        document.querySelectorAll("[data-radix-focus-guard]").forEach((node) => node.remove());
-      }
-      count$1--;
-    };
-  }, []);
-}
-function createFocusGuard() {
-  const element = document.createElement("span");
-  element.setAttribute("data-radix-focus-guard", "");
-  element.tabIndex = 0;
-  element.style.outline = "none";
-  element.style.opacity = "0";
-  element.style.position = "fixed";
-  element.style.pointerEvents = "none";
-  return element;
 }
 var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
 var AUTOFOCUS_ON_UNMOUNT = "focusScope.autoFocusOnUnmount";
@@ -48839,7 +48168,7 @@ var FocusScope = reactExports.forwardRef((props, forwardedRef) => {
     },
     [loop, trapped, focusScope.paused]
   );
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { tabIndex: -1, ...scopeProps, ref: composedRefs, onKeyDown: handleKeyDown });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.div, { tabIndex: -1, ...scopeProps, ref: composedRefs, onKeyDown: handleKeyDown });
 });
 FocusScope.displayName = FOCUS_SCOPE_NAME;
 function focusFirst$1(candidates, { select = false } = {}) {
@@ -48922,16 +48251,1511 @@ function arrayRemove(array, item) {
 function removeLinks(items) {
   return items.filter((item) => item.tagName !== "A");
 }
-var useLayoutEffect2 = (globalThis == null ? void 0 : globalThis.document) ? reactExports.useLayoutEffect : () => {
+var PORTAL_NAME$3 = "Portal";
+var Portal$2 = reactExports.forwardRef((props, forwardedRef) => {
+  var _a2;
+  const { container: containerProp, ...portalProps } = props;
+  const [mounted, setMounted] = reactExports.useState(false);
+  useLayoutEffect2(() => setMounted(true), []);
+  const container = containerProp || mounted && ((_a2 = globalThis == null ? void 0 : globalThis.document) == null ? void 0 : _a2.body);
+  return container ? ReactDOM$2.createPortal(/* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.div, { ...portalProps, ref: forwardedRef }), container) : null;
+});
+Portal$2.displayName = PORTAL_NAME$3;
+function useStateMachine(initialState, machine) {
+  return reactExports.useReducer((state, event) => {
+    const nextState = machine[state][event];
+    return nextState ?? state;
+  }, initialState);
+}
+var Presence = (props) => {
+  const { present, children } = props;
+  const presence = usePresence(present);
+  const child = typeof children === "function" ? children({ present: presence.isPresent }) : reactExports.Children.only(children);
+  const ref = useComposedRefs(presence.ref, getElementRef(child));
+  const forceMount = typeof children === "function";
+  return forceMount || presence.isPresent ? reactExports.cloneElement(child, { ref }) : null;
 };
-var useReactId = React$5[" useId ".trim().toString()] || (() => void 0);
-var count = 0;
-function useId(deterministicId) {
-  const [id, setId] = reactExports.useState(useReactId());
+Presence.displayName = "Presence";
+function usePresence(present) {
+  const [node, setNode] = reactExports.useState();
+  const stylesRef = reactExports.useRef(null);
+  const prevPresentRef = reactExports.useRef(present);
+  const prevAnimationNameRef = reactExports.useRef("none");
+  const initialState = present ? "mounted" : "unmounted";
+  const [state, send] = useStateMachine(initialState, {
+    mounted: {
+      UNMOUNT: "unmounted",
+      ANIMATION_OUT: "unmountSuspended"
+    },
+    unmountSuspended: {
+      MOUNT: "mounted",
+      ANIMATION_END: "unmounted"
+    },
+    unmounted: {
+      MOUNT: "mounted"
+    }
+  });
+  reactExports.useEffect(() => {
+    const currentAnimationName = getAnimationName(stylesRef.current);
+    prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
+  }, [state]);
   useLayoutEffect2(() => {
-    setId((reactId) => reactId ?? String(count++));
-  }, [deterministicId]);
-  return deterministicId || (id ? `radix-${id}` : "");
+    const styles = stylesRef.current;
+    const wasPresent = prevPresentRef.current;
+    const hasPresentChanged = wasPresent !== present;
+    if (hasPresentChanged) {
+      const prevAnimationName = prevAnimationNameRef.current;
+      const currentAnimationName = getAnimationName(styles);
+      if (present) {
+        send("MOUNT");
+      } else if (currentAnimationName === "none" || (styles == null ? void 0 : styles.display) === "none") {
+        send("UNMOUNT");
+      } else {
+        const isAnimating = prevAnimationName !== currentAnimationName;
+        if (wasPresent && isAnimating) {
+          send("ANIMATION_OUT");
+        } else {
+          send("UNMOUNT");
+        }
+      }
+      prevPresentRef.current = present;
+    }
+  }, [present, send]);
+  useLayoutEffect2(() => {
+    if (node) {
+      let timeoutId;
+      const ownerWindow = node.ownerDocument.defaultView ?? window;
+      const handleAnimationEnd = (event) => {
+        const currentAnimationName = getAnimationName(stylesRef.current);
+        const isCurrentAnimation = currentAnimationName.includes(CSS.escape(event.animationName));
+        if (event.target === node && isCurrentAnimation) {
+          send("ANIMATION_END");
+          if (!prevPresentRef.current) {
+            const currentFillMode = node.style.animationFillMode;
+            node.style.animationFillMode = "forwards";
+            timeoutId = ownerWindow.setTimeout(() => {
+              if (node.style.animationFillMode === "forwards") {
+                node.style.animationFillMode = currentFillMode;
+              }
+            });
+          }
+        }
+      };
+      const handleAnimationStart = (event) => {
+        if (event.target === node) {
+          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
+        }
+      };
+      node.addEventListener("animationstart", handleAnimationStart);
+      node.addEventListener("animationcancel", handleAnimationEnd);
+      node.addEventListener("animationend", handleAnimationEnd);
+      return () => {
+        ownerWindow.clearTimeout(timeoutId);
+        node.removeEventListener("animationstart", handleAnimationStart);
+        node.removeEventListener("animationcancel", handleAnimationEnd);
+        node.removeEventListener("animationend", handleAnimationEnd);
+      };
+    } else {
+      send("ANIMATION_END");
+    }
+  }, [node, send]);
+  return {
+    isPresent: ["mounted", "unmountSuspended"].includes(state),
+    ref: reactExports.useCallback((node2) => {
+      stylesRef.current = node2 ? getComputedStyle(node2) : null;
+      setNode(node2);
+    }, [])
+  };
+}
+function getAnimationName(styles) {
+  return (styles == null ? void 0 : styles.animationName) || "none";
+}
+function getElementRef(element) {
+  var _a2, _b2;
+  let getter = (_a2 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a2.get;
+  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.ref;
+  }
+  getter = (_b2 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b2.get;
+  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.props.ref;
+  }
+  return element.props.ref || element.ref;
+}
+var count = 0;
+function useFocusGuards() {
+  reactExports.useEffect(() => {
+    const edgeGuards = document.querySelectorAll("[data-radix-focus-guard]");
+    document.body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
+    document.body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
+    count++;
+    return () => {
+      if (count === 1) {
+        document.querySelectorAll("[data-radix-focus-guard]").forEach((node) => node.remove());
+      }
+      count--;
+    };
+  }, []);
+}
+function createFocusGuard() {
+  const element = document.createElement("span");
+  element.setAttribute("data-radix-focus-guard", "");
+  element.tabIndex = 0;
+  element.style.outline = "none";
+  element.style.opacity = "0";
+  element.style.position = "fixed";
+  element.style.pointerEvents = "none";
+  return element;
+}
+var __assign = function() {
+  __assign = Object.assign || function __assign2(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+      s = arguments[i];
+      for (var p2 in s) if (Object.prototype.hasOwnProperty.call(s, p2)) t[p2] = s[p2];
+    }
+    return t;
+  };
+  return __assign.apply(this, arguments);
+};
+function __rest(s, e) {
+  var t = {};
+  for (var p2 in s) if (Object.prototype.hasOwnProperty.call(s, p2) && e.indexOf(p2) < 0)
+    t[p2] = s[p2];
+  if (s != null && typeof Object.getOwnPropertySymbols === "function")
+    for (var i = 0, p2 = Object.getOwnPropertySymbols(s); i < p2.length; i++) {
+      if (e.indexOf(p2[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p2[i]))
+        t[p2[i]] = s[p2[i]];
+    }
+  return t;
+}
+function __spreadArray(to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l2 = from.length, ar; i < l2; i++) {
+    if (ar || !(i in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+      ar[i] = from[i];
+    }
+  }
+  return to.concat(ar || Array.prototype.slice.call(from));
+}
+typeof SuppressedError === "function" ? SuppressedError : function(error, suppressed, message) {
+  var e = new Error(message);
+  return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+var zeroRightClassName = "right-scroll-bar-position";
+var fullWidthClassName = "width-before-scroll-bar";
+var noScrollbarsClassName = "with-scroll-bars-hidden";
+var removedBarSizeVariable = "--removed-body-scroll-bar-size";
+function assignRef(ref, value) {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref) {
+    ref.current = value;
+  }
+  return ref;
+}
+function useCallbackRef(initialValue, callback) {
+  var ref = reactExports.useState(function() {
+    return {
+      // value
+      value: initialValue,
+      // last callback
+      callback,
+      // "memoized" public interface
+      facade: {
+        get current() {
+          return ref.value;
+        },
+        set current(value) {
+          var last2 = ref.value;
+          if (last2 !== value) {
+            ref.value = value;
+            ref.callback(value, last2);
+          }
+        }
+      }
+    };
+  })[0];
+  ref.callback = callback;
+  return ref.facade;
+}
+var useIsomorphicLayoutEffect = typeof window !== "undefined" ? reactExports.useLayoutEffect : reactExports.useEffect;
+var currentValues = /* @__PURE__ */ new WeakMap();
+function useMergeRefs(refs, defaultValue) {
+  var callbackRef = useCallbackRef(null, function(newValue) {
+    return refs.forEach(function(ref) {
+      return assignRef(ref, newValue);
+    });
+  });
+  useIsomorphicLayoutEffect(function() {
+    var oldValue = currentValues.get(callbackRef);
+    if (oldValue) {
+      var prevRefs_1 = new Set(oldValue);
+      var nextRefs_1 = new Set(refs);
+      var current_1 = callbackRef.current;
+      prevRefs_1.forEach(function(ref) {
+        if (!nextRefs_1.has(ref)) {
+          assignRef(ref, null);
+        }
+      });
+      nextRefs_1.forEach(function(ref) {
+        if (!prevRefs_1.has(ref)) {
+          assignRef(ref, current_1);
+        }
+      });
+    }
+    currentValues.set(callbackRef, refs);
+  }, [refs]);
+  return callbackRef;
+}
+function ItoI(a2) {
+  return a2;
+}
+function innerCreateMedium(defaults, middleware) {
+  if (middleware === void 0) {
+    middleware = ItoI;
+  }
+  var buffer = [];
+  var assigned = false;
+  var medium = {
+    read: function() {
+      if (assigned) {
+        throw new Error("Sidecar: could not `read` from an `assigned` medium. `read` could be used only with `useMedium`.");
+      }
+      if (buffer.length) {
+        return buffer[buffer.length - 1];
+      }
+      return defaults;
+    },
+    useMedium: function(data) {
+      var item = middleware(data, assigned);
+      buffer.push(item);
+      return function() {
+        buffer = buffer.filter(function(x3) {
+          return x3 !== item;
+        });
+      };
+    },
+    assignSyncMedium: function(cb) {
+      assigned = true;
+      while (buffer.length) {
+        var cbs = buffer;
+        buffer = [];
+        cbs.forEach(cb);
+      }
+      buffer = {
+        push: function(x3) {
+          return cb(x3);
+        },
+        filter: function() {
+          return buffer;
+        }
+      };
+    },
+    assignMedium: function(cb) {
+      assigned = true;
+      var pendingQueue = [];
+      if (buffer.length) {
+        var cbs = buffer;
+        buffer = [];
+        cbs.forEach(cb);
+        pendingQueue = buffer;
+      }
+      var executeQueue = function() {
+        var cbs2 = pendingQueue;
+        pendingQueue = [];
+        cbs2.forEach(cb);
+      };
+      var cycle = function() {
+        return Promise.resolve().then(executeQueue);
+      };
+      cycle();
+      buffer = {
+        push: function(x3) {
+          pendingQueue.push(x3);
+          cycle();
+        },
+        filter: function(filter) {
+          pendingQueue = pendingQueue.filter(filter);
+          return buffer;
+        }
+      };
+    }
+  };
+  return medium;
+}
+function createSidecarMedium(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  var medium = innerCreateMedium(null);
+  medium.options = __assign({ async: true, ssr: false }, options);
+  return medium;
+}
+var SideCar$1 = function(_a2) {
+  var sideCar = _a2.sideCar, rest = __rest(_a2, ["sideCar"]);
+  if (!sideCar) {
+    throw new Error("Sidecar: please provide `sideCar` property to import the right car");
+  }
+  var Target = sideCar.read();
+  if (!Target) {
+    throw new Error("Sidecar medium not found");
+  }
+  return reactExports.createElement(Target, __assign({}, rest));
+};
+SideCar$1.isSideCarExport = true;
+function exportSidecar(medium, exported) {
+  medium.useMedium(exported);
+  return SideCar$1;
+}
+var effectCar = createSidecarMedium();
+var nothing = function() {
+  return;
+};
+var RemoveScroll = reactExports.forwardRef(function(props, parentRef) {
+  var ref = reactExports.useRef(null);
+  var _a2 = reactExports.useState({
+    onScrollCapture: nothing,
+    onWheelCapture: nothing,
+    onTouchMoveCapture: nothing
+  }), callbacks = _a2[0], setCallbacks = _a2[1];
+  var forwardProps = props.forwardProps, children = props.children, className = props.className, removeScrollBar = props.removeScrollBar, enabled = props.enabled, shards = props.shards, sideCar = props.sideCar, noRelative = props.noRelative, noIsolation = props.noIsolation, inert = props.inert, allowPinchZoom = props.allowPinchZoom, _b2 = props.as, Container = _b2 === void 0 ? "div" : _b2, gapMode = props.gapMode, rest = __rest(props, ["forwardProps", "children", "className", "removeScrollBar", "enabled", "shards", "sideCar", "noRelative", "noIsolation", "inert", "allowPinchZoom", "as", "gapMode"]);
+  var SideCar2 = sideCar;
+  var containerRef = useMergeRefs([ref, parentRef]);
+  var containerProps = __assign(__assign({}, rest), callbacks);
+  return reactExports.createElement(
+    reactExports.Fragment,
+    null,
+    enabled && reactExports.createElement(SideCar2, { sideCar: effectCar, removeScrollBar, shards, noRelative, noIsolation, inert, setCallbacks, allowPinchZoom: !!allowPinchZoom, lockRef: ref, gapMode }),
+    forwardProps ? reactExports.cloneElement(reactExports.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : reactExports.createElement(Container, __assign({}, containerProps, { className, ref: containerRef }), children)
+  );
+});
+RemoveScroll.defaultProps = {
+  enabled: true,
+  removeScrollBar: true,
+  inert: false
+};
+RemoveScroll.classNames = {
+  fullWidth: fullWidthClassName,
+  zeroRight: zeroRightClassName
+};
+var getNonce = function() {
+  if (typeof __webpack_nonce__ !== "undefined") {
+    return __webpack_nonce__;
+  }
+  return void 0;
+};
+function makeStyleTag() {
+  if (!document)
+    return null;
+  var tag = document.createElement("style");
+  tag.type = "text/css";
+  var nonce = getNonce();
+  if (nonce) {
+    tag.setAttribute("nonce", nonce);
+  }
+  return tag;
+}
+function injectStyles(tag, css) {
+  if (tag.styleSheet) {
+    tag.styleSheet.cssText = css;
+  } else {
+    tag.appendChild(document.createTextNode(css));
+  }
+}
+function insertStyleTag(tag) {
+  var head = document.head || document.getElementsByTagName("head")[0];
+  head.appendChild(tag);
+}
+var stylesheetSingleton = function() {
+  var counter = 0;
+  var stylesheet = null;
+  return {
+    add: function(style2) {
+      if (counter == 0) {
+        if (stylesheet = makeStyleTag()) {
+          injectStyles(stylesheet, style2);
+          insertStyleTag(stylesheet);
+        }
+      }
+      counter++;
+    },
+    remove: function() {
+      counter--;
+      if (!counter && stylesheet) {
+        stylesheet.parentNode && stylesheet.parentNode.removeChild(stylesheet);
+        stylesheet = null;
+      }
+    }
+  };
+};
+var styleHookSingleton = function() {
+  var sheet = stylesheetSingleton();
+  return function(styles, isDynamic) {
+    reactExports.useEffect(function() {
+      sheet.add(styles);
+      return function() {
+        sheet.remove();
+      };
+    }, [styles && isDynamic]);
+  };
+};
+var styleSingleton = function() {
+  var useStyle = styleHookSingleton();
+  var Sheet2 = function(_a2) {
+    var styles = _a2.styles, dynamic = _a2.dynamic;
+    useStyle(styles, dynamic);
+    return null;
+  };
+  return Sheet2;
+};
+var zeroGap = {
+  left: 0,
+  top: 0,
+  right: 0,
+  gap: 0
+};
+var parse = function(x3) {
+  return parseInt(x3 || "", 10) || 0;
+};
+var getOffset = function(gapMode) {
+  var cs = window.getComputedStyle(document.body);
+  var left = cs[gapMode === "padding" ? "paddingLeft" : "marginLeft"];
+  var top = cs[gapMode === "padding" ? "paddingTop" : "marginTop"];
+  var right = cs[gapMode === "padding" ? "paddingRight" : "marginRight"];
+  return [parse(left), parse(top), parse(right)];
+};
+var getGapWidth = function(gapMode) {
+  if (gapMode === void 0) {
+    gapMode = "margin";
+  }
+  if (typeof window === "undefined") {
+    return zeroGap;
+  }
+  var offsets = getOffset(gapMode);
+  var documentWidth = document.documentElement.clientWidth;
+  var windowWidth = window.innerWidth;
+  return {
+    left: offsets[0],
+    top: offsets[1],
+    right: offsets[2],
+    gap: Math.max(0, windowWidth - documentWidth + offsets[2] - offsets[0])
+  };
+};
+var Style = styleSingleton();
+var lockAttribute = "data-scroll-locked";
+var getStyles = function(_a2, allowRelative, gapMode, important) {
+  var left = _a2.left, top = _a2.top, right = _a2.right, gap = _a2.gap;
+  if (gapMode === void 0) {
+    gapMode = "margin";
+  }
+  return "\n  .".concat(noScrollbarsClassName, " {\n   overflow: hidden ").concat(important, ";\n   padding-right: ").concat(gap, "px ").concat(important, ";\n  }\n  body[").concat(lockAttribute, "] {\n    overflow: hidden ").concat(important, ";\n    overscroll-behavior: contain;\n    ").concat([
+    allowRelative && "position: relative ".concat(important, ";"),
+    gapMode === "margin" && "\n    padding-left: ".concat(left, "px;\n    padding-top: ").concat(top, "px;\n    padding-right: ").concat(right, "px;\n    margin-left:0;\n    margin-top:0;\n    margin-right: ").concat(gap, "px ").concat(important, ";\n    "),
+    gapMode === "padding" && "padding-right: ".concat(gap, "px ").concat(important, ";")
+  ].filter(Boolean).join(""), "\n  }\n  \n  .").concat(zeroRightClassName, " {\n    right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " {\n    margin-right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(zeroRightClassName, " .").concat(zeroRightClassName, " {\n    right: 0 ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " .").concat(fullWidthClassName, " {\n    margin-right: 0 ").concat(important, ";\n  }\n  \n  body[").concat(lockAttribute, "] {\n    ").concat(removedBarSizeVariable, ": ").concat(gap, "px;\n  }\n");
+};
+var getCurrentUseCounter = function() {
+  var counter = parseInt(document.body.getAttribute(lockAttribute) || "0", 10);
+  return isFinite(counter) ? counter : 0;
+};
+var useLockAttribute = function() {
+  reactExports.useEffect(function() {
+    document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
+    return function() {
+      var newCounter = getCurrentUseCounter() - 1;
+      if (newCounter <= 0) {
+        document.body.removeAttribute(lockAttribute);
+      } else {
+        document.body.setAttribute(lockAttribute, newCounter.toString());
+      }
+    };
+  }, []);
+};
+var RemoveScrollBar = function(_a2) {
+  var noRelative = _a2.noRelative, noImportant = _a2.noImportant, _b2 = _a2.gapMode, gapMode = _b2 === void 0 ? "margin" : _b2;
+  useLockAttribute();
+  var gap = reactExports.useMemo(function() {
+    return getGapWidth(gapMode);
+  }, [gapMode]);
+  return reactExports.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
+};
+var passiveSupported = false;
+if (typeof window !== "undefined") {
+  try {
+    var options = Object.defineProperty({}, "passive", {
+      get: function() {
+        passiveSupported = true;
+        return true;
+      }
+    });
+    window.addEventListener("test", options, options);
+    window.removeEventListener("test", options, options);
+  } catch (err) {
+    passiveSupported = false;
+  }
+}
+var nonPassive = passiveSupported ? { passive: false } : false;
+var alwaysContainsScroll = function(node) {
+  return node.tagName === "TEXTAREA";
+};
+var elementCanBeScrolled = function(node, overflow) {
+  if (!(node instanceof Element)) {
+    return false;
+  }
+  var styles = window.getComputedStyle(node);
+  return (
+    // not-not-scrollable
+    styles[overflow] !== "hidden" && // contains scroll inside self
+    !(styles.overflowY === styles.overflowX && !alwaysContainsScroll(node) && styles[overflow] === "visible")
+  );
+};
+var elementCouldBeVScrolled = function(node) {
+  return elementCanBeScrolled(node, "overflowY");
+};
+var elementCouldBeHScrolled = function(node) {
+  return elementCanBeScrolled(node, "overflowX");
+};
+var locationCouldBeScrolled = function(axis, node) {
+  var ownerDocument = node.ownerDocument;
+  var current = node;
+  do {
+    if (typeof ShadowRoot !== "undefined" && current instanceof ShadowRoot) {
+      current = current.host;
+    }
+    var isScrollable = elementCouldBeScrolled(axis, current);
+    if (isScrollable) {
+      var _a2 = getScrollVariables(axis, current), scrollHeight = _a2[1], clientHeight = _a2[2];
+      if (scrollHeight > clientHeight) {
+        return true;
+      }
+    }
+    current = current.parentNode;
+  } while (current && current !== ownerDocument.body);
+  return false;
+};
+var getVScrollVariables = function(_a2) {
+  var scrollTop = _a2.scrollTop, scrollHeight = _a2.scrollHeight, clientHeight = _a2.clientHeight;
+  return [
+    scrollTop,
+    scrollHeight,
+    clientHeight
+  ];
+};
+var getHScrollVariables = function(_a2) {
+  var scrollLeft = _a2.scrollLeft, scrollWidth = _a2.scrollWidth, clientWidth = _a2.clientWidth;
+  return [
+    scrollLeft,
+    scrollWidth,
+    clientWidth
+  ];
+};
+var elementCouldBeScrolled = function(axis, node) {
+  return axis === "v" ? elementCouldBeVScrolled(node) : elementCouldBeHScrolled(node);
+};
+var getScrollVariables = function(axis, node) {
+  return axis === "v" ? getVScrollVariables(node) : getHScrollVariables(node);
+};
+var getDirectionFactor = function(axis, direction) {
+  return axis === "h" && direction === "rtl" ? -1 : 1;
+};
+var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
+  var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
+  var delta = directionFactor * sourceDelta;
+  var target = event.target;
+  var targetInLock = endTarget.contains(target);
+  var shouldCancelScroll = false;
+  var isDeltaPositive = delta > 0;
+  var availableScroll = 0;
+  var availableScrollTop = 0;
+  do {
+    if (!target) {
+      break;
+    }
+    var _a2 = getScrollVariables(axis, target), position = _a2[0], scroll_1 = _a2[1], capacity = _a2[2];
+    var elementScroll = scroll_1 - capacity - directionFactor * position;
+    if (position || elementScroll) {
+      if (elementCouldBeScrolled(axis, target)) {
+        availableScroll += elementScroll;
+        availableScrollTop += position;
+      }
+    }
+    var parent_1 = target.parentNode;
+    target = parent_1 && parent_1.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? parent_1.host : parent_1;
+  } while (
+    // portaled content
+    !targetInLock && target !== document.body || // self content
+    targetInLock && (endTarget.contains(target) || endTarget === target)
+  );
+  if (isDeltaPositive && (Math.abs(availableScroll) < 1 || false)) {
+    shouldCancelScroll = true;
+  } else if (!isDeltaPositive && (Math.abs(availableScrollTop) < 1 || false)) {
+    shouldCancelScroll = true;
+  }
+  return shouldCancelScroll;
+};
+var getTouchXY = function(event) {
+  return "changedTouches" in event ? [event.changedTouches[0].clientX, event.changedTouches[0].clientY] : [0, 0];
+};
+var getDeltaXY = function(event) {
+  return [event.deltaX, event.deltaY];
+};
+var extractRef = function(ref) {
+  return ref && "current" in ref ? ref.current : ref;
+};
+var deltaCompare = function(x3, y2) {
+  return x3[0] === y2[0] && x3[1] === y2[1];
+};
+var generateStyle = function(id) {
+  return "\n  .block-interactivity-".concat(id, " {pointer-events: none;}\n  .allow-interactivity-").concat(id, " {pointer-events: all;}\n");
+};
+var idCounter = 0;
+var lockStack = [];
+function RemoveScrollSideCar(props) {
+  var shouldPreventQueue = reactExports.useRef([]);
+  var touchStartRef = reactExports.useRef([0, 0]);
+  var activeAxis = reactExports.useRef();
+  var id = reactExports.useState(idCounter++)[0];
+  var Style2 = reactExports.useState(styleSingleton)[0];
+  var lastProps = reactExports.useRef(props);
+  reactExports.useEffect(function() {
+    lastProps.current = props;
+  }, [props]);
+  reactExports.useEffect(function() {
+    if (props.inert) {
+      document.body.classList.add("block-interactivity-".concat(id));
+      var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef), true).filter(Boolean);
+      allow_1.forEach(function(el) {
+        return el.classList.add("allow-interactivity-".concat(id));
+      });
+      return function() {
+        document.body.classList.remove("block-interactivity-".concat(id));
+        allow_1.forEach(function(el) {
+          return el.classList.remove("allow-interactivity-".concat(id));
+        });
+      };
+    }
+    return;
+  }, [props.inert, props.lockRef.current, props.shards]);
+  var shouldCancelEvent = reactExports.useCallback(function(event, parent) {
+    if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) {
+      return !lastProps.current.allowPinchZoom;
+    }
+    var touch = getTouchXY(event);
+    var touchStart = touchStartRef.current;
+    var deltaX = "deltaX" in event ? event.deltaX : touchStart[0] - touch[0];
+    var deltaY = "deltaY" in event ? event.deltaY : touchStart[1] - touch[1];
+    var currentAxis;
+    var target = event.target;
+    var moveDirection = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
+    if ("touches" in event && moveDirection === "h" && target.type === "range") {
+      return false;
+    }
+    var selection = window.getSelection();
+    var anchorNode = selection && selection.anchorNode;
+    var isTouchingSelection = anchorNode ? anchorNode === target || anchorNode.contains(target) : false;
+    if (isTouchingSelection) {
+      return false;
+    }
+    var canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
+    if (!canBeScrolledInMainDirection) {
+      return true;
+    }
+    if (canBeScrolledInMainDirection) {
+      currentAxis = moveDirection;
+    } else {
+      currentAxis = moveDirection === "v" ? "h" : "v";
+      canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
+    }
+    if (!canBeScrolledInMainDirection) {
+      return false;
+    }
+    if (!activeAxis.current && "changedTouches" in event && (deltaX || deltaY)) {
+      activeAxis.current = currentAxis;
+    }
+    if (!currentAxis) {
+      return true;
+    }
+    var cancelingAxis = activeAxis.current || currentAxis;
+    return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY);
+  }, []);
+  var shouldPrevent = reactExports.useCallback(function(_event) {
+    var event = _event;
+    if (!lockStack.length || lockStack[lockStack.length - 1] !== Style2) {
+      return;
+    }
+    var delta = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
+    var sourceEvent = shouldPreventQueue.current.filter(function(e) {
+      return e.name === event.type && (e.target === event.target || event.target === e.shadowParent) && deltaCompare(e.delta, delta);
+    })[0];
+    if (sourceEvent && sourceEvent.should) {
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (!sourceEvent) {
+      var shardNodes = (lastProps.current.shards || []).map(extractRef).filter(Boolean).filter(function(node) {
+        return node.contains(event.target);
+      });
+      var shouldStop = shardNodes.length > 0 ? shouldCancelEvent(event, shardNodes[0]) : !lastProps.current.noIsolation;
+      if (shouldStop) {
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+      }
+    }
+  }, []);
+  var shouldCancel = reactExports.useCallback(function(name, delta, target, should) {
+    var event = { name, delta, target, should, shadowParent: getOutermostShadowParent(target) };
+    shouldPreventQueue.current.push(event);
+    setTimeout(function() {
+      shouldPreventQueue.current = shouldPreventQueue.current.filter(function(e) {
+        return e !== event;
+      });
+    }, 1);
+  }, []);
+  var scrollTouchStart = reactExports.useCallback(function(event) {
+    touchStartRef.current = getTouchXY(event);
+    activeAxis.current = void 0;
+  }, []);
+  var scrollWheel = reactExports.useCallback(function(event) {
+    shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
+  }, []);
+  var scrollTouchMove = reactExports.useCallback(function(event) {
+    shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
+  }, []);
+  reactExports.useEffect(function() {
+    lockStack.push(Style2);
+    props.setCallbacks({
+      onScrollCapture: scrollWheel,
+      onWheelCapture: scrollWheel,
+      onTouchMoveCapture: scrollTouchMove
+    });
+    document.addEventListener("wheel", shouldPrevent, nonPassive);
+    document.addEventListener("touchmove", shouldPrevent, nonPassive);
+    document.addEventListener("touchstart", scrollTouchStart, nonPassive);
+    return function() {
+      lockStack = lockStack.filter(function(inst) {
+        return inst !== Style2;
+      });
+      document.removeEventListener("wheel", shouldPrevent, nonPassive);
+      document.removeEventListener("touchmove", shouldPrevent, nonPassive);
+      document.removeEventListener("touchstart", scrollTouchStart, nonPassive);
+    };
+  }, []);
+  var removeScrollBar = props.removeScrollBar, inert = props.inert;
+  return reactExports.createElement(
+    reactExports.Fragment,
+    null,
+    inert ? reactExports.createElement(Style2, { styles: generateStyle(id) }) : null,
+    removeScrollBar ? reactExports.createElement(RemoveScrollBar, { noRelative: props.noRelative, gapMode: props.gapMode }) : null
+  );
+}
+function getOutermostShadowParent(node) {
+  var shadowParent = null;
+  while (node !== null) {
+    if (node instanceof ShadowRoot) {
+      shadowParent = node.host;
+      node = node.host;
+    }
+    node = node.parentNode;
+  }
+  return shadowParent;
+}
+const SideCar = exportSidecar(effectCar, RemoveScrollSideCar);
+var ReactRemoveScroll = reactExports.forwardRef(function(props, ref) {
+  return reactExports.createElement(RemoveScroll, __assign({}, props, { ref, sideCar: SideCar }));
+});
+ReactRemoveScroll.classNames = RemoveScroll.classNames;
+var getDefaultParent = function(originalTarget) {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  var sampleTarget = Array.isArray(originalTarget) ? originalTarget[0] : originalTarget;
+  return sampleTarget.ownerDocument.body;
+};
+var counterMap = /* @__PURE__ */ new WeakMap();
+var uncontrolledNodes = /* @__PURE__ */ new WeakMap();
+var markerMap = {};
+var lockCount = 0;
+var unwrapHost = function(node) {
+  return node && (node.host || unwrapHost(node.parentNode));
+};
+var correctTargets = function(parent, targets) {
+  return targets.map(function(target) {
+    if (parent.contains(target)) {
+      return target;
+    }
+    var correctedTarget = unwrapHost(target);
+    if (correctedTarget && parent.contains(correctedTarget)) {
+      return correctedTarget;
+    }
+    console.error("aria-hidden", target, "in not contained inside", parent, ". Doing nothing");
+    return null;
+  }).filter(function(x3) {
+    return Boolean(x3);
+  });
+};
+var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
+  var targets = correctTargets(parentNode, Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
+  if (!markerMap[markerName]) {
+    markerMap[markerName] = /* @__PURE__ */ new WeakMap();
+  }
+  var markerCounter = markerMap[markerName];
+  var hiddenNodes = [];
+  var elementsToKeep = /* @__PURE__ */ new Set();
+  var elementsToStop = new Set(targets);
+  var keep = function(el) {
+    if (!el || elementsToKeep.has(el)) {
+      return;
+    }
+    elementsToKeep.add(el);
+    keep(el.parentNode);
+  };
+  targets.forEach(keep);
+  var deep = function(parent) {
+    if (!parent || elementsToStop.has(parent)) {
+      return;
+    }
+    Array.prototype.forEach.call(parent.children, function(node) {
+      if (elementsToKeep.has(node)) {
+        deep(node);
+      } else {
+        try {
+          var attr = node.getAttribute(controlAttribute);
+          var alreadyHidden = attr !== null && attr !== "false";
+          var counterValue = (counterMap.get(node) || 0) + 1;
+          var markerValue = (markerCounter.get(node) || 0) + 1;
+          counterMap.set(node, counterValue);
+          markerCounter.set(node, markerValue);
+          hiddenNodes.push(node);
+          if (counterValue === 1 && alreadyHidden) {
+            uncontrolledNodes.set(node, true);
+          }
+          if (markerValue === 1) {
+            node.setAttribute(markerName, "true");
+          }
+          if (!alreadyHidden) {
+            node.setAttribute(controlAttribute, "true");
+          }
+        } catch (e) {
+          console.error("aria-hidden: cannot operate on ", node, e);
+        }
+      }
+    });
+  };
+  deep(parentNode);
+  elementsToKeep.clear();
+  lockCount++;
+  return function() {
+    hiddenNodes.forEach(function(node) {
+      var counterValue = counterMap.get(node) - 1;
+      var markerValue = markerCounter.get(node) - 1;
+      counterMap.set(node, counterValue);
+      markerCounter.set(node, markerValue);
+      if (!counterValue) {
+        if (!uncontrolledNodes.has(node)) {
+          node.removeAttribute(controlAttribute);
+        }
+        uncontrolledNodes.delete(node);
+      }
+      if (!markerValue) {
+        node.removeAttribute(markerName);
+      }
+    });
+    lockCount--;
+    if (!lockCount) {
+      counterMap = /* @__PURE__ */ new WeakMap();
+      counterMap = /* @__PURE__ */ new WeakMap();
+      uncontrolledNodes = /* @__PURE__ */ new WeakMap();
+      markerMap = {};
+    }
+  };
+};
+var hideOthers = function(originalTarget, parentNode, markerName) {
+  if (markerName === void 0) {
+    markerName = "data-aria-hidden";
+  }
+  var targets = Array.from(Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
+  var activeParentNode = getDefaultParent(originalTarget);
+  if (!activeParentNode) {
+    return function() {
+      return null;
+    };
+  }
+  targets.push.apply(targets, Array.from(activeParentNode.querySelectorAll("[aria-live], script")));
+  return applyAttributeToOthers(targets, activeParentNode, markerName, "aria-hidden");
+};
+var DIALOG_NAME = "Dialog";
+var [createDialogContext, createDialogScope] = createContextScope(DIALOG_NAME);
+var [DialogProvider, useDialogContext] = createDialogContext(DIALOG_NAME);
+var Dialog$1 = (props) => {
+  const {
+    __scopeDialog,
+    children,
+    open: openProp,
+    defaultOpen,
+    onOpenChange,
+    modal = true
+  } = props;
+  const triggerRef = reactExports.useRef(null);
+  const contentRef = reactExports.useRef(null);
+  const [open, setOpen] = useControllableState({
+    prop: openProp,
+    defaultProp: defaultOpen ?? false,
+    onChange: onOpenChange,
+    caller: DIALOG_NAME
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    DialogProvider,
+    {
+      scope: __scopeDialog,
+      triggerRef,
+      contentRef,
+      contentId: useId(),
+      titleId: useId(),
+      descriptionId: useId(),
+      open,
+      onOpenChange: setOpen,
+      onOpenToggle: reactExports.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
+      modal,
+      children
+    }
+  );
+};
+Dialog$1.displayName = DIALOG_NAME;
+var TRIGGER_NAME$3 = "DialogTrigger";
+var DialogTrigger = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...triggerProps } = props;
+    const context = useDialogContext(TRIGGER_NAME$3, __scopeDialog);
+    const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Primitive$1.button,
+      {
+        type: "button",
+        "aria-haspopup": "dialog",
+        "aria-expanded": context.open,
+        "aria-controls": context.contentId,
+        "data-state": getState$1(context.open),
+        ...triggerProps,
+        ref: composedTriggerRef,
+        onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
+      }
+    );
+  }
+);
+DialogTrigger.displayName = TRIGGER_NAME$3;
+var PORTAL_NAME$2 = "DialogPortal";
+var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME$2, {
+  forceMount: void 0
+});
+var DialogPortal$1 = (props) => {
+  const { __scopeDialog, forceMount, children, container } = props;
+  const context = useDialogContext(PORTAL_NAME$2, __scopeDialog);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: reactExports.Children.map(children, (child) => /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$2, { asChild: true, container, children: child }) })) });
+};
+DialogPortal$1.displayName = PORTAL_NAME$2;
+var OVERLAY_NAME$1 = "DialogOverlay";
+var DialogOverlay$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const portalContext = usePortalContext(OVERLAY_NAME$1, props.__scopeDialog);
+    const { forceMount = portalContext.forceMount, ...overlayProps } = props;
+    const context = useDialogContext(OVERLAY_NAME$1, props.__scopeDialog);
+    return context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
+  }
+);
+DialogOverlay$1.displayName = OVERLAY_NAME$1;
+var Slot$1 = /* @__PURE__ */ createSlot("DialogOverlay.RemoveScroll");
+var DialogOverlayImpl = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...overlayProps } = props;
+    const context = useDialogContext(OVERLAY_NAME$1, __scopeDialog);
+    return (
+      // Make sure `Content` is scrollable even when it doesn't live inside `RemoveScroll`
+      // ie. when `Overlay` and `Content` are siblings
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ReactRemoveScroll, { as: Slot$1, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Primitive$1.div,
+        {
+          "data-state": getState$1(context.open),
+          ...overlayProps,
+          ref: forwardedRef,
+          style: { pointerEvents: "auto", ...overlayProps.style }
+        }
+      ) })
+    );
+  }
+);
+var CONTENT_NAME$4 = "DialogContent";
+var DialogContent$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const portalContext = usePortalContext(CONTENT_NAME$4, props.__scopeDialog);
+    const { forceMount = portalContext.forceMount, ...contentProps } = props;
+    const context = useDialogContext(CONTENT_NAME$4, props.__scopeDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
+  }
+);
+DialogContent$1.displayName = CONTENT_NAME$4;
+var DialogContentModal = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const context = useDialogContext(CONTENT_NAME$4, props.__scopeDialog);
+    const contentRef = reactExports.useRef(null);
+    const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
+    reactExports.useEffect(() => {
+      const content = contentRef.current;
+      if (content) return hideOthers(content);
+    }, []);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DialogContentImpl,
+      {
+        ...props,
+        ref: composedRefs,
+        trapFocus: context.open,
+        disableOutsidePointerEvents: true,
+        onCloseAutoFocus: composeEventHandlers(props.onCloseAutoFocus, (event) => {
+          var _a2;
+          event.preventDefault();
+          (_a2 = context.triggerRef.current) == null ? void 0 : _a2.focus();
+        }),
+        onPointerDownOutside: composeEventHandlers(props.onPointerDownOutside, (event) => {
+          const originalEvent = event.detail.originalEvent;
+          const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
+          const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
+          if (isRightClick) event.preventDefault();
+        }),
+        onFocusOutside: composeEventHandlers(
+          props.onFocusOutside,
+          (event) => event.preventDefault()
+        )
+      }
+    );
+  }
+);
+var DialogContentNonModal = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const context = useDialogContext(CONTENT_NAME$4, props.__scopeDialog);
+    const hasInteractedOutsideRef = reactExports.useRef(false);
+    const hasPointerDownOutsideRef = reactExports.useRef(false);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DialogContentImpl,
+      {
+        ...props,
+        ref: forwardedRef,
+        trapFocus: false,
+        disableOutsidePointerEvents: false,
+        onCloseAutoFocus: (event) => {
+          var _a2, _b2;
+          (_a2 = props.onCloseAutoFocus) == null ? void 0 : _a2.call(props, event);
+          if (!event.defaultPrevented) {
+            if (!hasInteractedOutsideRef.current) (_b2 = context.triggerRef.current) == null ? void 0 : _b2.focus();
+            event.preventDefault();
+          }
+          hasInteractedOutsideRef.current = false;
+          hasPointerDownOutsideRef.current = false;
+        },
+        onInteractOutside: (event) => {
+          var _a2, _b2;
+          (_a2 = props.onInteractOutside) == null ? void 0 : _a2.call(props, event);
+          if (!event.defaultPrevented) {
+            hasInteractedOutsideRef.current = true;
+            if (event.detail.originalEvent.type === "pointerdown") {
+              hasPointerDownOutsideRef.current = true;
+            }
+          }
+          const target = event.target;
+          const targetIsTrigger = (_b2 = context.triggerRef.current) == null ? void 0 : _b2.contains(target);
+          if (targetIsTrigger) event.preventDefault();
+          if (event.detail.originalEvent.type === "focusin" && hasPointerDownOutsideRef.current) {
+            event.preventDefault();
+          }
+        }
+      }
+    );
+  }
+);
+var DialogContentImpl = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
+    const context = useDialogContext(CONTENT_NAME$4, __scopeDialog);
+    const contentRef = reactExports.useRef(null);
+    const composedRefs = useComposedRefs(forwardedRef, contentRef);
+    useFocusGuards();
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FocusScope,
+        {
+          asChild: true,
+          loop: true,
+          trapped: trapFocus,
+          onMountAutoFocus: onOpenAutoFocus,
+          onUnmountAutoFocus: onCloseAutoFocus,
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            DismissableLayer,
+            {
+              role: "dialog",
+              id: context.contentId,
+              "aria-describedby": context.descriptionId,
+              "aria-labelledby": context.titleId,
+              "data-state": getState$1(context.open),
+              ...contentProps,
+              ref: composedRefs,
+              onDismiss: () => context.onOpenChange(false)
+            }
+          )
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TitleWarning, { titleId: context.titleId }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DescriptionWarning$1, { contentRef, descriptionId: context.descriptionId })
+      ] })
+    ] });
+  }
+);
+var TITLE_NAME$1 = "DialogTitle";
+var DialogTitle$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...titleProps } = props;
+    const context = useDialogContext(TITLE_NAME$1, __scopeDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
+  }
+);
+DialogTitle$1.displayName = TITLE_NAME$1;
+var DESCRIPTION_NAME$1 = "DialogDescription";
+var DialogDescription$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...descriptionProps } = props;
+    const context = useDialogContext(DESCRIPTION_NAME$1, __scopeDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
+  }
+);
+DialogDescription$1.displayName = DESCRIPTION_NAME$1;
+var CLOSE_NAME = "DialogClose";
+var DialogClose = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...closeProps } = props;
+    const context = useDialogContext(CLOSE_NAME, __scopeDialog);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Primitive$1.button,
+      {
+        type: "button",
+        ...closeProps,
+        ref: forwardedRef,
+        onClick: composeEventHandlers(props.onClick, () => context.onOpenChange(false))
+      }
+    );
+  }
+);
+DialogClose.displayName = CLOSE_NAME;
+function getState$1(open) {
+  return open ? "open" : "closed";
+}
+var TITLE_WARNING_NAME = "DialogTitleWarning";
+var [WarningProvider, useWarningContext] = createContext2(TITLE_WARNING_NAME, {
+  contentName: CONTENT_NAME$4,
+  titleName: TITLE_NAME$1,
+  docsSlug: "dialog"
+});
+var TitleWarning = ({ titleId }) => {
+  const titleWarningContext = useWarningContext(TITLE_WARNING_NAME);
+  const MESSAGE = `\`${titleWarningContext.contentName}\` requires a \`${titleWarningContext.titleName}\` for the component to be accessible for screen reader users.
+
+If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
+  reactExports.useEffect(() => {
+    if (titleId) {
+      const hasTitle = document.getElementById(titleId);
+      if (!hasTitle) console.error(MESSAGE);
+    }
+  }, [MESSAGE, titleId]);
+  return null;
+};
+var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
+var DescriptionWarning$1 = ({ contentRef, descriptionId }) => {
+  const descriptionWarningContext = useWarningContext(DESCRIPTION_WARNING_NAME);
+  const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${descriptionWarningContext.contentName}}.`;
+  reactExports.useEffect(() => {
+    var _a2;
+    const describedById = (_a2 = contentRef.current) == null ? void 0 : _a2.getAttribute("aria-describedby");
+    if (descriptionId && describedById) {
+      const hasDescription = document.getElementById(descriptionId);
+      if (!hasDescription) console.warn(MESSAGE);
+    }
+  }, [MESSAGE, contentRef, descriptionId]);
+  return null;
+};
+var Root$5 = Dialog$1;
+var Trigger$2 = DialogTrigger;
+var Portal$1 = DialogPortal$1;
+var Overlay = DialogOverlay$1;
+var Content$2 = DialogContent$1;
+var Title = DialogTitle$1;
+var Description = DialogDescription$1;
+var Close = DialogClose;
+function Dialog({
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$5, { "data-slot": "dialog", ...props });
+}
+function DialogPortal({
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$1, { "data-slot": "dialog-portal", ...props });
+}
+function DialogOverlay({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Overlay,
+    {
+      "data-slot": "dialog-overlay",
+      className: cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function DialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogPortal, { "data-slot": "dialog-portal", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlay, {}),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      Content$2,
+      {
+        "data-slot": "dialog-content",
+        className: cn(
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          className
+        ),
+        ...props,
+        children: [
+          children,
+          showCloseButton && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Close,
+            {
+              "data-slot": "dialog-close",
+              className: "ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(X, {}),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sr-only", children: "Close" })
+              ]
+            }
+          )
+        ]
+      }
+    )
+  ] });
+}
+function DialogHeader({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "dialog-header",
+      className: cn("flex flex-col gap-2 text-center sm:text-left", className),
+      ...props
+    }
+  );
+}
+function DialogFooter({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "dialog-footer",
+      className: cn(
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function DialogTitle({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Title,
+    {
+      "data-slot": "dialog-title",
+      className: cn("text-lg leading-none font-semibold", className),
+      ...props
+    }
+  );
+}
+function DialogDescription({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Description,
+    {
+      "data-slot": "dialog-description",
+      className: cn("text-muted-foreground text-sm", className),
+      ...props
+    }
+  );
+}
+function Input({ className, type, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "input",
+    {
+      type,
+      "data-slot": "input",
+      className: cn(
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        className
+      ),
+      ...props
+    }
+  );
+}
+var NODES = [
+  "a",
+  "button",
+  "div",
+  "form",
+  "h2",
+  "h3",
+  "img",
+  "input",
+  "label",
+  "li",
+  "nav",
+  "ol",
+  "p",
+  "select",
+  "span",
+  "svg",
+  "ul"
+];
+var Primitive = NODES.reduce((primitive, node) => {
+  const Slot2 = /* @__PURE__ */ createSlot$1(`Primitive.${node}`);
+  const Node2 = reactExports.forwardRef((props, forwardedRef) => {
+    const { asChild, ...primitiveProps } = props;
+    const Comp = asChild ? Slot2 : node;
+    if (typeof window !== "undefined") {
+      window[Symbol.for("radix-ui")] = true;
+    }
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
+  });
+  Node2.displayName = `Primitive.${node}`;
+  return { ...primitive, [node]: Node2 };
+}, {});
+var NAME$3 = "Label";
+var Label$1 = reactExports.forwardRef((props, forwardedRef) => {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Primitive.label,
+    {
+      ...props,
+      ref: forwardedRef,
+      onMouseDown: (event) => {
+        var _a2;
+        const target = event.target;
+        if (target.closest("button, input, select, textarea")) return;
+        (_a2 = props.onMouseDown) == null ? void 0 : _a2.call(props, event);
+        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
+      }
+    }
+  );
+});
+Label$1.displayName = NAME$3;
+var Root$4 = Label$1;
+function Label({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Root$4,
+    {
+      "data-slot": "label",
+      className: cn(
+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function clamp$1(value, [min2, max2]) {
+  return Math.min(max2, Math.max(min2, value));
+}
+function createCollection(name) {
+  const PROVIDER_NAME = name + "CollectionProvider";
+  const [createCollectionContext, createCollectionScope2] = createContextScope(PROVIDER_NAME);
+  const [CollectionProviderImpl, useCollectionContext] = createCollectionContext(
+    PROVIDER_NAME,
+    { collectionRef: { current: null }, itemMap: /* @__PURE__ */ new Map() }
+  );
+  const CollectionProvider = (props) => {
+    const { scope, children } = props;
+    const ref = React$4.useRef(null);
+    const itemMap = React$4.useRef(/* @__PURE__ */ new Map()).current;
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionProviderImpl, { scope, itemMap, collectionRef: ref, children });
+  };
+  CollectionProvider.displayName = PROVIDER_NAME;
+  const COLLECTION_SLOT_NAME = name + "CollectionSlot";
+  const CollectionSlotImpl = /* @__PURE__ */ createSlot(COLLECTION_SLOT_NAME);
+  const CollectionSlot = React$4.forwardRef(
+    (props, forwardedRef) => {
+      const { scope, children } = props;
+      const context = useCollectionContext(COLLECTION_SLOT_NAME, scope);
+      const composedRefs = useComposedRefs(forwardedRef, context.collectionRef);
+      return /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionSlotImpl, { ref: composedRefs, children });
+    }
+  );
+  CollectionSlot.displayName = COLLECTION_SLOT_NAME;
+  const ITEM_SLOT_NAME = name + "CollectionItemSlot";
+  const ITEM_DATA_ATTR = "data-radix-collection-item";
+  const CollectionItemSlotImpl = /* @__PURE__ */ createSlot(ITEM_SLOT_NAME);
+  const CollectionItemSlot = React$4.forwardRef(
+    (props, forwardedRef) => {
+      const { scope, children, ...itemData } = props;
+      const ref = React$4.useRef(null);
+      const composedRefs = useComposedRefs(forwardedRef, ref);
+      const context = useCollectionContext(ITEM_SLOT_NAME, scope);
+      React$4.useEffect(() => {
+        context.itemMap.set(ref, { ref, ...itemData });
+        return () => void context.itemMap.delete(ref);
+      });
+      return /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionItemSlotImpl, { ...{ [ITEM_DATA_ATTR]: "" }, ref: composedRefs, children });
+    }
+  );
+  CollectionItemSlot.displayName = ITEM_SLOT_NAME;
+  function useCollection2(scope) {
+    const context = useCollectionContext(name + "CollectionConsumer", scope);
+    const getItems = React$4.useCallback(() => {
+      const collectionNode = context.collectionRef.current;
+      if (!collectionNode) return [];
+      const orderedNodes = Array.from(collectionNode.querySelectorAll(`[${ITEM_DATA_ATTR}]`));
+      const items = Array.from(context.itemMap.values());
+      const orderedItems = items.sort(
+        (a2, b2) => orderedNodes.indexOf(a2.ref.current) - orderedNodes.indexOf(b2.ref.current)
+      );
+      return orderedItems;
+    }, [context.collectionRef, context.itemMap]);
+    return getItems;
+  }
+  return [
+    { Provider: CollectionProvider, Slot: CollectionSlot, ItemSlot: CollectionItemSlot },
+    useCollection2,
+    createCollectionScope2
+  ];
+}
+var DirectionContext = reactExports.createContext(void 0);
+function useDirection(localDir) {
+  const globalDir = reactExports.useContext(DirectionContext);
+  return localDir || globalDir || "ltr";
 }
 const sides = ["top", "right", "bottom", "left"];
 const min = Math.min;
@@ -50852,7 +51676,7 @@ var NAME$2 = "Arrow";
 var Arrow$1 = reactExports.forwardRef((props, forwardedRef) => {
   const { children, width = 10, height = 5, ...arrowProps } = props;
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive.svg,
+    Primitive$1.svg,
     {
       ...arrowProps,
       ref: forwardedRef,
@@ -50865,7 +51689,7 @@ var Arrow$1 = reactExports.forwardRef((props, forwardedRef) => {
   );
 });
 Arrow$1.displayName = NAME$2;
-var Root$4 = Arrow$1;
+var Root$3 = Arrow$1;
 function useSize(element) {
   const [size2, setSize] = reactExports.useState(void 0);
   useLayoutEffect2(() => {
@@ -50924,12 +51748,12 @@ var PopperAnchor = reactExports.forwardRef(
         context.onAnchorChange(anchorRef.current);
       }
     });
-    return virtualRef ? null : /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...anchorProps, ref: composedRefs });
+    return virtualRef ? null : /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.div, { ...anchorProps, ref: composedRefs });
   }
 );
 PopperAnchor.displayName = ANCHOR_NAME;
-var CONTENT_NAME$4 = "PopperContent";
-var [PopperContentProvider, useContentContext] = createPopperContext(CONTENT_NAME$4);
+var CONTENT_NAME$3 = "PopperContent";
+var [PopperContentProvider, useContentContext] = createPopperContext(CONTENT_NAME$3);
 var PopperContent = reactExports.forwardRef(
   (props, forwardedRef) => {
     var _a2, _b2, _c2, _d2, _e2, _f2;
@@ -50949,7 +51773,7 @@ var PopperContent = reactExports.forwardRef(
       onPlaced,
       ...contentProps
     } = props;
-    const context = usePopperContext(CONTENT_NAME$4, __scopePopper);
+    const context = usePopperContext(CONTENT_NAME$3, __scopePopper);
     const [content, setContent] = reactExports.useState(null);
     const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
     const [arrow$12, setArrow] = reactExports.useState(null);
@@ -51052,7 +51876,7 @@ var PopperContent = reactExports.forwardRef(
             arrowY,
             shouldHideArrow: cannotCenterArrow,
             children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-              Primitive.div,
+              Primitive$1.div,
               {
                 "data-side": placedSide,
                 "data-align": placedAlign,
@@ -51072,7 +51896,7 @@ var PopperContent = reactExports.forwardRef(
     );
   }
 );
-PopperContent.displayName = CONTENT_NAME$4;
+PopperContent.displayName = CONTENT_NAME$3;
 var ARROW_NAME$1 = "PopperArrow";
 var OPPOSITE_SIDE = {
   top: "bottom",
@@ -51112,7 +51936,7 @@ var PopperArrow = reactExports.forwardRef(function PopperArrow2(props, forwarded
           visibility: contentContext.shouldHideArrow ? "hidden" : void 0
         },
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Root$4,
+          Root$3,
           {
             ...arrowProps,
             ref: forwardedRef,
@@ -51169,84 +51993,8 @@ function getSideAndAlignFromPlacement(placement) {
 }
 var Root2$3 = Popper;
 var Anchor = PopperAnchor;
-var Content$2 = PopperContent;
+var Content$1 = PopperContent;
 var Arrow = PopperArrow;
-var PORTAL_NAME$3 = "Portal";
-var Portal$2 = reactExports.forwardRef((props, forwardedRef) => {
-  var _a2;
-  const { container: containerProp, ...portalProps } = props;
-  const [mounted, setMounted] = reactExports.useState(false);
-  useLayoutEffect2(() => setMounted(true), []);
-  const container = containerProp || mounted && ((_a2 = globalThis == null ? void 0 : globalThis.document) == null ? void 0 : _a2.body);
-  return container ? ReactDOM$2.createPortal(/* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...portalProps, ref: forwardedRef }), container) : null;
-});
-Portal$2.displayName = PORTAL_NAME$3;
-var useInsertionEffect = React$5[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
-function useControllableState({
-  prop,
-  defaultProp,
-  onChange = () => {
-  },
-  caller
-}) {
-  const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
-    defaultProp,
-    onChange
-  });
-  const isControlled = prop !== void 0;
-  const value = isControlled ? prop : uncontrolledProp;
-  {
-    const isControlledRef = reactExports.useRef(prop !== void 0);
-    reactExports.useEffect(() => {
-      const wasControlled = isControlledRef.current;
-      if (wasControlled !== isControlled) {
-        const from = wasControlled ? "controlled" : "uncontrolled";
-        const to = isControlled ? "controlled" : "uncontrolled";
-        console.warn(
-          `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
-        );
-      }
-      isControlledRef.current = isControlled;
-    }, [isControlled, caller]);
-  }
-  const setValue = reactExports.useCallback(
-    (nextValue) => {
-      var _a2;
-      if (isControlled) {
-        const value2 = isFunction(nextValue) ? nextValue(prop) : nextValue;
-        if (value2 !== prop) {
-          (_a2 = onChangeRef.current) == null ? void 0 : _a2.call(onChangeRef, value2);
-        }
-      } else {
-        setUncontrolledProp(nextValue);
-      }
-    },
-    [isControlled, prop, setUncontrolledProp, onChangeRef]
-  );
-  return [value, setValue];
-}
-function useUncontrolledState({
-  defaultProp,
-  onChange
-}) {
-  const [value, setValue] = reactExports.useState(defaultProp);
-  const prevValueRef = reactExports.useRef(value);
-  const onChangeRef = reactExports.useRef(onChange);
-  useInsertionEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-  reactExports.useEffect(() => {
-    var _a2;
-    if (prevValueRef.current !== value) {
-      (_a2 = onChangeRef.current) == null ? void 0 : _a2.call(onChangeRef, value);
-      prevValueRef.current = value;
-    }
-  }, [value, prevValueRef]);
-  return [value, setValue, onChangeRef];
-}
-function isFunction(value) {
-  return typeof value === "function";
-}
 function usePrevious(value) {
   const ref = reactExports.useRef({ value, previous: value });
   return reactExports.useMemo(() => {
@@ -51274,7 +52022,7 @@ var NAME$1 = "VisuallyHidden";
 var VisuallyHidden = reactExports.forwardRef(
   (props, forwardedRef) => {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.span,
+      Primitive$1.span,
       {
         ...props,
         ref: forwardedRef,
@@ -51284,785 +52032,6 @@ var VisuallyHidden = reactExports.forwardRef(
   }
 );
 VisuallyHidden.displayName = NAME$1;
-var getDefaultParent = function(originalTarget) {
-  if (typeof document === "undefined") {
-    return null;
-  }
-  var sampleTarget = Array.isArray(originalTarget) ? originalTarget[0] : originalTarget;
-  return sampleTarget.ownerDocument.body;
-};
-var counterMap = /* @__PURE__ */ new WeakMap();
-var uncontrolledNodes = /* @__PURE__ */ new WeakMap();
-var markerMap = {};
-var lockCount = 0;
-var unwrapHost = function(node) {
-  return node && (node.host || unwrapHost(node.parentNode));
-};
-var correctTargets = function(parent, targets) {
-  return targets.map(function(target) {
-    if (parent.contains(target)) {
-      return target;
-    }
-    var correctedTarget = unwrapHost(target);
-    if (correctedTarget && parent.contains(correctedTarget)) {
-      return correctedTarget;
-    }
-    console.error("aria-hidden", target, "in not contained inside", parent, ". Doing nothing");
-    return null;
-  }).filter(function(x3) {
-    return Boolean(x3);
-  });
-};
-var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
-  var targets = correctTargets(parentNode, Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
-  if (!markerMap[markerName]) {
-    markerMap[markerName] = /* @__PURE__ */ new WeakMap();
-  }
-  var markerCounter = markerMap[markerName];
-  var hiddenNodes = [];
-  var elementsToKeep = /* @__PURE__ */ new Set();
-  var elementsToStop = new Set(targets);
-  var keep = function(el) {
-    if (!el || elementsToKeep.has(el)) {
-      return;
-    }
-    elementsToKeep.add(el);
-    keep(el.parentNode);
-  };
-  targets.forEach(keep);
-  var deep = function(parent) {
-    if (!parent || elementsToStop.has(parent)) {
-      return;
-    }
-    Array.prototype.forEach.call(parent.children, function(node) {
-      if (elementsToKeep.has(node)) {
-        deep(node);
-      } else {
-        try {
-          var attr = node.getAttribute(controlAttribute);
-          var alreadyHidden = attr !== null && attr !== "false";
-          var counterValue = (counterMap.get(node) || 0) + 1;
-          var markerValue = (markerCounter.get(node) || 0) + 1;
-          counterMap.set(node, counterValue);
-          markerCounter.set(node, markerValue);
-          hiddenNodes.push(node);
-          if (counterValue === 1 && alreadyHidden) {
-            uncontrolledNodes.set(node, true);
-          }
-          if (markerValue === 1) {
-            node.setAttribute(markerName, "true");
-          }
-          if (!alreadyHidden) {
-            node.setAttribute(controlAttribute, "true");
-          }
-        } catch (e) {
-          console.error("aria-hidden: cannot operate on ", node, e);
-        }
-      }
-    });
-  };
-  deep(parentNode);
-  elementsToKeep.clear();
-  lockCount++;
-  return function() {
-    hiddenNodes.forEach(function(node) {
-      var counterValue = counterMap.get(node) - 1;
-      var markerValue = markerCounter.get(node) - 1;
-      counterMap.set(node, counterValue);
-      markerCounter.set(node, markerValue);
-      if (!counterValue) {
-        if (!uncontrolledNodes.has(node)) {
-          node.removeAttribute(controlAttribute);
-        }
-        uncontrolledNodes.delete(node);
-      }
-      if (!markerValue) {
-        node.removeAttribute(markerName);
-      }
-    });
-    lockCount--;
-    if (!lockCount) {
-      counterMap = /* @__PURE__ */ new WeakMap();
-      counterMap = /* @__PURE__ */ new WeakMap();
-      uncontrolledNodes = /* @__PURE__ */ new WeakMap();
-      markerMap = {};
-    }
-  };
-};
-var hideOthers = function(originalTarget, parentNode, markerName) {
-  if (markerName === void 0) {
-    markerName = "data-aria-hidden";
-  }
-  var targets = Array.from(Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
-  var activeParentNode = getDefaultParent(originalTarget);
-  if (!activeParentNode) {
-    return function() {
-      return null;
-    };
-  }
-  targets.push.apply(targets, Array.from(activeParentNode.querySelectorAll("[aria-live], script")));
-  return applyAttributeToOthers(targets, activeParentNode, markerName, "aria-hidden");
-};
-var __assign = function() {
-  __assign = Object.assign || function __assign2(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-      s = arguments[i];
-      for (var p2 in s) if (Object.prototype.hasOwnProperty.call(s, p2)) t[p2] = s[p2];
-    }
-    return t;
-  };
-  return __assign.apply(this, arguments);
-};
-function __rest(s, e) {
-  var t = {};
-  for (var p2 in s) if (Object.prototype.hasOwnProperty.call(s, p2) && e.indexOf(p2) < 0)
-    t[p2] = s[p2];
-  if (s != null && typeof Object.getOwnPropertySymbols === "function")
-    for (var i = 0, p2 = Object.getOwnPropertySymbols(s); i < p2.length; i++) {
-      if (e.indexOf(p2[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p2[i]))
-        t[p2[i]] = s[p2[i]];
-    }
-  return t;
-}
-function __spreadArray(to, from, pack) {
-  if (pack || arguments.length === 2) for (var i = 0, l2 = from.length, ar; i < l2; i++) {
-    if (ar || !(i in from)) {
-      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-      ar[i] = from[i];
-    }
-  }
-  return to.concat(ar || Array.prototype.slice.call(from));
-}
-typeof SuppressedError === "function" ? SuppressedError : function(error, suppressed, message) {
-  var e = new Error(message);
-  return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-};
-var zeroRightClassName = "right-scroll-bar-position";
-var fullWidthClassName = "width-before-scroll-bar";
-var noScrollbarsClassName = "with-scroll-bars-hidden";
-var removedBarSizeVariable = "--removed-body-scroll-bar-size";
-function assignRef(ref, value) {
-  if (typeof ref === "function") {
-    ref(value);
-  } else if (ref) {
-    ref.current = value;
-  }
-  return ref;
-}
-function useCallbackRef(initialValue, callback) {
-  var ref = reactExports.useState(function() {
-    return {
-      // value
-      value: initialValue,
-      // last callback
-      callback,
-      // "memoized" public interface
-      facade: {
-        get current() {
-          return ref.value;
-        },
-        set current(value) {
-          var last2 = ref.value;
-          if (last2 !== value) {
-            ref.value = value;
-            ref.callback(value, last2);
-          }
-        }
-      }
-    };
-  })[0];
-  ref.callback = callback;
-  return ref.facade;
-}
-var useIsomorphicLayoutEffect = typeof window !== "undefined" ? reactExports.useLayoutEffect : reactExports.useEffect;
-var currentValues = /* @__PURE__ */ new WeakMap();
-function useMergeRefs(refs, defaultValue) {
-  var callbackRef = useCallbackRef(null, function(newValue) {
-    return refs.forEach(function(ref) {
-      return assignRef(ref, newValue);
-    });
-  });
-  useIsomorphicLayoutEffect(function() {
-    var oldValue = currentValues.get(callbackRef);
-    if (oldValue) {
-      var prevRefs_1 = new Set(oldValue);
-      var nextRefs_1 = new Set(refs);
-      var current_1 = callbackRef.current;
-      prevRefs_1.forEach(function(ref) {
-        if (!nextRefs_1.has(ref)) {
-          assignRef(ref, null);
-        }
-      });
-      nextRefs_1.forEach(function(ref) {
-        if (!prevRefs_1.has(ref)) {
-          assignRef(ref, current_1);
-        }
-      });
-    }
-    currentValues.set(callbackRef, refs);
-  }, [refs]);
-  return callbackRef;
-}
-function ItoI(a2) {
-  return a2;
-}
-function innerCreateMedium(defaults, middleware) {
-  if (middleware === void 0) {
-    middleware = ItoI;
-  }
-  var buffer = [];
-  var assigned = false;
-  var medium = {
-    read: function() {
-      if (assigned) {
-        throw new Error("Sidecar: could not `read` from an `assigned` medium. `read` could be used only with `useMedium`.");
-      }
-      if (buffer.length) {
-        return buffer[buffer.length - 1];
-      }
-      return defaults;
-    },
-    useMedium: function(data) {
-      var item = middleware(data, assigned);
-      buffer.push(item);
-      return function() {
-        buffer = buffer.filter(function(x3) {
-          return x3 !== item;
-        });
-      };
-    },
-    assignSyncMedium: function(cb) {
-      assigned = true;
-      while (buffer.length) {
-        var cbs = buffer;
-        buffer = [];
-        cbs.forEach(cb);
-      }
-      buffer = {
-        push: function(x3) {
-          return cb(x3);
-        },
-        filter: function() {
-          return buffer;
-        }
-      };
-    },
-    assignMedium: function(cb) {
-      assigned = true;
-      var pendingQueue = [];
-      if (buffer.length) {
-        var cbs = buffer;
-        buffer = [];
-        cbs.forEach(cb);
-        pendingQueue = buffer;
-      }
-      var executeQueue = function() {
-        var cbs2 = pendingQueue;
-        pendingQueue = [];
-        cbs2.forEach(cb);
-      };
-      var cycle = function() {
-        return Promise.resolve().then(executeQueue);
-      };
-      cycle();
-      buffer = {
-        push: function(x3) {
-          pendingQueue.push(x3);
-          cycle();
-        },
-        filter: function(filter) {
-          pendingQueue = pendingQueue.filter(filter);
-          return buffer;
-        }
-      };
-    }
-  };
-  return medium;
-}
-function createSidecarMedium(options) {
-  if (options === void 0) {
-    options = {};
-  }
-  var medium = innerCreateMedium(null);
-  medium.options = __assign({ async: true, ssr: false }, options);
-  return medium;
-}
-var SideCar$1 = function(_a2) {
-  var sideCar = _a2.sideCar, rest = __rest(_a2, ["sideCar"]);
-  if (!sideCar) {
-    throw new Error("Sidecar: please provide `sideCar` property to import the right car");
-  }
-  var Target = sideCar.read();
-  if (!Target) {
-    throw new Error("Sidecar medium not found");
-  }
-  return reactExports.createElement(Target, __assign({}, rest));
-};
-SideCar$1.isSideCarExport = true;
-function exportSidecar(medium, exported) {
-  medium.useMedium(exported);
-  return SideCar$1;
-}
-var effectCar = createSidecarMedium();
-var nothing = function() {
-  return;
-};
-var RemoveScroll = reactExports.forwardRef(function(props, parentRef) {
-  var ref = reactExports.useRef(null);
-  var _a2 = reactExports.useState({
-    onScrollCapture: nothing,
-    onWheelCapture: nothing,
-    onTouchMoveCapture: nothing
-  }), callbacks = _a2[0], setCallbacks = _a2[1];
-  var forwardProps = props.forwardProps, children = props.children, className = props.className, removeScrollBar = props.removeScrollBar, enabled = props.enabled, shards = props.shards, sideCar = props.sideCar, noRelative = props.noRelative, noIsolation = props.noIsolation, inert = props.inert, allowPinchZoom = props.allowPinchZoom, _b2 = props.as, Container = _b2 === void 0 ? "div" : _b2, gapMode = props.gapMode, rest = __rest(props, ["forwardProps", "children", "className", "removeScrollBar", "enabled", "shards", "sideCar", "noRelative", "noIsolation", "inert", "allowPinchZoom", "as", "gapMode"]);
-  var SideCar2 = sideCar;
-  var containerRef = useMergeRefs([ref, parentRef]);
-  var containerProps = __assign(__assign({}, rest), callbacks);
-  return reactExports.createElement(
-    reactExports.Fragment,
-    null,
-    enabled && reactExports.createElement(SideCar2, { sideCar: effectCar, removeScrollBar, shards, noRelative, noIsolation, inert, setCallbacks, allowPinchZoom: !!allowPinchZoom, lockRef: ref, gapMode }),
-    forwardProps ? reactExports.cloneElement(reactExports.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : reactExports.createElement(Container, __assign({}, containerProps, { className, ref: containerRef }), children)
-  );
-});
-RemoveScroll.defaultProps = {
-  enabled: true,
-  removeScrollBar: true,
-  inert: false
-};
-RemoveScroll.classNames = {
-  fullWidth: fullWidthClassName,
-  zeroRight: zeroRightClassName
-};
-var getNonce = function() {
-  if (typeof __webpack_nonce__ !== "undefined") {
-    return __webpack_nonce__;
-  }
-  return void 0;
-};
-function makeStyleTag() {
-  if (!document)
-    return null;
-  var tag = document.createElement("style");
-  tag.type = "text/css";
-  var nonce = getNonce();
-  if (nonce) {
-    tag.setAttribute("nonce", nonce);
-  }
-  return tag;
-}
-function injectStyles(tag, css) {
-  if (tag.styleSheet) {
-    tag.styleSheet.cssText = css;
-  } else {
-    tag.appendChild(document.createTextNode(css));
-  }
-}
-function insertStyleTag(tag) {
-  var head = document.head || document.getElementsByTagName("head")[0];
-  head.appendChild(tag);
-}
-var stylesheetSingleton = function() {
-  var counter = 0;
-  var stylesheet = null;
-  return {
-    add: function(style2) {
-      if (counter == 0) {
-        if (stylesheet = makeStyleTag()) {
-          injectStyles(stylesheet, style2);
-          insertStyleTag(stylesheet);
-        }
-      }
-      counter++;
-    },
-    remove: function() {
-      counter--;
-      if (!counter && stylesheet) {
-        stylesheet.parentNode && stylesheet.parentNode.removeChild(stylesheet);
-        stylesheet = null;
-      }
-    }
-  };
-};
-var styleHookSingleton = function() {
-  var sheet = stylesheetSingleton();
-  return function(styles, isDynamic) {
-    reactExports.useEffect(function() {
-      sheet.add(styles);
-      return function() {
-        sheet.remove();
-      };
-    }, [styles && isDynamic]);
-  };
-};
-var styleSingleton = function() {
-  var useStyle = styleHookSingleton();
-  var Sheet2 = function(_a2) {
-    var styles = _a2.styles, dynamic = _a2.dynamic;
-    useStyle(styles, dynamic);
-    return null;
-  };
-  return Sheet2;
-};
-var zeroGap = {
-  left: 0,
-  top: 0,
-  right: 0,
-  gap: 0
-};
-var parse = function(x3) {
-  return parseInt(x3 || "", 10) || 0;
-};
-var getOffset = function(gapMode) {
-  var cs = window.getComputedStyle(document.body);
-  var left = cs[gapMode === "padding" ? "paddingLeft" : "marginLeft"];
-  var top = cs[gapMode === "padding" ? "paddingTop" : "marginTop"];
-  var right = cs[gapMode === "padding" ? "paddingRight" : "marginRight"];
-  return [parse(left), parse(top), parse(right)];
-};
-var getGapWidth = function(gapMode) {
-  if (gapMode === void 0) {
-    gapMode = "margin";
-  }
-  if (typeof window === "undefined") {
-    return zeroGap;
-  }
-  var offsets = getOffset(gapMode);
-  var documentWidth = document.documentElement.clientWidth;
-  var windowWidth = window.innerWidth;
-  return {
-    left: offsets[0],
-    top: offsets[1],
-    right: offsets[2],
-    gap: Math.max(0, windowWidth - documentWidth + offsets[2] - offsets[0])
-  };
-};
-var Style = styleSingleton();
-var lockAttribute = "data-scroll-locked";
-var getStyles = function(_a2, allowRelative, gapMode, important) {
-  var left = _a2.left, top = _a2.top, right = _a2.right, gap = _a2.gap;
-  if (gapMode === void 0) {
-    gapMode = "margin";
-  }
-  return "\n  .".concat(noScrollbarsClassName, " {\n   overflow: hidden ").concat(important, ";\n   padding-right: ").concat(gap, "px ").concat(important, ";\n  }\n  body[").concat(lockAttribute, "] {\n    overflow: hidden ").concat(important, ";\n    overscroll-behavior: contain;\n    ").concat([
-    allowRelative && "position: relative ".concat(important, ";"),
-    gapMode === "margin" && "\n    padding-left: ".concat(left, "px;\n    padding-top: ").concat(top, "px;\n    padding-right: ").concat(right, "px;\n    margin-left:0;\n    margin-top:0;\n    margin-right: ").concat(gap, "px ").concat(important, ";\n    "),
-    gapMode === "padding" && "padding-right: ".concat(gap, "px ").concat(important, ";")
-  ].filter(Boolean).join(""), "\n  }\n  \n  .").concat(zeroRightClassName, " {\n    right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " {\n    margin-right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(zeroRightClassName, " .").concat(zeroRightClassName, " {\n    right: 0 ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " .").concat(fullWidthClassName, " {\n    margin-right: 0 ").concat(important, ";\n  }\n  \n  body[").concat(lockAttribute, "] {\n    ").concat(removedBarSizeVariable, ": ").concat(gap, "px;\n  }\n");
-};
-var getCurrentUseCounter = function() {
-  var counter = parseInt(document.body.getAttribute(lockAttribute) || "0", 10);
-  return isFinite(counter) ? counter : 0;
-};
-var useLockAttribute = function() {
-  reactExports.useEffect(function() {
-    document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
-    return function() {
-      var newCounter = getCurrentUseCounter() - 1;
-      if (newCounter <= 0) {
-        document.body.removeAttribute(lockAttribute);
-      } else {
-        document.body.setAttribute(lockAttribute, newCounter.toString());
-      }
-    };
-  }, []);
-};
-var RemoveScrollBar = function(_a2) {
-  var noRelative = _a2.noRelative, noImportant = _a2.noImportant, _b2 = _a2.gapMode, gapMode = _b2 === void 0 ? "margin" : _b2;
-  useLockAttribute();
-  var gap = reactExports.useMemo(function() {
-    return getGapWidth(gapMode);
-  }, [gapMode]);
-  return reactExports.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
-};
-var passiveSupported = false;
-if (typeof window !== "undefined") {
-  try {
-    var options = Object.defineProperty({}, "passive", {
-      get: function() {
-        passiveSupported = true;
-        return true;
-      }
-    });
-    window.addEventListener("test", options, options);
-    window.removeEventListener("test", options, options);
-  } catch (err) {
-    passiveSupported = false;
-  }
-}
-var nonPassive = passiveSupported ? { passive: false } : false;
-var alwaysContainsScroll = function(node) {
-  return node.tagName === "TEXTAREA";
-};
-var elementCanBeScrolled = function(node, overflow) {
-  if (!(node instanceof Element)) {
-    return false;
-  }
-  var styles = window.getComputedStyle(node);
-  return (
-    // not-not-scrollable
-    styles[overflow] !== "hidden" && // contains scroll inside self
-    !(styles.overflowY === styles.overflowX && !alwaysContainsScroll(node) && styles[overflow] === "visible")
-  );
-};
-var elementCouldBeVScrolled = function(node) {
-  return elementCanBeScrolled(node, "overflowY");
-};
-var elementCouldBeHScrolled = function(node) {
-  return elementCanBeScrolled(node, "overflowX");
-};
-var locationCouldBeScrolled = function(axis, node) {
-  var ownerDocument = node.ownerDocument;
-  var current = node;
-  do {
-    if (typeof ShadowRoot !== "undefined" && current instanceof ShadowRoot) {
-      current = current.host;
-    }
-    var isScrollable = elementCouldBeScrolled(axis, current);
-    if (isScrollable) {
-      var _a2 = getScrollVariables(axis, current), scrollHeight = _a2[1], clientHeight = _a2[2];
-      if (scrollHeight > clientHeight) {
-        return true;
-      }
-    }
-    current = current.parentNode;
-  } while (current && current !== ownerDocument.body);
-  return false;
-};
-var getVScrollVariables = function(_a2) {
-  var scrollTop = _a2.scrollTop, scrollHeight = _a2.scrollHeight, clientHeight = _a2.clientHeight;
-  return [
-    scrollTop,
-    scrollHeight,
-    clientHeight
-  ];
-};
-var getHScrollVariables = function(_a2) {
-  var scrollLeft = _a2.scrollLeft, scrollWidth = _a2.scrollWidth, clientWidth = _a2.clientWidth;
-  return [
-    scrollLeft,
-    scrollWidth,
-    clientWidth
-  ];
-};
-var elementCouldBeScrolled = function(axis, node) {
-  return axis === "v" ? elementCouldBeVScrolled(node) : elementCouldBeHScrolled(node);
-};
-var getScrollVariables = function(axis, node) {
-  return axis === "v" ? getVScrollVariables(node) : getHScrollVariables(node);
-};
-var getDirectionFactor = function(axis, direction) {
-  return axis === "h" && direction === "rtl" ? -1 : 1;
-};
-var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
-  var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
-  var delta = directionFactor * sourceDelta;
-  var target = event.target;
-  var targetInLock = endTarget.contains(target);
-  var shouldCancelScroll = false;
-  var isDeltaPositive = delta > 0;
-  var availableScroll = 0;
-  var availableScrollTop = 0;
-  do {
-    if (!target) {
-      break;
-    }
-    var _a2 = getScrollVariables(axis, target), position = _a2[0], scroll_1 = _a2[1], capacity = _a2[2];
-    var elementScroll = scroll_1 - capacity - directionFactor * position;
-    if (position || elementScroll) {
-      if (elementCouldBeScrolled(axis, target)) {
-        availableScroll += elementScroll;
-        availableScrollTop += position;
-      }
-    }
-    var parent_1 = target.parentNode;
-    target = parent_1 && parent_1.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? parent_1.host : parent_1;
-  } while (
-    // portaled content
-    !targetInLock && target !== document.body || // self content
-    targetInLock && (endTarget.contains(target) || endTarget === target)
-  );
-  if (isDeltaPositive && (Math.abs(availableScroll) < 1 || false)) {
-    shouldCancelScroll = true;
-  } else if (!isDeltaPositive && (Math.abs(availableScrollTop) < 1 || false)) {
-    shouldCancelScroll = true;
-  }
-  return shouldCancelScroll;
-};
-var getTouchXY = function(event) {
-  return "changedTouches" in event ? [event.changedTouches[0].clientX, event.changedTouches[0].clientY] : [0, 0];
-};
-var getDeltaXY = function(event) {
-  return [event.deltaX, event.deltaY];
-};
-var extractRef = function(ref) {
-  return ref && "current" in ref ? ref.current : ref;
-};
-var deltaCompare = function(x3, y2) {
-  return x3[0] === y2[0] && x3[1] === y2[1];
-};
-var generateStyle = function(id) {
-  return "\n  .block-interactivity-".concat(id, " {pointer-events: none;}\n  .allow-interactivity-").concat(id, " {pointer-events: all;}\n");
-};
-var idCounter = 0;
-var lockStack = [];
-function RemoveScrollSideCar(props) {
-  var shouldPreventQueue = reactExports.useRef([]);
-  var touchStartRef = reactExports.useRef([0, 0]);
-  var activeAxis = reactExports.useRef();
-  var id = reactExports.useState(idCounter++)[0];
-  var Style2 = reactExports.useState(styleSingleton)[0];
-  var lastProps = reactExports.useRef(props);
-  reactExports.useEffect(function() {
-    lastProps.current = props;
-  }, [props]);
-  reactExports.useEffect(function() {
-    if (props.inert) {
-      document.body.classList.add("block-interactivity-".concat(id));
-      var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef), true).filter(Boolean);
-      allow_1.forEach(function(el) {
-        return el.classList.add("allow-interactivity-".concat(id));
-      });
-      return function() {
-        document.body.classList.remove("block-interactivity-".concat(id));
-        allow_1.forEach(function(el) {
-          return el.classList.remove("allow-interactivity-".concat(id));
-        });
-      };
-    }
-    return;
-  }, [props.inert, props.lockRef.current, props.shards]);
-  var shouldCancelEvent = reactExports.useCallback(function(event, parent) {
-    if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) {
-      return !lastProps.current.allowPinchZoom;
-    }
-    var touch = getTouchXY(event);
-    var touchStart = touchStartRef.current;
-    var deltaX = "deltaX" in event ? event.deltaX : touchStart[0] - touch[0];
-    var deltaY = "deltaY" in event ? event.deltaY : touchStart[1] - touch[1];
-    var currentAxis;
-    var target = event.target;
-    var moveDirection = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
-    if ("touches" in event && moveDirection === "h" && target.type === "range") {
-      return false;
-    }
-    var selection = window.getSelection();
-    var anchorNode = selection && selection.anchorNode;
-    var isTouchingSelection = anchorNode ? anchorNode === target || anchorNode.contains(target) : false;
-    if (isTouchingSelection) {
-      return false;
-    }
-    var canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
-    if (!canBeScrolledInMainDirection) {
-      return true;
-    }
-    if (canBeScrolledInMainDirection) {
-      currentAxis = moveDirection;
-    } else {
-      currentAxis = moveDirection === "v" ? "h" : "v";
-      canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
-    }
-    if (!canBeScrolledInMainDirection) {
-      return false;
-    }
-    if (!activeAxis.current && "changedTouches" in event && (deltaX || deltaY)) {
-      activeAxis.current = currentAxis;
-    }
-    if (!currentAxis) {
-      return true;
-    }
-    var cancelingAxis = activeAxis.current || currentAxis;
-    return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY);
-  }, []);
-  var shouldPrevent = reactExports.useCallback(function(_event) {
-    var event = _event;
-    if (!lockStack.length || lockStack[lockStack.length - 1] !== Style2) {
-      return;
-    }
-    var delta = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
-    var sourceEvent = shouldPreventQueue.current.filter(function(e) {
-      return e.name === event.type && (e.target === event.target || event.target === e.shadowParent) && deltaCompare(e.delta, delta);
-    })[0];
-    if (sourceEvent && sourceEvent.should) {
-      if (event.cancelable) {
-        event.preventDefault();
-      }
-      return;
-    }
-    if (!sourceEvent) {
-      var shardNodes = (lastProps.current.shards || []).map(extractRef).filter(Boolean).filter(function(node) {
-        return node.contains(event.target);
-      });
-      var shouldStop = shardNodes.length > 0 ? shouldCancelEvent(event, shardNodes[0]) : !lastProps.current.noIsolation;
-      if (shouldStop) {
-        if (event.cancelable) {
-          event.preventDefault();
-        }
-      }
-    }
-  }, []);
-  var shouldCancel = reactExports.useCallback(function(name, delta, target, should) {
-    var event = { name, delta, target, should, shadowParent: getOutermostShadowParent(target) };
-    shouldPreventQueue.current.push(event);
-    setTimeout(function() {
-      shouldPreventQueue.current = shouldPreventQueue.current.filter(function(e) {
-        return e !== event;
-      });
-    }, 1);
-  }, []);
-  var scrollTouchStart = reactExports.useCallback(function(event) {
-    touchStartRef.current = getTouchXY(event);
-    activeAxis.current = void 0;
-  }, []);
-  var scrollWheel = reactExports.useCallback(function(event) {
-    shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
-  }, []);
-  var scrollTouchMove = reactExports.useCallback(function(event) {
-    shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
-  }, []);
-  reactExports.useEffect(function() {
-    lockStack.push(Style2);
-    props.setCallbacks({
-      onScrollCapture: scrollWheel,
-      onWheelCapture: scrollWheel,
-      onTouchMoveCapture: scrollTouchMove
-    });
-    document.addEventListener("wheel", shouldPrevent, nonPassive);
-    document.addEventListener("touchmove", shouldPrevent, nonPassive);
-    document.addEventListener("touchstart", scrollTouchStart, nonPassive);
-    return function() {
-      lockStack = lockStack.filter(function(inst) {
-        return inst !== Style2;
-      });
-      document.removeEventListener("wheel", shouldPrevent, nonPassive);
-      document.removeEventListener("touchmove", shouldPrevent, nonPassive);
-      document.removeEventListener("touchstart", scrollTouchStart, nonPassive);
-    };
-  }, []);
-  var removeScrollBar = props.removeScrollBar, inert = props.inert;
-  return reactExports.createElement(
-    reactExports.Fragment,
-    null,
-    inert ? reactExports.createElement(Style2, { styles: generateStyle(id) }) : null,
-    removeScrollBar ? reactExports.createElement(RemoveScrollBar, { noRelative: props.noRelative, gapMode: props.gapMode }) : null
-  );
-}
-function getOutermostShadowParent(node) {
-  var shadowParent = null;
-  while (node !== null) {
-    if (node instanceof ShadowRoot) {
-      shadowParent = node.host;
-      node = node.host;
-    }
-    node = node.parentNode;
-  }
-  return shadowParent;
-}
-const SideCar = exportSidecar(effectCar, RemoveScrollSideCar);
-var ReactRemoveScroll = reactExports.forwardRef(function(props, ref) {
-  return reactExports.createElement(RemoveScroll, __assign({}, props, { ref, sideCar: SideCar }));
-});
-ReactRemoveScroll.classNames = RemoveScroll.classNames;
 var OPEN_KEYS = [" ", "Enter", "ArrowUp", "ArrowDown"];
 var SELECTION_KEYS = [" ", "Enter"];
 var SELECT_NAME = "Select";
@@ -52173,12 +52142,12 @@ var Select$1 = (props) => {
   ) });
 };
 Select$1.displayName = SELECT_NAME;
-var TRIGGER_NAME$3 = "SelectTrigger";
+var TRIGGER_NAME$2 = "SelectTrigger";
 var SelectTrigger$1 = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, disabled = false, ...triggerProps } = props;
     const popperScope = usePopperScope(__scopeSelect);
-    const context = useSelectContext(TRIGGER_NAME$3, __scopeSelect);
+    const context = useSelectContext(TRIGGER_NAME$2, __scopeSelect);
     const isDisabled = context.disabled || disabled;
     const composedRefs = useComposedRefs(forwardedRef, context.onTriggerChange);
     const getItems = useCollection$1(__scopeSelect);
@@ -52204,7 +52173,7 @@ var SelectTrigger$1 = reactExports.forwardRef(
       }
     };
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Anchor, { asChild: true, ...popperScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.button,
+      Primitive$1.button,
       {
         type: "button",
         role: "combobox",
@@ -52250,7 +52219,7 @@ var SelectTrigger$1 = reactExports.forwardRef(
     ) });
   }
 );
-SelectTrigger$1.displayName = TRIGGER_NAME$3;
+SelectTrigger$1.displayName = TRIGGER_NAME$2;
 var VALUE_NAME = "SelectValue";
 var SelectValue$1 = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -52263,7 +52232,7 @@ var SelectValue$1 = reactExports.forwardRef(
       onValueNodeHasChildrenChange(hasChildren);
     }, [onValueNodeHasChildrenChange, hasChildren]);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.span,
+      Primitive$1.span,
       {
         ...valueProps,
         ref: composedRefs,
@@ -52278,19 +52247,19 @@ var ICON_NAME = "SelectIcon";
 var SelectIcon = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, children, ...iconProps } = props;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.span, { "aria-hidden": true, ...iconProps, ref: forwardedRef, children: children || "▼" });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.span, { "aria-hidden": true, ...iconProps, ref: forwardedRef, children: children || "▼" });
   }
 );
 SelectIcon.displayName = ICON_NAME;
-var PORTAL_NAME$2 = "SelectPortal";
+var PORTAL_NAME$1 = "SelectPortal";
 var SelectPortal = (props) => {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$2, { asChild: true, ...props });
 };
-SelectPortal.displayName = PORTAL_NAME$2;
-var CONTENT_NAME$3 = "SelectContent";
+SelectPortal.displayName = PORTAL_NAME$1;
+var CONTENT_NAME$2 = "SelectContent";
 var SelectContent$1 = reactExports.forwardRef(
   (props, forwardedRef) => {
-    const context = useSelectContext(CONTENT_NAME$3, props.__scopeSelect);
+    const context = useSelectContext(CONTENT_NAME$2, props.__scopeSelect);
     const [fragment, setFragment] = reactExports.useState();
     useLayoutEffect2(() => {
       setFragment(new DocumentFragment());
@@ -52305,11 +52274,11 @@ var SelectContent$1 = reactExports.forwardRef(
     return /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContentImpl, { ...props, ref: forwardedRef });
   }
 );
-SelectContent$1.displayName = CONTENT_NAME$3;
+SelectContent$1.displayName = CONTENT_NAME$2;
 var CONTENT_MARGIN = 10;
-var [SelectContentProvider, useSelectContentContext] = createSelectContext(CONTENT_NAME$3);
+var [SelectContentProvider, useSelectContentContext] = createSelectContext(CONTENT_NAME$2);
 var CONTENT_IMPL_NAME = "SelectContentImpl";
-var Slot$1 = /* @__PURE__ */ createSlot("SelectContent.RemoveScroll");
+var Slot = /* @__PURE__ */ createSlot("SelectContent.RemoveScroll");
 var SelectContentImpl = reactExports.forwardRef(
   (props, forwardedRef) => {
     const {
@@ -52333,7 +52302,7 @@ var SelectContentImpl = reactExports.forwardRef(
       //
       ...contentProps
     } = props;
-    const context = useSelectContext(CONTENT_NAME$3, __scopeSelect);
+    const context = useSelectContext(CONTENT_NAME$2, __scopeSelect);
     const [content, setContent] = reactExports.useState(null);
     const [viewport, setViewport] = reactExports.useState(null);
     const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
@@ -52473,7 +52442,7 @@ var SelectContentImpl = reactExports.forwardRef(
         position,
         isPositioned,
         searchRef,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(ReactRemoveScroll, { as: Slot$1, allowPinchZoom: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(ReactRemoveScroll, { as: Slot, allowPinchZoom: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           FocusScope,
           {
             asChild: true,
@@ -52548,8 +52517,8 @@ SelectContentImpl.displayName = CONTENT_IMPL_NAME;
 var ITEM_ALIGNED_POSITION_NAME = "SelectItemAlignedPosition";
 var SelectItemAlignedPosition = reactExports.forwardRef((props, forwardedRef) => {
   const { __scopeSelect, onPlaced, ...popperProps } = props;
-  const context = useSelectContext(CONTENT_NAME$3, __scopeSelect);
-  const contentContext = useSelectContentContext(CONTENT_NAME$3, __scopeSelect);
+  const context = useSelectContext(CONTENT_NAME$2, __scopeSelect);
+  const contentContext = useSelectContentContext(CONTENT_NAME$2, __scopeSelect);
   const [contentWrapper, setContentWrapper] = reactExports.useState(null);
   const [content, setContent] = reactExports.useState(null);
   const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
@@ -52689,7 +52658,7 @@ var SelectItemAlignedPosition = reactExports.forwardRef((props, forwardedRef) =>
             zIndex: contentZIndex
           },
           children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            Primitive.div,
+            Primitive$1.div,
             {
               ...popperProps,
               ref: composedRefs,
@@ -52719,7 +52688,7 @@ var SelectPopperPosition = reactExports.forwardRef((props, forwardedRef) => {
   } = props;
   const popperScope = usePopperScope(__scopeSelect);
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Content$2,
+    Content$1,
     {
       ...popperScope,
       ...popperProps,
@@ -52743,7 +52712,7 @@ var SelectPopperPosition = reactExports.forwardRef((props, forwardedRef) => {
   );
 });
 SelectPopperPosition.displayName = POPPER_POSITION_NAME;
-var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME$3, {});
+var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME$2, {});
 var VIEWPORT_NAME = "SelectViewport";
 var SelectViewport = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -52763,7 +52732,7 @@ var SelectViewport = reactExports.forwardRef(
         }
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Collection$1.Slot, { scope: __scopeSelect, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Primitive.div,
+        Primitive$1.div,
         {
           "data-radix-select-viewport": "",
           role: "presentation",
@@ -52818,7 +52787,7 @@ var SelectGroup = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, ...groupProps } = props;
     const groupId = useId();
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(SelectGroupContextProvider, { scope: __scopeSelect, id: groupId, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { role: "group", "aria-labelledby": groupId, ...groupProps, ref: forwardedRef }) });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(SelectGroupContextProvider, { scope: __scopeSelect, id: groupId, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.div, { role: "group", "aria-labelledby": groupId, ...groupProps, ref: forwardedRef }) });
   }
 );
 SelectGroup.displayName = GROUP_NAME$1;
@@ -52827,7 +52796,7 @@ var SelectLabel = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, ...labelProps } = props;
     const groupContext = useSelectGroupContext(LABEL_NAME, __scopeSelect);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { id: groupContext.id, ...labelProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.div, { id: groupContext.id, ...labelProps, ref: forwardedRef });
   }
 );
 SelectLabel.displayName = LABEL_NAME;
@@ -52886,7 +52855,7 @@ var SelectItem$1 = reactExports.forwardRef(
             disabled,
             textValue,
             children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-              Primitive.div,
+              Primitive$1.div,
               {
                 role: "option",
                 "aria-labelledby": textId,
@@ -52969,7 +52938,7 @@ var SelectItemText = reactExports.forwardRef(
       return () => onNativeOptionRemove(nativeOption);
     }, [onNativeOptionAdd, onNativeOptionRemove, nativeOption]);
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.span, { id: itemContext.textId, ...itemTextProps, ref: composedRefs }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.span, { id: itemContext.textId, ...itemTextProps, ref: composedRefs }),
       itemContext.isSelected && context.valueNode && !context.valueNodeHasChildren ? reactDomExports.createPortal(itemTextProps.children, context.valueNode) : null
     ] });
   }
@@ -52980,7 +52949,7 @@ var SelectItemIndicator = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, ...itemIndicatorProps } = props;
     const itemContext = useSelectItemContext(ITEM_INDICATOR_NAME, __scopeSelect);
-    return itemContext.isSelected ? /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.span, { "aria-hidden": true, ...itemIndicatorProps, ref: forwardedRef }) : null;
+    return itemContext.isSelected ? /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.span, { "aria-hidden": true, ...itemIndicatorProps, ref: forwardedRef }) : null;
   }
 );
 SelectItemIndicator.displayName = ITEM_INDICATOR_NAME;
@@ -53071,7 +53040,7 @@ var SelectScrollButtonImpl = reactExports.forwardRef((props, forwardedRef) => {
     (_a2 = activeItem == null ? void 0 : activeItem.ref.current) == null ? void 0 : _a2.scrollIntoView({ block: "nearest" });
   }, [getItems]);
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive.div,
+    Primitive$1.div,
     {
       "aria-hidden": true,
       ...scrollIndicatorProps,
@@ -53099,7 +53068,7 @@ var SEPARATOR_NAME = "SelectSeparator";
 var SelectSeparator = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, ...separatorProps } = props;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { "aria-hidden": true, ...separatorProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive$1.div, { "aria-hidden": true, ...separatorProps, ref: forwardedRef });
   }
 );
 SelectSeparator.displayName = SEPARATOR_NAME;
@@ -53136,7 +53105,7 @@ var SelectBubbleInput = reactExports.forwardRef(
       }
     }, [prevValue, value]);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.select,
+      Primitive$1.select,
       {
         ...props,
         style: { ...VISUALLY_HIDDEN_STYLES, ...props.style },
@@ -53191,10 +53160,10 @@ function wrapArray$1(array, startIndex) {
   return array.map((_2, index2) => array[(startIndex + index2) % array.length]);
 }
 var Root2$2 = Select$1;
-var Trigger$2 = SelectTrigger$1;
+var Trigger$1 = SelectTrigger$1;
 var Value = SelectValue$1;
 var Icon = SelectIcon;
-var Portal$1 = SelectPortal;
+var Portal = SelectPortal;
 var Content2$1 = SelectContent$1;
 var Viewport = SelectViewport;
 var Item$1 = SelectItem$1;
@@ -53219,7 +53188,7 @@ function SelectTrigger({
   ...props
 }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    Trigger$2,
+    Trigger$1,
     {
       "data-slot": "select-trigger",
       "data-size": size2,
@@ -53241,7 +53210,7 @@ function SelectContent({
   position = "popper",
   ...props
 }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$1, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
     Content2$1,
     {
       "data-slot": "select-content",
@@ -53321,6 +53290,2347 @@ function SelectScrollDownButton({
       ),
       ...props,
       children: /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { className: "size-4" })
+    }
+  );
+}
+function Table({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-slot": "table-container",
+      className: "relative w-full overflow-x-auto",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "table",
+        {
+          "data-slot": "table",
+          className: cn("w-full caption-bottom text-sm", className),
+          ...props
+        }
+      )
+    }
+  );
+}
+function TableHeader({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "thead",
+    {
+      "data-slot": "table-header",
+      className: cn("[&_tr]:border-b", className),
+      ...props
+    }
+  );
+}
+function TableBody({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "tbody",
+    {
+      "data-slot": "table-body",
+      className: cn("[&_tr:last-child]:border-0", className),
+      ...props
+    }
+  );
+}
+function TableRow({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "tr",
+    {
+      "data-slot": "table-row",
+      className: cn(
+        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function TableHead({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "th",
+    {
+      "data-slot": "table-head",
+      className: cn(
+        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function TableCell({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "td",
+    {
+      "data-slot": "table-cell",
+      className: cn(
+        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className
+      ),
+      ...props
+    }
+  );
+}
+var ENTRY_FOCUS = "rovingFocusGroup.onEntryFocus";
+var EVENT_OPTIONS = { bubbles: false, cancelable: true };
+var GROUP_NAME = "RovingFocusGroup";
+var [Collection, useCollection, createCollectionScope] = createCollection(GROUP_NAME);
+var [createRovingFocusGroupContext, createRovingFocusGroupScope] = createContextScope(
+  GROUP_NAME,
+  [createCollectionScope]
+);
+var [RovingFocusProvider, useRovingFocusContext] = createRovingFocusGroupContext(GROUP_NAME);
+var RovingFocusGroup = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Provider, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Slot, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(RovingFocusGroupImpl, { ...props, ref: forwardedRef }) }) });
+  }
+);
+RovingFocusGroup.displayName = GROUP_NAME;
+var RovingFocusGroupImpl = reactExports.forwardRef((props, forwardedRef) => {
+  const {
+    __scopeRovingFocusGroup,
+    orientation,
+    loop = false,
+    dir,
+    currentTabStopId: currentTabStopIdProp,
+    defaultCurrentTabStopId,
+    onCurrentTabStopIdChange,
+    onEntryFocus,
+    preventScrollOnEntryFocus = false,
+    ...groupProps
+  } = props;
+  const ref = reactExports.useRef(null);
+  const composedRefs = useComposedRefs(forwardedRef, ref);
+  const direction = useDirection(dir);
+  const [currentTabStopId, setCurrentTabStopId] = useControllableState({
+    prop: currentTabStopIdProp,
+    defaultProp: defaultCurrentTabStopId ?? null,
+    onChange: onCurrentTabStopIdChange,
+    caller: GROUP_NAME
+  });
+  const [isTabbingBackOut, setIsTabbingBackOut] = reactExports.useState(false);
+  const handleEntryFocus = useCallbackRef$1(onEntryFocus);
+  const getItems = useCollection(__scopeRovingFocusGroup);
+  const isClickFocusRef = reactExports.useRef(false);
+  const [focusableItemsCount, setFocusableItemsCount] = reactExports.useState(0);
+  reactExports.useEffect(() => {
+    const node = ref.current;
+    if (node) {
+      node.addEventListener(ENTRY_FOCUS, handleEntryFocus);
+      return () => node.removeEventListener(ENTRY_FOCUS, handleEntryFocus);
+    }
+  }, [handleEntryFocus]);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    RovingFocusProvider,
+    {
+      scope: __scopeRovingFocusGroup,
+      orientation,
+      dir: direction,
+      loop,
+      currentTabStopId,
+      onItemFocus: reactExports.useCallback(
+        (tabStopId) => setCurrentTabStopId(tabStopId),
+        [setCurrentTabStopId]
+      ),
+      onItemShiftTab: reactExports.useCallback(() => setIsTabbingBackOut(true), []),
+      onFocusableItemAdd: reactExports.useCallback(
+        () => setFocusableItemsCount((prevCount) => prevCount + 1),
+        []
+      ),
+      onFocusableItemRemove: reactExports.useCallback(
+        () => setFocusableItemsCount((prevCount) => prevCount - 1),
+        []
+      ),
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Primitive$1.div,
+        {
+          tabIndex: isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0,
+          "data-orientation": orientation,
+          ...groupProps,
+          ref: composedRefs,
+          style: { outline: "none", ...props.style },
+          onMouseDown: composeEventHandlers(props.onMouseDown, () => {
+            isClickFocusRef.current = true;
+          }),
+          onFocus: composeEventHandlers(props.onFocus, (event) => {
+            const isKeyboardFocus = !isClickFocusRef.current;
+            if (event.target === event.currentTarget && isKeyboardFocus && !isTabbingBackOut) {
+              const entryFocusEvent = new CustomEvent(ENTRY_FOCUS, EVENT_OPTIONS);
+              event.currentTarget.dispatchEvent(entryFocusEvent);
+              if (!entryFocusEvent.defaultPrevented) {
+                const items = getItems().filter((item) => item.focusable);
+                const activeItem = items.find((item) => item.active);
+                const currentItem = items.find((item) => item.id === currentTabStopId);
+                const candidateItems = [activeItem, currentItem, ...items].filter(
+                  Boolean
+                );
+                const candidateNodes = candidateItems.map((item) => item.ref.current);
+                focusFirst(candidateNodes, preventScrollOnEntryFocus);
+              }
+            }
+            isClickFocusRef.current = false;
+          }),
+          onBlur: composeEventHandlers(props.onBlur, () => setIsTabbingBackOut(false))
+        }
+      )
+    }
+  );
+});
+var ITEM_NAME = "RovingFocusGroupItem";
+var RovingFocusGroupItem = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const {
+      __scopeRovingFocusGroup,
+      focusable = true,
+      active = false,
+      tabStopId,
+      children,
+      ...itemProps
+    } = props;
+    const autoId = useId();
+    const id = tabStopId || autoId;
+    const context = useRovingFocusContext(ITEM_NAME, __scopeRovingFocusGroup);
+    const isCurrentTabStop = context.currentTabStopId === id;
+    const getItems = useCollection(__scopeRovingFocusGroup);
+    const { onFocusableItemAdd, onFocusableItemRemove, currentTabStopId } = context;
+    reactExports.useEffect(() => {
+      if (focusable) {
+        onFocusableItemAdd();
+        return () => onFocusableItemRemove();
+      }
+    }, [focusable, onFocusableItemAdd, onFocusableItemRemove]);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Collection.ItemSlot,
+      {
+        scope: __scopeRovingFocusGroup,
+        id,
+        focusable,
+        active,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Primitive$1.span,
+          {
+            tabIndex: isCurrentTabStop ? 0 : -1,
+            "data-orientation": context.orientation,
+            ...itemProps,
+            ref: forwardedRef,
+            onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
+              if (!focusable) event.preventDefault();
+              else context.onItemFocus(id);
+            }),
+            onFocus: composeEventHandlers(props.onFocus, () => context.onItemFocus(id)),
+            onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
+              if (event.key === "Tab" && event.shiftKey) {
+                context.onItemShiftTab();
+                return;
+              }
+              if (event.target !== event.currentTarget) return;
+              const focusIntent = getFocusIntent(event, context.orientation, context.dir);
+              if (focusIntent !== void 0) {
+                if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+                event.preventDefault();
+                const items = getItems().filter((item) => item.focusable);
+                let candidateNodes = items.map((item) => item.ref.current);
+                if (focusIntent === "last") candidateNodes.reverse();
+                else if (focusIntent === "prev" || focusIntent === "next") {
+                  if (focusIntent === "prev") candidateNodes.reverse();
+                  const currentIndex = candidateNodes.indexOf(event.currentTarget);
+                  candidateNodes = context.loop ? wrapArray(candidateNodes, currentIndex + 1) : candidateNodes.slice(currentIndex + 1);
+                }
+                setTimeout(() => focusFirst(candidateNodes));
+              }
+            }),
+            children: typeof children === "function" ? children({ isCurrentTabStop, hasTabStop: currentTabStopId != null }) : children
+          }
+        )
+      }
+    );
+  }
+);
+RovingFocusGroupItem.displayName = ITEM_NAME;
+var MAP_KEY_TO_FOCUS_INTENT = {
+  ArrowLeft: "prev",
+  ArrowUp: "prev",
+  ArrowRight: "next",
+  ArrowDown: "next",
+  PageUp: "first",
+  Home: "first",
+  PageDown: "last",
+  End: "last"
+};
+function getDirectionAwareKey(key, dir) {
+  if (dir !== "rtl") return key;
+  return key === "ArrowLeft" ? "ArrowRight" : key === "ArrowRight" ? "ArrowLeft" : key;
+}
+function getFocusIntent(event, orientation, dir) {
+  const key = getDirectionAwareKey(event.key, dir);
+  if (orientation === "vertical" && ["ArrowLeft", "ArrowRight"].includes(key)) return void 0;
+  if (orientation === "horizontal" && ["ArrowUp", "ArrowDown"].includes(key)) return void 0;
+  return MAP_KEY_TO_FOCUS_INTENT[key];
+}
+function focusFirst(candidates, preventScroll = false) {
+  const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
+  for (const candidate of candidates) {
+    if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
+    candidate.focus({ preventScroll });
+    if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
+  }
+}
+function wrapArray(array, startIndex) {
+  return array.map((_2, index2) => array[(startIndex + index2) % array.length]);
+}
+var Root$2 = RovingFocusGroup;
+var Item = RovingFocusGroupItem;
+var TABS_NAME = "Tabs";
+var [createTabsContext] = createContextScope(TABS_NAME, [
+  createRovingFocusGroupScope
+]);
+var useRovingFocusGroupScope = createRovingFocusGroupScope();
+var [TabsProvider, useTabsContext] = createTabsContext(TABS_NAME);
+var Tabs$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const {
+      __scopeTabs,
+      value: valueProp,
+      onValueChange,
+      defaultValue,
+      orientation = "horizontal",
+      dir,
+      activationMode = "automatic",
+      ...tabsProps
+    } = props;
+    const direction = useDirection(dir);
+    const [value, setValue] = useControllableState({
+      prop: valueProp,
+      onChange: onValueChange,
+      defaultProp: defaultValue ?? "",
+      caller: TABS_NAME
+    });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      TabsProvider,
+      {
+        scope: __scopeTabs,
+        baseId: useId(),
+        value,
+        onValueChange: setValue,
+        orientation,
+        dir: direction,
+        activationMode,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Primitive$1.div,
+          {
+            dir: direction,
+            "data-orientation": orientation,
+            ...tabsProps,
+            ref: forwardedRef
+          }
+        )
+      }
+    );
+  }
+);
+Tabs$1.displayName = TABS_NAME;
+var TAB_LIST_NAME = "TabsList";
+var TabsList$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeTabs, loop = true, ...listProps } = props;
+    const context = useTabsContext(TAB_LIST_NAME, __scopeTabs);
+    const rovingFocusGroupScope = useRovingFocusGroupScope(__scopeTabs);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Root$2,
+      {
+        asChild: true,
+        ...rovingFocusGroupScope,
+        orientation: context.orientation,
+        dir: context.dir,
+        loop,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Primitive$1.div,
+          {
+            role: "tablist",
+            "aria-orientation": context.orientation,
+            ...listProps,
+            ref: forwardedRef
+          }
+        )
+      }
+    );
+  }
+);
+TabsList$1.displayName = TAB_LIST_NAME;
+var TRIGGER_NAME$1 = "TabsTrigger";
+var TabsTrigger$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeTabs, value, disabled = false, ...triggerProps } = props;
+    const context = useTabsContext(TRIGGER_NAME$1, __scopeTabs);
+    const rovingFocusGroupScope = useRovingFocusGroupScope(__scopeTabs);
+    const triggerId = makeTriggerId(context.baseId, value);
+    const contentId = makeContentId(context.baseId, value);
+    const isSelected = value === context.value;
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Item,
+      {
+        asChild: true,
+        ...rovingFocusGroupScope,
+        focusable: !disabled,
+        active: isSelected,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Primitive$1.button,
+          {
+            type: "button",
+            role: "tab",
+            "aria-selected": isSelected,
+            "aria-controls": contentId,
+            "data-state": isSelected ? "active" : "inactive",
+            "data-disabled": disabled ? "" : void 0,
+            disabled,
+            id: triggerId,
+            ...triggerProps,
+            ref: forwardedRef,
+            onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
+              if (!disabled && event.button === 0 && event.ctrlKey === false) {
+                context.onValueChange(value);
+              } else {
+                event.preventDefault();
+              }
+            }),
+            onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
+              if ([" ", "Enter"].includes(event.key)) context.onValueChange(value);
+            }),
+            onFocus: composeEventHandlers(props.onFocus, () => {
+              const isAutomaticActivation = context.activationMode !== "manual";
+              if (!isSelected && !disabled && isAutomaticActivation) {
+                context.onValueChange(value);
+              }
+            })
+          }
+        )
+      }
+    );
+  }
+);
+TabsTrigger$1.displayName = TRIGGER_NAME$1;
+var CONTENT_NAME$1 = "TabsContent";
+var TabsContent$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeTabs, value, forceMount, children, ...contentProps } = props;
+    const context = useTabsContext(CONTENT_NAME$1, __scopeTabs);
+    const triggerId = makeTriggerId(context.baseId, value);
+    const contentId = makeContentId(context.baseId, value);
+    const isSelected = value === context.value;
+    const isMountAnimationPreventedRef = reactExports.useRef(isSelected);
+    reactExports.useEffect(() => {
+      const rAF = requestAnimationFrame(() => isMountAnimationPreventedRef.current = false);
+      return () => cancelAnimationFrame(rAF);
+    }, []);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || isSelected, children: ({ present }) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Primitive$1.div,
+      {
+        "data-state": isSelected ? "active" : "inactive",
+        "data-orientation": context.orientation,
+        role: "tabpanel",
+        "aria-labelledby": triggerId,
+        hidden: !present,
+        id: contentId,
+        tabIndex: 0,
+        ...contentProps,
+        ref: forwardedRef,
+        style: {
+          ...props.style,
+          animationDuration: isMountAnimationPreventedRef.current ? "0s" : void 0
+        },
+        children: present && children
+      }
+    ) });
+  }
+);
+TabsContent$1.displayName = CONTENT_NAME$1;
+function makeTriggerId(baseId, value) {
+  return `${baseId}-trigger-${value}`;
+}
+function makeContentId(baseId, value) {
+  return `${baseId}-content-${value}`;
+}
+var Root2$1 = Tabs$1;
+var List = TabsList$1;
+var Trigger = TabsTrigger$1;
+var Content = TabsContent$1;
+function Tabs({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Root2$1,
+    {
+      "data-slot": "tabs",
+      className: cn("flex flex-col gap-2", className),
+      ...props
+    }
+  );
+}
+function TabsList({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    List,
+    {
+      "data-slot": "tabs-list",
+      className: cn(
+        "bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function TabsTrigger({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Trigger,
+    {
+      "data-slot": "tabs-trigger",
+      className: cn(
+        "data-[state=active]:bg-background dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function TabsContent({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Content,
+    {
+      "data-slot": "tabs-content",
+      className: cn("flex-1 outline-none", className),
+      ...props
+    }
+  );
+}
+function readDeviceId() {
+  var _a2;
+  return ((_a2 = loadEnterpriseActivation()) == null ? void 0 : _a2.deviceId) ?? "";
+}
+function formatVnd$n(amount) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+function formatDateTime(ns) {
+  const ms2 = Number(ns) / 1e6;
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(ms2));
+}
+const PAYMENT_LABELS = {
+  [PaymentStatus.paid]: "Đã thanh toán",
+  [PaymentStatus.unpaid]: "Chưa thanh toán",
+  [PaymentStatus.expired]: "Hết hạn",
+  [PaymentStatus.refunded]: "Đã hoàn tiền"
+};
+const INVOICE_LABELS = {
+  [InvoiceStatus.none]: "Chưa phát hành",
+  [InvoiceStatus.invoiced]: "Đã phát hành",
+  [InvoiceStatus.failed]: "Thất bại"
+};
+const PAYMENT_OPTIONS = [
+  { value: PaymentStatus.paid, label: "Đã thanh toán" },
+  { value: PaymentStatus.unpaid, label: "Chưa thanh toán" },
+  { value: PaymentStatus.expired, label: "Hết hạn" },
+  { value: PaymentStatus.refunded, label: "Đã hoàn tiền" }
+];
+function paymentBadgeClass(status) {
+  switch (status) {
+    case PaymentStatus.paid:
+      return "badge-success";
+    case PaymentStatus.unpaid:
+      return "badge-warning";
+    case PaymentStatus.expired:
+      return "badge-destructive";
+    default:
+      return "badge-info";
+  }
+}
+function invoiceBadgeClass(status) {
+  switch (status) {
+    case InvoiceStatus.invoiced:
+      return "badge-success";
+    case InvoiceStatus.failed:
+      return "badge-destructive";
+    default:
+      return "badge-info";
+  }
+}
+function AccountingPage() {
+  const deviceId = readDeviceId();
+  const [mode, setMode] = reactExports.useState("code");
+  const [codeInput, setCodeInput] = reactExports.useState("");
+  const [emailInput, setEmailInput] = reactExports.useState("");
+  const [statusFilter, setStatusFilter] = reactExports.useState("");
+  const [submittedCode, setSubmittedCode] = reactExports.useState(null);
+  const [submittedEmail, setSubmittedEmail] = reactExports.useState(null);
+  const [cleanupCode, setCleanupCode] = reactExports.useState("");
+  const [invoiceManualCode, setInvoiceManualCode] = reactExports.useState("");
+  const [invoiceOrderId, setInvoiceOrderId] = reactExports.useState(null);
+  const [invoiceId, setInvoiceId] = reactExports.useState("");
+  const [pdfUrl, setPdfUrl] = reactExports.useState("");
+  const [imageOrder, setImageOrder] = reactExports.useState(null);
+  const orderByCode = useGetOrder(submittedCode ?? void 0, deviceId);
+  const ordersByEmail = useOrdersByEmail(submittedEmail, deviceId);
+  const allOrders = useOrders(deviceId);
+  const cleanupMutation = useCleanupOrderByDevice(deviceId);
+  const invoiceMutation = useIssueInvoiceByDevice(deviceId);
+  let results = [];
+  let isLoading = false;
+  let isError = false;
+  if (mode === "code") {
+    isLoading = orderByCode.isLoading;
+    isError = orderByCode.isError;
+    if (orderByCode.data) results = [orderByCode.data];
+  } else if (mode === "email") {
+    isLoading = ordersByEmail.isLoading;
+    isError = ordersByEmail.isError;
+    results = ordersByEmail.data ?? [];
+  } else {
+    isLoading = allOrders.isLoading;
+    isError = allOrders.isError;
+    results = (allOrders.data ?? []).filter(
+      (o) => !statusFilter || o.paymentStatus === statusFilter
+    );
+  }
+  function handleSearch(e) {
+    e.preventDefault();
+    if (mode === "code") {
+      setSubmittedCode(codeInput.trim() || null);
+      setSubmittedEmail(null);
+    } else if (mode === "email") {
+      setSubmittedEmail(emailInput.trim().toLowerCase() || null);
+      setSubmittedCode(null);
+    }
+  }
+  async function handleCleanup(orderId) {
+    try {
+      await cleanupMutation.mutateAsync(orderId);
+      ue.success("Đã dọn dẹp đơn.");
+    } catch (err) {
+      ue.error(
+        err instanceof Error ? err.message : "Không thể dọn dẹp đơn."
+      );
+    }
+  }
+  async function handleCleanupByCode(e) {
+    e.preventDefault();
+    if (!cleanupCode.trim()) {
+      ue.error("Vui lòng nhập mã đơn.");
+      return;
+    }
+    await handleCleanup(cleanupCode.trim());
+  }
+  async function handleIssueInvoice() {
+    if (!invoiceOrderId) return;
+    if (!invoiceId.trim() || !pdfUrl.trim()) {
+      ue.error("Vui lòng nhập mã hoá đơn và đường dẫn PDF.");
+      return;
+    }
+    try {
+      await invoiceMutation.mutateAsync({
+        orderId: invoiceOrderId,
+        invoiceId: invoiceId.trim(),
+        pdfUrl: pdfUrl.trim()
+      });
+      ue.success("Đã phát hành hoá đơn.");
+      setInvoiceOrderId(null);
+      setInvoiceId("");
+      setPdfUrl("");
+    } catch (err) {
+      ue.error(
+        err instanceof Error ? err.message : "Không thể phát hành hoá đơn."
+      );
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "flex flex-col gap-6", "data-ocid": "accounting.page", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "accounting.lookup_card", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+          "Tra cứu đơn hàng"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Tìm đơn theo mã đơn, email khách hàng hoặc trạng thái thanh toán. Kết quả kèm ảnh xác thực thanh toán để đối chiếu." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "flex flex-col gap-4", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Tabs,
+          {
+            value: mode,
+            onValueChange: (v2) => setMode(v2),
+            "data-ocid": "accounting.lookup_tabs",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(TabsList, { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TabsTrigger, { value: "code", "data-ocid": "accounting.tab.code", children: "Mã đơn" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TabsTrigger, { value: "email", "data-ocid": "accounting.tab.email", children: "Email" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TabsTrigger, { value: "status", "data-ocid": "accounting.tab.status", children: "Trạng thái" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TabsContent, { value: "code", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleSearch,
+                  className: "flex flex-col gap-3 sm:flex-row",
+                  "data-ocid": "accounting.code_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      Input,
+                      {
+                        value: codeInput,
+                        onChange: (e) => setCodeInput(e.target.value),
+                        placeholder: "Nhập mã đơn…",
+                        "aria-label": "Mã đơn cần tra cứu",
+                        "data-ocid": "accounting.code_input",
+                        className: "sm:max-w-xs"
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        disabled: !codeInput.trim(),
+                        "data-ocid": "accounting.code_search_button",
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Tra cứu"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              ) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TabsContent, { value: "email", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleSearch,
+                  className: "flex flex-col gap-3 sm:flex-row",
+                  "data-ocid": "accounting.email_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      Input,
+                      {
+                        type: "email",
+                        value: emailInput,
+                        onChange: (e) => setEmailInput(e.target.value),
+                        placeholder: "Nhập email khách hàng…",
+                        "aria-label": "Email khách hàng cần tra cứu",
+                        "data-ocid": "accounting.email_input",
+                        className: "sm:max-w-xs"
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        disabled: !emailInput.trim(),
+                        "data-ocid": "accounting.email_search_button",
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Tra cứu"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              ) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TabsContent, { value: "status", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3 sm:flex-row sm:items-center", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Select,
+                  {
+                    value: statusFilter || "all",
+                    onValueChange: (v2) => setStatusFilter(v2 === "all" ? "" : v2),
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        SelectTrigger,
+                        {
+                          className: "sm:max-w-xs",
+                          "data-ocid": "accounting.status_select",
+                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: "Chọn trạng thái thanh toán" })
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "all", children: "Tất cả trạng thái" }),
+                        PAYMENT_OPTIONS.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: opt.value, children: opt.label }, opt.value))
+                      ] })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm text-muted-foreground", children: "Hiển thị đơn theo trạng thái thanh toán đã chọn." })
+              ] }) })
+            ]
+          }
+        ),
+        isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-8 text-sm text-muted-foreground",
+            "data-ocid": "accounting.lookup.loading_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-5 w-5 animate-spin", "aria-hidden": "true" }),
+              "Đang tải đơn hàng…"
+            ]
+          }
+        ) : isError ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-6 text-center",
+            "data-ocid": "accounting.lookup.error_state",
+            role: "alert",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-medium text-destructive", children: "Không tải được đơn hàng." }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-muted-foreground", children: "Kiểm tra lại mã đơn hoặc thử lại sau." })
+            ]
+          }
+        ) : results.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-12 text-center",
+            "data-ocid": "accounting.lookup.empty_state",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Search,
+                {
+                  className: "h-10 w-10 text-muted-foreground",
+                  "aria-hidden": "true"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-3 font-display text-base font-semibold", children: "Chưa có kết quả" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 max-w-sm text-sm text-muted-foreground", children: "Nhập mã đơn, email hoặc chọn trạng thái để tra cứu đơn hàng." })
+            ]
+          }
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "overflow-x-auto",
+            "data-ocid": "accounting.lookup_table",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "ent-th", children: "Mã đơn" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "ent-th", children: "Khách hàng" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "ent-th", children: "Tổng tiền" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "ent-th", children: "Thanh toán" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "ent-th", children: "Hoá đơn" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "ent-th", children: "Ảnh xác thực" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "ent-th text-right", children: "Thao tác" })
+              ] }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: results.map((order, idx) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                TableRow,
+                {
+                  className: "ent-table-row",
+                  "data-ocid": `accounting.row.${idx + 1}`,
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "ent-td", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-xs font-semibold text-foreground", children: order.orderId }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: formatDateTime(order.createdAt) })
+                    ] }) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "ent-td", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-foreground", children: order.cusName || "Khách vãng lai" }),
+                      order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: order.cusPhone })
+                    ] }) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "ent-td", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-sm font-semibold text-foreground", children: formatVnd$n(order.amount) }) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "ent-td", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "span",
+                      {
+                        className: `ent-pill ${paymentBadgeClass(order.paymentStatus)}`,
+                        "data-ocid": `accounting.payment_badge.${idx + 1}`,
+                        children: PAYMENT_LABELS[order.paymentStatus]
+                      }
+                    ) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "ent-td", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "span",
+                      {
+                        className: `ent-pill ${invoiceBadgeClass(order.invoiceStatus)}`,
+                        "data-ocid": `accounting.invoice_badge.${idx + 1}`,
+                        children: INVOICE_LABELS[order.invoiceStatus]
+                      }
+                    ) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "ent-td", children: order.paymentVerificationImage ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: () => setImageOrder(order),
+                        "data-ocid": `accounting.image_button.${idx + 1}`,
+                        "aria-label": `Xem ảnh xác thực thanh toán đơn ${order.orderId}`,
+                        className: "group inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40 transition-smooth hover:border-primary",
+                        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "img",
+                          {
+                            src: order.paymentVerificationImage,
+                            alt: `Ảnh xác thực thanh toán đơn ${order.orderId}`,
+                            className: "h-full w-full object-cover"
+                          }
+                        )
+                      }
+                    ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "span",
+                      {
+                        className: "inline-flex items-center gap-1.5 text-xs text-muted-foreground",
+                        "data-ocid": `accounting.no_image.${idx + 1}`,
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            Image$1,
+                            {
+                              className: "h-3.5 w-3.5",
+                              "aria-hidden": "true"
+                            }
+                          ),
+                          "Chưa có"
+                        ]
+                      }
+                    ) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "ent-td", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-end gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        Button,
+                        {
+                          type: "button",
+                          variant: "outline",
+                          size: "sm",
+                          disabled: cleanupMutation.isPending,
+                          onClick: () => handleCleanup(order.orderId),
+                          "data-ocid": `accounting.cleanup_button.${idx + 1}`,
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              Trash2,
+                              {
+                                className: "h-3.5 w-3.5",
+                                "aria-hidden": "true"
+                              }
+                            ),
+                            "Dọn dẹp"
+                          ]
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        Button,
+                        {
+                          type: "button",
+                          variant: "outline",
+                          size: "sm",
+                          disabled: invoiceMutation.isPending,
+                          onClick: () => {
+                            setInvoiceOrderId(order.orderId);
+                            setInvoiceId("");
+                            setPdfUrl("");
+                          },
+                          "data-ocid": `accounting.invoice_button.${idx + 1}`,
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              Receipt,
+                              {
+                                className: "h-3.5 w-3.5",
+                                "aria-hidden": "true"
+                              }
+                            ),
+                            "Hoá đơn"
+                          ]
+                        }
+                      )
+                    ] }) })
+                  ]
+                },
+                order.orderId
+              )) })
+            ] })
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 gap-6 lg:grid-cols-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "accounting.cleanup_card", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+            "Dọn dẹp đơn thủ công"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Huỷ/xoá một đơn hàng cũ hoặc hết hạn theo mã đơn." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "form",
+          {
+            onSubmit: handleCleanupByCode,
+            className: "flex flex-col gap-3",
+            "data-ocid": "accounting.cleanup_form",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "cleanup-code", className: "text-sm font-medium", children: "Mã đơn" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Input,
+                  {
+                    id: "cleanup-code",
+                    value: cleanupCode,
+                    onChange: (e) => setCleanupCode(e.target.value),
+                    placeholder: "Nhập mã đơn cần dọn dẹp…",
+                    "data-ocid": "accounting.cleanup_input"
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                Button,
+                {
+                  type: "submit",
+                  variant: "destructive",
+                  disabled: cleanupMutation.isPending || !cleanupCode.trim(),
+                  "data-ocid": "accounting.cleanup_submit_button",
+                  className: "w-full sm:w-auto",
+                  children: [
+                    cleanupMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      LoaderCircle,
+                      {
+                        className: "h-4 w-4 animate-spin",
+                        "aria-hidden": "true"
+                      }
+                    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "h-4 w-4", "aria-hidden": "true" }),
+                    "Dọn dẹp đơn"
+                  ]
+                }
+              )
+            ]
+          }
+        ) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "accounting.invoice_card", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+            "Phát hành hoá đơn thủ công"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Phát hành hoá đơn điện tử cho một đơn hàng theo mã đơn." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "form",
+          {
+            onSubmit: (e) => {
+              e.preventDefault();
+              if (!invoiceManualCode.trim()) {
+                ue.error("Vui lòng nhập mã đơn.");
+                return;
+              }
+              setInvoiceOrderId(invoiceManualCode.trim());
+              setInvoiceId("");
+              setPdfUrl("");
+            },
+            className: "flex flex-col gap-3",
+            "data-ocid": "accounting.invoice_form",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "invoice-code", className: "text-sm font-medium", children: "Mã đơn" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Input,
+                  {
+                    id: "invoice-code",
+                    value: invoiceManualCode,
+                    onChange: (e) => setInvoiceManualCode(e.target.value),
+                    placeholder: "Nhập mã đơn cần phát hành hoá đơn…",
+                    "data-ocid": "accounting.invoice_code_input"
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                Button,
+                {
+                  type: "submit",
+                  disabled: !invoiceManualCode.trim(),
+                  "data-ocid": "accounting.invoice_open_button",
+                  className: "w-full sm:w-auto",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4", "aria-hidden": "true" }),
+                    "Phát hành hoá đơn"
+                  ]
+                }
+              )
+            ]
+          }
+        ) })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Dialog,
+      {
+        open: !!invoiceOrderId,
+        onOpenChange: (open) => {
+          if (!open) setInvoiceOrderId(null);
+        },
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { "data-ocid": "accounting.invoice_dialog", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogTitle, { className: "flex items-center gap-2 font-display", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+              "Phát hành hoá đơn"
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogDescription, { children: [
+              "Nhập thông tin hoá đơn điện tử cho đơn",
+              " ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-semibold text-foreground", children: invoiceOrderId }),
+              "."
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "invoice-id", className: "text-sm font-medium", children: "Mã hoá đơn" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Input,
+                {
+                  id: "invoice-id",
+                  value: invoiceId,
+                  onChange: (e) => setInvoiceId(e.target.value),
+                  placeholder: "VD: INV-2026-0001",
+                  "data-ocid": "accounting.invoice_id_input"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "invoice-pdf", className: "text-sm font-medium", children: "Đường dẫn PDF hoá đơn" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Input,
+                {
+                  id: "invoice-pdf",
+                  value: pdfUrl,
+                  onChange: (e) => setPdfUrl(e.target.value),
+                  placeholder: "https://…/hoa-don.pdf",
+                  "data-ocid": "accounting.invoice_pdf_input"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "outline",
+                onClick: () => setInvoiceOrderId(null),
+                "data-ocid": "accounting.invoice_cancel_button",
+                children: "Huỷ"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              Button,
+              {
+                type: "button",
+                disabled: invoiceMutation.isPending || !invoiceId.trim() || !pdfUrl.trim(),
+                onClick: handleIssueInvoice,
+                "data-ocid": "accounting.invoice_submit_button",
+                children: [
+                  invoiceMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4", "aria-hidden": "true" }),
+                  "Phát hành"
+                ]
+              }
+            )
+          ] })
+        ] })
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Dialog,
+      {
+        open: !!imageOrder,
+        onOpenChange: (open) => {
+          if (!open) setImageOrder(null);
+        },
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { "data-ocid": "accounting.image_dialog", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogTitle, { className: "flex items-center gap-2 font-display", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                ShieldCheck,
+                {
+                  className: "h-4 w-4 text-primary",
+                  "aria-hidden": "true"
+                }
+              ),
+              "Ảnh xác thực thanh toán"
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogDescription, { children: [
+              "Đơn",
+              " ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono font-semibold text-foreground", children: imageOrder == null ? void 0 : imageOrder.orderId }),
+              " ",
+              "— ",
+              imageOrder ? PAYMENT_LABELS[imageOrder.paymentStatus] : ""
+            ] })
+          ] }),
+          (imageOrder == null ? void 0 : imageOrder.paymentVerificationImage) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: imageOrder.paymentVerificationImage,
+              alt: `Ảnh xác thực thanh toán đơn ${imageOrder.orderId}`,
+              className: "mx-auto max-h-[60vh] w-auto rounded-md border border-border object-contain"
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đơn này chưa có ảnh xác thực thanh toán." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(DialogFooter, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "outline",
+              onClick: () => setImageOrder(null),
+              "data-ocid": "accounting.image_close_button",
+              children: "Đóng"
+            }
+          ) })
+        ] })
+      }
+    )
+  ] });
+}
+function pad2$1(n) {
+  return n.toString().padStart(2, "0");
+}
+function formatTime$2(hour, minute) {
+  return `${pad2$1(hour)}:${pad2$1(minute)}`;
+}
+function SectionCard$1({
+  icon: Icon2,
+  title,
+  description,
+  children,
+  testId
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": testId, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+        title
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: description })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children })
+  ] });
+}
+function AdminPanel() {
+  const [newSecret, setNewSecret] = reactExports.useState("");
+  const [secretInputKey, setSecretInputKey] = reactExports.useState(0);
+  const [paymentModeDraft, setPaymentModeDraft] = reactExports.useState(
+    null
+  );
+  const [openHour, setOpenHour] = reactExports.useState("");
+  const [openMinute, setOpenMinute] = reactExports.useState("");
+  const [closeHour, setCloseHour] = reactExports.useState("");
+  const [closeMinute, setCloseMinute] = reactExports.useState("");
+  const setSecretMutation = useSetVpsSecret();
+  const canisterIdQuery = useCanisterIdText();
+  const paymentModeQuery = useGetPaymentMode();
+  const setPaymentModeMutation = useSetPaymentMode();
+  const storeHoursQuery = useGetStoreHours();
+  const setStoreHoursMutation = useSetStoreHours();
+  reactExports.useEffect(() => {
+    if (storeHoursQuery.data) {
+      setOpenHour(storeHoursQuery.data.openHour.toString());
+      setOpenMinute(storeHoursQuery.data.openMinute.toString());
+      setCloseHour(storeHoursQuery.data.closeHour.toString());
+      setCloseMinute(storeHoursQuery.data.closeMinute.toString());
+    }
+  }, [storeHoursQuery.data]);
+  const currentPaymentMode = paymentModeDraft ?? (paymentModeQuery.data === "customer" ? "customer" : "driver");
+  async function handleSetSecret(e) {
+    e.preventDefault();
+    if (!newSecret.trim()) {
+      ue.error("Vui lòng nhập secret mới.");
+      return;
+    }
+    if (newSecret.length < 8) {
+      ue.error("Secret phải có ít nhất 8 ký tự.");
+      return;
+    }
+    try {
+      await setSecretMutation.mutateAsync(newSecret.trim());
+      ue.success("Đã cập nhật secret VPS.");
+      setNewSecret("");
+      setSecretInputKey((k2) => k2 + 1);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể cập nhật secret.";
+      ue.error(message);
+    }
+  }
+  async function copyCanisterId() {
+    const id = canisterIdQuery.data;
+    if (!id) return;
+    try {
+      await navigator.clipboard.writeText(id);
+      ue.success("Đã sao chép Canister ID.");
+    } catch {
+      ue.error("Không sao chép được. Vui lòng sao chép thủ công.");
+    }
+  }
+  async function handleUpdatePaymentMode(e) {
+    e.preventDefault();
+    try {
+      await setPaymentModeMutation.mutateAsync(currentPaymentMode);
+      ue.success("Đã cập nhật chế độ thanh toán đơn.");
+      setPaymentModeDraft(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể cập nhật chế độ thanh toán.";
+      ue.error(message);
+    }
+  }
+  async function handleUpdateStoreHours(e) {
+    e.preventDefault();
+    const oh = Number(openHour);
+    const om = Number(openMinute);
+    const ch = Number(closeHour);
+    const cm = Number(closeMinute);
+    if (!Number.isInteger(oh) || oh < 0 || oh > 23 || !Number.isInteger(om) || om < 0 || om > 59 || !Number.isInteger(ch) || ch < 0 || ch > 23 || !Number.isInteger(cm) || cm < 0 || cm > 59) {
+      ue.error("Giờ phải nằm trong khoảng hợp lệ (00:00 – 23:59).");
+      return;
+    }
+    try {
+      await setStoreHoursMutation.mutateAsync({
+        openHour: BigInt(oh),
+        openMinute: BigInt(om),
+        closeHour: BigInt(ch),
+        closeMinute: BigInt(cm)
+      });
+      ue.success("Đã cập nhật giờ mở/đóng cửa hàng.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể cập nhật giờ mở/đóng cửa hàng.";
+      ue.error(message);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-5xl px-4 py-8 md:px-6 md:py-10",
+      "data-ocid": "admin.page",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "h1",
+            {
+              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+              "data-ocid": "admin.title",
+              children: "Quản lý"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Cấu hình hệ thống, mã kích hoạt, thiết bị và canister." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard$1,
+            {
+              icon: KeyRound,
+              title: "Canister ID",
+              description: "Định danh canister dùng để VPS xác thực HMAC.",
+              testId: "admin.canister_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-col gap-3", children: canisterIdQuery.isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "div",
+                {
+                  className: "flex items-center gap-2 text-sm text-muted-foreground",
+                  "data-ocid": "admin.canister.loading_state",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+                    "Đang tải Canister ID…"
+                  ]
+                }
+              ) : canisterIdQuery.isError ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "p",
+                {
+                  className: "text-sm text-destructive",
+                  "data-ocid": "admin.canister.error_state",
+                  children: "Không tải được Canister ID."
+                }
+              ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "code",
+                  {
+                    className: "min-w-0 flex-1 truncate rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs text-foreground",
+                    title: canisterIdQuery.data ?? "",
+                    "data-ocid": "admin.canister.id_value",
+                    children: canisterIdQuery.data || "—"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "outline",
+                    size: "icon",
+                    onClick: copyCanisterId,
+                    disabled: !canisterIdQuery.data,
+                    "data-ocid": "admin.canister.copy_button",
+                    "aria-label": "Sao chép Canister ID",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                )
+              ] }) })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard$1,
+            {
+              icon: ShieldOff,
+              title: "Cập nhật secret VPS",
+              description: "Đặt lại khóa bí mật dùng để ký HMAC giữa canister và VPS worker.",
+              testId: "admin.secret_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleSetSecret,
+                  className: "flex flex-col gap-3",
+                  "data-ocid": "admin.secret_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "vps-secret", className: "text-sm font-medium", children: "Secret mới" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Input,
+                        {
+                          id: "vps-secret",
+                          type: "password",
+                          value: newSecret,
+                          onChange: (e) => setNewSecret(e.target.value),
+                          placeholder: "Ít nhất 8 ký tự",
+                          minLength: 8,
+                          autoComplete: "off",
+                          "data-ocid": "admin.secret_input"
+                        },
+                        secretInputKey
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        disabled: setSecretMutation.isPending || !newSecret.trim(),
+                        "data-ocid": "admin.secret.submit_button",
+                        className: "w-full sm:w-auto",
+                        children: [
+                          setSecretMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldOff, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Cập nhật secret"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              )
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard$1,
+            {
+              icon: Wallet,
+              title: "Chế độ thanh toán đơn",
+              description: "Chọn ai là người thanh toán tiền đơn: tài xế trả trước rồi thanh toán lại, hoặc khách trả trực tiếp cho tài xế khi nhận hàng.",
+              testId: "admin.payment_mode_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleUpdatePaymentMode,
+                  className: "flex flex-col gap-3",
+                  "data-ocid": "admin.payment_mode_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "fieldset",
+                      {
+                        className: "flex flex-col gap-2",
+                        "data-ocid": "admin.payment_mode_fieldset",
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("legend", { className: "sr-only", children: "Chế độ thanh toán đơn" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "label",
+                            {
+                              className: "flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-smooth hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+                              "data-ocid": "admin.payment_mode.option.driver",
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "input",
+                                  {
+                                    type: "radio",
+                                    name: "paymentMode",
+                                    value: "driver",
+                                    checked: currentPaymentMode === "driver",
+                                    onChange: () => setPaymentModeDraft("driver"),
+                                    className: "mt-0.5 h-4 w-4 accent-primary",
+                                    "data-ocid": "admin.payment_mode.radio.driver"
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex flex-col", children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-foreground", children: "Tài xế trả tiền đơn" }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Tài xế thanh toán trước cho đơn, sau đó quyết toán với nhà." })
+                                ] })
+                              ]
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "label",
+                            {
+                              className: "flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-smooth hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+                              "data-ocid": "admin.payment_mode.option.customer",
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "input",
+                                  {
+                                    type: "radio",
+                                    name: "paymentMode",
+                                    value: "customer",
+                                    checked: currentPaymentMode === "customer",
+                                    onChange: () => setPaymentModeDraft("customer"),
+                                    className: "mt-0.5 h-4 w-4 accent-primary",
+                                    "data-ocid": "admin.payment_mode.radio.customer"
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex flex-col", children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-foreground", children: "Khách trả tiền đơn" }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Khách thanh toán trực tiếp cho tài xế khi nhận hàng." })
+                                ] })
+                              ]
+                            }
+                          )
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "div",
+                      {
+                        className: "text-xs text-muted-foreground",
+                        "data-ocid": "admin.payment_mode.current_value",
+                        children: paymentModeQuery.isLoading ? "Đang tải chế độ hiện tại…" : `Chế độ hiện tại: ${currentPaymentMode === "driver" ? "Tài xế trả tiền đơn" : "Khách trả tiền đơn"}`
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        disabled: setPaymentModeMutation.isPending || paymentModeQuery.isLoading || paymentModeDraft === null,
+                        "data-ocid": "admin.payment_mode.submit_button",
+                        className: "w-full sm:w-auto",
+                        children: [
+                          setPaymentModeMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Wallet, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Cập nhật"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              )
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SectionCard$1,
+            {
+              icon: Clock,
+              title: "Giờ mở/đóng cửa hàng",
+              description: "Cấu hình giờ mở và đóng cửa toàn cục, áp dụng chung cho tất cả cửa hàng. Ngoài giờ này, cả tài xế và khách đều không thể đặt hàng.",
+              testId: "admin.store_hours_card",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "form",
+                {
+                  onSubmit: handleUpdateStoreHours,
+                  className: "flex flex-col gap-3",
+                  "data-ocid": "admin.store_hours_form",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          Label,
+                          {
+                            htmlFor: "store-open-hour",
+                            className: "text-sm font-medium",
+                            children: "Giờ mở cửa"
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            Input,
+                            {
+                              id: "store-open-hour",
+                              type: "number",
+                              min: 0,
+                              max: 23,
+                              value: openHour,
+                              onChange: (e) => setOpenHour(e.target.value),
+                              placeholder: "08",
+                              inputMode: "numeric",
+                              "aria-label": "Giờ mở cửa",
+                              "data-ocid": "admin.store_hours.open_hour_input",
+                              className: "text-center font-mono"
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: ":" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            Input,
+                            {
+                              type: "number",
+                              min: 0,
+                              max: 59,
+                              value: openMinute,
+                              onChange: (e) => setOpenMinute(e.target.value),
+                              placeholder: "00",
+                              inputMode: "numeric",
+                              "aria-label": "Phút mở cửa",
+                              "data-ocid": "admin.store_hours.open_minute_input",
+                              className: "text-center font-mono"
+                            }
+                          )
+                        ] })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          Label,
+                          {
+                            htmlFor: "store-close-hour",
+                            className: "text-sm font-medium",
+                            children: "Giờ đóng cửa"
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            Input,
+                            {
+                              id: "store-close-hour",
+                              type: "number",
+                              min: 0,
+                              max: 23,
+                              value: closeHour,
+                              onChange: (e) => setCloseHour(e.target.value),
+                              placeholder: "22",
+                              inputMode: "numeric",
+                              "aria-label": "Giờ đóng cửa",
+                              "data-ocid": "admin.store_hours.close_hour_input",
+                              className: "text-center font-mono"
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: ":" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            Input,
+                            {
+                              type: "number",
+                              min: 0,
+                              max: 59,
+                              value: closeMinute,
+                              onChange: (e) => setCloseMinute(e.target.value),
+                              placeholder: "00",
+                              inputMode: "numeric",
+                              "aria-label": "Phút đóng cửa",
+                              "data-ocid": "admin.store_hours.close_minute_input",
+                              className: "text-center font-mono"
+                            }
+                          )
+                        ] })
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "div",
+                      {
+                        className: "text-xs text-muted-foreground",
+                        "data-ocid": "admin.store_hours.current_value",
+                        children: storeHoursQuery.isLoading ? "Đang tải giờ hiện tại…" : storeHoursQuery.data ? `Giờ hiện tại: ${formatTime$2(
+                          Number(storeHoursQuery.data.openHour),
+                          Number(storeHoursQuery.data.openMinute)
+                        )} – ${formatTime$2(
+                          Number(storeHoursQuery.data.closeHour),
+                          Number(storeHoursQuery.data.closeMinute)
+                        )}` : "Chưa cấu hình giờ mở/đóng."
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        type: "submit",
+                        disabled: setStoreHoursMutation.isPending || storeHoursQuery.isLoading || !openHour || !openMinute || !closeHour || !closeMinute,
+                        "data-ocid": "admin.store_hours.submit_button",
+                        className: "w-full sm:w-auto",
+                        children: [
+                          setStoreHoursMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-4 w-4", "aria-hidden": "true" }),
+                          "Lưu giờ mở/đóng"
+                        ]
+                      }
+                    )
+                  ]
+                }
+              )
+            }
+          )
+        ] })
+      ]
+    }
+  );
+}
+function todayKey$1() {
+  const d2 = /* @__PURE__ */ new Date();
+  const y2 = d2.getFullYear();
+  const m2 = String(d2.getMonth() + 1).padStart(2, "0");
+  const day = String(d2.getDate()).padStart(2, "0");
+  return `${y2}${m2}${day}`;
+}
+function formatDate$6(yyyymmdd) {
+  if (yyyymmdd.length !== 8) return yyyymmdd;
+  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}`;
+}
+function computeStatus$1(row, today) {
+  if (!row.active || today > row.endDate) return "off";
+  if (today < row.startDate) return "upcoming";
+  return "active";
+}
+function StatusBadge$2({
+  status,
+  expired
+}) {
+  if (status === "active") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10.5px] font-bold text-success", children: "● Đang chạy" });
+  }
+  if (status === "upcoming") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-[10.5px] font-bold text-warning", children: "● Sắp diễn ra" });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center gap-1 rounded-full bg-muted-foreground/15 px-2 py-0.5 text-[10.5px] font-bold text-muted-foreground", children: [
+    "● ",
+    expired ? "Tắt (hết hạn)" : "Tắt"
+  ] });
+}
+function KindLabel({ kind }) {
+  const label = kind === "he1" ? "Hệ 1" : kind === "dangky" ? "Đăng ký" : "Doanh số";
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[10.5px] text-muted-foreground", children: label });
+}
+function He1UsageCell$1({
+  code,
+  dailyLimit
+}) {
+  const { data: count2 } = useKmDailyCount(code);
+  if (count2 === void 0)
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" });
+  const percent = dailyLimit > 0n ? Math.min(100, Number(count2) / Number(dailyLimit) * 100) : 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center whitespace-nowrap text-[11px] text-muted-foreground", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mr-1.5 inline-block h-[5px] w-16 overflow-hidden rounded-full bg-foreground/10 align-middle", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "span",
+      {
+        className: "block h-full rounded-full bg-primary",
+        style: { width: `${percent}%` }
+      }
+    ) }),
+    count2.toString(),
+    "/",
+    dailyLimit.toString(),
+    " đơn/ngày"
+  ] });
+}
+function VoucherCountCell$1({ code }) {
+  const { data: count2 } = useVoucherCountByProgram(code);
+  if (count2 === void 0)
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[11px] text-muted-foreground", children: [
+    count2.toString(),
+    " phiếu đã phát"
+  ] });
+}
+function OverviewCard({
+  icon,
+  label,
+  running,
+  value,
+  sub
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border bg-card p-3.5", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-1.5 flex items-center gap-1.5 text-[11.5px] text-muted-foreground", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "span",
+        {
+          className: `h-1.5 w-1.5 shrink-0 rounded-full ${running ? "bg-success" : "bg-muted-foreground"}`
+        }
+      ),
+      icon,
+      label
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-xl font-bold text-foreground", children: value }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 text-[10.5px] text-muted-foreground", children: sub })
+  ] });
+}
+function AdminPromoDashboard() {
+  const { data: promotions } = usePromotions();
+  const { data: registrationPromos } = useRegistrationPromos();
+  const { data: salesPromos } = useSalesPromos();
+  const today = todayKey$1();
+  const rows = [
+    ...(promotions ?? []).map((p2) => ({
+      code: p2.code,
+      name: p2.name,
+      kind: "he1",
+      active: p2.active,
+      startDate: p2.startDate,
+      endDate: p2.endDate
+    })),
+    ...(registrationPromos ?? []).map((p2) => ({
+      code: p2.code,
+      name: p2.name,
+      kind: "dangky",
+      active: p2.active,
+      startDate: p2.startDate,
+      endDate: p2.endDate
+    })),
+    ...(salesPromos ?? []).map((p2) => ({
+      code: p2.code,
+      name: p2.name,
+      kind: "doanhso",
+      active: p2.active,
+      startDate: p2.startDate,
+      endDate: p2.endDate
+    }))
+  ].sort(
+    (a2, b2) => a2.startDate < b2.startDate ? 1 : a2.startDate > b2.startDate ? -1 : 0
+  );
+  const he1Running = (promotions ?? []).some(
+    (p2) => computeStatus$1(
+      {
+        code: p2.code,
+        name: p2.name,
+        active: p2.active,
+        startDate: p2.startDate,
+        endDate: p2.endDate
+      },
+      today
+    ) === "active"
+  );
+  const dangKyRunning = (registrationPromos ?? []).some(
+    (p2) => computeStatus$1(
+      {
+        code: p2.code,
+        name: p2.name,
+        active: p2.active,
+        startDate: p2.startDate,
+        endDate: p2.endDate
+      },
+      today
+    ) === "active"
+  );
+  const doanhSoRunning = (salesPromos ?? []).some(
+    (p2) => computeStatus$1(
+      {
+        code: p2.code,
+        name: p2.name,
+        active: p2.active,
+        startDate: p2.startDate,
+        endDate: p2.endDate
+      },
+      today
+    ) === "active"
+  );
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "section",
+    {
+      className: "mx-auto w-full max-w-5xl px-4 py-8 md:px-6",
+      "data-ocid": "admin_promo_dashboard.page",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-semibold tracking-tight", children: "Theo dõi khuyến mại" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-muted-foreground", children: "Tổng hợp và chi tiết tất cả chương trình khuyến mại (Hệ 1 · Đăng ký · Doanh số)." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            OverviewCard,
+            {
+              icon: /* @__PURE__ */ jsxRuntimeExports.jsx(ChartColumn, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+              label: "Hệ 1 (theo khung giờ)",
+              running: he1Running,
+              value: (promotions ?? []).length.toString(),
+              sub: "chương trình đã tạo"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            OverviewCard,
+            {
+              icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Gift, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+              label: "Khuyến mại đăng ký",
+              running: dangKyRunning,
+              value: (registrationPromos ?? []).length.toString(),
+              sub: "chương trình đã tạo"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            OverviewCard,
+            {
+              icon: /* @__PURE__ */ jsxRuntimeExports.jsx(TrendingUp, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+              label: "Doanh số tuần/tháng",
+              running: doanhSoRunning,
+              value: (salesPromos ?? []).length.toString(),
+              sub: "chương trình đã tạo"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-5 overflow-x-auto rounded-lg border border-border bg-card", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "bg-secondary text-left text-[11px] font-bold uppercase tracking-wide text-muted-foreground", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Chương trình" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Trạng thái" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Thời hạn" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Mức sử dụng" })
+          ] }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("tbody", { children: [
+            rows.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("tr", { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "td",
+              {
+                colSpan: 4,
+                className: "px-3 py-6 text-center text-sm text-muted-foreground",
+                children: "Chưa có chương trình khuyến mại nào."
+              }
+            ) }),
+            rows.map((row) => {
+              const status = computeStatus$1(row, today);
+              const expired = today > row.endDate;
+              const promo = row.kind === "he1" ? (promotions ?? []).find((p2) => p2.code === row.code) : void 0;
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "tr",
+                {
+                  className: "border-t border-border",
+                  "data-ocid": "admin_promo_dashboard.row",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "px-3 py-2.5", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium text-foreground", children: row.name }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(KindLabel, { kind: row.kind })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5", children: /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge$2, { status, expired }) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground", children: [
+                      formatDate$6(row.startDate),
+                      " – ",
+                      formatDate$6(row.endDate)
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5", children: row.kind === "he1" && promo ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      He1UsageCell$1,
+                      {
+                        code: row.code,
+                        dailyLimit: promo.dailyOrderLimit
+                      }
+                    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(VoucherCountCell$1, { code: row.code }) })
+                  ]
+                },
+                `${row.kind}-${row.code}`
+              );
+            })
+          ] })
+        ] }) })
+      ]
+    }
+  );
+}
+function formatVnd$m(n) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+  }).format(n);
+}
+function BranchTable({ data, testId }) {
+  if (data.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        "data-ocid": testId ?? "branch_table.empty_state",
+        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
+        children: "Chưa có dữ liệu chi nhánh."
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "data-ocid": testId ?? "branch_table", className: "w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "w-[40%]", children: "Chi nhánh" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Địa chỉ" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Số đơn" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Doanh thu" })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: data.map((row, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      TableRow,
+      {
+        "data-ocid": `branch_table.row.${i + 1}`,
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium text-foreground", children: row.name }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-muted-foreground", children: row.address || "—" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono", children: row.orderCount }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$m(row.totalRevenue) })
+        ]
+      },
+      row.restaurantId
+    )) })
+  ] }) });
+}
+function formatVnd$l(n) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+  }).format(n);
+}
+function CustomerTable({ data, testId }) {
+  if (data.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        "data-ocid": testId ?? "customer_table.empty_state",
+        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
+        children: "Chưa có dữ liệu khách hàng."
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "data-ocid": testId ?? "customer_table", className: "w-full", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "w-[40%]", children: "Khách hàng" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Số điện thoại" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Số đơn" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Tổng chi" })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(TableBody, { children: data.map((row, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { "data-ocid": `customer_table.row.${i + 1}`, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium text-foreground", children: row.name || "Khách vãng lai" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-sm text-muted-foreground", children: row.phone }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono", children: row.orderCount }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono font-medium", children: formatVnd$l(row.totalSpent) })
+    ] }, row.phone)) })
+  ] }) });
+}
+const STATUS_STYLES = {
+  paid: {
+    label: "Đã thanh toán",
+    barClass: "fill-success",
+    textClass: "text-success"
+  },
+  pending: {
+    label: "Đang chờ",
+    barClass: "fill-warning",
+    textClass: "text-warning-foreground"
+  },
+  shipping: {
+    label: "Đang giao",
+    barClass: "fill-info",
+    textClass: "text-info"
+  },
+  cancelled: {
+    label: "Đã hủy",
+    barClass: "fill-destructive",
+    textClass: "text-destructive"
+  }
+};
+function styleFor(status) {
+  return STATUS_STYLES[status] ?? {
+    label: status,
+    barClass: "fill-primary",
+    textClass: "text-primary"
+  };
+}
+function OrdersChart({ data, testId }) {
+  const { rows, maxCount } = reactExports.useMemo(() => {
+    const max2 = data.reduce((m2, d2) => Math.max(m2, d2.count), 0);
+    return { rows: data, maxCount: max2 };
+  }, [data]);
+  if (data.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        "data-ocid": testId ?? "orders_chart.empty_state",
+        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
+        children: "Chưa có dữ liệu đơn hàng theo trạng thái."
+      }
+    );
+  }
+  const total = data.reduce((s, d2) => s + d2.count, 0);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-ocid": testId ?? "orders_chart",
+      className: "flex flex-col gap-3",
+      role: "img",
+      "aria-label": "Biểu đồ đơn hàng theo trạng thái",
+      children: rows.map((row, i) => {
+        const style2 = styleFor(row.status);
+        const pct = maxCount <= 0 ? 0 : row.count / maxCount * 100;
+        const sharePct = total <= 0 ? 0 : row.count / total * 100;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            "data-ocid": `orders_chart.row.${i + 1}`,
+            className: "flex flex-col gap-1.5",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2 text-sm", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: style2.label }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-mono text-xs text-muted-foreground", children: [
+                  row.count,
+                  " (",
+                  sharePct.toFixed(0),
+                  "%)"
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-3 w-full overflow-hidden rounded-full bg-secondary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: cn(
+                    "h-full rounded-full transition-smooth",
+                    style2.barClass.replace("fill-", "bg-")
+                  ),
+                  style: { width: `${pct}%` },
+                  "data-ocid": `orders_chart.bar.${i + 1}`
+                }
+              ) })
+            ]
+          },
+          row.status
+        );
+      })
+    }
+  );
+}
+function formatVndShort(n) {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)} tỷ`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)} tr`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(0)}k`;
+  return `${n}`;
+}
+function formatVnd$k(n) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+  }).format(n);
+}
+function formatDayLabel(iso) {
+  const [y2, m2, d2] = iso.split("-");
+  if (!y2 || !m2 || !d2) return iso;
+  return `${d2}/${m2}`;
+}
+const VIEW_WIDTH = 640;
+const VIEW_HEIGHT = 240;
+const PAD_LEFT = 8;
+const PAD_RIGHT = 8;
+const PAD_TOP = 16;
+const PAD_BOTTOM = 28;
+const PLOT_WIDTH = VIEW_WIDTH - PAD_LEFT - PAD_RIGHT;
+const PLOT_HEIGHT = VIEW_HEIGHT - PAD_TOP - PAD_BOTTOM;
+function RevenueChart({ data, testId }) {
+  const { bars, yTicks } = reactExports.useMemo(() => {
+    const max2 = data.reduce((m2, d2) => Math.max(m2, d2.revenue), 0);
+    const niceMax = max2 <= 0 ? 1 : Math.ceil(max2 * 1.1);
+    const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => ({
+      ratio: t,
+      value: Math.round(niceMax * t)
+    }));
+    const n = data.length;
+    const slot = n > 0 ? PLOT_WIDTH / n : PLOT_WIDTH;
+    const barW = Math.min(slot * 0.62, 36);
+    const computed = data.map((d2, i) => {
+      const h2 = max2 <= 0 ? 0 : d2.revenue / niceMax * PLOT_HEIGHT;
+      const x3 = PAD_LEFT + i * slot + (slot - barW) / 2;
+      const y2 = PAD_TOP + (PLOT_HEIGHT - h2);
+      return { ...d2, x: x3, y: y2, w: barW, h: h2 };
+    });
+    return { bars: computed, yTicks: ticks };
+  }, [data]);
+  if (data.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        "data-ocid": testId ?? "revenue_chart.empty_state",
+        className: "flex h-[240px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
+        children: "Chưa có dữ liệu doanh thu trong khoảng đã chọn."
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-ocid": testId ?? "revenue_chart",
+      className: "w-full",
+      role: "img",
+      "aria-label": "Biểu đồ doanh thu theo thời gian",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "svg",
+        {
+          viewBox: `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`,
+          className: "w-full",
+          preserveAspectRatio: "xMidYMid meet",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: "Biểu đồ doanh thu" }),
+            yTicks.map((t) => {
+              const y2 = PAD_TOP + PLOT_HEIGHT - t.ratio * PLOT_HEIGHT;
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs("g", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "line",
+                  {
+                    x1: PAD_LEFT,
+                    x2: VIEW_WIDTH - PAD_RIGHT,
+                    y1: y2,
+                    y2,
+                    stroke: "currentColor",
+                    strokeWidth: 1,
+                    className: "text-border",
+                    strokeDasharray: t.ratio === 0 ? "0" : "3 3"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "text",
+                  {
+                    x: PAD_LEFT + 2,
+                    y: y2 - 2,
+                    fontSize: 10,
+                    className: "fill-muted-foreground",
+                    children: formatVndShort(t.value)
+                  }
+                )
+              ] }, `y-${t.ratio}`);
+            }),
+            bars.map((b2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "g",
+              {
+                "data-ocid": `revenue_chart.point.${i + 1}`,
+                className: "transition-smooth",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "rect",
+                    {
+                      x: b2.x,
+                      y: b2.y,
+                      width: b2.w,
+                      height: Math.max(b2.h, 0),
+                      rx: 3,
+                      className: "fill-primary transition-smooth hover:fill-primary/80",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("title", { children: `${formatDayLabel(b2.date)}: ${formatVnd$k(b2.revenue)}` })
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "text",
+                    {
+                      x: b2.x + b2.w / 2,
+                      y: VIEW_HEIGHT - 10,
+                      fontSize: 10,
+                      textAnchor: "middle",
+                      className: "fill-muted-foreground",
+                      children: formatDayLabel(b2.date)
+                    }
+                  )
+                ]
+              },
+              b2.date
+            ))
+          ]
+        }
+      )
+    }
+  );
+}
+const TONE_STYLES = {
+  primary: {
+    iconWrap: "bg-primary/10 text-primary",
+    value: "text-primary"
+  },
+  success: {
+    iconWrap: "bg-success/15 text-success",
+    value: "text-success"
+  },
+  warning: {
+    iconWrap: "bg-warning/20 text-warning-foreground",
+    value: "text-warning-foreground"
+  },
+  info: {
+    iconWrap: "bg-info/15 text-info",
+    value: "text-info"
+  }
+};
+function StatCard({
+  label,
+  value,
+  icon: Icon2,
+  hint,
+  tone = "primary",
+  testId
+}) {
+  const styles = TONE_STYLES[tone];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      "data-ocid": testId ?? "stat.card",
+      className: "flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-smooth hover:shadow-md",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium text-muted-foreground", children: label }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "span",
+            {
+              className: cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                styles.iconWrap
+              ),
+              "aria-hidden": "true",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4" })
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "span",
+            {
+              className: cn(
+                "font-display text-2xl font-bold tracking-tight md:text-3xl",
+                styles.value
+              ),
+              children: value
+            }
+          ),
+          hint ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: hint }) : null
+        ] })
+      ]
+    }
+  );
+}
+function formatVnd$j(n) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+  }).format(n);
+}
+function TopItemsChart({ data, testId }) {
+  if (data.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        "data-ocid": testId ?? "top_items_chart.empty_state",
+        className: "flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground",
+        children: "Chưa có dữ liệu món ăn."
+      }
+    );
+  }
+  const maxQuantity = data.reduce((m2, d2) => Math.max(m2, d2.quantity), 0);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      "data-ocid": testId ?? "top_items_chart",
+      className: "flex flex-col gap-3",
+      role: "img",
+      "aria-label": "Biểu đồ món bán chạy nhất",
+      children: data.map((row, i) => {
+        const pct = maxQuantity <= 0 ? 0 : row.quantity / maxQuantity * 100;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            "data-ocid": `top_items_chart.row.${i + 1}`,
+            className: "flex flex-col gap-1.5",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2 text-sm", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex min-w-0 items-center gap-2 font-medium text-foreground", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "span",
+                    {
+                      className: cn(
+                        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+                        i === 0 ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                      ),
+                      children: i + 1
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "truncate", children: row.name })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "shrink-0 whitespace-nowrap font-mono text-xs text-muted-foreground", children: [
+                  row.quantity,
+                  " phần · ",
+                  formatVnd$j(row.revenue)
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-3 w-full overflow-hidden rounded-full bg-secondary", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: "h-full rounded-full bg-primary transition-smooth",
+                  style: { width: `${pct}%` },
+                  "data-ocid": `top_items_chart.bar.${i + 1}`
+                }
+              ) })
+            ]
+          },
+          row.itemId
+        );
+      })
     }
   );
 }
@@ -53509,6 +55819,25 @@ async function changeOrderRestaurant(orderId, restaurantId) {
     body: { restaurantId }
   });
 }
+async function confirmManualPaymentByPhoto(orderId, imageFile) {
+  const formData = new FormData();
+  formData.append("image", imageFile);
+  return vpsFetch({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/manual-payment-photo`,
+    body: formData,
+    isFormData: true,
+    timeoutMs: 3e4
+    // OCR có thể mất vài giây, dài hơn timeout mặc định
+  });
+}
+async function getManualPhotoConfirmEligibility(orderIds) {
+  if (orderIds.length === 0) return {};
+  return vpsFetch({
+    method: "GET",
+    path: `/orders/qr-status?ids=${orderIds.map(encodeURIComponent).join(",")}`
+  });
+}
 async function upsertCustomer(email) {
   try {
     await vpsFetch({
@@ -53566,19 +55895,19 @@ async function getAnalytics(range = "30d") {
   });
 }
 const vpsBaseUrl = getVpsUrl();
-const RANGE_LABELS = {
+const RANGE_LABELS$1 = {
   "7d": "7 ngày",
   "30d": "30 ngày",
   "90d": "90 ngày"
 };
-function formatVnd$f(n) {
+function formatVnd$i(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
     maximumFractionDigits: 0
   }).format(n);
 }
-function formatNumber(n) {
+function formatNumber$1(n) {
   return new Intl.NumberFormat("vi-VN").format(n);
 }
 function AnalyticsDashboard() {
@@ -53647,7 +55976,7 @@ function AnalyticsDashboard() {
                   children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {})
                 }
               ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: Object.keys(RANGE_LABELS).map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: r2, children: RANGE_LABELS[r2] }, r2)) })
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: Object.keys(RANGE_LABELS$1).map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: r2, children: RANGE_LABELS$1[r2] }, r2)) })
             ] })
           ] })
         ] }),
@@ -53693,10 +56022,10 @@ function AnalyticsDashboard() {
               StatCard,
               {
                 label: "Tổng doanh thu",
-                value: formatVnd$f((a2 == null ? void 0 : a2.totalRevenue) ?? 0),
+                value: formatVnd$i((a2 == null ? void 0 : a2.totalRevenue) ?? 0),
                 icon: Banknote,
                 tone: "primary",
-                hint: `Trung bình ${formatVnd$f((a2 == null ? void 0 : a2.averageOrderValue) ?? 0)}/đơn`,
+                hint: `Trung bình ${formatVnd$i((a2 == null ? void 0 : a2.averageOrderValue) ?? 0)}/đơn`,
                 testId: "analytics.stat.total_revenue"
               }
             ),
@@ -53704,10 +56033,10 @@ function AnalyticsDashboard() {
               StatCard,
               {
                 label: "Tổng đơn",
-                value: formatNumber((a2 == null ? void 0 : a2.totalOrders) ?? 0),
+                value: formatNumber$1((a2 == null ? void 0 : a2.totalOrders) ?? 0),
                 icon: ShoppingCart,
                 tone: "info",
-                hint: `${formatNumber((a2 == null ? void 0 : a2.paidOrders) ?? 0)} đã thanh toán`,
+                hint: `${formatNumber$1((a2 == null ? void 0 : a2.paidOrders) ?? 0)} đã thanh toán`,
                 testId: "analytics.stat.total_orders"
               }
             ),
@@ -53715,8 +56044,8 @@ function AnalyticsDashboard() {
               StatCard,
               {
                 label: "Chi nhánh hoạt động",
-                value: formatNumber(((_a2 = a2 == null ? void 0 : a2.byRestaurant) == null ? void 0 : _a2.length) ?? 0),
-                icon: Store2,
+                value: formatNumber$1(((_a2 = a2 == null ? void 0 : a2.byRestaurant) == null ? void 0 : _a2.length) ?? 0),
+                icon: Store$1,
                 tone: "success",
                 hint: "Có đơn trong khoảng thời gian này",
                 testId: "analytics.stat.active_branches"
@@ -53726,10 +56055,10 @@ function AnalyticsDashboard() {
               StatCard,
               {
                 label: "Đang giao",
-                value: formatNumber((a2 == null ? void 0 : a2.shippingOrders) ?? 0),
+                value: formatNumber$1((a2 == null ? void 0 : a2.shippingOrders) ?? 0),
                 icon: Truck,
                 tone: "warning",
-                hint: `${formatNumber((a2 == null ? void 0 : a2.pendingOrders) ?? 0)} đang chờ`,
+                hint: `${formatNumber$1((a2 == null ? void 0 : a2.pendingOrders) ?? 0)} đang chờ`,
                 testId: "analytics.stat.shipping"
               }
             )
@@ -53749,7 +56078,7 @@ function AnalyticsDashboard() {
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
                   "Doanh thu hàng ngày trong ",
-                  RANGE_LABELS[range].toLowerCase(),
+                  RANGE_LABELS$1[range].toLowerCase(),
                   "."
                 ] })
               ] }),
@@ -53790,7 +56119,7 @@ function AnalyticsDashboard() {
           /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "analytics.branches_card", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(Store2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Store$1, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
                 "Chi nhánh"
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Doanh thu và số đơn theo từng cửa hàng trong chuỗi." })
@@ -53806,7 +56135,7 @@ function AnalyticsDashboard() {
               /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
                 "Top 10 món theo số lượng bán trong",
                 " ",
-                RANGE_LABELS[range].toLowerCase(),
+                RANGE_LABELS$1[range].toLowerCase(),
                 " (không tính đơn đã huỷ)."
               ] })
             ] }),
@@ -53823,10 +56152,10 @@ function AnalyticsDashboard() {
               StatCard,
               {
                 label: "Khách mới",
-                value: formatNumber((a2 == null ? void 0 : a2.customers.new) ?? 0),
+                value: formatNumber$1((a2 == null ? void 0 : a2.customers.new) ?? 0),
                 icon: Sparkles,
                 tone: "info",
-                hint: `Trên tổng ${formatNumber((a2 == null ? void 0 : a2.customers.total) ?? 0)} khách trong khoảng này`,
+                hint: `Trên tổng ${formatNumber$1((a2 == null ? void 0 : a2.customers.total) ?? 0)} khách trong khoảng này`,
                 testId: "analytics.stat.new_customers"
               }
             ),
@@ -53834,7 +56163,7 @@ function AnalyticsDashboard() {
               StatCard,
               {
                 label: "Khách quay lại",
-                value: formatNumber((a2 == null ? void 0 : a2.customers.returning) ?? 0),
+                value: formatNumber$1((a2 == null ? void 0 : a2.customers.returning) ?? 0),
                 icon: UserCheck,
                 tone: "success",
                 hint: "Đã từng đặt trước khoảng thời gian này",
@@ -53851,7 +56180,7 @@ function AnalyticsDashboard() {
               /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
                 "Top 10 khách theo tổng chi trong",
                 " ",
-                RANGE_LABELS[range].toLowerCase(),
+                RANGE_LABELS$1[range].toLowerCase(),
                 "."
               ] })
             ] }),
@@ -55220,7 +57549,7 @@ var QRCodeSVG = React$4.forwardRef(
   }
 );
 QRCodeSVG.displayName = "QRCodeSVG";
-function formatVnd$e(amount) {
+function formatVnd$h(amount) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
 }
 function CounterQRDisplay({
@@ -55329,7 +57658,7 @@ function CounterQRDisplay({
                     {
                       className: "font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl",
                       "data-ocid": "counter_qr.amount",
-                      children: formatVnd$e(order.amount)
+                      children: formatVnd$h(order.amount)
                     }
                   )
                 ] }),
@@ -55624,7 +57953,7 @@ function Skeleton({ className, ...props }) {
 }
 const ALL_CATEGORY = "Tất cả";
 const CATEGORY_ORDER = ["Món chính", "Món phụ", "Đồ uống", "Tráng miệng"];
-function formatVnd$d(value) {
+function formatVnd$g(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -55740,7 +58069,7 @@ const MenuCard = reactExports.memo(function MenuCard2({
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "line-clamp-2 text-sm font-medium leading-snug text-foreground", children: item.name }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 font-mono text-sm font-bold text-foreground", children: formatVnd$d(item.price) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 font-mono text-sm font-bold text-foreground", children: formatVnd$g(item.price) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-[11px] text-muted-foreground", children: [
             "Đã gồm VAT ",
             Number(item.vatRate),
@@ -55935,7 +58264,7 @@ var Separator$1 = reactExports.forwardRef((props, forwardedRef) => {
   const ariaOrientation = orientation === "vertical" ? orientation : void 0;
   const semanticProps = decorative ? { role: "none" } : { "aria-orientation": ariaOrientation, role: "separator" };
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive$1.div,
+    Primitive.div,
     {
       "data-orientation": orientation,
       ...semanticProps,
@@ -55948,7 +58277,7 @@ Separator$1.displayName = NAME;
 function isValidOrientation(orientation) {
   return ORIENTATIONS.includes(orientation);
 }
-var Root$3 = Separator$1;
+var Root$1 = Separator$1;
 function Separator({
   className,
   orientation = "horizontal",
@@ -55956,7 +58285,7 @@ function Separator({
   ...props
 }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Root$3,
+    Root$1,
     {
       "data-slot": "separator",
       decorative,
@@ -55990,7 +58319,7 @@ const EMPTY_CUSTOMER$1 = {
   cusTaxCode: "",
   receiverEmail: ""
 };
-function formatVnd$c(n) {
+function formatVnd$f(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -56167,7 +58496,7 @@ function CounterOrder() {
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mx-auto w-full max-w-4xl flex-1 px-4 py-6 md:px-6", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Store2, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Store$1, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-semibold tracking-tight", children: "Đặt món tại quầy" })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { className: "mb-4", "data-ocid": "counter.menu_card", children: [
@@ -56205,7 +58534,7 @@ function CounterOrder() {
                 itemCount,
                 " món"
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-2xl font-bold text-foreground", children: formatVnd$c(itemsTotal) })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-2xl font-bold text-foreground", children: formatVnd$f(itemsTotal) })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(
               Button,
@@ -56220,7 +58549,7 @@ function CounterOrder() {
                 ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingCart, { className: "h-4 w-4", "aria-hidden": "true" }),
                   "Đặt đơn · ",
-                  formatVnd$c(itemsTotal)
+                  formatVnd$f(itemsTotal)
                 ] })
               }
             )
@@ -56240,7 +58569,7 @@ function CounterOrder() {
 }
 const STEPS = [
   { icon: Receipt, label: "Bạn đặt đơn" },
-  { icon: Store2, label: "Nhà hàng nhận đơn" },
+  { icon: Store$1, label: "Nhà hàng nhận đơn" },
   { icon: Phone, label: "Bạn gọi tài xế" },
   { icon: CreditCard, label: "Tài xế đến quán, trả tiền & nhận hàng" },
   { icon: Package, label: "Hàng giao cho bạn" }
@@ -56432,545 +58761,6 @@ function OrderProcessFlow() {
           ] })
         ] })
       ]
-    }
-  );
-}
-function useStateMachine(initialState, machine) {
-  return reactExports.useReducer((state, event) => {
-    const nextState = machine[state][event];
-    return nextState ?? state;
-  }, initialState);
-}
-var Presence = (props) => {
-  const { present, children } = props;
-  const presence = usePresence(present);
-  const child = typeof children === "function" ? children({ present: presence.isPresent }) : reactExports.Children.only(children);
-  const ref = useComposedRefs(presence.ref, getElementRef(child));
-  const forceMount = typeof children === "function";
-  return forceMount || presence.isPresent ? reactExports.cloneElement(child, { ref }) : null;
-};
-Presence.displayName = "Presence";
-function usePresence(present) {
-  const [node, setNode] = reactExports.useState();
-  const stylesRef = reactExports.useRef(null);
-  const prevPresentRef = reactExports.useRef(present);
-  const prevAnimationNameRef = reactExports.useRef("none");
-  const initialState = present ? "mounted" : "unmounted";
-  const [state, send] = useStateMachine(initialState, {
-    mounted: {
-      UNMOUNT: "unmounted",
-      ANIMATION_OUT: "unmountSuspended"
-    },
-    unmountSuspended: {
-      MOUNT: "mounted",
-      ANIMATION_END: "unmounted"
-    },
-    unmounted: {
-      MOUNT: "mounted"
-    }
-  });
-  reactExports.useEffect(() => {
-    const currentAnimationName = getAnimationName(stylesRef.current);
-    prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
-  }, [state]);
-  useLayoutEffect2(() => {
-    const styles = stylesRef.current;
-    const wasPresent = prevPresentRef.current;
-    const hasPresentChanged = wasPresent !== present;
-    if (hasPresentChanged) {
-      const prevAnimationName = prevAnimationNameRef.current;
-      const currentAnimationName = getAnimationName(styles);
-      if (present) {
-        send("MOUNT");
-      } else if (currentAnimationName === "none" || (styles == null ? void 0 : styles.display) === "none") {
-        send("UNMOUNT");
-      } else {
-        const isAnimating = prevAnimationName !== currentAnimationName;
-        if (wasPresent && isAnimating) {
-          send("ANIMATION_OUT");
-        } else {
-          send("UNMOUNT");
-        }
-      }
-      prevPresentRef.current = present;
-    }
-  }, [present, send]);
-  useLayoutEffect2(() => {
-    if (node) {
-      let timeoutId;
-      const ownerWindow = node.ownerDocument.defaultView ?? window;
-      const handleAnimationEnd = (event) => {
-        const currentAnimationName = getAnimationName(stylesRef.current);
-        const isCurrentAnimation = currentAnimationName.includes(CSS.escape(event.animationName));
-        if (event.target === node && isCurrentAnimation) {
-          send("ANIMATION_END");
-          if (!prevPresentRef.current) {
-            const currentFillMode = node.style.animationFillMode;
-            node.style.animationFillMode = "forwards";
-            timeoutId = ownerWindow.setTimeout(() => {
-              if (node.style.animationFillMode === "forwards") {
-                node.style.animationFillMode = currentFillMode;
-              }
-            });
-          }
-        }
-      };
-      const handleAnimationStart = (event) => {
-        if (event.target === node) {
-          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
-        }
-      };
-      node.addEventListener("animationstart", handleAnimationStart);
-      node.addEventListener("animationcancel", handleAnimationEnd);
-      node.addEventListener("animationend", handleAnimationEnd);
-      return () => {
-        ownerWindow.clearTimeout(timeoutId);
-        node.removeEventListener("animationstart", handleAnimationStart);
-        node.removeEventListener("animationcancel", handleAnimationEnd);
-        node.removeEventListener("animationend", handleAnimationEnd);
-      };
-    } else {
-      send("ANIMATION_END");
-    }
-  }, [node, send]);
-  return {
-    isPresent: ["mounted", "unmountSuspended"].includes(state),
-    ref: reactExports.useCallback((node2) => {
-      stylesRef.current = node2 ? getComputedStyle(node2) : null;
-      setNode(node2);
-    }, [])
-  };
-}
-function getAnimationName(styles) {
-  return (styles == null ? void 0 : styles.animationName) || "none";
-}
-function getElementRef(element) {
-  var _a2, _b2;
-  let getter = (_a2 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a2.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b2 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b2.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-var DIALOG_NAME = "Dialog";
-var [createDialogContext, createDialogScope] = createContextScope(DIALOG_NAME);
-var [DialogProvider, useDialogContext] = createDialogContext(DIALOG_NAME);
-var Dialog$1 = (props) => {
-  const {
-    __scopeDialog,
-    children,
-    open: openProp,
-    defaultOpen,
-    onOpenChange,
-    modal = true
-  } = props;
-  const triggerRef = reactExports.useRef(null);
-  const contentRef = reactExports.useRef(null);
-  const [open, setOpen] = useControllableState({
-    prop: openProp,
-    defaultProp: defaultOpen ?? false,
-    onChange: onOpenChange,
-    caller: DIALOG_NAME
-  });
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    DialogProvider,
-    {
-      scope: __scopeDialog,
-      triggerRef,
-      contentRef,
-      contentId: useId(),
-      titleId: useId(),
-      descriptionId: useId(),
-      open,
-      onOpenChange: setOpen,
-      onOpenToggle: reactExports.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
-      modal,
-      children
-    }
-  );
-};
-Dialog$1.displayName = DIALOG_NAME;
-var TRIGGER_NAME$2 = "DialogTrigger";
-var DialogTrigger = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...triggerProps } = props;
-    const context = useDialogContext(TRIGGER_NAME$2, __scopeDialog);
-    const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        "aria-haspopup": "dialog",
-        "aria-expanded": context.open,
-        "aria-controls": context.contentId,
-        "data-state": getState$1(context.open),
-        ...triggerProps,
-        ref: composedTriggerRef,
-        onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
-      }
-    );
-  }
-);
-DialogTrigger.displayName = TRIGGER_NAME$2;
-var PORTAL_NAME$1 = "DialogPortal";
-var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME$1, {
-  forceMount: void 0
-});
-var DialogPortal$1 = (props) => {
-  const { __scopeDialog, forceMount, children, container } = props;
-  const context = useDialogContext(PORTAL_NAME$1, __scopeDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: reactExports.Children.map(children, (child) => /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$2, { asChild: true, container, children: child }) })) });
-};
-DialogPortal$1.displayName = PORTAL_NAME$1;
-var OVERLAY_NAME$1 = "DialogOverlay";
-var DialogOverlay$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const portalContext = usePortalContext(OVERLAY_NAME$1, props.__scopeDialog);
-    const { forceMount = portalContext.forceMount, ...overlayProps } = props;
-    const context = useDialogContext(OVERLAY_NAME$1, props.__scopeDialog);
-    return context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
-  }
-);
-DialogOverlay$1.displayName = OVERLAY_NAME$1;
-var Slot = /* @__PURE__ */ createSlot("DialogOverlay.RemoveScroll");
-var DialogOverlayImpl = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...overlayProps } = props;
-    const context = useDialogContext(OVERLAY_NAME$1, __scopeDialog);
-    return (
-      // Make sure `Content` is scrollable even when it doesn't live inside `RemoveScroll`
-      // ie. when `Overlay` and `Content` are siblings
-      /* @__PURE__ */ jsxRuntimeExports.jsx(ReactRemoveScroll, { as: Slot, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Primitive.div,
-        {
-          "data-state": getState$1(context.open),
-          ...overlayProps,
-          ref: forwardedRef,
-          style: { pointerEvents: "auto", ...overlayProps.style }
-        }
-      ) })
-    );
-  }
-);
-var CONTENT_NAME$2 = "DialogContent";
-var DialogContent$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const portalContext = usePortalContext(CONTENT_NAME$2, props.__scopeDialog);
-    const { forceMount = portalContext.forceMount, ...contentProps } = props;
-    const context = useDialogContext(CONTENT_NAME$2, props.__scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
-  }
-);
-DialogContent$1.displayName = CONTENT_NAME$2;
-var DialogContentModal = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const context = useDialogContext(CONTENT_NAME$2, props.__scopeDialog);
-    const contentRef = reactExports.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
-    reactExports.useEffect(() => {
-      const content = contentRef.current;
-      if (content) return hideOthers(content);
-    }, []);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      DialogContentImpl,
-      {
-        ...props,
-        ref: composedRefs,
-        trapFocus: context.open,
-        disableOutsidePointerEvents: true,
-        onCloseAutoFocus: composeEventHandlers(props.onCloseAutoFocus, (event) => {
-          var _a2;
-          event.preventDefault();
-          (_a2 = context.triggerRef.current) == null ? void 0 : _a2.focus();
-        }),
-        onPointerDownOutside: composeEventHandlers(props.onPointerDownOutside, (event) => {
-          const originalEvent = event.detail.originalEvent;
-          const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
-          const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
-          if (isRightClick) event.preventDefault();
-        }),
-        onFocusOutside: composeEventHandlers(
-          props.onFocusOutside,
-          (event) => event.preventDefault()
-        )
-      }
-    );
-  }
-);
-var DialogContentNonModal = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const context = useDialogContext(CONTENT_NAME$2, props.__scopeDialog);
-    const hasInteractedOutsideRef = reactExports.useRef(false);
-    const hasPointerDownOutsideRef = reactExports.useRef(false);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      DialogContentImpl,
-      {
-        ...props,
-        ref: forwardedRef,
-        trapFocus: false,
-        disableOutsidePointerEvents: false,
-        onCloseAutoFocus: (event) => {
-          var _a2, _b2;
-          (_a2 = props.onCloseAutoFocus) == null ? void 0 : _a2.call(props, event);
-          if (!event.defaultPrevented) {
-            if (!hasInteractedOutsideRef.current) (_b2 = context.triggerRef.current) == null ? void 0 : _b2.focus();
-            event.preventDefault();
-          }
-          hasInteractedOutsideRef.current = false;
-          hasPointerDownOutsideRef.current = false;
-        },
-        onInteractOutside: (event) => {
-          var _a2, _b2;
-          (_a2 = props.onInteractOutside) == null ? void 0 : _a2.call(props, event);
-          if (!event.defaultPrevented) {
-            hasInteractedOutsideRef.current = true;
-            if (event.detail.originalEvent.type === "pointerdown") {
-              hasPointerDownOutsideRef.current = true;
-            }
-          }
-          const target = event.target;
-          const targetIsTrigger = (_b2 = context.triggerRef.current) == null ? void 0 : _b2.contains(target);
-          if (targetIsTrigger) event.preventDefault();
-          if (event.detail.originalEvent.type === "focusin" && hasPointerDownOutsideRef.current) {
-            event.preventDefault();
-          }
-        }
-      }
-    );
-  }
-);
-var DialogContentImpl = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
-    const context = useDialogContext(CONTENT_NAME$2, __scopeDialog);
-    const contentRef = reactExports.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, contentRef);
-    useFocusGuards();
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        FocusScope,
-        {
-          asChild: true,
-          loop: true,
-          trapped: trapFocus,
-          onMountAutoFocus: onOpenAutoFocus,
-          onUnmountAutoFocus: onCloseAutoFocus,
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            DismissableLayer,
-            {
-              role: "dialog",
-              id: context.contentId,
-              "aria-describedby": context.descriptionId,
-              "aria-labelledby": context.titleId,
-              "data-state": getState$1(context.open),
-              ...contentProps,
-              ref: composedRefs,
-              onDismiss: () => context.onOpenChange(false)
-            }
-          )
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(TitleWarning, { titleId: context.titleId }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(DescriptionWarning$1, { contentRef, descriptionId: context.descriptionId })
-      ] })
-    ] });
-  }
-);
-var TITLE_NAME$1 = "DialogTitle";
-var DialogTitle$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...titleProps } = props;
-    const context = useDialogContext(TITLE_NAME$1, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
-  }
-);
-DialogTitle$1.displayName = TITLE_NAME$1;
-var DESCRIPTION_NAME$1 = "DialogDescription";
-var DialogDescription$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...descriptionProps } = props;
-    const context = useDialogContext(DESCRIPTION_NAME$1, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
-  }
-);
-DialogDescription$1.displayName = DESCRIPTION_NAME$1;
-var CLOSE_NAME = "DialogClose";
-var DialogClose = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...closeProps } = props;
-    const context = useDialogContext(CLOSE_NAME, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        ...closeProps,
-        ref: forwardedRef,
-        onClick: composeEventHandlers(props.onClick, () => context.onOpenChange(false))
-      }
-    );
-  }
-);
-DialogClose.displayName = CLOSE_NAME;
-function getState$1(open) {
-  return open ? "open" : "closed";
-}
-var TITLE_WARNING_NAME = "DialogTitleWarning";
-var [WarningProvider, useWarningContext] = createContext2(TITLE_WARNING_NAME, {
-  contentName: CONTENT_NAME$2,
-  titleName: TITLE_NAME$1,
-  docsSlug: "dialog"
-});
-var TitleWarning = ({ titleId }) => {
-  const titleWarningContext = useWarningContext(TITLE_WARNING_NAME);
-  const MESSAGE = `\`${titleWarningContext.contentName}\` requires a \`${titleWarningContext.titleName}\` for the component to be accessible for screen reader users.
-
-If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
-
-For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
-  reactExports.useEffect(() => {
-    if (titleId) {
-      const hasTitle = document.getElementById(titleId);
-      if (!hasTitle) console.error(MESSAGE);
-    }
-  }, [MESSAGE, titleId]);
-  return null;
-};
-var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
-var DescriptionWarning$1 = ({ contentRef, descriptionId }) => {
-  const descriptionWarningContext = useWarningContext(DESCRIPTION_WARNING_NAME);
-  const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${descriptionWarningContext.contentName}}.`;
-  reactExports.useEffect(() => {
-    var _a2;
-    const describedById = (_a2 = contentRef.current) == null ? void 0 : _a2.getAttribute("aria-describedby");
-    if (descriptionId && describedById) {
-      const hasDescription = document.getElementById(descriptionId);
-      if (!hasDescription) console.warn(MESSAGE);
-    }
-  }, [MESSAGE, contentRef, descriptionId]);
-  return null;
-};
-var Root$2 = Dialog$1;
-var Trigger$1 = DialogTrigger;
-var Portal = DialogPortal$1;
-var Overlay = DialogOverlay$1;
-var Content$1 = DialogContent$1;
-var Title = DialogTitle$1;
-var Description = DialogDescription$1;
-var Close = DialogClose;
-function Dialog({
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$2, { "data-slot": "dialog", ...props });
-}
-function DialogPortal({
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { "data-slot": "dialog-portal", ...props });
-}
-function DialogOverlay({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Overlay,
-    {
-      "data-slot": "dialog-overlay",
-      className: cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function DialogContent({
-  className,
-  children,
-  showCloseButton = true,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogPortal, { "data-slot": "dialog-portal", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlay, {}),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      Content$1,
-      {
-        "data-slot": "dialog-content",
-        className: cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
-          className
-        ),
-        ...props,
-        children: [
-          children,
-          showCloseButton && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            Close,
-            {
-              "data-slot": "dialog-close",
-              className: "ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(X, {}),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sr-only", children: "Close" })
-              ]
-            }
-          )
-        ]
-      }
-    )
-  ] });
-}
-function DialogHeader({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "dialog-header",
-      className: cn("flex flex-col gap-2 text-center sm:text-left", className),
-      ...props
-    }
-  );
-}
-function DialogFooter({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "dialog-footer",
-      className: cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function DialogTitle({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Title,
-    {
-      "data-slot": "dialog-title",
-      className: cn("text-lg leading-none font-semibold", className),
-      ...props
-    }
-  );
-}
-function DialogDescription({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Description,
-    {
-      "data-slot": "dialog-description",
-      className: cn("text-muted-foreground text-sm", className),
-      ...props
     }
   );
 }
@@ -57456,7 +59246,7 @@ function usePromotionCountdown(promotion) {
   }, [promotion]);
   return state;
 }
-function formatVnd$b(n) {
+function formatVnd$e(n) {
   try {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -57529,11 +59319,11 @@ function PromotionBanner() {
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs font-medium text-foreground", children: [
                   "Đơn từ ",
-                  formatVnd$b(t.minOrderValue)
+                  formatVnd$e(t.minOrderValue)
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-display text-sm font-bold text-destructive", children: [
                   "−",
-                  formatVnd$b(t.discountAmount)
+                  formatVnd$e(t.discountAmount)
                 ] })
               ]
             },
@@ -57641,7 +59431,7 @@ function PromotionBanner() {
     )
   ] });
 }
-function formatVnd$a(n) {
+function formatVnd$d(n) {
   try {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -57652,7 +59442,7 @@ function formatVnd$a(n) {
     return `${n} đ`;
   }
 }
-function formatDate$4(yyyymmdd) {
+function formatDate$5(yyyymmdd) {
   if (yyyymmdd.length !== 8) return yyyymmdd;
   return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
 }
@@ -57689,7 +59479,7 @@ function RegistrationPromoBanner() {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "ml-6 mt-1 text-xs text-muted-foreground", children: [
           "Xác thực email lần đầu, nhận ngay phiếu giảm giá",
           " ",
-          formatVnd$a(promo.voucherValue),
+          formatVnd$d(promo.voucherValue),
           " cho đơn tiếp theo — có hiệu lực",
           " ",
           promo.voucherValidDays.toString(),
@@ -57704,10 +59494,10 @@ function RegistrationPromoBanner() {
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(CalendarRange, { className: "h-3 w-3 shrink-0", "aria-hidden": "true" }),
               "Chương trình áp dụng: từ ",
-              formatDate$4(promo.startDate),
+              formatDate$5(promo.startDate),
               " đến",
               " ",
-              formatDate$4(promo.endDate)
+              formatDate$5(promo.endDate)
             ]
           }
         ),
@@ -57781,12 +59571,12 @@ function RestaurantSelect({
   ) });
 }
 function Sheet({ ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$2, { "data-slot": "sheet", ...props });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$5, { "data-slot": "sheet", ...props });
 }
 function SheetPortal({
   ...props
 }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { "data-slot": "sheet-portal", ...props });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$1, { "data-slot": "sheet-portal", ...props });
 }
 function SheetOverlay({
   className,
@@ -57813,7 +59603,7 @@ function SheetContent({
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(SheetPortal, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(SheetOverlay, {}),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      Content$1,
+      Content$2,
       {
         "data-slot": "sheet-content",
         className: cn(
@@ -57972,7 +59762,7 @@ function useOpenCountdown(openHour, openMinute) {
   }, [openHour, openMinute]);
   return { remainingMs, formatted: formatDuration(remainingMs) };
 }
-function formatVnd$9(value) {
+function formatVnd$c(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -58278,7 +60068,7 @@ function CreateOrder() {
                       children: [
                         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-2 text-xs font-semibold leading-snug", children: m2.name }),
                         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-auto flex items-center justify-between gap-1", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: formatVnd$9(Number(m2.price)) }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: formatVnd$c(Number(m2.price)) }),
                           /* @__PURE__ */ jsxRuntimeExports.jsx(
                             "button",
                             {
@@ -58317,7 +60107,7 @@ function CreateOrder() {
                   itemCount,
                   " món"
                 ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold", children: formatVnd$9(totalAmount) })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold", children: formatVnd$c(totalAmount) })
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingCart, { className: "h-4 w-4", "aria-hidden": "true" }),
@@ -58351,7 +60141,7 @@ function CreateOrder() {
                             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
                               /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "line-clamp-1 font-medium", children: l2.item.name }),
                               /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground", children: [
-                                formatVnd$9(Number(l2.item.price)),
+                                formatVnd$c(Number(l2.item.price)),
                                 " × ",
                                 l2.quantity
                               ] })
@@ -58445,7 +60235,7 @@ function CreateOrder() {
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Separator, {}),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-sm", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Tổng tiền hàng" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono", children: formatVnd$9(totalAmount) })
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono", children: formatVnd$c(totalAmount) })
                 ] }),
                 cartDiscounts.kmDiscount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
                   "div",
@@ -58456,7 +60246,7 @@ function CreateOrder() {
                       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: cartDiscounts.kmLabel || "Khuyến mãi giờ vàng" }),
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [
                         "-",
-                        formatVnd$9(cartDiscounts.kmDiscount)
+                        formatVnd$c(cartDiscounts.kmDiscount)
                       ] })
                     ]
                   }
@@ -58489,7 +60279,7 @@ function CreateOrder() {
                             /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Không dùng phiếu" }),
                             cartDiscounts.validVouchers.map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("option", { value: v2.code, children: [
                               "Giảm ",
-                              formatVnd$9(Number(v2.value)),
+                              formatVnd$c(Number(v2.value)),
                               " (HSD",
                               " ",
                               formatVoucherDate(v2.endDate),
@@ -58510,7 +60300,7 @@ function CreateOrder() {
                       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Phiếu giảm giá" }),
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [
                         "-",
-                        formatVnd$9(cartDiscounts.voucherDiscount)
+                        formatVnd$c(cartDiscounts.voucherDiscount)
                       ] })
                     ]
                   }
@@ -58521,7 +60311,7 @@ function CreateOrder() {
                     /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "h-4 w-4", "aria-hidden": "true" }),
                     "Tổng thanh toán"
                   ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]", children: formatVnd$9(cartDiscounts.finalTotal) })
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]", children: formatVnd$c(cartDiscounts.finalTotal) })
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sticky bottom-0 -mx-6 border-t border-border bg-background px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3", children: [
                   storeClosed && /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -58559,7 +60349,7 @@ function CreateOrder() {
                       ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
                         /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingCart, { className: "h-4 w-4", "aria-hidden": "true" }),
                         "Đặt đơn · ",
-                        formatVnd$9(cartDiscounts.finalTotal)
+                        formatVnd$c(cartDiscounts.finalTotal)
                       ] })
                     }
                   )
@@ -58575,7 +60365,10 @@ function CreateOrder() {
 const ROLE_OPTIONS = [
   { value: DeviceRole.cashier, label: "Thu ngân" },
   { value: DeviceRole.driver, label: "Tài xế" },
-  { value: DeviceRole.admin, label: "Quản trị" }
+  { value: DeviceRole.admin, label: "Quản trị" },
+  { value: DeviceRole.paymentQueue, label: "Hàng đợi thanh toán" },
+  { value: DeviceRole.accounting, label: "Kế toán" },
+  { value: DeviceRole.salesPromoReporting, label: "Báo cáo bán hàng & KM" }
 ];
 function formatExpiry(ns) {
   if (!ns || ns <= 0n) return "—";
@@ -58771,7 +60564,10 @@ function ActivationCodeForm() {
 const ROLE_LABELS = {
   [DeviceRole.admin]: "Quản trị",
   [DeviceRole.cashier]: "Thu ngân",
-  [DeviceRole.driver]: "Tài xế"
+  [DeviceRole.driver]: "Tài xế",
+  [DeviceRole.paymentQueue]: "Hàng đợi thanh toán",
+  [DeviceRole.accounting]: "Kế toán",
+  [DeviceRole.salesPromoReporting]: "Báo cáo bán hàng & KM"
 };
 function formatTimestamp(ns) {
   if (!ns || ns <= 0n) return "—";
@@ -58929,7 +60725,13 @@ const ROLE_FILTER_OPTIONS = [
   { value: "all", label: "Tất cả vai trò" },
   { value: DeviceRole.admin, label: "Quản trị" },
   { value: DeviceRole.cashier, label: "Thu ngân" },
-  { value: DeviceRole.driver, label: "Tài xế" }
+  { value: DeviceRole.driver, label: "Tài xế" },
+  { value: DeviceRole.paymentQueue, label: "Hàng đợi thanh toán" },
+  { value: DeviceRole.accounting, label: "Kế toán" },
+  {
+    value: DeviceRole.salesPromoReporting,
+    label: "Báo cáo bán hàng & KM"
+  }
 ];
 function matchesRole(device, filter) {
   if (filter === "all") return true;
@@ -59244,6 +61046,32 @@ function DeviceManager() {
     }
   );
 }
+function stripDiacritics(s) {
+  return s.normalize("NFD").replace(new RegExp("\\p{Diacritic}", "gu"), "").replace(/đ/giu, (m2) => m2 === "đ" ? "d" : "D");
+}
+function matchesQuery(text, query) {
+  if (!query.trim()) return true;
+  return stripDiacritics(text).toLowerCase().includes(stripDiacritics(query).toLowerCase());
+}
+function HighlightMatch({
+  text,
+  query
+}) {
+  const trimmed = query.trim();
+  if (!trimmed) return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: text });
+  const normalizedText = stripDiacritics(text).toLowerCase();
+  const normalizedQuery = stripDiacritics(trimmed).toLowerCase();
+  const idx = normalizedText.indexOf(normalizedQuery);
+  if (idx === -1) return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: text });
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + trimmed.length);
+  const after = text.slice(idx + trimmed.length);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(reactExports.Fragment, { children: [
+    before,
+    /* @__PURE__ */ jsxRuntimeExports.jsx("mark", { className: "rounded-sm bg-amber-300/60 text-inherit", children: match }),
+    after
+  ] });
+}
 const BOOKING_MAP = {
   [BookingStatus.pending]: { variant: "warning", label: "Chờ xác nhận" },
   [BookingStatus.confirmed]: { variant: "info", label: "Đã xác nhận" },
@@ -59280,7 +61108,7 @@ function resolveSpec(status) {
   if (value in INVOICE_MAP) return INVOICE_MAP[value];
   return { variant: "muted", label: value || "Không xác định" };
 }
-function StatusBadge({
+function StatusBadge$1({
   status,
   label,
   size: size2 = "sm",
@@ -59319,7 +61147,7 @@ function StatusBadge({
     }
   );
 }
-function formatVnd$8(amount) {
+function formatVnd$b(amount) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -59327,7 +61155,7 @@ function formatVnd$8(amount) {
   }).format(Number(amount));
 }
 function formatUnitPrice(price, unitName) {
-  const base = formatVnd$8(price);
+  const base = formatVnd$b(price);
   return unitName ? `${base}/${unitName}` : base;
 }
 function shortOrderId(orderId) {
@@ -59474,8 +61302,8 @@ function OrderCard({
       )
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-1.5", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.bookingStatus }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: order.paymentStatus })
+      /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge$1, { status: order.bookingStatus }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge$1, { status: order.paymentStatus })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "mt-3 divide-y divide-border border-t border-border", children: order.items.map((item, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "li",
@@ -59504,7 +61332,7 @@ function OrderCard({
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Đã giảm" }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-mono font-medium text-destructive", children: [
             "-",
-            formatVnd$8(order.kmDiscountAmount + order.voucherDiscountAmount)
+            formatVnd$b(order.kmDiscountAmount + order.voucherDiscountAmount)
           ] })
         ]
       }
@@ -59516,14 +61344,14 @@ function OrderCard({
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-right", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-base font-semibold text-foreground", children: formatVnd$8(order.amount) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-base font-semibold text-foreground", children: formatVnd$b(order.amount) }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: "Tổng cộng" })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           CopyButton$1,
           {
             small: true,
-            value: formatVnd$8(order.amount),
+            value: formatVnd$b(order.amount),
             label: "tổng tiền",
             ocid: `order.card.${index2}.copy_amount_button`
           }
@@ -59585,6 +61413,7 @@ function toOrder(h2) {
     tingeeQrCode: "",
     invoiceId: "",
     pdfUrl: "",
+    paymentVerificationImage: "",
     kmDiscountAmount: BigInt(h2.kmDiscountAmount || 0),
     voucherDiscountAmount: BigInt(h2.voucherDiscountAmount || 0),
     createdAt: createdAtNs,
@@ -59596,7 +61425,7 @@ const PERIOD_LABELS = {
   week: "Tuần này",
   month: "Tháng này"
 };
-function formatVnd$7(n) {
+function formatVnd$a(n) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -59604,86 +61433,77 @@ function formatVnd$7(n) {
   }).format(n);
 }
 function DriverOrderHistory({
-  restaurantId
+  restaurantId,
+  period
 }) {
-  const [period, setPeriod] = reactExports.useState("today");
+  const [searchQuery, setSearchQuery] = reactExports.useState("");
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["restaurantHistory", restaurantId, period],
     queryFn: () => getRestaurantHistory(restaurantId, period),
     enabled: !!restaurantId,
     refetchOnWindowFocus: false
   });
-  const results = ((data == null ? void 0 : data.orders) ?? []).map(toOrder);
+  const results = ((data == null ? void 0 : data.orders) ?? []).map(toOrder).filter(
+    (o) => matchesQuery(o.cusName, searchQuery) || matchesQuery(o.cusPhone, searchQuery)
+  );
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "div",
     {
       className: "mx-auto w-full max-w-2xl px-4 py-4 md:px-6",
       "data-ocid": "driver_history.page",
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "mb-4 flex gap-1.5",
-            role: "tablist",
-            "aria-label": "Chọn khoảng thời gian",
-            "data-ocid": "driver_history.period_tabs",
-            children: Object.keys(PERIOD_LABELS).map((p2) => {
-              const active = p2 === period;
-              return /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  type: "button",
-                  role: "tab",
-                  "aria-selected": active,
-                  onClick: () => setPeriod(p2),
-                  "data-ocid": `driver_history.period_tab.${p2}`,
-                  className: `min-h-[40px] flex-1 rounded-full border px-3 py-2 text-sm font-medium transition-smooth ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-secondary"}`,
-                  children: PERIOD_LABELS[p2]
-                },
-                p2
-              );
-            })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 grid grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex flex-wrap items-baseline justify-between gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-lg font-bold tracking-tight", children: PERIOD_LABELS[period] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "div",
             {
-              className: "flex items-center gap-2.5 rounded-lg border border-border bg-card p-3",
-              "data-ocid": "driver_history.total_orders",
+              className: "flex items-center gap-2 text-xs",
+              "data-ocid": "driver_history.stats",
               children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  Receipt,
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "span",
                   {
-                    className: "h-5 w-5 shrink-0 text-primary",
-                    "aria-hidden": "true"
+                    className: "inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 font-semibold text-muted-foreground",
+                    "data-ocid": "driver_history.total_orders",
+                    children: [
+                      isLoading ? "…" : (data == null ? void 0 : data.totalOrders) ?? 0,
+                      " đơn"
+                    ]
                   }
                 ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Tổng số đơn" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-lg font-bold text-foreground", children: isLoading ? "…" : (data == null ? void 0 : data.totalOrders) ?? 0 })
-                ] })
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "span",
+                  {
+                    className: "inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 font-semibold text-foreground",
+                    "data-ocid": "driver_history.total_paid",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "h-1.5 w-1.5 rounded-full bg-success" }),
+                      isLoading ? "…" : formatVnd$a((data == null ? void 0 : data.totalPaidAmount) ?? 0),
+                      " đã TT"
+                    ]
+                  }
+                )
               ]
             }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Search,
             {
-              className: "flex items-center gap-2.5 rounded-lg border border-border bg-card p-3",
-              "data-ocid": "driver_history.total_paid",
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  Wallet,
-                  {
-                    className: "h-5 w-5 shrink-0 text-success",
-                    "aria-hidden": "true"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Đã thanh toán" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-lg font-bold text-foreground", children: isLoading ? "…" : formatVnd$7((data == null ? void 0 : data.totalPaidAmount) ?? 0) })
-                ] })
-              ]
+              className: "h-4 w-4 shrink-0 text-muted-foreground",
+              "aria-hidden": "true"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              type: "text",
+              value: searchQuery,
+              onChange: (e) => setSearchQuery(e.target.value),
+              placeholder: "Tìm theo tên hoặc SĐT khách…",
+              "data-ocid": "driver_history.search_input",
+              className: "w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             }
           )
         ] }),
@@ -59740,18 +61560,20 @@ function DriverOrderHistory({
             className: "flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center",
             "data-ocid": "driver_history.empty_state",
             children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
+              searchQuery.trim() ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Search,
+                {
+                  className: "h-10 w-10 text-muted-foreground",
+                  "aria-hidden": "true"
+                }
+              ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
                 History,
                 {
                   className: "h-10 w-10 text-muted-foreground",
                   "aria-hidden": "true"
                 }
               ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-3 text-sm text-muted-foreground", children: [
-                "Chưa có đơn hàng nào ",
-                PERIOD_LABELS[period].toLowerCase(),
-                "."
-              ] })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-3 text-sm text-muted-foreground", children: searchQuery.trim() ? `Không tìm thấy đơn khớp "${searchQuery.trim()}".` : `Chưa có đơn hàng nào ${PERIOD_LABELS[period].toLowerCase()}.` })
             ]
           }
         )
@@ -59759,17 +61581,180 @@ function DriverOrderHistory({
     }
   );
 }
-function formatVnd$6(amount) {
+function formatVnd$9(amount) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
 }
-function formatTime(ns) {
+function ManualPaymentPhotoDialog({
+  open,
+  onOpenChange,
+  orderId,
+  cusName,
+  amount,
+  onConfirmed
+}) {
+  const fileInputRef = reactExports.useRef(null);
+  const [previewUrl, setPreviewUrl] = reactExports.useState(null);
+  const [selectedFile, setSelectedFile] = reactExports.useState(null);
+  const [submitting, setSubmitting] = reactExports.useState(false);
+  const [mismatch, setMismatch] = reactExports.useState(null);
+  function reset() {
+    setPreviewUrl(null);
+    setSelectedFile(null);
+    setMismatch(null);
+    setSubmitting(false);
+  }
+  function handleFileChange(e) {
+    var _a2;
+    const file = (_a2 = e.target.files) == null ? void 0 : _a2[0];
+    if (!file) return;
+    setSelectedFile(file);
+    setMismatch(null);
+    setPreviewUrl(URL.createObjectURL(file));
+  }
+  async function handleSubmit() {
+    if (!selectedFile) return;
+    setSubmitting(true);
+    setMismatch(null);
+    try {
+      await confirmManualPaymentByPhoto(orderId, selectedFile);
+      ue.success("Đã xác nhận thanh toán.");
+      reset();
+      onOpenChange(false);
+      onConfirmed();
+    } catch (err) {
+      if (err instanceof VpsHttpError) {
+        const body = err.body;
+        if (body && typeof body.amountOk === "boolean") {
+          setMismatch({
+            amountOk: body.amountOk,
+            accountOk: body.accountOk ?? false
+          });
+          setSubmitting(false);
+          return;
+        }
+      }
+      const message = err instanceof Error ? err.message : "Không xác nhận được thanh toán.";
+      ue.error(message);
+      setSubmitting(false);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Dialog,
+    {
+      open,
+      onOpenChange: (next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      },
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { "data-ocid": "manual_payment_photo.content", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: "Xác nhận thanh toán bằng ảnh" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogDescription, { children: [
+            orderId,
+            " — ",
+            cusName || "Khách vãng lai"
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-md border border-border bg-card px-3 py-2 text-sm", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Số tiền cần khớp: " }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display font-bold text-primary", children: formatVnd$9(amount) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            ref: fileInputRef,
+            type: "file",
+            accept: "image/jpeg,image/png,image/webp",
+            onChange: handleFileChange,
+            className: "hidden",
+            "data-ocid": "manual_payment_photo.file_input"
+          }
+        ),
+        previewUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              var _a2;
+              return (_a2 = fileInputRef.current) == null ? void 0 : _a2.click();
+            },
+            className: "overflow-hidden rounded-md border border-border",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: previewUrl,
+                alt: "Ảnh xác nhận chuyển khoản",
+                className: "max-h-64 w-full object-contain"
+              }
+            )
+          }
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              var _a2;
+              return (_a2 = fileInputRef.current) == null ? void 0 : _a2.click();
+            },
+            className: "flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-border px-4 py-8 text-sm text-muted-foreground transition-smooth hover:border-primary/40",
+            "data-ocid": "manual_payment_photo.upload_zone",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Upload, { className: "h-6 w-6", "aria-hidden": "true" }),
+              "Chạm để chọn ảnh xác nhận chuyển khoản"
+            ]
+          }
+        ),
+        mismatch && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive",
+            "data-ocid": "manual_payment_photo.mismatch_banner",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                TriangleAlert,
+                {
+                  className: "mt-0.5 h-4 w-4 shrink-0",
+                  "aria-hidden": "true"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-semibold", children: "Không tìm thấy khớp trong ảnh — vui lòng chụp lại rõ hơn." }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-1", children: [
+                  !mismatch.amountOk && "Không thấy đúng số tiền. ",
+                  !mismatch.accountOk && "Không thấy đúng tài khoản nhận."
+                ] })
+              ] })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogFooter, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Button,
+          {
+            type: "button",
+            onClick: handleSubmit,
+            disabled: !selectedFile || submitting,
+            "data-ocid": "manual_payment_photo.submit_button",
+            children: [
+              submitting && /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+              submitting ? "Đang kiểm tra ảnh…" : "Xác nhận"
+            ]
+          }
+        ) })
+      ] })
+    }
+  );
+}
+function formatVnd$8(amount) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+function formatTime$1(ns) {
   const ms2 = Number(ns) / 1e6;
   return new Intl.DateTimeFormat("vi-VN", {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date(ms2));
 }
-function isPending(o) {
+function isPending$1(o) {
   return o.paymentStatus === PaymentStatus.unpaid || o.paymentStatus === PaymentStatus.expired;
 }
 function isExpired(o) {
@@ -59799,8 +61784,22 @@ function PaymentQueue({
   onPay,
   payingOrderId
 }) {
-  const pending = orders.filter((o) => isPending(o) && isToday(o.createdAt));
-  const sorted = [...pending].sort((a2, b2) => {
+  const [photoConfirmOrder, setPhotoConfirmOrder] = reactExports.useState(
+    null
+  );
+  const [searchQuery, setSearchQuery] = reactExports.useState("");
+  const pending = orders.filter((o) => isPending$1(o) && isToday(o.createdAt));
+  const filtered = pending.filter(
+    (o) => matchesQuery(o.cusName, searchQuery) || matchesQuery(o.cusPhone, searchQuery)
+  );
+  const pendingOrderIds = pending.map((o) => o.orderId);
+  const { data: photoEligibility } = useQuery({
+    queryKey: ["manual-photo-eligibility", pendingOrderIds.join(",")],
+    queryFn: () => getManualPhotoConfirmEligibility(pendingOrderIds),
+    enabled: pendingOrderIds.length > 0,
+    refetchInterval: 15e3
+  });
+  const sorted = [...filtered].sort((a2, b2) => {
     const aOverdue = isOverdue(a2.createdAt) ? 0 : 1;
     const bOverdue = isOverdue(b2.createdAt) ? 0 : 1;
     if (aOverdue !== bOverdue) return aOverdue - bOverdue;
@@ -59812,15 +61811,31 @@ function PaymentQueue({
       className: "mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8",
       "data-ocid": "queue.section",
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center justify-between gap-3", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(ListOrdered, { className: "h-5 w-5 text-primary", "aria-hidden": "true" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-xl font-bold tracking-tight md:text-2xl", children: "Hàng đợi thanh toán" })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-4 flex items-center gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Search,
+              {
+                className: "h-4 w-4 shrink-0 text-muted-foreground",
+                "aria-hidden": "true"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                type: "text",
+                value: searchQuery,
+                onChange: (e) => setSearchQuery(e.target.value),
+                placeholder: "Tìm theo tên hoặc SĐT khách…",
+                "data-ocid": "queue.search_input",
+                className: "w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+              }
+            )
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "span",
             {
-              className: "inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
+              className: "inline-flex shrink-0 items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary",
               "data-ocid": "queue.count",
               children: [
                 sorted.length,
@@ -59859,11 +61874,11 @@ function PaymentQueue({
                 {
                   className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
                   "aria-hidden": "true",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingBag, { className: "h-7 w-7" })
+                  children: searchQuery.trim() ? /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "h-7 w-7" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingBag, { className: "h-7 w-7" })
                 }
               ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Không có đơn chờ thanh toán" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Hàng đợi trống. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: searchQuery.trim() ? `Không tìm thấy đơn khớp "${searchQuery.trim()}"` : "Không có đơn chờ thanh toán" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: searchQuery.trim() ? "Thử tìm theo tên hoặc SĐT khác." : "Hàng đợi trống. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
             ]
           }
         ),
@@ -59876,6 +61891,7 @@ function PaymentQueue({
             children: sorted.map((order, idx) => {
               const isPaying = payingOrderId === order.orderId;
               const expired = isExpired(order);
+              const isCancelled = order.bookingStatus === BookingStatus.cancelled;
               const discounted = hasDiscount(order);
               return /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "li",
@@ -59896,7 +61912,7 @@ function PaymentQueue({
                             title: "Thời gian tạo đơn",
                             children: [
                               /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
-                              formatTime(order.createdAt)
+                              formatTime$1(order.createdAt)
                             ]
                           }
                         ),
@@ -59909,11 +61925,24 @@ function PaymentQueue({
                           }
                         )
                       ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-2 truncate font-display text-base font-semibold text-foreground", children: order.cusName || "Khách vãng lai" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "mt-2 truncate font-display text-base font-semibold text-foreground", children: order.cusName ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        HighlightMatch,
+                        {
+                          text: order.cusName,
+                          query: searchQuery
+                        }
+                      ) : "Khách vãng lai" }),
                       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-0.5 truncate font-mono text-xs text-muted-foreground", children: order.orderId }),
                       order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-0.5 text-xs text-muted-foreground", children: [
-                        "SĐT: ",
-                        order.cusPhone
+                        "SĐT:",
+                        " ",
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          HighlightMatch,
+                          {
+                            text: order.cusPhone,
+                            query: searchQuery
+                          }
+                        )
                       ] }),
                       order.items && order.items.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
                         "ul",
@@ -59930,7 +61959,7 @@ function PaymentQueue({
                                   " × ",
                                   Number(it2.quantity)
                                 ] }),
-                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$6(
+                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shrink-0 font-mono", children: formatVnd$8(
                                   BigInt(Number(it2.price) * Number(it2.quantity))
                                 ) })
                               ]
@@ -59948,34 +61977,59 @@ function PaymentQueue({
                           "data-ocid": `queue.discount.${idx + 1}`,
                           children: [
                             "Đã giảm -",
-                            formatVnd$6(
+                            formatVnd$8(
                               order.kmDiscountAmount + order.voucherDiscountAmount
                             )
                           ]
                         }
                       ),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$6(order.amount - order.shippingFee) }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "button",
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-xl font-bold text-primary", children: formatVnd$8(order.amount - order.shippingFee) }),
+                      isCancelled ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "span",
                         {
-                          type: "button",
-                          onClick: () => onPay(order),
-                          disabled: isPaying,
-                          "data-ocid": `queue.pay_button.${idx + 1}`,
-                          "aria-label": `Thanh toán đơn ${order.cusName || order.orderId}`,
-                          className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
-                          children: isPaying ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              LoaderCircle,
-                              {
-                                className: "h-4 w-4 animate-spin",
-                                "aria-hidden": "true"
-                              }
-                            ),
-                            "Đang mở…"
-                          ] }) : expired ? "Tạo QR mới" : "Thanh toán"
+                          "data-ocid": `queue.cancelled_badge.${idx + 1}`,
+                          className: "inline-flex min-h-[36px] items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive",
+                          children: "Đơn đã huỷ"
                         }
-                      )
+                      ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "button",
+                          {
+                            type: "button",
+                            onClick: () => onPay(order),
+                            disabled: isPaying,
+                            "data-ocid": `queue.pay_button.${idx + 1}`,
+                            "aria-label": `Thanh toán đơn ${order.cusName || order.orderId}`,
+                            className: "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-smooth hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+                            children: isPaying ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                LoaderCircle,
+                                {
+                                  className: "h-4 w-4 animate-spin",
+                                  "aria-hidden": "true"
+                                }
+                              ),
+                              "Đang mở…"
+                            ] }) : expired ? "Tạo QR mới" : "Thanh toán"
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            onClick: () => setPhotoConfirmOrder(order),
+                            disabled: (photoEligibility == null ? void 0 : photoEligibility[order.orderId]) !== true,
+                            "data-ocid": `queue.manual_photo_button.${idx + 1}`,
+                            "aria-label": `Xác nhận thanh toán bằng ảnh cho đơn ${order.cusName || order.orderId}`,
+                            title: (photoEligibility == null ? void 0 : photoEligibility[order.orderId]) !== true ? "Chỉ dùng được sau khi đơn đã từng tạo QR" : void 0,
+                            className: "inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-card",
+                            children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(Camera, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+                              "Xác nhận thủ công bằng ảnh"
+                            ]
+                          }
+                        )
+                      ] })
                     ] })
                   ] })
                 },
@@ -59983,12 +62037,25 @@ function PaymentQueue({
               );
             })
           }
+        ),
+        photoConfirmOrder && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          ManualPaymentPhotoDialog,
+          {
+            open: !!photoConfirmOrder,
+            onOpenChange: (open) => {
+              if (!open) setPhotoConfirmOrder(null);
+            },
+            orderId: photoConfirmOrder.orderId,
+            cusName: photoConfirmOrder.cusName,
+            amount: photoConfirmOrder.amount - photoConfirmOrder.shippingFee,
+            onConfirmed: () => setPhotoConfirmOrder(null)
+          }
         )
       ]
     }
   );
 }
-function formatVnd$5(amount) {
+function formatVnd$7(amount) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
 }
 function QRDisplay({ order, onClose, onPaid }) {
@@ -60168,7 +62235,7 @@ function QRDisplay({ order, onClose, onPaid }) {
                     {
                       className: "font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl",
                       "data-ocid": "qr.amount",
-                      children: formatVnd$5(order.amount - order.shippingFee)
+                      children: formatVnd$7(order.amount - order.shippingFee)
                     }
                   ),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: "Tiền hàng (không gồm phí ship)" })
@@ -60273,13 +62340,13 @@ function QRDisplay({ order, onClose, onPaid }) {
     }
   );
 }
-function usePendingOrders(restaurantId) {
+function usePendingOrders(restaurantId, deviceId) {
   const { actor, isFetching } = useActor(createActor);
   return useQuery({
-    queryKey: ["orders", "pending", restaurantId],
+    queryKey: ["orders", "pending", restaurantId, deviceId],
     queryFn: async () => {
       if (!actor || !restaurantId) return [];
-      return actor.listPendingPaymentOrders(restaurantId);
+      return actor.listPendingPaymentOrders(restaurantId, "");
     },
     enabled: !!actor && !isFetching && !!restaurantId,
     refetchInterval: 5e3,
@@ -60287,6 +62354,12 @@ function usePendingOrders(restaurantId) {
   });
 }
 const DRIVER_STORAGE_KEY = "bbh_driver_activation";
+const NAV_ITEMS = [
+  { tab: "queue", label: "Hàng đợi", icon: ListOrdered },
+  { tab: "today", label: "Hôm nay", icon: CalendarDays },
+  { tab: "week", label: "Tuần này", icon: CalendarRange },
+  { tab: "month", label: "Tháng này", icon: Calendar }
+];
 function loadStoredActivation() {
   try {
     const raw = localStorage.getItem(DRIVER_STORAGE_KEY);
@@ -60364,106 +62437,82 @@ function DriverPaymentScreen() {
   if (!restaurantId || !deviceId) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(ActivationForm, { onActivated: handleActivated });
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "div",
-    {
-      className: "flex min-h-[calc(100vh-4rem)] flex-col",
-      "data-ocid": "driver.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "border-b border-border bg-card px-4 py-3 md:px-6",
-            "data-ocid": "driver.status_bar",
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mx-auto flex w-full max-w-2xl items-center gap-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 items-center gap-2", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "div",
-                {
-                  className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/15 text-success",
-                  "aria-hidden": "true",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(Smartphone, { className: "h-5 w-5" })
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate text-sm font-semibold text-foreground", children: deviceName || "Thiết bị đã kích hoạt" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate font-mono text-xs text-muted-foreground", children: deviceId }),
-                restaurant && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate text-xs font-medium text-foreground", children: restaurant.name }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "flex items-start gap-1 text-[11px] text-muted-foreground", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      MapPin,
-                      {
-                        className: "mt-0.5 h-3 w-3 shrink-0",
-                        "aria-hidden": "true"
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "line-clamp-2", children: restaurant.address })
-                  ] })
-                ] })
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex h-[calc(100vh-4rem)] flex-col", "data-ocid": "driver.page", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "shrink-0 border-b border-border bg-card px-4 py-3 md:px-6",
+        "data-ocid": "driver.status_bar",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mx-auto flex w-full max-w-2xl items-center gap-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 items-center gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/15 text-success",
+              "aria-hidden": "true",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Smartphone, { className: "h-5 w-5" })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate text-sm font-semibold text-foreground", children: deviceName || "Thiết bị đã kích hoạt" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate font-mono text-xs text-muted-foreground", children: deviceId }),
+            restaurant && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate text-xs font-medium text-foreground", children: restaurant.name }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "flex items-start gap-1 text-[11px] text-muted-foreground", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  MapPin,
+                  {
+                    className: "mt-0.5 h-3 w-3 shrink-0",
+                    "aria-hidden": "true"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "line-clamp-2", children: restaurant.address })
               ] })
-            ] }) })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "border-b border-border bg-card px-4 md:px-6",
-            "data-ocid": "driver.tabs",
-            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mx-auto flex w-full max-w-2xl gap-1", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  type: "button",
-                  role: "tab",
-                  "aria-selected": activeTab === "queue",
-                  onClick: () => setActiveTab("queue"),
-                  "data-ocid": "driver.tab.queue",
-                  className: `flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-smooth ${activeTab === "queue" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`,
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(ListOrdered, { className: "h-4 w-4", "aria-hidden": "true" }),
-                    "Hàng đợi thanh toán"
-                  ]
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  type: "button",
-                  role: "tab",
-                  "aria-selected": activeTab === "history",
-                  onClick: () => setActiveTab("history"),
-                  "data-ocid": "driver.tab.history",
-                  className: `flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-smooth ${activeTab === "history" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`,
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(History, { className: "h-4 w-4", "aria-hidden": "true" }),
-                    "Lịch sử đơn hàng"
-                  ]
-                }
-              )
             ] })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1", children: activeTab === "queue" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-          PaymentQueue,
+          ] })
+        ] }) })
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1 overflow-y-auto", children: activeTab === "queue" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+      PaymentQueue,
+      {
+        orders: ordersQuery.data ?? [],
+        isLoading: ordersQuery.isLoading,
+        isError: ordersQuery.isError,
+        onPay: handlePay,
+        payingOrderId: (activeOrder == null ? void 0 : activeOrder.orderId) ?? null
+      }
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(DriverOrderHistory, { restaurantId, period: activeTab }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "nav",
+      {
+        className: "flex shrink-0 border-t border-border bg-card",
+        "data-ocid": "driver.bottom_nav",
+        children: NAV_ITEMS.map(({ tab, label, icon: Icon2 }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
           {
-            orders: ordersQuery.data ?? [],
-            isLoading: ordersQuery.isLoading,
-            isError: ordersQuery.isError,
-            onPay: handlePay,
-            payingOrderId: (activeOrder == null ? void 0 : activeOrder.orderId) ?? null
-          }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(DriverOrderHistory, { restaurantId }) }),
-        activeOrder && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          QRDisplay,
-          {
-            order: activeOrder,
-            onClose: handleCloseQr,
-            onPaid: handlePaid
-          }
-        )
-      ]
-    }
-  );
+            type: "button",
+            onClick: () => setActiveTab(tab),
+            "aria-current": activeTab === tab ? "page" : void 0,
+            "data-ocid": `driver.bottom_nav.${tab}`,
+            className: `flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition-smooth ${activeTab === tab ? "text-primary" : "text-muted-foreground hover:text-foreground"}`,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-5 w-5", "aria-hidden": "true" }),
+              label
+            ]
+          },
+          tab
+        ))
+      }
+    ),
+    activeOrder && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      QRDisplay,
+      {
+        order: activeOrder,
+        onClose: handleCloseQr,
+        onPaid: handlePaid
+      }
+    )
+  ] });
 }
 const TERMS = [
   "Các chương trình khuyến mại chỉ áp dụng cho khách hàng đã xác thực email qua mã OTP.",
@@ -60572,7 +62621,7 @@ function GioiThieu() {
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-6", "data-ocid": "gioi_thieu.restaurant_chain", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "mb-1 flex items-center gap-1.5 font-display text-base font-bold text-foreground", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Store2, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Store$1, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
             "Chuỗi cửa hàng"
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mb-3 text-xs text-muted-foreground", children: "Bảng động — tự cập nhật khi thêm/bớt chi nhánh trong hệ thống, không cần sửa giao diện." }),
@@ -60910,7 +62959,7 @@ var Switch$1 = reactExports.forwardRef(
     });
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(SwitchProvider, { scope: __scopeSwitch, checked, disabled, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Primitive.button,
+        Primitive$1.button,
         {
           type: "button",
           role: "switch",
@@ -60955,7 +63004,7 @@ var SwitchThumb = reactExports.forwardRef(
     const { __scopeSwitch, ...thumbProps } = props;
     const context = useSwitchContext(THUMB_NAME, __scopeSwitch);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.span,
+      Primitive$1.span,
       {
         "data-state": getState(context.checked),
         "data-disabled": context.disabled ? "" : void 0,
@@ -61019,14 +63068,14 @@ SwitchBubbleInput.displayName = BUBBLE_INPUT_NAME;
 function getState(checked) {
   return checked ? "checked" : "unchecked";
 }
-var Root$1 = Switch$1;
+var Root = Switch$1;
 var Thumb = SwitchThumb;
 function Switch({
   className,
   ...props
 }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Root$1,
+    Root,
     {
       "data-slot": "switch",
       className: cn(
@@ -61337,23 +63386,23 @@ var useDialogScope = createDialogScope();
 var AlertDialog$1 = (props) => {
   const { __scopeAlertDialog, ...alertDialogProps } = props;
   const dialogScope = useDialogScope(__scopeAlertDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$2, { ...dialogScope, ...alertDialogProps, modal: true });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root$5, { ...dialogScope, ...alertDialogProps, modal: true });
 };
 AlertDialog$1.displayName = ROOT_NAME;
-var TRIGGER_NAME$1 = "AlertDialogTrigger";
+var TRIGGER_NAME = "AlertDialogTrigger";
 var AlertDialogTrigger = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeAlertDialog, ...triggerProps } = props;
     const dialogScope = useDialogScope(__scopeAlertDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger$1, { ...dialogScope, ...triggerProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Trigger$2, { ...dialogScope, ...triggerProps, ref: forwardedRef });
   }
 );
-AlertDialogTrigger.displayName = TRIGGER_NAME$1;
+AlertDialogTrigger.displayName = TRIGGER_NAME;
 var PORTAL_NAME = "AlertDialogPortal";
 var AlertDialogPortal$1 = (props) => {
   const { __scopeAlertDialog, ...portalProps } = props;
   const dialogScope = useDialogScope(__scopeAlertDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { ...dialogScope, ...portalProps });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$1, { ...dialogScope, ...portalProps });
 };
 AlertDialogPortal$1.displayName = PORTAL_NAME;
 var OVERLAY_NAME = "AlertDialogOverlay";
@@ -61365,8 +63414,8 @@ var AlertDialogOverlay$1 = reactExports.forwardRef(
   }
 );
 AlertDialogOverlay$1.displayName = OVERLAY_NAME;
-var CONTENT_NAME$1 = "AlertDialogContent";
-var [AlertDialogContentProvider, useAlertDialogContentContext] = createAlertDialogContext(CONTENT_NAME$1);
+var CONTENT_NAME = "AlertDialogContent";
+var [AlertDialogContentProvider, useAlertDialogContentContext] = createAlertDialogContext(CONTENT_NAME);
 var Slottable = /* @__PURE__ */ createSlottable("AlertDialogContent");
 var AlertDialogContent$1 = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -61378,11 +63427,11 @@ var AlertDialogContent$1 = reactExports.forwardRef(
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       WarningProvider,
       {
-        contentName: CONTENT_NAME$1,
+        contentName: CONTENT_NAME,
         titleName: TITLE_NAME,
         docsSlug: "alert-dialog",
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogContentProvider, { scope: __scopeAlertDialog, cancelRef, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          Content$1,
+          Content$2,
           {
             role: "alertdialog",
             ...dialogScope,
@@ -61405,7 +63454,7 @@ var AlertDialogContent$1 = reactExports.forwardRef(
     );
   }
 );
-AlertDialogContent$1.displayName = CONTENT_NAME$1;
+AlertDialogContent$1.displayName = CONTENT_NAME;
 var TITLE_NAME = "AlertDialogTitle";
 var AlertDialogTitle$1 = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -61443,11 +63492,11 @@ var AlertDialogCancel$1 = reactExports.forwardRef(
 );
 AlertDialogCancel$1.displayName = CANCEL_NAME;
 var DescriptionWarning = ({ contentRef }) => {
-  const MESSAGE = `\`${CONTENT_NAME$1}\` requires a description for the component to be accessible for screen reader users.
+  const MESSAGE = `\`${CONTENT_NAME}\` requires a description for the component to be accessible for screen reader users.
 
-You can add a description to the \`${CONTENT_NAME$1}\` by passing a \`${DESCRIPTION_NAME}\` component as a child, which also benefits sighted users by adding visible context to the dialog.
+You can add a description to the \`${CONTENT_NAME}\` by passing a \`${DESCRIPTION_NAME}\` component as a child, which also benefits sighted users by adding visible context to the dialog.
 
-Alternatively, you can use your own component as a description by assigning it an \`id\` and passing the same value to the \`aria-describedby\` prop in \`${CONTENT_NAME$1}\`. If the description is confusing or duplicative for sighted users, you can use the \`@radix-ui/react-visually-hidden\` primitive as a wrapper around your description component.
+Alternatively, you can use your own component as a description by assigning it an \`id\` and passing the same value to the \`aria-describedby\` prop in \`${CONTENT_NAME}\`. If the description is confusing or duplicative for sighted users, you can use the \`@radix-ui/react-visually-hidden\` primitive as a wrapper around your description component.
 
 For more information, see https://radix-ui.com/primitives/docs/components/alert-dialog`;
   reactExports.useEffect(() => {
@@ -61459,7 +63508,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/alert-
   }, [MESSAGE, contentRef]);
   return null;
 };
-var Root2$1 = AlertDialog$1;
+var Root2 = AlertDialog$1;
 var Portal2 = AlertDialogPortal$1;
 var Overlay2 = AlertDialogOverlay$1;
 var Content2 = AlertDialogContent$1;
@@ -61470,7 +63519,7 @@ var Description2 = AlertDialogDescription$1;
 function AlertDialog({
   ...props
 }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2$1, { "data-slot": "alert-dialog", ...props });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root2, { "data-slot": "alert-dialog", ...props });
 }
 function AlertDialogPortal({
   ...props
@@ -61591,7 +63640,7 @@ function AlertDialogCancel({
     }
   );
 }
-function formatVnd$4(n) {
+function formatVnd$6(n) {
   try {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -61647,7 +63696,7 @@ function MenuItemRow({
       }
     ) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "max-w-[200px] truncate text-sm font-medium text-foreground", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { title: item.name, children: item.name }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono text-sm text-foreground", children: formatVnd$4(item.price) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right font-mono text-sm text-foreground", children: formatVnd$6(item.price) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-sm text-muted-foreground", children: item.unitName || "—" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "text-right font-mono text-sm text-muted-foreground", children: [
       String(item.vatRate),
@@ -61959,7 +64008,7 @@ function MenuManager() {
     }
   );
 }
-function formatVnd$3(value) {
+function formatVnd$5(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -62021,7 +64070,7 @@ function PeriodSummaryPanel({ email, period }) {
         {
           className: "mt-0.5 font-mono text-2xl font-bold text-[oklch(var(--bbh-gold))]",
           "data-ocid": "order_history.period_summary.total",
-          children: formatVnd$3(total)
+          children: formatVnd$5(total)
         }
       ),
       nextGap && /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -62032,10 +64081,10 @@ function PeriodSummaryPanel({ email, period }) {
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(TrendingUp, { className: "h-4 w-4 shrink-0", "aria-hidden": "true" }),
             "Còn ",
-            formatVnd$3(nextGap.remaining),
+            formatVnd$5(nextGap.remaining),
             " nữa để nhận phiếu",
             " ",
-            formatVnd$3(Number(nextGap.tier.voucherValue))
+            formatVnd$5(Number(nextGap.tier.voucherValue))
           ]
         }
       )
@@ -62105,7 +64154,7 @@ function useSalesProgress(period, email) {
     isError
   };
 }
-function formatVnd$2(value) {
+function formatVnd$4(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -62113,7 +64162,7 @@ function formatVnd$2(value) {
   }).format(value);
 }
 function formatVndBig(value) {
-  return formatVnd$2(Number(value));
+  return formatVnd$4(Number(value));
 }
 function SalesProgressRow({ label, period, email }) {
   const { total, tierProgress, nextGap, progressPercent, isLoading } = useSalesProgress(period, email);
@@ -62126,7 +64175,7 @@ function SalesProgressRow({ label, period, email }) {
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-baseline justify-between", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11.5px] font-bold text-foreground", children: label }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-[13px] font-bold text-foreground", children: formatVnd$2(total) })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-[13px] font-bold text-foreground", children: formatVnd$4(total) })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative mx-0.5 mb-4 mt-0.5", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-2 overflow-hidden rounded-full bg-foreground/10", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -62169,7 +64218,7 @@ function SalesProgressRow({ label, period, email }) {
         nextGap && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-center text-[11px] text-muted-foreground", children: [
           "Còn",
           " ",
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-foreground", children: formatVnd$2(nextGap.remaining) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-foreground", children: formatVnd$4(nextGap.remaining) }),
           " ",
           "nữa để nhận thêm",
           " ",
@@ -62202,14 +64251,14 @@ function SalesProgressPanel({ email }) {
     }
   );
 }
-function formatVnd$1(value) {
+function formatVnd$3(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
     maximumFractionDigits: 0
   }).format(value);
 }
-function formatDate$3(yyyymmdd) {
+function formatDate$4(yyyymmdd) {
   if (yyyymmdd.length !== 8) return yyyymmdd;
   return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
 }
@@ -62268,7 +64317,7 @@ function VoucherListPanel({ email }) {
             "data-ocid": `order_history.voucher.${v2.code}`,
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]", children: formatVnd$1(Number(v2.value)) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]", children: formatVnd$3(Number(v2.value)) }),
                 v2.used ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
                   "span",
                   {
@@ -62305,456 +64354,15 @@ function VoucherListPanel({ email }) {
               /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-1 flex items-center gap-1 text-xs text-muted-foreground", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
                 "HSD: ",
-                formatDate$3(v2.startDate),
+                formatDate$4(v2.startDate),
                 " - ",
-                formatDate$3(v2.endDate)
+                formatDate$4(v2.endDate)
               ] })
             ]
           },
           v2.code
         );
       })
-    }
-  );
-}
-var ENTRY_FOCUS = "rovingFocusGroup.onEntryFocus";
-var EVENT_OPTIONS = { bubbles: false, cancelable: true };
-var GROUP_NAME = "RovingFocusGroup";
-var [Collection, useCollection, createCollectionScope] = createCollection(GROUP_NAME);
-var [createRovingFocusGroupContext, createRovingFocusGroupScope] = createContextScope(
-  GROUP_NAME,
-  [createCollectionScope]
-);
-var [RovingFocusProvider, useRovingFocusContext] = createRovingFocusGroupContext(GROUP_NAME);
-var RovingFocusGroup = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Provider, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Slot, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(RovingFocusGroupImpl, { ...props, ref: forwardedRef }) }) });
-  }
-);
-RovingFocusGroup.displayName = GROUP_NAME;
-var RovingFocusGroupImpl = reactExports.forwardRef((props, forwardedRef) => {
-  const {
-    __scopeRovingFocusGroup,
-    orientation,
-    loop = false,
-    dir,
-    currentTabStopId: currentTabStopIdProp,
-    defaultCurrentTabStopId,
-    onCurrentTabStopIdChange,
-    onEntryFocus,
-    preventScrollOnEntryFocus = false,
-    ...groupProps
-  } = props;
-  const ref = reactExports.useRef(null);
-  const composedRefs = useComposedRefs(forwardedRef, ref);
-  const direction = useDirection(dir);
-  const [currentTabStopId, setCurrentTabStopId] = useControllableState({
-    prop: currentTabStopIdProp,
-    defaultProp: defaultCurrentTabStopId ?? null,
-    onChange: onCurrentTabStopIdChange,
-    caller: GROUP_NAME
-  });
-  const [isTabbingBackOut, setIsTabbingBackOut] = reactExports.useState(false);
-  const handleEntryFocus = useCallbackRef$1(onEntryFocus);
-  const getItems = useCollection(__scopeRovingFocusGroup);
-  const isClickFocusRef = reactExports.useRef(false);
-  const [focusableItemsCount, setFocusableItemsCount] = reactExports.useState(0);
-  reactExports.useEffect(() => {
-    const node = ref.current;
-    if (node) {
-      node.addEventListener(ENTRY_FOCUS, handleEntryFocus);
-      return () => node.removeEventListener(ENTRY_FOCUS, handleEntryFocus);
-    }
-  }, [handleEntryFocus]);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    RovingFocusProvider,
-    {
-      scope: __scopeRovingFocusGroup,
-      orientation,
-      dir: direction,
-      loop,
-      currentTabStopId,
-      onItemFocus: reactExports.useCallback(
-        (tabStopId) => setCurrentTabStopId(tabStopId),
-        [setCurrentTabStopId]
-      ),
-      onItemShiftTab: reactExports.useCallback(() => setIsTabbingBackOut(true), []),
-      onFocusableItemAdd: reactExports.useCallback(
-        () => setFocusableItemsCount((prevCount) => prevCount + 1),
-        []
-      ),
-      onFocusableItemRemove: reactExports.useCallback(
-        () => setFocusableItemsCount((prevCount) => prevCount - 1),
-        []
-      ),
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Primitive.div,
-        {
-          tabIndex: isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0,
-          "data-orientation": orientation,
-          ...groupProps,
-          ref: composedRefs,
-          style: { outline: "none", ...props.style },
-          onMouseDown: composeEventHandlers(props.onMouseDown, () => {
-            isClickFocusRef.current = true;
-          }),
-          onFocus: composeEventHandlers(props.onFocus, (event) => {
-            const isKeyboardFocus = !isClickFocusRef.current;
-            if (event.target === event.currentTarget && isKeyboardFocus && !isTabbingBackOut) {
-              const entryFocusEvent = new CustomEvent(ENTRY_FOCUS, EVENT_OPTIONS);
-              event.currentTarget.dispatchEvent(entryFocusEvent);
-              if (!entryFocusEvent.defaultPrevented) {
-                const items = getItems().filter((item) => item.focusable);
-                const activeItem = items.find((item) => item.active);
-                const currentItem = items.find((item) => item.id === currentTabStopId);
-                const candidateItems = [activeItem, currentItem, ...items].filter(
-                  Boolean
-                );
-                const candidateNodes = candidateItems.map((item) => item.ref.current);
-                focusFirst(candidateNodes, preventScrollOnEntryFocus);
-              }
-            }
-            isClickFocusRef.current = false;
-          }),
-          onBlur: composeEventHandlers(props.onBlur, () => setIsTabbingBackOut(false))
-        }
-      )
-    }
-  );
-});
-var ITEM_NAME = "RovingFocusGroupItem";
-var RovingFocusGroupItem = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeRovingFocusGroup,
-      focusable = true,
-      active = false,
-      tabStopId,
-      children,
-      ...itemProps
-    } = props;
-    const autoId = useId();
-    const id = tabStopId || autoId;
-    const context = useRovingFocusContext(ITEM_NAME, __scopeRovingFocusGroup);
-    const isCurrentTabStop = context.currentTabStopId === id;
-    const getItems = useCollection(__scopeRovingFocusGroup);
-    const { onFocusableItemAdd, onFocusableItemRemove, currentTabStopId } = context;
-    reactExports.useEffect(() => {
-      if (focusable) {
-        onFocusableItemAdd();
-        return () => onFocusableItemRemove();
-      }
-    }, [focusable, onFocusableItemAdd, onFocusableItemRemove]);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Collection.ItemSlot,
-      {
-        scope: __scopeRovingFocusGroup,
-        id,
-        focusable,
-        active,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive.span,
-          {
-            tabIndex: isCurrentTabStop ? 0 : -1,
-            "data-orientation": context.orientation,
-            ...itemProps,
-            ref: forwardedRef,
-            onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
-              if (!focusable) event.preventDefault();
-              else context.onItemFocus(id);
-            }),
-            onFocus: composeEventHandlers(props.onFocus, () => context.onItemFocus(id)),
-            onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
-              if (event.key === "Tab" && event.shiftKey) {
-                context.onItemShiftTab();
-                return;
-              }
-              if (event.target !== event.currentTarget) return;
-              const focusIntent = getFocusIntent(event, context.orientation, context.dir);
-              if (focusIntent !== void 0) {
-                if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
-                event.preventDefault();
-                const items = getItems().filter((item) => item.focusable);
-                let candidateNodes = items.map((item) => item.ref.current);
-                if (focusIntent === "last") candidateNodes.reverse();
-                else if (focusIntent === "prev" || focusIntent === "next") {
-                  if (focusIntent === "prev") candidateNodes.reverse();
-                  const currentIndex = candidateNodes.indexOf(event.currentTarget);
-                  candidateNodes = context.loop ? wrapArray(candidateNodes, currentIndex + 1) : candidateNodes.slice(currentIndex + 1);
-                }
-                setTimeout(() => focusFirst(candidateNodes));
-              }
-            }),
-            children: typeof children === "function" ? children({ isCurrentTabStop, hasTabStop: currentTabStopId != null }) : children
-          }
-        )
-      }
-    );
-  }
-);
-RovingFocusGroupItem.displayName = ITEM_NAME;
-var MAP_KEY_TO_FOCUS_INTENT = {
-  ArrowLeft: "prev",
-  ArrowUp: "prev",
-  ArrowRight: "next",
-  ArrowDown: "next",
-  PageUp: "first",
-  Home: "first",
-  PageDown: "last",
-  End: "last"
-};
-function getDirectionAwareKey(key, dir) {
-  if (dir !== "rtl") return key;
-  return key === "ArrowLeft" ? "ArrowRight" : key === "ArrowRight" ? "ArrowLeft" : key;
-}
-function getFocusIntent(event, orientation, dir) {
-  const key = getDirectionAwareKey(event.key, dir);
-  if (orientation === "vertical" && ["ArrowLeft", "ArrowRight"].includes(key)) return void 0;
-  if (orientation === "horizontal" && ["ArrowUp", "ArrowDown"].includes(key)) return void 0;
-  return MAP_KEY_TO_FOCUS_INTENT[key];
-}
-function focusFirst(candidates, preventScroll = false) {
-  const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
-  for (const candidate of candidates) {
-    if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
-    candidate.focus({ preventScroll });
-    if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
-  }
-}
-function wrapArray(array, startIndex) {
-  return array.map((_2, index2) => array[(startIndex + index2) % array.length]);
-}
-var Root = RovingFocusGroup;
-var Item = RovingFocusGroupItem;
-var TABS_NAME = "Tabs";
-var [createTabsContext] = createContextScope(TABS_NAME, [
-  createRovingFocusGroupScope
-]);
-var useRovingFocusGroupScope = createRovingFocusGroupScope();
-var [TabsProvider, useTabsContext] = createTabsContext(TABS_NAME);
-var Tabs$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeTabs,
-      value: valueProp,
-      onValueChange,
-      defaultValue,
-      orientation = "horizontal",
-      dir,
-      activationMode = "automatic",
-      ...tabsProps
-    } = props;
-    const direction = useDirection(dir);
-    const [value, setValue] = useControllableState({
-      prop: valueProp,
-      onChange: onValueChange,
-      defaultProp: defaultValue ?? "",
-      caller: TABS_NAME
-    });
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      TabsProvider,
-      {
-        scope: __scopeTabs,
-        baseId: useId(),
-        value,
-        onValueChange: setValue,
-        orientation,
-        dir: direction,
-        activationMode,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive.div,
-          {
-            dir: direction,
-            "data-orientation": orientation,
-            ...tabsProps,
-            ref: forwardedRef
-          }
-        )
-      }
-    );
-  }
-);
-Tabs$1.displayName = TABS_NAME;
-var TAB_LIST_NAME = "TabsList";
-var TabsList$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeTabs, loop = true, ...listProps } = props;
-    const context = useTabsContext(TAB_LIST_NAME, __scopeTabs);
-    const rovingFocusGroupScope = useRovingFocusGroupScope(__scopeTabs);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Root,
-      {
-        asChild: true,
-        ...rovingFocusGroupScope,
-        orientation: context.orientation,
-        dir: context.dir,
-        loop,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive.div,
-          {
-            role: "tablist",
-            "aria-orientation": context.orientation,
-            ...listProps,
-            ref: forwardedRef
-          }
-        )
-      }
-    );
-  }
-);
-TabsList$1.displayName = TAB_LIST_NAME;
-var TRIGGER_NAME = "TabsTrigger";
-var TabsTrigger$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeTabs, value, disabled = false, ...triggerProps } = props;
-    const context = useTabsContext(TRIGGER_NAME, __scopeTabs);
-    const rovingFocusGroupScope = useRovingFocusGroupScope(__scopeTabs);
-    const triggerId = makeTriggerId(context.baseId, value);
-    const contentId = makeContentId(context.baseId, value);
-    const isSelected = value === context.value;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Item,
-      {
-        asChild: true,
-        ...rovingFocusGroupScope,
-        focusable: !disabled,
-        active: isSelected,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive.button,
-          {
-            type: "button",
-            role: "tab",
-            "aria-selected": isSelected,
-            "aria-controls": contentId,
-            "data-state": isSelected ? "active" : "inactive",
-            "data-disabled": disabled ? "" : void 0,
-            disabled,
-            id: triggerId,
-            ...triggerProps,
-            ref: forwardedRef,
-            onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
-              if (!disabled && event.button === 0 && event.ctrlKey === false) {
-                context.onValueChange(value);
-              } else {
-                event.preventDefault();
-              }
-            }),
-            onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
-              if ([" ", "Enter"].includes(event.key)) context.onValueChange(value);
-            }),
-            onFocus: composeEventHandlers(props.onFocus, () => {
-              const isAutomaticActivation = context.activationMode !== "manual";
-              if (!isSelected && !disabled && isAutomaticActivation) {
-                context.onValueChange(value);
-              }
-            })
-          }
-        )
-      }
-    );
-  }
-);
-TabsTrigger$1.displayName = TRIGGER_NAME;
-var CONTENT_NAME = "TabsContent";
-var TabsContent$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeTabs, value, forceMount, children, ...contentProps } = props;
-    const context = useTabsContext(CONTENT_NAME, __scopeTabs);
-    const triggerId = makeTriggerId(context.baseId, value);
-    const contentId = makeContentId(context.baseId, value);
-    const isSelected = value === context.value;
-    const isMountAnimationPreventedRef = reactExports.useRef(isSelected);
-    reactExports.useEffect(() => {
-      const rAF = requestAnimationFrame(() => isMountAnimationPreventedRef.current = false);
-      return () => cancelAnimationFrame(rAF);
-    }, []);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || isSelected, children: ({ present }) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.div,
-      {
-        "data-state": isSelected ? "active" : "inactive",
-        "data-orientation": context.orientation,
-        role: "tabpanel",
-        "aria-labelledby": triggerId,
-        hidden: !present,
-        id: contentId,
-        tabIndex: 0,
-        ...contentProps,
-        ref: forwardedRef,
-        style: {
-          ...props.style,
-          animationDuration: isMountAnimationPreventedRef.current ? "0s" : void 0
-        },
-        children: present && children
-      }
-    ) });
-  }
-);
-TabsContent$1.displayName = CONTENT_NAME;
-function makeTriggerId(baseId, value) {
-  return `${baseId}-trigger-${value}`;
-}
-function makeContentId(baseId, value) {
-  return `${baseId}-content-${value}`;
-}
-var Root2 = Tabs$1;
-var List = TabsList$1;
-var Trigger = TabsTrigger$1;
-var Content = TabsContent$1;
-function Tabs({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Root2,
-    {
-      "data-slot": "tabs",
-      className: cn("flex flex-col gap-2", className),
-      ...props
-    }
-  );
-}
-function TabsList({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    List,
-    {
-      "data-slot": "tabs-list",
-      className: cn(
-        "bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function TabsTrigger({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Trigger,
-    {
-      "data-slot": "tabs-trigger",
-      className: cn(
-        "data-[state=active]:bg-background dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function TabsContent({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Content,
-    {
-      "data-slot": "tabs-content",
-      className: cn("flex-1 outline-none", className),
-      ...props
     }
   );
 }
@@ -63112,7 +64720,7 @@ function ChangeRestaurantDialog({
       children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { "data-ocid": "change_restaurant.dialog", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogTitle, { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Store2, { className: "h-5 w-5", "aria-hidden": "true" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Store$1, { className: "h-5 w-5", "aria-hidden": "true" }),
             "Chuyển sang nhà hàng khác"
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "Dùng khi bạn đặt tài xế đến nhầm nhà hàng. Đơn của bạn sẽ được chuyển sang nhà hàng bạn chọn bên dưới." })
@@ -63214,7 +64822,7 @@ function stepIndex(status) {
   }
   return 0;
 }
-function formatVnd(amount) {
+function formatVnd$2(amount) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
 }
 function CopyButton({ value, label }) {
@@ -63513,7 +65121,7 @@ function OrderStatusView({
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-4 flex flex-col gap-1", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "Thanh toán" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status: payment, size: "md" })
+            /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge$1, { status: payment, size: "md" })
           ] })
         ]
       }
@@ -63597,14 +65205,14 @@ function OrderStatusView({
                   {
                     className: "mt-1 font-display text-lg font-bold text-primary",
                     "data-ocid": "order_tracker.total_amount",
-                    children: formatVnd(order.amount)
+                    children: formatVnd$2(order.amount)
                   }
                 )
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 CopyButton,
                 {
-                  value: formatVnd(order.amount),
+                  value: formatVnd$2(order.amount),
                   label: "Sao chép tổng tiền hàng"
                 }
               )
@@ -63761,7 +65369,7 @@ function OrderingPartners() {
       "data-ocid": "ordering_partners.page",
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "mb-6 flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Store2, { className: "h-6 w-6 text-primary", "aria-hidden": "true" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Store$1, { className: "h-6 w-6 text-primary", "aria-hidden": "true" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl", children: "Đối tác đặt món" })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm leading-relaxed text-muted-foreground", children: 'Bún Bò Huế 65 chuẩn vị Huế, giao tận nơi tại Hà Nội — đặt trực tiếp tại đây hoặc tìm "bún bò huế 65 grabfood", "bún bò huế 65 shopeefood" trên app giao đồ ăn. Đang tìm bún bò huế gần đây?' }),
@@ -63798,6 +65406,272 @@ function OrderingPartners() {
       ]
     }
   );
+}
+function formatVnd$1(amount) {
+  return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
+}
+function formatTime(ns) {
+  const ms2 = Number(ns) / 1e6;
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(ms2));
+}
+function isPending(o) {
+  return o.paymentStatus === PaymentStatus.unpaid || o.paymentStatus === PaymentStatus.expired;
+}
+function PaymentQueuePage() {
+  const stored = loadEnterpriseActivation();
+  const restaurantId = stored == null ? void 0 : stored.restaurantId;
+  const deviceId = stored == null ? void 0 : stored.deviceId;
+  const [searchQuery, setSearchQuery] = reactExports.useState("");
+  const [confirmOrder, setConfirmOrder] = reactExports.useState(null);
+  const ordersQuery = useListPendingPaymentOrders(restaurantId, deviceId, 5e3);
+  const confirmMutation = useConfirmPaymentByDevice(deviceId);
+  const orders = (ordersQuery.data ?? []).filter((o) => isPending(o));
+  const filtered = orders.filter(
+    (o) => !searchQuery.trim() || o.cusName.toLowerCase().includes(searchQuery.trim().toLowerCase()) || o.cusPhone.toLowerCase().includes(searchQuery.trim().toLowerCase()) || o.orderId.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  );
+  const totalPendingAmount = filtered.reduce((sum, o) => sum + o.amount, 0n);
+  if (!restaurantId || !deviceId) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
+        "data-ocid": "payment_queue.no_device_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
+              "aria-hidden": "true",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingBag, { className: "h-7 w-7" })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: "Chưa kích hoạt thiết bị" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "max-w-md text-sm text-muted-foreground", children: 'Thiết bị này chưa được gắn vai trò "Hàng đợi thanh toán". Vui lòng kích hoạt thiết bị bằng mã kích hoạt do quản trị viên cấp.' })
+        ]
+      }
+    );
+  }
+  async function handleConfirm(order) {
+    try {
+      await confirmMutation.mutateAsync(order.orderId);
+      ue.success(
+        `Đã xác nhận thanh toán đơn ${order.cusName || order.orderId}`
+      );
+      setConfirmOrder(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể xác nhận thanh toán.";
+      ue.error(message);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-6", "data-ocid": "payment_queue.page", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "h1",
+        {
+          className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+          "data-ocid": "payment_queue.title",
+          children: "Hàng đợi thanh toán"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Danh sách đơn chờ thanh toán của nhà hàng được gắn. Xác nhận thanh toán khi khách đã chuyển khoản." })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ent-kpi", "data-ocid": "payment_queue.kpi_count", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "ent-kpi-label", children: "Đơn chờ thanh toán" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "ent-kpi-value", children: filtered.length })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ent-kpi", "data-ocid": "payment_queue.kpi_amount", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "ent-kpi-label", children: "Tổng tiền chờ xác nhận" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "ent-kpi-value text-primary", children: formatVnd$1(totalPendingAmount) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ent-kpi", "data-ocid": "payment_queue.kpi_device", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "ent-kpi-label", children: "Thiết bị" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "truncate font-mono text-sm font-semibold text-foreground", children: stored.name || deviceId })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ent-toolbar", "data-ocid": "payment_queue.toolbar", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Search,
+          {
+            className: "h-4 w-4 shrink-0 text-muted-foreground",
+            "aria-hidden": "true"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            type: "text",
+            value: searchQuery,
+            onChange: (e) => setSearchQuery(e.target.value),
+            placeholder: "Tìm theo tên, SĐT hoặc mã đơn…",
+            "data-ocid": "payment_queue.search_input",
+            className: "w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ent-pill badge-info", "data-ocid": "payment_queue.count", children: [
+        filtered.length,
+        " đơn"
+      ] })
+    ] }),
+    ordersQuery.isError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive",
+        "data-ocid": "payment_queue.error_state",
+        children: "Không tải được danh sách đơn. Đang thử lại tự động mỗi 5 giây…"
+      }
+    ),
+    ordersQuery.isLoading && filtered.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-4 py-10 text-center",
+        "data-ocid": "payment_queue.loading_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-6 w-6 animate-spin text-muted-foreground" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang tải đơn chờ…" })
+        ]
+      }
+    ),
+    !ordersQuery.isLoading && filtered.length === 0 && !ordersQuery.isError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-4 py-12 text-center",
+        "data-ocid": "payment_queue.empty_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground",
+              "aria-hidden": "true",
+              children: searchQuery.trim() ? /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "h-7 w-7" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-7 w-7" })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display text-lg font-semibold", children: searchQuery.trim() ? `Không tìm thấy đơn khớp "${searchQuery.trim()}"` : "Không có đơn chờ thanh toán" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: searchQuery.trim() ? "Thử tìm theo tên, SĐT hoặc mã đơn khác." : "Hàng đợi trống. Đơn mới sẽ xuất hiện tự động mỗi 5 giây." })
+        ]
+      }
+    ),
+    filtered.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "overflow-hidden rounded-lg border border-border bg-card shadow-sm",
+        "data-ocid": "payment_queue.table",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full min-w-[720px] text-left", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { className: "border-b border-border bg-muted/40", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "ent-th", children: "Khách hàng" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "ent-th", children: "Mã đơn" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "ent-th", children: "Thời gian" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "ent-th text-right", children: "Tổng tiền" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "ent-th text-right", children: "Thao tác" })
+          ] }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("tbody", { children: filtered.map((order, idx) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "tr",
+            {
+              className: "ent-table-row",
+              "data-ocid": `payment_queue.row.${idx + 1}`,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "ent-td", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-medium text-foreground", children: order.cusName || "Khách vãng lai" }),
+                  order.cusPhone && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-xs text-muted-foreground", children: order.cusPhone })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "ent-td", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-xs text-muted-foreground", children: order.orderId }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "ent-td", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "inline-flex items-center gap-1 text-xs text-muted-foreground", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "h-3 w-3", "aria-hidden": "true" }),
+                  formatTime(order.createdAt)
+                ] }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "ent-td text-right", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold text-primary", children: formatVnd$1(order.amount - order.shippingFee) }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "ent-td text-right", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Button,
+                  {
+                    type: "button",
+                    size: "sm",
+                    onClick: () => setConfirmOrder(order),
+                    disabled: confirmMutation.isPending,
+                    "data-ocid": `payment_queue.confirm_button.${idx + 1}`,
+                    className: "inline-flex min-h-[36px] items-center gap-1.5",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Banknote, { className: "h-4 w-4", "aria-hidden": "true" }),
+                      "Xác nhận thanh toán"
+                    ]
+                  }
+                ) })
+              ]
+            },
+            order.orderId
+          )) })
+        ] }) })
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Dialog,
+      {
+        open: !!confirmOrder,
+        onOpenChange: (open) => {
+          if (!open) setConfirmOrder(null);
+        },
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { "data-ocid": "payment_queue.confirm_dialog", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { className: "font-display", children: "Xác nhận thanh toán" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "Xác nhận đơn hàng này đã được thanh toán? Thao tác này sẽ đánh dấu trạng thái thanh toán của đơn là đã thanh toán." })
+          ] }),
+          confirmOrder && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-4 text-sm", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Khách hàng" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: confirmOrder.cusName || "Khách vãng lai" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Mã đơn" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-xs text-foreground", children: confirmOrder.orderId })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "Số tiền" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-base font-bold text-primary", children: formatVnd$1(confirmOrder.amount - confirmOrder.shippingFee) })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "outline",
+                onClick: () => setConfirmOrder(null),
+                disabled: confirmMutation.isPending,
+                "data-ocid": "payment_queue.cancel_button",
+                children: "Huỷ"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                onClick: () => confirmOrder && handleConfirm(confirmOrder),
+                disabled: confirmMutation.isPending || !confirmOrder,
+                "data-ocid": "payment_queue.confirm_submit_button",
+                children: confirmMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    LoaderCircle,
+                    {
+                      className: "h-4 w-4 animate-spin",
+                      "aria-hidden": "true"
+                    }
+                  ),
+                  "Đang xác nhận…"
+                ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "h-4 w-4", "aria-hidden": "true" }),
+                  "Xác nhận đã thanh toán"
+                ] })
+              }
+            )
+          ] })
+        ] })
+      }
+    )
+  ] });
 }
 function normalizeEmail(v2) {
   return v2.trim().toLowerCase();
@@ -64016,16 +65890,16 @@ const WEEKDAY_LABELS = [
   "Thứ sáu",
   "Thứ bảy"
 ];
-let draftIdCounter$1 = 0;
-function nextDraftId$1() {
-  draftIdCounter$1 += 1;
-  return draftIdCounter$1;
+let draftIdCounter$2 = 0;
+function nextDraftId$2() {
+  draftIdCounter$2 += 1;
+  return draftIdCounter$2;
 }
-function toDateInputValue$2(yyyymmdd) {
+function toDateInputValue$3(yyyymmdd) {
   if (yyyymmdd.length !== 8) return "";
   return `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
 }
-function fromDateInputValue$2(value) {
+function fromDateInputValue$3(value) {
   return value.replaceAll("-", "");
 }
 function PromotionForm({
@@ -64038,23 +65912,23 @@ function PromotionForm({
   const [name, setName] = reactExports.useState((initial == null ? void 0 : initial.name) ?? "");
   const [termsUrl, setTermsUrl] = reactExports.useState((initial == null ? void 0 : initial.termsUrl) ?? "");
   const [startDate, setStartDate] = reactExports.useState(
-    toDateInputValue$2((initial == null ? void 0 : initial.startDate) ?? "")
+    toDateInputValue$3((initial == null ? void 0 : initial.startDate) ?? "")
   );
   const [endDate, setEndDate] = reactExports.useState(
-    toDateInputValue$2((initial == null ? void 0 : initial.endDate) ?? "")
+    toDateInputValue$3((initial == null ? void 0 : initial.endDate) ?? "")
   );
   const [daysOfWeek, setDaysOfWeek] = reactExports.useState(
     (initial == null ? void 0 : initial.daysOfWeek) ? [...initial.daysOfWeek] : Array(7).fill(true)
   );
   const [timeSlots, setTimeSlots] = reactExports.useState(
     (initial == null ? void 0 : initial.timeSlots) && initial.timeSlots.length > 0 ? initial.timeSlots.map((s) => ({
-      id: nextDraftId$1(),
+      id: nextDraftId$2(),
       startHour: String(s.startHour),
       startMinute: String(s.startMinute),
       durationMinutes: String(s.durationMinutes)
     })) : [
       {
-        id: nextDraftId$1(),
+        id: nextDraftId$2(),
         startHour: "",
         startMinute: "",
         durationMinutes: ""
@@ -64069,10 +65943,10 @@ function PromotionForm({
   );
   const [tiers, setTiers] = reactExports.useState(
     (initial == null ? void 0 : initial.tiers) && initial.tiers.length > 0 ? initial.tiers.map((t) => ({
-      id: nextDraftId$1(),
+      id: nextDraftId$2(),
       minOrderValue: String(t.minOrderValue),
       discountAmount: String(t.discountAmount)
-    })) : [{ id: nextDraftId$1(), minOrderValue: "", discountAmount: "" }]
+    })) : [{ id: nextDraftId$2(), minOrderValue: "", discountAmount: "" }]
   );
   const [active, setActive] = reactExports.useState((initial == null ? void 0 : initial.active) ?? true);
   const [error, setError] = reactExports.useState(null);
@@ -64081,7 +65955,7 @@ function PromotionForm({
     setTimeSlots([
       ...timeSlots,
       {
-        id: nextDraftId$1(),
+        id: nextDraftId$2(),
         startHour: "",
         startMinute: "",
         durationMinutes: ""
@@ -64095,7 +65969,7 @@ function PromotionForm({
     if (tiers.length >= 5) return;
     setTiers([
       ...tiers,
-      { id: nextDraftId$1(), minOrderValue: "", discountAmount: "" }
+      { id: nextDraftId$2(), minOrderValue: "", discountAmount: "" }
     ]);
   }
   function removeTier(index2) {
@@ -64112,7 +65986,7 @@ function PromotionForm({
       setError("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc.");
       return;
     }
-    if (fromDateInputValue$2(startDate) > fromDateInputValue$2(endDate)) {
+    if (fromDateInputValue$3(startDate) > fromDateInputValue$3(endDate)) {
       setError("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
       return;
     }
@@ -64179,8 +66053,8 @@ function PromotionForm({
     onSubmit(
       {
         name: name.trim(),
-        startDate: fromDateInputValue$2(startDate),
-        endDate: fromDateInputValue$2(endDate),
+        startDate: fromDateInputValue$3(startDate),
+        endDate: fromDateInputValue$3(endDate),
         daysOfWeek,
         timeSlots: parsedSlots,
         dailyOrderLimit: BigInt(dailyLimitNum),
@@ -64558,7 +66432,7 @@ function PromotionForm({
     }
   );
 }
-function formatDate$2(yyyymmdd) {
+function formatDate$3(yyyymmdd) {
   if (yyyymmdd.length !== 8) return yyyymmdd;
   return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
 }
@@ -64580,9 +66454,9 @@ function PromotionTableRow({
     /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-xs", children: promo.code }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium", children: promo.name }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "whitespace-nowrap text-xs text-muted-foreground", children: [
-      formatDate$2(promo.startDate),
+      formatDate$3(promo.startDate),
       " - ",
-      formatDate$2(promo.endDate)
+      formatDate$3(promo.endDate)
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-xs text-muted-foreground", children: promo.timeSlots.map(
       (s) => `${pad2(Number(s.startHour))}:${pad2(Number(s.startMinute))} (${s.durationMinutes}p)`
@@ -64937,18 +66811,18 @@ function PromotionManager() {
     }
   );
 }
-function toDateInputValue$1(yyyymmdd) {
+function toDateInputValue$2(yyyymmdd) {
   if (yyyymmdd.length !== 8) return "";
   return `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
 }
-function fromDateInputValue$1(value) {
+function fromDateInputValue$2(value) {
   return value.replaceAll("-", "");
 }
-function formatDate$1(yyyymmdd) {
+function formatDate$2(yyyymmdd) {
   if (yyyymmdd.length !== 8) return yyyymmdd;
   return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
 }
-function RegistrationPromoForm({
+function RegistrationPromoForm$1({
   initial,
   submitting,
   submitError,
@@ -64958,10 +66832,10 @@ function RegistrationPromoForm({
   const [name, setName] = reactExports.useState((initial == null ? void 0 : initial.name) ?? "");
   const [termsUrl, setTermsUrl] = reactExports.useState((initial == null ? void 0 : initial.termsUrl) ?? "");
   const [startDate, setStartDate] = reactExports.useState(
-    toDateInputValue$1((initial == null ? void 0 : initial.startDate) ?? "")
+    toDateInputValue$2((initial == null ? void 0 : initial.startDate) ?? "")
   );
   const [endDate, setEndDate] = reactExports.useState(
-    toDateInputValue$1((initial == null ? void 0 : initial.endDate) ?? "")
+    toDateInputValue$2((initial == null ? void 0 : initial.endDate) ?? "")
   );
   const [voucherValue, setVoucherValue] = reactExports.useState(
     initial ? String(initial.voucherValue) : ""
@@ -64982,7 +66856,7 @@ function RegistrationPromoForm({
       setError("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc.");
       return;
     }
-    if (fromDateInputValue$1(startDate) > fromDateInputValue$1(endDate)) {
+    if (fromDateInputValue$2(startDate) > fromDateInputValue$2(endDate)) {
       setError("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
       return;
     }
@@ -64999,8 +66873,8 @@ function RegistrationPromoForm({
     onSubmit(
       {
         name: name.trim(),
-        startDate: fromDateInputValue$1(startDate),
-        endDate: fromDateInputValue$1(endDate),
+        startDate: fromDateInputValue$2(startDate),
+        endDate: fromDateInputValue$2(endDate),
         voucherValue: BigInt(value),
         voucherValidDays: BigInt(validDays),
         termsUrl: termsUrl.trim()
@@ -65170,9 +67044,9 @@ function RegistrationPromoTableRow({
     /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-xs", children: promo.code }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium", children: promo.name }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "whitespace-nowrap text-xs text-muted-foreground", children: [
-      formatDate$1(promo.startDate),
+      formatDate$2(promo.startDate),
       " - ",
-      formatDate$1(promo.endDate)
+      formatDate$2(promo.endDate)
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "text-xs text-muted-foreground", children: [
       promo.voucherValue.toLocaleString("vi-VN"),
@@ -65349,7 +67223,7 @@ function RegistrationPromoManager() {
               ] }),
               mode.copyFrom && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mb-4 text-xs text-muted-foreground", children: 'Chương trình mới sẽ được tạo với trạng thái "Đã tắt" — bạn có thể bật lại sau khi kiểm tra thông tin.' }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
-                RegistrationPromoForm,
+                RegistrationPromoForm$1,
                 {
                   initial: mode.copyFrom,
                   submitting: createMutation.isPending,
@@ -65381,7 +67255,7 @@ function RegistrationPromoManager() {
                 )
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
-                RegistrationPromoForm,
+                RegistrationPromoForm$1,
                 {
                   initial: mode.promo,
                   submitting: updateMutation.isPending,
@@ -66534,33 +68408,33 @@ function RestaurantManager() {
     }
   );
 }
-function toDateInputValue(yyyymmdd) {
+function toDateInputValue$1(yyyymmdd) {
   if (yyyymmdd.length !== 8) return "";
   return `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
 }
-function fromDateInputValue(value) {
+function fromDateInputValue$1(value) {
   return value.replaceAll("-", "");
 }
-function formatDate(yyyymmdd) {
+function formatDate$1(yyyymmdd) {
   if (yyyymmdd.length !== 8) return yyyymmdd;
   return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
 }
-let draftIdCounter = 0;
-function nextDraftId() {
-  draftIdCounter += 1;
-  return draftIdCounter;
+let draftIdCounter$1 = 0;
+function nextDraftId$1() {
+  draftIdCounter$1 += 1;
+  return draftIdCounter$1;
 }
-function draftsFromTiers(tiers) {
+function draftsFromTiers$1(tiers) {
   if (tiers.length === 0) {
-    return [{ id: nextDraftId(), minSales: "", voucherValue: "" }];
+    return [{ id: nextDraftId$1(), minSales: "", voucherValue: "" }];
   }
   return tiers.map((t) => ({
-    id: nextDraftId(),
+    id: nextDraftId$1(),
     minSales: String(t.minSales),
     voucherValue: String(t.voucherValue)
   }));
 }
-function parseTiers(drafts, label) {
+function parseTiers$1(drafts, label) {
   const result = [];
   for (const d2 of drafts) {
     if (!d2.minSales.trim() && !d2.voucherValue.trim()) continue;
@@ -66589,7 +68463,7 @@ function TierGroup({
     if (drafts.length >= 3) return;
     setDrafts([
       ...drafts,
-      { id: nextDraftId(), minSales: "", voucherValue: "" }
+      { id: nextDraftId$1(), minSales: "", voucherValue: "" }
     ]);
   }
   function removeTier(id) {
@@ -66672,7 +68546,7 @@ function TierGroup({
     ))
   ] });
 }
-function SalesPromoForm({
+function SalesPromoForm$1({
   initial,
   submitting,
   submitError,
@@ -66682,16 +68556,16 @@ function SalesPromoForm({
   const [name, setName] = reactExports.useState((initial == null ? void 0 : initial.name) ?? "");
   const [termsUrl, setTermsUrl] = reactExports.useState((initial == null ? void 0 : initial.termsUrl) ?? "");
   const [startDate, setStartDate] = reactExports.useState(
-    toDateInputValue((initial == null ? void 0 : initial.startDate) ?? "")
+    toDateInputValue$1((initial == null ? void 0 : initial.startDate) ?? "")
   );
   const [endDate, setEndDate] = reactExports.useState(
-    toDateInputValue((initial == null ? void 0 : initial.endDate) ?? "")
+    toDateInputValue$1((initial == null ? void 0 : initial.endDate) ?? "")
   );
   const [weeklyDrafts, setWeeklyDrafts] = reactExports.useState(
-    () => draftsFromTiers((initial == null ? void 0 : initial.weeklyTiers) ?? [])
+    () => draftsFromTiers$1((initial == null ? void 0 : initial.weeklyTiers) ?? [])
   );
   const [monthlyDrafts, setMonthlyDrafts] = reactExports.useState(
-    () => draftsFromTiers((initial == null ? void 0 : initial.monthlyTiers) ?? [])
+    () => draftsFromTiers$1((initial == null ? void 0 : initial.monthlyTiers) ?? [])
   );
   const [voucherValidDays, setVoucherValidDays] = reactExports.useState(
     initial ? String(initial.voucherValidDays) : "30"
@@ -66709,7 +68583,7 @@ function SalesPromoForm({
       setError("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc.");
       return;
     }
-    if (fromDateInputValue(startDate) > fromDateInputValue(endDate)) {
+    if (fromDateInputValue$1(startDate) > fromDateInputValue$1(endDate)) {
       setError("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
       return;
     }
@@ -66718,12 +68592,12 @@ function SalesPromoForm({
       setError("Số ngày hiệu lực phiếu phải là số nguyên dương.");
       return;
     }
-    const weeklyTiers = parseTiers(weeklyDrafts, "theo tuần");
+    const weeklyTiers = parseTiers$1(weeklyDrafts, "theo tuần");
     if ("error" in weeklyTiers) {
       setError(weeklyTiers.error);
       return;
     }
-    const monthlyTiers = parseTiers(monthlyDrafts, "theo tháng");
+    const monthlyTiers = parseTiers$1(monthlyDrafts, "theo tháng");
     if ("error" in monthlyTiers) {
       setError(monthlyTiers.error);
       return;
@@ -66735,8 +68609,8 @@ function SalesPromoForm({
     onSubmit(
       {
         name: name.trim(),
-        startDate: fromDateInputValue(startDate),
-        endDate: fromDateInputValue(endDate),
+        startDate: fromDateInputValue$1(startDate),
+        endDate: fromDateInputValue$1(endDate),
         weeklyTiers,
         monthlyTiers,
         voucherValidDays: BigInt(validDays),
@@ -66909,9 +68783,9 @@ function SalesPromoTableRow({
     /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-xs", children: promo.code }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium", children: promo.name }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "whitespace-nowrap text-xs text-muted-foreground", children: [
-      formatDate(promo.startDate),
+      formatDate$1(promo.startDate),
       " - ",
-      formatDate(promo.endDate)
+      formatDate$1(promo.endDate)
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "text-xs text-muted-foreground", children: [
       promo.weeklyTiers.length,
@@ -67086,7 +68960,7 @@ function SalesPromoManager() {
               ] }),
               mode.copyFrom && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mb-4 text-xs text-muted-foreground", children: 'Chương trình mới sẽ được tạo với trạng thái "Đã tắt" — bạn có thể bật lại sau khi kiểm tra thông tin.' }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
-                SalesPromoForm,
+                SalesPromoForm$1,
                 {
                   initial: mode.copyFrom,
                   submitting: createMutation.isPending,
@@ -67118,7 +68992,7 @@ function SalesPromoManager() {
                 )
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
-                SalesPromoForm,
+                SalesPromoForm$1,
                 {
                   initial: mode.promo,
                   submitting: updateMutation.isPending,
@@ -67208,6 +69082,1817 @@ function SalesPromoManager() {
     }
   );
 }
+function getEnterpriseDeviceId() {
+  var _a2;
+  return ((_a2 = loadEnterpriseActivation()) == null ? void 0 : _a2.deviceId) ?? "";
+}
+function toDateInputValue(yyyymmdd) {
+  if (yyyymmdd.length !== 8) return "";
+  return `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
+}
+function fromDateInputValue(value) {
+  return value.replaceAll("-", "");
+}
+function formatDate(yyyymmdd) {
+  if (yyyymmdd.length !== 8) return yyyymmdd;
+  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`;
+}
+function formatVnd(n) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+  }).format(n);
+}
+function formatNumber(n) {
+  return new Intl.NumberFormat("vi-VN").format(n);
+}
+function todayKey() {
+  const d2 = /* @__PURE__ */ new Date();
+  const y2 = d2.getFullYear();
+  const m2 = String(d2.getMonth() + 1).padStart(2, "0");
+  const day = String(d2.getDate()).padStart(2, "0");
+  return `${y2}${m2}${day}`;
+}
+function computeStatus(active, startDate, endDate, today) {
+  if (!active || today > endDate) return "off";
+  if (today < startDate) return "upcoming";
+  return "active";
+}
+function StatusBadge({ status }) {
+  if (status === "active") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "ent-pill badge-success", children: "● Đang chạy" });
+  }
+  if (status === "upcoming") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "ent-pill badge-warning", children: "● Sắp diễn ra" });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "ent-pill border-border bg-muted text-muted-foreground", children: "● Tắt" });
+}
+function PromoSystem1({
+  deviceId
+}) {
+  const promotionsQuery = usePromotions(deviceId);
+  const createMutation = useCreatePromotion(deviceId);
+  const updateMutation = useUpdatePromotion(deviceId);
+  const deleteMutation = useDeletePromotion(deviceId);
+  const stopMutation = useStopPromotion(deviceId);
+  const [mode, setMode] = reactExports.useState({ kind: "list" });
+  function handleAddSubmit(input) {
+    const isCopyFlow = mode.kind === "add" && !!mode.copyFrom;
+    createMutation.mutate(input, {
+      onSuccess: (created) => {
+        ue.success("Đã tạo chương trình khuyến mại.");
+        setMode({ kind: "list" });
+        if (isCopyFlow) stopMutation.mutate(created.code);
+      },
+      onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi tạo.")
+    });
+  }
+  function handleEditSubmit(input, active) {
+    if (mode.kind !== "edit") return;
+    updateMutation.mutate(
+      { code: mode.promotion.code, input, active },
+      {
+        onSuccess: () => {
+          ue.success("Đã lưu thay đổi.");
+          setMode({ kind: "list" });
+        },
+        onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi lưu.")
+      }
+    );
+  }
+  function handleDelete(code) {
+    deleteMutation.mutate(code, {
+      onSuccess: () => ue.success("Đã xoá chương trình."),
+      onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi xoá.")
+    });
+  }
+  function handleStop(code) {
+    stopMutation.mutate(code, {
+      onSuccess: () => ue.success("Đã dừng chương trình."),
+      onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi dừng.")
+    });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display text-lg font-semibold text-foreground", children: "Hệ 1 — theo khung giờ" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Chương trình KM áp dụng theo khung giờ, cho tất cả nhà hàng." })
+      ] }),
+      mode.kind === "list" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Button,
+        {
+          type: "button",
+          onClick: () => setMode({ kind: "add" }),
+          "data-ocid": "sales_reporting.promo1.add_button",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "h-4 w-4", "aria-hidden": "true" }),
+            "Thêm chương trình"
+          ]
+        }
+      )
+    ] }),
+    mode.kind === "add" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "rounded-lg border border-border bg-card p-5 shadow-sm",
+        "data-ocid": "sales_reporting.promo1.add_panel",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "font-display text-base font-semibold text-foreground", children: mode.copyFrom ? `Sao chép từ "${mode.copyFrom.name}"` : "Thêm chương trình khuyến mại" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "ghost",
+                size: "icon",
+                onClick: () => setMode({ kind: "list" }),
+                "aria-label": "Đóng",
+                "data-ocid": "sales_reporting.promo1.add.close_button",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "h-4 w-4", "aria-hidden": "true" })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            PromotionForm,
+            {
+              initial: mode.copyFrom,
+              submitting: createMutation.isPending,
+              submitError: createMutation.isError ? createMutation.error instanceof Error ? createMutation.error.message : "Lỗi khi tạo" : null,
+              onSubmit: handleAddSubmit,
+              onCancel: () => setMode({ kind: "list" })
+            }
+          )
+        ]
+      }
+    ),
+    mode.kind === "edit" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "rounded-lg border border-border bg-card p-5 shadow-sm",
+        "data-ocid": "sales_reporting.promo1.edit_panel",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "font-display text-base font-semibold text-foreground", children: "Sửa chương trình khuyến mại" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "ghost",
+                size: "icon",
+                onClick: () => setMode({ kind: "list" }),
+                "aria-label": "Đóng",
+                "data-ocid": "sales_reporting.promo1.edit.close_button",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "h-4 w-4", "aria-hidden": "true" })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            PromotionForm,
+            {
+              initial: mode.promotion,
+              submitting: updateMutation.isPending,
+              submitError: updateMutation.isError ? updateMutation.error instanceof Error ? updateMutation.error.message : "Lỗi khi lưu" : null,
+              onSubmit: handleEditSubmit,
+              onCancel: () => setMode({ kind: "list" })
+            }
+          )
+        ]
+      }
+    ),
+    mode.kind === "list" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      PromotionTable,
+      {
+        promotions: promotionsQuery.data ?? [],
+        isLoading: promotionsQuery.isLoading,
+        isDeleting: deleteMutation.isPending,
+        isStopping: stopMutation.isPending,
+        onEdit: (p2) => setMode({ kind: "edit", promotion: p2 }),
+        onDelete: handleDelete,
+        onStop: handleStop,
+        onCopy: (p2) => setMode({ kind: "add", copyFrom: p2 })
+      }
+    )
+  ] });
+}
+function RegistrationPromoForm({
+  initial,
+  submitting,
+  submitError,
+  onSubmit,
+  onCancel
+}) {
+  const [name, setName] = reactExports.useState((initial == null ? void 0 : initial.name) ?? "");
+  const [termsUrl, setTermsUrl] = reactExports.useState((initial == null ? void 0 : initial.termsUrl) ?? "");
+  const [startDate, setStartDate] = reactExports.useState(
+    toDateInputValue((initial == null ? void 0 : initial.startDate) ?? "")
+  );
+  const [endDate, setEndDate] = reactExports.useState(
+    toDateInputValue((initial == null ? void 0 : initial.endDate) ?? "")
+  );
+  const [voucherValue, setVoucherValue] = reactExports.useState(
+    initial ? String(initial.voucherValue) : ""
+  );
+  const [voucherValidDays, setVoucherValidDays] = reactExports.useState(
+    initial ? String(initial.voucherValidDays) : "30"
+  );
+  const [active, setActive] = reactExports.useState((initial == null ? void 0 : initial.active) ?? true);
+  const [error, setError] = reactExports.useState(null);
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError(null);
+    if (!name.trim()) return setError("Vui lòng nhập tên chương trình.");
+    if (!startDate || !endDate)
+      return setError("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc.");
+    if (fromDateInputValue(startDate) > fromDateInputValue(endDate))
+      return setError("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
+    const value = Number(voucherValue);
+    if (!Number.isInteger(value) || value <= 0)
+      return setError("Giá trị phiếu phải là số nguyên dương.");
+    const validDays = Number(voucherValidDays);
+    if (!Number.isInteger(validDays) || validDays <= 0)
+      return setError("Số ngày hiệu lực phiếu phải là số nguyên dương.");
+    onSubmit(
+      {
+        name: name.trim(),
+        startDate: fromDateInputValue(startDate),
+        endDate: fromDateInputValue(endDate),
+        voucherValue: BigInt(value),
+        voucherValidDays: BigInt(validDays),
+        termsUrl: termsUrl.trim()
+      },
+      active
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "form",
+    {
+      onSubmit: handleSubmit,
+      className: "flex flex-col gap-4",
+      "data-ocid": "sales_reporting.regpromo.form",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-regpromo-name", children: "Tên chương trình" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              id: "sr-regpromo-name",
+              value: name,
+              onChange: (e) => setName(e.target.value),
+              placeholder: "Ưu đãi khách hàng mới",
+              "data-ocid": "sales_reporting.regpromo.form.name_input"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-regpromo-terms", children: "Link Điều khoản (tuỳ chọn)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              id: "sr-regpromo-terms",
+              type: "url",
+              value: termsUrl,
+              onChange: (e) => setTermsUrl(e.target.value),
+              placeholder: "https://...",
+              "data-ocid": "sales_reporting.regpromo.form.terms_input"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-regpromo-start", children: "Ngày bắt đầu" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                id: "sr-regpromo-start",
+                type: "date",
+                value: startDate,
+                onChange: (e) => setStartDate(e.target.value),
+                "data-ocid": "sales_reporting.regpromo.form.start_input"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-regpromo-end", children: "Ngày kết thúc" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                id: "sr-regpromo-end",
+                type: "date",
+                value: endDate,
+                onChange: (e) => setEndDate(e.target.value),
+                "data-ocid": "sales_reporting.regpromo.form.end_input"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-regpromo-value", children: "Giá trị phiếu (đ)" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                id: "sr-regpromo-value",
+                type: "number",
+                min: 1,
+                value: voucherValue,
+                onChange: (e) => setVoucherValue(e.target.value),
+                placeholder: "20000",
+                "data-ocid": "sales_reporting.regpromo.form.value_input"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-regpromo-days", children: "Phiếu hiệu lực (ngày)" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                id: "sr-regpromo-days",
+                type: "number",
+                min: 1,
+                value: voucherValidDays,
+                onChange: (e) => setVoucherValidDays(e.target.value),
+                placeholder: "30",
+                "data-ocid": "sales_reporting.regpromo.form.days_input"
+              }
+            )
+          ] })
+        ] }),
+        initial && /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "flex cursor-pointer items-center gap-2 text-sm", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              type: "checkbox",
+              checked: active,
+              onChange: (e) => setActive(e.target.checked),
+              className: "h-4 w-4 accent-primary",
+              "data-ocid": "sales_reporting.regpromo.form.active_checkbox"
+            }
+          ),
+          "Đang hoạt động (bỏ chọn để tạm dừng)"
+        ] }),
+        (error || submitError) && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "p",
+          {
+            className: "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive",
+            role: "alert",
+            "data-ocid": "sales_reporting.regpromo.form.error",
+            children: error || submitError
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-end gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "outline",
+              onClick: onCancel,
+              disabled: submitting,
+              "data-ocid": "sales_reporting.regpromo.form.cancel_button",
+              children: "Hủy"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Button,
+            {
+              type: "submit",
+              disabled: submitting,
+              "data-ocid": "sales_reporting.regpromo.form.submit_button",
+              children: [
+                submitting && /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+                "Lưu"
+              ]
+            }
+          )
+        ] })
+      ]
+    }
+  );
+}
+function PromoRegistration({
+  deviceId
+}) {
+  const promosQuery = useRegistrationPromos(deviceId);
+  const createMutation = useCreateRegistrationPromo(deviceId);
+  const updateMutation = useUpdateRegistrationPromo(deviceId);
+  const deleteMutation = useDeleteRegistrationPromo(deviceId);
+  const stopMutation = useStopRegistrationPromo(deviceId);
+  const [mode, setMode] = reactExports.useState({ kind: "list" });
+  const [pendingDelete, setPendingDelete] = reactExports.useState(
+    null
+  );
+  function handleAddSubmit(input) {
+    const isCopyFlow = mode.kind === "add" && !!mode.copyFrom;
+    createMutation.mutate(input, {
+      onSuccess: (created) => {
+        ue.success("Đã tạo chương trình khuyến mại đăng ký.");
+        setMode({ kind: "list" });
+        if (isCopyFlow) stopMutation.mutate(created.code);
+      },
+      onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi tạo.")
+    });
+  }
+  function handleEditSubmit(input, active) {
+    if (mode.kind !== "edit") return;
+    updateMutation.mutate(
+      { code: mode.promo.code, input, active },
+      {
+        onSuccess: () => {
+          ue.success("Đã lưu thay đổi.");
+          setMode({ kind: "list" });
+        },
+        onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi lưu.")
+      }
+    );
+  }
+  function handleDelete(code) {
+    deleteMutation.mutate(code, {
+      onSuccess: () => ue.success("Đã xoá chương trình."),
+      onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi xoá.")
+    });
+  }
+  function handleStop(code) {
+    stopMutation.mutate(code, {
+      onSuccess: () => ue.success("Đã dừng chương trình."),
+      onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi dừng.")
+    });
+  }
+  const promos = promosQuery.data ?? [];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display text-lg font-semibold text-foreground", children: "Khuyến mại đăng ký" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Phát 1 phiếu giảm giá cho khách xác thực email lần đầu." })
+      ] }),
+      mode.kind === "list" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Button,
+        {
+          type: "button",
+          onClick: () => setMode({ kind: "add" }),
+          "data-ocid": "sales_reporting.regpromo.add_button",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "h-4 w-4", "aria-hidden": "true" }),
+            "Thêm chương trình"
+          ]
+        }
+      )
+    ] }),
+    mode.kind === "add" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "rounded-lg border border-border bg-card p-5 shadow-sm",
+        "data-ocid": "sales_reporting.regpromo.add_panel",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "font-display text-base font-semibold text-foreground", children: mode.copyFrom ? `Sao chép từ "${mode.copyFrom.name}"` : "Thêm chương trình" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "ghost",
+                size: "icon",
+                onClick: () => setMode({ kind: "list" }),
+                "aria-label": "Đóng",
+                "data-ocid": "sales_reporting.regpromo.add.close_button",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "h-4 w-4", "aria-hidden": "true" })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            RegistrationPromoForm,
+            {
+              initial: mode.copyFrom,
+              submitting: createMutation.isPending,
+              submitError: createMutation.isError ? createMutation.error instanceof Error ? createMutation.error.message : "Lỗi khi tạo" : null,
+              onSubmit: handleAddSubmit,
+              onCancel: () => setMode({ kind: "list" })
+            }
+          )
+        ]
+      }
+    ),
+    mode.kind === "edit" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "rounded-lg border border-border bg-card p-5 shadow-sm",
+        "data-ocid": "sales_reporting.regpromo.edit_panel",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "font-display text-base font-semibold text-foreground", children: "Sửa chương trình" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "ghost",
+                size: "icon",
+                onClick: () => setMode({ kind: "list" }),
+                "aria-label": "Đóng",
+                "data-ocid": "sales_reporting.regpromo.edit.close_button",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "h-4 w-4", "aria-hidden": "true" })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            RegistrationPromoForm,
+            {
+              initial: mode.promo,
+              submitting: updateMutation.isPending,
+              submitError: updateMutation.isError ? updateMutation.error instanceof Error ? updateMutation.error.message : "Lỗi khi lưu" : null,
+              onSubmit: handleEditSubmit,
+              onCancel: () => setMode({ kind: "list" })
+            }
+          )
+        ]
+      }
+    ),
+    mode.kind === "list" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-x-auto rounded-lg border border-border", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { className: "bg-muted/40", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Mã" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Tên chương trình" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Hiệu lực" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Giá trị phiếu" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-center", children: "Trạng thái" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Thao tác" })
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(TableBody, { children: [
+        promos.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(TableRow, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          TableCell,
+          {
+            colSpan: 6,
+            className: "px-3 py-6 text-center text-sm text-muted-foreground",
+            children: 'Chưa có chương trình nào. Bấm "Thêm chương trình" để tạo.'
+          }
+        ) }),
+        promos.map((promo) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          TableRow,
+          {
+            "data-ocid": `sales_reporting.regpromo.row.${promo.code}`,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-xs", children: promo.code }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium", children: promo.name }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "whitespace-nowrap text-xs text-muted-foreground", children: [
+                formatDate(promo.startDate),
+                " - ",
+                formatDate(promo.endDate)
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "text-xs text-muted-foreground", children: [
+                promo.voucherValue.toLocaleString("vi-VN"),
+                "đ"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "span",
+                {
+                  className: promo.active ? "rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success" : "rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground",
+                  children: promo.active ? "Đang bật" : "Đã tắt"
+                }
+              ) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-end gap-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    onClick: () => setMode({ kind: "add", copyFrom: promo }),
+                    "aria-label": `Sao chép ${promo.name}`,
+                    "data-ocid": `sales_reporting.regpromo.copy_button.${promo.code}`,
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    onClick: () => handleStop(promo.code),
+                    disabled: !promo.active || stopMutation.isPending,
+                    "aria-label": `Dừng ${promo.name}`,
+                    "data-ocid": `sales_reporting.regpromo.stop_button.${promo.code}`,
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(CircleStop, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    onClick: () => setMode({ kind: "edit", promo }),
+                    "aria-label": `Sửa ${promo.name}`,
+                    "data-ocid": `sales_reporting.regpromo.edit_button.${promo.code}`,
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    onClick: () => setPendingDelete(promo),
+                    "aria-label": `Xoá ${promo.name}`,
+                    className: "text-destructive hover:bg-destructive/10",
+                    "data-ocid": `sales_reporting.regpromo.delete_button.${promo.code}`,
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                )
+              ] }) })
+            ]
+          },
+          promo.code
+        ))
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      AlertDialog,
+      {
+        open: !!pendingDelete,
+        onOpenChange: (open) => {
+          if (!open) setPendingDelete(null);
+        },
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogContent, { "data-ocid": "sales_reporting.regpromo.delete_dialog", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogHeader, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogTitle, { children: "Xoá chương trình?" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogDescription, { children: [
+              'Bạn có chắc muốn xoá chương trình "',
+              pendingDelete == null ? void 0 : pendingDelete.name,
+              '"? Hành động này không thể hoàn tác.'
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogFooter, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogCancel, { children: "Hủy" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              AlertDialogAction,
+              {
+                onClick: () => {
+                  if (pendingDelete) handleDelete(pendingDelete.code);
+                  setPendingDelete(null);
+                },
+                disabled: deleteMutation.isPending,
+                className: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                children: [
+                  deleteMutation.isPending && /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+                  "Xoá chương trình"
+                ]
+              }
+            )
+          ] })
+        ] })
+      }
+    )
+  ] });
+}
+let draftIdCounter = 0;
+function nextDraftId() {
+  draftIdCounter += 1;
+  return draftIdCounter;
+}
+function draftsFromTiers(tiers) {
+  if (tiers.length === 0)
+    return [{ id: nextDraftId(), minSales: "", voucherValue: "" }];
+  return tiers.map((t) => ({
+    id: nextDraftId(),
+    minSales: String(t.minSales),
+    voucherValue: String(t.voucherValue)
+  }));
+}
+function parseTiers(drafts, label) {
+  const result = [];
+  for (const d2 of drafts) {
+    if (!d2.minSales.trim() && !d2.voucherValue.trim()) continue;
+    const minSales = Number(d2.minSales);
+    const voucherValue = Number(d2.voucherValue);
+    if (!Number.isInteger(minSales) || minSales <= 0)
+      return { error: `Mức doanh số ${label} phải là số nguyên dương.` };
+    if (!Number.isInteger(voucherValue) || voucherValue <= 0)
+      return { error: `Giá trị phiếu ${label} phải là số nguyên dương.` };
+    result.push({
+      minSales: BigInt(minSales),
+      voucherValue: BigInt(voucherValue)
+    });
+  }
+  return result;
+}
+function SalesPromoForm({
+  initial,
+  submitting,
+  submitError,
+  onSubmit,
+  onCancel
+}) {
+  const [name, setName] = reactExports.useState((initial == null ? void 0 : initial.name) ?? "");
+  const [termsUrl, setTermsUrl] = reactExports.useState((initial == null ? void 0 : initial.termsUrl) ?? "");
+  const [startDate, setStartDate] = reactExports.useState(
+    toDateInputValue((initial == null ? void 0 : initial.startDate) ?? "")
+  );
+  const [endDate, setEndDate] = reactExports.useState(
+    toDateInputValue((initial == null ? void 0 : initial.endDate) ?? "")
+  );
+  const [weeklyDrafts, setWeeklyDrafts] = reactExports.useState(
+    () => draftsFromTiers((initial == null ? void 0 : initial.weeklyTiers) ?? [])
+  );
+  const [monthlyDrafts, setMonthlyDrafts] = reactExports.useState(
+    () => draftsFromTiers((initial == null ? void 0 : initial.monthlyTiers) ?? [])
+  );
+  const [voucherValidDays, setVoucherValidDays] = reactExports.useState(
+    initial ? String(initial.voucherValidDays) : "30"
+  );
+  const [active, setActive] = reactExports.useState((initial == null ? void 0 : initial.active) ?? true);
+  const [error, setError] = reactExports.useState(null);
+  function updateDraft(setter, id, field, value) {
+    setter(
+      (drafts) => drafts.map((d2) => d2.id === id ? { ...d2, [field]: value } : d2)
+    );
+  }
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError(null);
+    if (!name.trim()) return setError("Vui lòng nhập tên chương trình.");
+    if (!startDate || !endDate)
+      return setError("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc.");
+    if (fromDateInputValue(startDate) > fromDateInputValue(endDate))
+      return setError("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
+    const validDays = Number(voucherValidDays);
+    if (!Number.isInteger(validDays) || validDays <= 0)
+      return setError("Số ngày hiệu lực phiếu phải là số nguyên dương.");
+    const weeklyTiers = parseTiers(weeklyDrafts, "theo tuần");
+    if ("error" in weeklyTiers) return setError(weeklyTiers.error);
+    const monthlyTiers = parseTiers(monthlyDrafts, "theo tháng");
+    if ("error" in monthlyTiers) return setError(monthlyTiers.error);
+    if (weeklyTiers.length === 0 && monthlyTiers.length === 0)
+      return setError("Vui lòng cấu hình ít nhất 1 mức (tuần hoặc tháng).");
+    onSubmit(
+      {
+        name: name.trim(),
+        startDate: fromDateInputValue(startDate),
+        endDate: fromDateInputValue(endDate),
+        weeklyTiers,
+        monthlyTiers,
+        voucherValidDays: BigInt(validDays),
+        termsUrl: termsUrl.trim()
+      },
+      active
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "form",
+    {
+      onSubmit: handleSubmit,
+      className: "flex flex-col gap-4",
+      "data-ocid": "sales_reporting.salespromo.form",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-salespromo-name", children: "Tên chương trình" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              id: "sr-salespromo-name",
+              value: name,
+              onChange: (e) => setName(e.target.value),
+              placeholder: "Khách hàng thân thiết",
+              "data-ocid": "sales_reporting.salespromo.form.name_input"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-salespromo-terms", children: "Link Điều khoản (tuỳ chọn)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              id: "sr-salespromo-terms",
+              type: "url",
+              value: termsUrl,
+              onChange: (e) => setTermsUrl(e.target.value),
+              placeholder: "https://...",
+              "data-ocid": "sales_reporting.salespromo.form.terms_input"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-salespromo-start", children: "Ngày bắt đầu" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                id: "sr-salespromo-start",
+                type: "date",
+                value: startDate,
+                onChange: (e) => setStartDate(e.target.value),
+                "data-ocid": "sales_reporting.salespromo.form.start_input"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-salespromo-end", children: "Ngày kết thúc" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                id: "sr-salespromo-end",
+                type: "date",
+                value: endDate,
+                onChange: (e) => setEndDate(e.target.value),
+                "data-ocid": "sales_reporting.salespromo.form.end_input"
+              }
+            )
+          ] })
+        ] }),
+        ["weekly", "monthly"].map((kind) => {
+          const drafts = kind === "weekly" ? weeklyDrafts : monthlyDrafts;
+          const setter = kind === "weekly" ? setWeeklyDrafts : setMonthlyDrafts;
+          const title = kind === "weekly" ? "Mức thưởng theo tuần" : "Mức thưởng theo tháng";
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(Label, { children: [
+                title,
+                " (tối đa 3 mức)"
+              ] }),
+              drafts.length < 3 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                Button,
+                {
+                  type: "button",
+                  variant: "outline",
+                  size: "sm",
+                  onClick: () => setter([
+                    ...drafts,
+                    { id: nextDraftId(), minSales: "", voucherValue: "" }
+                  ]),
+                  "data-ocid": `sales_reporting.salespromo.form.${kind}.add_button`,
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "h-3.5 w-3.5", "aria-hidden": "true" }),
+                    "Thêm mức"
+                  ]
+                }
+              )
+            ] }),
+            drafts.map((d2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                className: "flex items-center gap-2 rounded-md border border-border bg-muted/30 p-2.5",
+                "data-ocid": `sales_reporting.salespromo.form.${kind}.${i}`,
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 items-center gap-1.5", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "whitespace-nowrap text-xs text-muted-foreground", children: "Đạt từ" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      Input,
+                      {
+                        type: "number",
+                        min: 1,
+                        placeholder: "500000",
+                        value: d2.minSales,
+                        onChange: (e) => updateDraft(setter, d2.id, "minSales", e.target.value),
+                        className: "flex-1 font-mono",
+                        "data-ocid": `sales_reporting.salespromo.form.${kind}.${i}.min_input`
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "whitespace-nowrap text-xs text-muted-foreground", children: "đ tặng" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      Input,
+                      {
+                        type: "number",
+                        min: 1,
+                        placeholder: "30000",
+                        value: d2.voucherValue,
+                        onChange: (e) => updateDraft(setter, d2.id, "voucherValue", e.target.value),
+                        className: "flex-1 font-mono",
+                        "data-ocid": `sales_reporting.salespromo.form.${kind}.${i}.value_input`
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "đ" })
+                  ] }),
+                  drafts.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "button",
+                      variant: "ghost",
+                      size: "icon",
+                      onClick: () => setter(drafts.filter((x3) => x3.id !== d2.id)),
+                      "aria-label": "Xoá mức",
+                      "data-ocid": `sales_reporting.salespromo.form.${kind}.${i}.remove_button`,
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Trash2,
+                        {
+                          className: "h-4 w-4 text-destructive",
+                          "aria-hidden": "true"
+                        }
+                      )
+                    }
+                  )
+                ]
+              },
+              d2.id
+            ))
+          ] }, kind);
+        }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sr-salespromo-days", children: "Phiếu hiệu lực (ngày)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              id: "sr-salespromo-days",
+              type: "number",
+              min: 1,
+              value: voucherValidDays,
+              onChange: (e) => setVoucherValidDays(e.target.value),
+              placeholder: "30",
+              className: "max-w-[200px]",
+              "data-ocid": "sales_reporting.salespromo.form.days_input"
+            }
+          )
+        ] }),
+        initial && /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "flex cursor-pointer items-center gap-2 text-sm", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              type: "checkbox",
+              checked: active,
+              onChange: (e) => setActive(e.target.checked),
+              className: "h-4 w-4 accent-primary",
+              "data-ocid": "sales_reporting.salespromo.form.active_checkbox"
+            }
+          ),
+          "Đang hoạt động (bỏ chọn để tạm dừng)"
+        ] }),
+        (error || submitError) && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "p",
+          {
+            className: "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive",
+            role: "alert",
+            "data-ocid": "sales_reporting.salespromo.form.error",
+            children: error || submitError
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-end gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "outline",
+              onClick: onCancel,
+              disabled: submitting,
+              "data-ocid": "sales_reporting.salespromo.form.cancel_button",
+              children: "Hủy"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Button,
+            {
+              type: "submit",
+              disabled: submitting,
+              "data-ocid": "sales_reporting.salespromo.form.submit_button",
+              children: [
+                submitting && /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+                "Lưu"
+              ]
+            }
+          )
+        ] })
+      ]
+    }
+  );
+}
+function PromoSales({
+  deviceId
+}) {
+  const promosQuery = useSalesPromos(deviceId);
+  const createMutation = useCreateSalesPromo(deviceId);
+  const updateMutation = useUpdateSalesPromo(deviceId);
+  const deleteMutation = useDeleteSalesPromo(deviceId);
+  const stopMutation = useStopSalesPromo(deviceId);
+  const [mode, setMode] = reactExports.useState({ kind: "list" });
+  const [pendingDelete, setPendingDelete] = reactExports.useState(null);
+  function handleAddSubmit(input) {
+    const isCopyFlow = mode.kind === "add" && !!mode.copyFrom;
+    createMutation.mutate(input, {
+      onSuccess: (created) => {
+        ue.success("Đã tạo chương trình khuyến mại doanh số.");
+        setMode({ kind: "list" });
+        if (isCopyFlow) stopMutation.mutate(created.code);
+      },
+      onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi tạo.")
+    });
+  }
+  function handleEditSubmit(input, active) {
+    if (mode.kind !== "edit") return;
+    updateMutation.mutate(
+      { code: mode.promo.code, input, active },
+      {
+        onSuccess: () => {
+          ue.success("Đã lưu thay đổi.");
+          setMode({ kind: "list" });
+        },
+        onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi lưu.")
+      }
+    );
+  }
+  function handleDelete(code) {
+    deleteMutation.mutate(code, {
+      onSuccess: () => ue.success("Đã xoá chương trình."),
+      onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi xoá.")
+    });
+  }
+  function handleStop(code) {
+    stopMutation.mutate(code, {
+      onSuccess: () => ue.success("Đã dừng chương trình."),
+      onError: (e) => ue.error(e instanceof Error ? e.message : "Lỗi khi dừng.")
+    });
+  }
+  const promos = promosQuery.data ?? [];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display text-lg font-semibold text-foreground", children: "Khuyến mại doanh số" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Phát phiếu giảm giá theo doanh số tuần/tháng của khách." })
+      ] }),
+      mode.kind === "list" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Button,
+        {
+          type: "button",
+          onClick: () => setMode({ kind: "add" }),
+          "data-ocid": "sales_reporting.salespromo.add_button",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "h-4 w-4", "aria-hidden": "true" }),
+            "Thêm chương trình"
+          ]
+        }
+      )
+    ] }),
+    mode.kind === "add" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "rounded-lg border border-border bg-card p-5 shadow-sm",
+        "data-ocid": "sales_reporting.salespromo.add_panel",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "font-display text-base font-semibold text-foreground", children: mode.copyFrom ? `Sao chép từ "${mode.copyFrom.name}"` : "Thêm chương trình" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "ghost",
+                size: "icon",
+                onClick: () => setMode({ kind: "list" }),
+                "aria-label": "Đóng",
+                "data-ocid": "sales_reporting.salespromo.add.close_button",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "h-4 w-4", "aria-hidden": "true" })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SalesPromoForm,
+            {
+              initial: mode.copyFrom,
+              submitting: createMutation.isPending,
+              submitError: createMutation.isError ? createMutation.error instanceof Error ? createMutation.error.message : "Lỗi khi tạo" : null,
+              onSubmit: handleAddSubmit,
+              onCancel: () => setMode({ kind: "list" })
+            }
+          )
+        ]
+      }
+    ),
+    mode.kind === "edit" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "rounded-lg border border-border bg-card p-5 shadow-sm",
+        "data-ocid": "sales_reporting.salespromo.edit_panel",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "font-display text-base font-semibold text-foreground", children: "Sửa chương trình" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "ghost",
+                size: "icon",
+                onClick: () => setMode({ kind: "list" }),
+                "aria-label": "Đóng",
+                "data-ocid": "sales_reporting.salespromo.edit.close_button",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "h-4 w-4", "aria-hidden": "true" })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SalesPromoForm,
+            {
+              initial: mode.promo,
+              submitting: updateMutation.isPending,
+              submitError: updateMutation.isError ? updateMutation.error instanceof Error ? updateMutation.error.message : "Lỗi khi lưu" : null,
+              onSubmit: handleEditSubmit,
+              onCancel: () => setMode({ kind: "list" })
+            }
+          )
+        ]
+      }
+    ),
+    mode.kind === "list" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-x-auto rounded-lg border border-border", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Table, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TableHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(TableRow, { className: "bg-muted/40", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Mã" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Tên chương trình" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Hiệu lực" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Mức tuần" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { children: "Mức tháng" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-center", children: "Trạng thái" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TableHead, { className: "text-right", children: "Thao tác" })
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(TableBody, { children: [
+        promos.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(TableRow, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          TableCell,
+          {
+            colSpan: 7,
+            className: "px-3 py-6 text-center text-sm text-muted-foreground",
+            children: 'Chưa có chương trình nào. Bấm "Thêm chương trình" để tạo.'
+          }
+        ) }),
+        promos.map((promo) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          TableRow,
+          {
+            "data-ocid": `sales_reporting.salespromo.row.${promo.code}`,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-mono text-xs", children: promo.code }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "font-medium", children: promo.name }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "whitespace-nowrap text-xs text-muted-foreground", children: [
+                formatDate(promo.startDate),
+                " - ",
+                formatDate(promo.endDate)
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "text-xs text-muted-foreground", children: [
+                promo.weeklyTiers.length,
+                " mức"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(TableCell, { className: "text-xs text-muted-foreground", children: [
+                promo.monthlyTiers.length,
+                " mức"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "span",
+                {
+                  className: promo.active ? "rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success" : "rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground",
+                  children: promo.active ? "Đang bật" : "Đã tắt"
+                }
+              ) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TableCell, { className: "text-right", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-end gap-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    onClick: () => setMode({ kind: "add", copyFrom: promo }),
+                    "aria-label": `Sao chép ${promo.name}`,
+                    "data-ocid": `sales_reporting.salespromo.copy_button.${promo.code}`,
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    onClick: () => handleStop(promo.code),
+                    disabled: !promo.active || stopMutation.isPending,
+                    "aria-label": `Dừng ${promo.name}`,
+                    "data-ocid": `sales_reporting.salespromo.stop_button.${promo.code}`,
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(CircleStop, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    onClick: () => setMode({ kind: "edit", promo }),
+                    "aria-label": `Sửa ${promo.name}`,
+                    "data-ocid": `sales_reporting.salespromo.edit_button.${promo.code}`,
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    onClick: () => setPendingDelete(promo),
+                    "aria-label": `Xoá ${promo.name}`,
+                    className: "text-destructive hover:bg-destructive/10",
+                    "data-ocid": `sales_reporting.salespromo.delete_button.${promo.code}`,
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "h-4 w-4", "aria-hidden": "true" })
+                  }
+                )
+              ] }) })
+            ]
+          },
+          promo.code
+        ))
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      AlertDialog,
+      {
+        open: !!pendingDelete,
+        onOpenChange: (open) => {
+          if (!open) setPendingDelete(null);
+        },
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogContent, { "data-ocid": "sales_reporting.salespromo.delete_dialog", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogHeader, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogTitle, { children: "Xoá chương trình?" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogDescription, { children: [
+              'Bạn có chắc muốn xoá chương trình "',
+              pendingDelete == null ? void 0 : pendingDelete.name,
+              '"? Hành động này không thể hoàn tác.'
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(AlertDialogFooter, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(AlertDialogCancel, { children: "Hủy" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              AlertDialogAction,
+              {
+                onClick: () => {
+                  if (pendingDelete) handleDelete(pendingDelete.code);
+                  setPendingDelete(null);
+                },
+                disabled: deleteMutation.isPending,
+                className: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                children: [
+                  deleteMutation.isPending && /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "h-4 w-4 animate-spin", "aria-hidden": "true" }),
+                  "Xoá chương trình"
+                ]
+              }
+            )
+          ] })
+        ] })
+      }
+    )
+  ] });
+}
+function He1UsageCell({
+  code,
+  dailyLimit
+}) {
+  const { data: count2 } = useKmDailyCount(code);
+  if (count2 === void 0)
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" });
+  const percent = dailyLimit > 0n ? Math.min(100, Number(count2) / Number(dailyLimit) * 100) : 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center whitespace-nowrap text-[11px] text-muted-foreground", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mr-1.5 inline-block h-[5px] w-16 overflow-hidden rounded-full bg-foreground/10 align-middle", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "span",
+      {
+        className: "block h-full rounded-full bg-primary",
+        style: { width: `${percent}%` }
+      }
+    ) }),
+    count2.toString(),
+    "/",
+    dailyLimit.toString(),
+    " đơn/ngày"
+  ] });
+}
+function VoucherCountCell({ code }) {
+  const { data: count2 } = useVoucherCountByProgram(code);
+  if (count2 === void 0)
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "—" });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[11px] text-muted-foreground", children: [
+    count2.toString(),
+    " phiếu đã phát"
+  ] });
+}
+function PromoTracking({
+  deviceId
+}) {
+  const { data: promotions } = usePromotions(deviceId);
+  const { data: registrationPromos } = useRegistrationPromos(deviceId);
+  const { data: salesPromos } = useSalesPromos(deviceId);
+  const today = todayKey();
+  const rows = [
+    ...(promotions ?? []).map((p2) => ({
+      code: p2.code,
+      name: p2.name,
+      kind: "he1",
+      active: p2.active,
+      startDate: p2.startDate,
+      endDate: p2.endDate
+    })),
+    ...(registrationPromos ?? []).map((p2) => ({
+      code: p2.code,
+      name: p2.name,
+      kind: "dangky",
+      active: p2.active,
+      startDate: p2.startDate,
+      endDate: p2.endDate
+    })),
+    ...(salesPromos ?? []).map((p2) => ({
+      code: p2.code,
+      name: p2.name,
+      kind: "doanhso",
+      active: p2.active,
+      startDate: p2.startDate,
+      endDate: p2.endDate
+    }))
+  ].sort(
+    (a2, b2) => a2.startDate < b2.startDate ? 1 : a2.startDate > b2.startDate ? -1 : 0
+  );
+  const runningCount = rows.filter(
+    (r2) => computeStatus(r2.active, r2.startDate, r2.endDate, today) === "active"
+  ).length;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 gap-3 sm:grid-cols-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ent-kpi", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ent-kpi-label", children: "Hệ 1 (theo khung giờ)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ent-kpi-value", children: (promotions ?? []).length }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ent-kpi-label", children: "chương trình đã tạo" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ent-kpi", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ent-kpi-label", children: "Khuyến mại đăng ký" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ent-kpi-value", children: (registrationPromos ?? []).length }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ent-kpi-label", children: "chương trình đã tạo" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ent-kpi", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ent-kpi-label", children: "Doanh số tuần/tháng" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ent-kpi-value", children: (salesPromos ?? []).length }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ent-kpi-label", children: "chương trình đã tạo" })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border bg-card", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between border-b border-border px-4 py-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display text-base font-semibold text-foreground", children: "Chi tiết chương trình" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ent-pill badge-success", children: [
+          runningCount,
+          " đang chạy"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "bg-secondary text-left text-[11px] font-bold uppercase tracking-wide text-muted-foreground", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Chương trình" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Trạng thái" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Thời hạn" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2.5", children: "Mức sử dụng" })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("tbody", { children: [
+          rows.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("tr", { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "td",
+            {
+              colSpan: 4,
+              className: "px-3 py-6 text-center text-sm text-muted-foreground",
+              children: "Chưa có chương trình khuyến mại nào."
+            }
+          ) }),
+          rows.map((row) => {
+            const status = computeStatus(
+              row.active,
+              row.startDate,
+              row.endDate,
+              today
+            );
+            const promo = row.kind === "he1" ? (promotions ?? []).find((p2) => p2.code === row.code) : void 0;
+            return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "tr",
+              {
+                className: "border-t border-border",
+                "data-ocid": "sales_reporting.tracking.row",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "px-3 py-2.5", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium text-foreground", children: row.name }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[10.5px] text-muted-foreground", children: row.kind === "he1" ? "Hệ 1" : row.kind === "dangky" ? "Đăng ký" : "Doanh số" })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5", children: /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status }) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground", children: [
+                    formatDate(row.startDate),
+                    " – ",
+                    formatDate(row.endDate)
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5", children: row.kind === "he1" && promo ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    He1UsageCell,
+                    {
+                      code: row.code,
+                      dailyLimit: promo.dailyOrderLimit
+                    }
+                  ) : /* @__PURE__ */ jsxRuntimeExports.jsx(VoucherCountCell, { code: row.code }) })
+                ]
+              },
+              `${row.kind}-${row.code}`
+            );
+          })
+        ] })
+      ] }) })
+    ] })
+  ] });
+}
+const RANGE_LABELS = {
+  "7d": "7 ngày",
+  "30d": "30 ngày",
+  "90d": "90 ngày"
+};
+function SalesAnalytics() {
+  var _a2;
+  const [range, setRange] = reactExports.useState("30d");
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["analytics", range],
+    queryFn: () => getAnalytics(range),
+    retry: 1
+  });
+  const { data: restaurants } = useRestaurants();
+  const a2 = data;
+  const ordersByStatus = a2 ? [
+    { status: "paid", count: a2.paidOrders },
+    { status: "shipping", count: a2.shippingOrders },
+    { status: "pending", count: a2.pendingOrders },
+    { status: "cancelled", count: a2.cancelledOrders }
+  ].filter((d2) => d2.count > 0) : [];
+  const revenueData = (a2 == null ? void 0 : a2.byDay) ?? [];
+  const branchData = ((a2 == null ? void 0 : a2.byRestaurant) ?? []).map((r2) => {
+    const restaurant = restaurants == null ? void 0 : restaurants.find(
+      (x3) => x3.restaurantId === r2.restaurantId
+    );
+    return {
+      restaurantId: r2.restaurantId,
+      name: (restaurant == null ? void 0 : restaurant.name) || r2.name,
+      address: restaurant == null ? void 0 : restaurant.address,
+      orderCount: r2.orders,
+      totalRevenue: r2.revenue
+    };
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display text-lg font-semibold text-foreground", children: "Báo cáo phân tích bán hàng" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Doanh thu, đơn hàng và khách hàng theo thời gian thực." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "label",
+          {
+            htmlFor: "sr-analytics-range",
+            className: "text-sm font-medium text-muted-foreground",
+            children: "Khoảng:"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: range, onValueChange: (v2) => setRange(v2), children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SelectTrigger,
+            {
+              id: "sr-analytics-range",
+              className: "w-[140px]",
+              "data-ocid": "sales_reporting.analytics.range_select",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {})
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: Object.keys(RANGE_LABELS).map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: r2, children: RANGE_LABELS[r2] }, r2)) })
+        ] })
+      ] })
+    ] }),
+    isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex flex-col gap-6",
+        "data-ocid": "sales_reporting.analytics.loading_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4", children: Array.from({ length: 4 }, (_2, i) => `skel-${i}`).map((id) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "h-[120px] animate-pulse rounded-xl border border-border bg-card"
+            },
+            id
+          )) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-[300px] animate-pulse rounded-xl border border-border bg-card" })
+        ]
+      }
+    ) : isError ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-destructive/40 bg-destructive/5 p-10 text-center",
+        "data-ocid": "sales_reporting.analytics.error_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-lg font-semibold text-foreground", children: "Không tải được dữ liệu báo cáo" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "max-w-md text-sm text-muted-foreground", children: (error == null ? void 0 : error.message) ?? "VPS chưa phản hồi hoặc thiếu API key. Vui lòng thử lại." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              onClick: () => refetch(),
+              "data-ocid": "sales_reporting.analytics.retry_button",
+              children: "Thử lại"
+            }
+          )
+        ]
+      }
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex flex-col gap-6",
+        "data-ocid": "sales_reporting.analytics.content",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              StatCard,
+              {
+                label: "Tổng doanh thu",
+                value: formatVnd((a2 == null ? void 0 : a2.totalRevenue) ?? 0),
+                icon: Banknote,
+                tone: "primary",
+                hint: `Trung bình ${formatVnd((a2 == null ? void 0 : a2.averageOrderValue) ?? 0)}/đơn`,
+                testId: "sales_reporting.analytics.stat.total_revenue"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              StatCard,
+              {
+                label: "Tổng đơn",
+                value: formatNumber((a2 == null ? void 0 : a2.totalOrders) ?? 0),
+                icon: ShoppingCart,
+                tone: "info",
+                hint: `${formatNumber((a2 == null ? void 0 : a2.paidOrders) ?? 0)} đã thanh toán`,
+                testId: "sales_reporting.analytics.stat.total_orders"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              StatCard,
+              {
+                label: "Chi nhánh hoạt động",
+                value: formatNumber(((_a2 = a2 == null ? void 0 : a2.byRestaurant) == null ? void 0 : _a2.length) ?? 0),
+                icon: Store$1,
+                tone: "success",
+                hint: "Có đơn trong khoảng thời gian này",
+                testId: "sales_reporting.analytics.stat.active_branches"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              StatCard,
+              {
+                label: "Đang giao",
+                value: formatNumber((a2 == null ? void 0 : a2.shippingOrders) ?? 0),
+                icon: Truck,
+                tone: "warning",
+                hint: `${formatNumber((a2 == null ? void 0 : a2.pendingOrders) ?? 0)} đang chờ`,
+                testId: "sales_reporting.analytics.stat.shipping"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 gap-4 lg:grid-cols-3", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              Card,
+              {
+                className: "lg:col-span-2",
+                "data-ocid": "sales_reporting.analytics.revenue_card",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        TrendingUp,
+                        {
+                          className: "h-4 w-4 text-primary",
+                          "aria-hidden": "true"
+                        }
+                      ),
+                      "Doanh thu theo thời gian"
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
+                      "Doanh thu hàng ngày trong ",
+                      RANGE_LABELS[range].toLowerCase(),
+                      "."
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    RevenueChart,
+                    {
+                      data: revenueData.map((d2) => ({
+                        date: d2.date,
+                        revenue: d2.revenue
+                      })),
+                      testId: "sales_reporting.analytics.revenue_chart"
+                    }
+                  ) })
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "sales_reporting.analytics.orders_card", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Package,
+                    {
+                      className: "h-4 w-4 text-primary",
+                      "aria-hidden": "true"
+                    }
+                  ),
+                  "Đơn hàng theo trạng thái"
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Phân bổ đơn theo trạng thái." })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                OrdersChart,
+                {
+                  data: ordersByStatus,
+                  testId: "sales_reporting.analytics.orders_chart"
+                }
+              ) })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "sales_reporting.analytics.branches_card", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Store$1, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+                "Chi nhánh"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CardDescription, { children: "Doanh thu và số đơn theo từng cửa hàng trong chuỗi." })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              BranchTable,
+              {
+                data: branchData,
+                testId: "sales_reporting.analytics.branch_table"
+              }
+            ) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "sales_reporting.analytics.top_items_card", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Flame, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+                "Món bán chạy nhất"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
+                "Top 10 món theo số lượng bán trong",
+                " ",
+                RANGE_LABELS[range].toLowerCase(),
+                " (không tính đơn đã huỷ)."
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              TopItemsChart,
+              {
+                data: (a2 == null ? void 0 : a2.topItems) ?? [],
+                testId: "sales_reporting.analytics.top_items_chart"
+              }
+            ) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 gap-4 sm:grid-cols-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              StatCard,
+              {
+                label: "Khách mới",
+                value: formatNumber((a2 == null ? void 0 : a2.customers.new) ?? 0),
+                icon: Sparkles,
+                tone: "info",
+                hint: `Trên tổng ${formatNumber((a2 == null ? void 0 : a2.customers.total) ?? 0)} khách trong khoảng này`,
+                testId: "sales_reporting.analytics.stat.new_customers"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              StatCard,
+              {
+                label: "Khách quay lại",
+                value: formatNumber((a2 == null ? void 0 : a2.customers.returning) ?? 0),
+                icon: UserCheck,
+                tone: "success",
+                hint: "Đã từng đặt trước khoảng thời gian này",
+                testId: "sales_reporting.analytics.stat.returning_customers"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { "data-ocid": "sales_reporting.analytics.customers_card", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { className: "flex items-center gap-2 font-display", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Users, { className: "h-4 w-4 text-primary", "aria-hidden": "true" }),
+                "Khách hàng"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(CardDescription, { children: [
+                "Top 10 khách theo tổng chi trong",
+                " ",
+                RANGE_LABELS[range].toLowerCase(),
+                "."
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              CustomerTable,
+              {
+                data: (a2 == null ? void 0 : a2.customers.top) ?? [],
+                testId: "sales_reporting.analytics.customer_table"
+              }
+            ) })
+          ] })
+        ]
+      }
+    )
+  ] });
+}
+function SalesPromoReportingPage() {
+  const deviceId = getEnterpriseDeviceId();
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-6", "data-ocid": "sales_reporting.page", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "h1",
+        {
+          className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+          "data-ocid": "sales_reporting.title",
+          children: "Báo cáo bán hàng & KM"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Quản lý khuyến mại, theo dõi KM và báo cáo phân tích bán hàng trong phạm vi nhà hàng được gắn." })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Tabs, { defaultValue: "promo", "data-ocid": "sales_reporting.tabs", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(TabsList, { className: "w-full sm:w-auto", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          TabsTrigger,
+          {
+            value: "promo",
+            "data-ocid": "sales_reporting.tab.promo",
+            className: "flex-1 sm:flex-none",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Gift, { className: "h-4 w-4", "aria-hidden": "true" }),
+              "Quản lý khuyến mại"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          TabsTrigger,
+          {
+            value: "tracking",
+            "data-ocid": "sales_reporting.tab.tracking",
+            className: "flex-1 sm:flex-none",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(ChartColumn, { className: "h-4 w-4", "aria-hidden": "true" }),
+              "Theo dõi KM"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          TabsTrigger,
+          {
+            value: "analytics",
+            "data-ocid": "sales_reporting.tab.analytics",
+            className: "flex-1 sm:flex-none",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(TrendingUp, { className: "h-4 w-4", "aria-hidden": "true" }),
+              "Báo cáo bán hàng"
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        TabsContent,
+        {
+          value: "promo",
+          className: "mt-4",
+          "data-ocid": "sales_reporting.tab.promo.content",
+          children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Tabs, { defaultValue: "he1", "data-ocid": "sales_reporting.promo_tabs", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(TabsList, { className: "w-full sm:w-auto", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                TabsTrigger,
+                {
+                  value: "he1",
+                  "data-ocid": "sales_reporting.promo_tab.he1",
+                  className: "flex-1 sm:flex-none",
+                  children: "Hệ 1"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                TabsTrigger,
+                {
+                  value: "dangky",
+                  "data-ocid": "sales_reporting.promo_tab.dangky",
+                  className: "flex-1 sm:flex-none",
+                  children: "Đăng ký"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                TabsTrigger,
+                {
+                  value: "doanhso",
+                  "data-ocid": "sales_reporting.promo_tab.doanhso",
+                  className: "flex-1 sm:flex-none",
+                  children: "Doanh số"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(TabsContent, { value: "he1", className: "mt-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(PromoSystem1, { deviceId }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(TabsContent, { value: "dangky", className: "mt-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(PromoRegistration, { deviceId }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(TabsContent, { value: "doanhso", className: "mt-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(PromoSales, { deviceId }) })
+          ] })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        TabsContent,
+        {
+          value: "tracking",
+          className: "mt-4",
+          "data-ocid": "sales_reporting.tab.tracking.content",
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(PromoTracking, { deviceId })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        TabsContent,
+        {
+          value: "analytics",
+          className: "mt-4",
+          "data-ocid": "sales_reporting.tab.analytics.content",
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(SalesAnalytics, {})
+        }
+      )
+    ] })
+  ] });
+}
 function AdminGate({ children }) {
   const { isAuthenticated, isInitializing, isAdmin, isAdminLoading, login } = useAuth();
   if (isInitializing || isAdminLoading) {
@@ -67257,6 +70942,122 @@ function AdminGate({ children }) {
     );
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children });
+}
+function EnterpriseGate({
+  requiredRole,
+  moduleTitle,
+  moduleDescription,
+  children
+}) {
+  const { isAdmin, isAdminLoading } = useAuth();
+  const [activationVersion, setActivationVersion] = reactExports.useState(0);
+  const activation = loadEnterpriseActivation();
+  const deviceId = (activation == null ? void 0 : activation.deviceId) ?? "";
+  const { enterpriseRole, isEnterpriseRoleLoading } = useEnterpriseRole(deviceId);
+  if (isAdminLoading || isEnterpriseRoleLoading) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "section",
+      {
+        className: "mx-auto w-full max-w-7xl px-4 py-10 md:px-6",
+        "data-ocid": "enterprise.loading_state",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "Đang kiểm tra quyền…" })
+      }
+    );
+  }
+  if (isAdmin) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "section",
+      {
+        className: "bbh-enterprise-theme mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10",
+        "data-ocid": "enterprise.page",
+        children: children ? children : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "h1",
+              {
+                className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+                "data-ocid": "enterprise.title",
+                children: moduleTitle
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: moduleDescription })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "mt-6 rounded-lg border border-border bg-card p-6 shadow-panel",
+              "data-ocid": "enterprise.placeholder",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground", children: [
+                "Mô-đun ",
+                moduleTitle,
+                " đang được triển khai."
+              ] })
+            }
+          )
+        ] })
+      }
+    );
+  }
+  if (!activation) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      EnterpriseActivationForm,
+      {
+        expectedRole: requiredRole,
+        expectedRoleLabel: ENTERPRISE_ROLE_LABELS[requiredRole],
+        onActivated: () => setActivationVersion((v2) => v2 + 1)
+      }
+    );
+  }
+  if (enterpriseRole !== requiredRole) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "section",
+      {
+        className: "mx-auto w-full max-w-7xl px-4 py-10 md:px-6",
+        "data-ocid": "enterprise.unauthorized_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-semibold tracking-tight md:text-3xl", children: "Không có quyền truy cập" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-2 text-sm text-muted-foreground", children: [
+            "Thiết bị của bạn không được gắn vai trò",
+            " ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-foreground", children: ENTERPRISE_ROLE_LABELS[requiredRole] }),
+            ". Vui lòng liên hệ quản trị viên."
+          ] })
+        ]
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "section",
+    {
+      className: "bbh-enterprise-theme mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10",
+      "data-ocid": "enterprise.page",
+      children: children ? children : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "h1",
+            {
+              className: "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl",
+              "data-ocid": "enterprise.title",
+              children: moduleTitle
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: moduleDescription })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "mt-6 rounded-lg border border-border bg-card p-6 shadow-panel",
+            "data-ocid": "enterprise.placeholder",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground", children: [
+              "Mô-đun ",
+              moduleTitle,
+              " đang được triển khai."
+            ] })
+          }
+        )
+      ] })
+    }
+  );
 }
 const rootRoute = createRootRouteWithContext()({
   component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(Layout, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) })
@@ -67362,6 +71163,45 @@ const adminPromoDashboardRoute = createRoute({
   path: "/admin/theo-doi-km",
   component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(AdminGate, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(AdminPromoDashboard, {}) })
 });
+const enterprisePaymentQueueRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/enterprise/payment-queue",
+  component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(
+    EnterpriseGate,
+    {
+      requiredRole: EnterpriseRole.paymentQueue,
+      moduleTitle: "Hàng đợi thanh toán",
+      moduleDescription: "Danh sách đơn chờ thanh toán của nhà hàng được gắn.",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(PaymentQueuePage, {})
+    }
+  )
+});
+const enterpriseAccountingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/enterprise/accounting",
+  component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(
+    EnterpriseGate,
+    {
+      requiredRole: EnterpriseRole.accounting,
+      moduleTitle: "Kế toán",
+      moduleDescription: "Dọn đơn, phát hành hoá đơn và tra cứu đơn hàng trong phạm vi nhà hàng được gắn.",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(AccountingPage, {})
+    }
+  )
+});
+const enterpriseSalesReportingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/enterprise/sales-reporting",
+  component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(
+    EnterpriseGate,
+    {
+      requiredRole: EnterpriseRole.salesPromoReporting,
+      moduleTitle: "Báo cáo bán hàng & KM",
+      moduleDescription: "Quản lý khuyến mại, theo dõi KM và báo cáo phân tích bán hàng.",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(SalesPromoReportingPage, {})
+    }
+  )
+});
 const router = createRouter({
   routeTree: rootRoute.addChildren([
     indexRoute,
@@ -67382,7 +71222,10 @@ const router = createRouter({
     adminRegistrationPromoRoute,
     adminSalesPromoRoute,
     adminAnalyticsRoute,
-    adminPromoDashboardRoute
+    adminPromoDashboardRoute,
+    enterprisePaymentQueueRoute,
+    enterpriseAccountingRoute,
+    enterpriseSalesReportingRoute
   ]),
   defaultPreload: "intent"
 });

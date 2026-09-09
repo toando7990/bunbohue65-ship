@@ -28,7 +28,10 @@ export interface Device {
 }
 export interface DeviceEntry { 'device' : Device, 'deviceId' : string }
 export type DeviceId = string;
-export type DeviceRole = { 'admin' : null } |
+export type DeviceRole = { 'accounting' : null } |
+  { 'paymentQueue' : null } |
+  { 'admin' : null } |
+  { 'salesPromoReporting' : null } |
   { 'cashier' : null } |
   { 'driver' : null };
 export interface DiscountTier {
@@ -36,6 +39,9 @@ export interface DiscountTier {
   'minOrderValue' : bigint,
 }
 export type Email = string;
+export type EnterpriseRole = { 'accounting' : null } |
+  { 'paymentQueue' : null } |
+  { 'salesPromoReporting' : null };
 export type Error = { 'FrontendOriginsNotConfigured' : null } |
   {
     'MixedSsoSources' : {
@@ -92,6 +98,7 @@ export interface Order {
   'items' : Array<OrderItem>,
   'voucherDiscountAmount' : bigint,
   'amount' : bigint,
+  'paymentVerificationImage' : string,
   'cusAddress' : string,
   'invoiceStatus' : InvoiceStatus,
   'billId' : [] | [string],
@@ -278,9 +285,12 @@ export interface _SERVICE {
   'applyPromotion' : ActorMethod<[string, bigint, Hmac], Result_16>,
   'applyVoucher' : ActorMethod<[string, string, bigint, Hmac], Result_6>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'callerHasEnterpriseRole' : ActorMethod<[DeviceId, EnterpriseRole], boolean>,
   'cancelOrder' : ActorMethod<[string, string], Result>,
   'changeOrderRestaurant' : ActorMethod<[string, string, string], Result>,
   'cleanupExpiredActivations' : ActorMethod<[], bigint>,
+  'cleanupOrderByDevice' : ActorMethod<[string, string], Result>,
+  'confirmPaymentByDevice' : ActorMethod<[string, string], Result>,
   'countVouchersByProgram' : ActorMethod<[string], bigint>,
   'createOrder' : ActorMethod<
     [
@@ -312,6 +322,7 @@ export interface _SERVICE {
       string,
       string,
       string,
+      string,
       Array<boolean>,
       Array<TimeSlot>,
       bigint,
@@ -322,11 +333,12 @@ export interface _SERVICE {
     Result_4
   >,
   'createRegistrationPromo' : ActorMethod<
-    [string, string, string, bigint, bigint, string],
+    [string, string, string, string, bigint, bigint, string],
     Result_3
   >,
   'createSalesPromo' : ActorMethod<
     [
+      string,
       string,
       string,
       string,
@@ -339,10 +351,10 @@ export interface _SERVICE {
   >,
   'deactivateExpiredPromotions' : ActorMethod<[Hmac], Result_6>,
   'deleteItem' : ActorMethod<[string], Result_7>,
-  'deletePromotion' : ActorMethod<[string], Result_7>,
-  'deleteRegistrationPromo' : ActorMethod<[string], Result_7>,
+  'deletePromotion' : ActorMethod<[string, string], Result_7>,
+  'deleteRegistrationPromo' : ActorMethod<[string, string], Result_7>,
   'deleteRestaurant' : ActorMethod<[string], Result_7>,
-  'deleteSalesPromo' : ActorMethod<[string], Result_7>,
+  'deleteSalesPromo' : ActorMethod<[string, string], Result_7>,
   'execute' : ActorMethod<[string], Result__1>,
   'generateActivationCode' : ActorMethod<[RestaurantId, DeviceRole], Result_15>,
   'getApiDoc' : ActorMethod<[], string>,
@@ -362,19 +374,23 @@ export interface _SERVICE {
   'getKmUsageCount' : ActorMethod<[string, string], bigint>,
   'getMenu' : ActorMethod<[], Array<MenuItem>>,
   'getMenuForRestaurant' : ActorMethod<[string], Array<MenuItem>>,
-  'getOrder' : ActorMethod<[string], Result>,
+  'getOrder' : ActorMethod<[string, string], Result>,
   'getOrderStatus' : ActorMethod<[string], Result_14>,
-  'getOrdersByEmail' : ActorMethod<[string], Array<Order>>,
+  'getOrdersByEmail' : ActorMethod<[string, string], Array<Order>>,
   'getPaymentMode' : ActorMethod<[], string>,
   'getRestaurants' : ActorMethod<[], Array<Restaurant>>,
   'getStoreHours' : ActorMethod<[], StoreHours>,
   'getUpgradeState' : ActorMethod<[], UpgradeState>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isEmailVerified' : ActorMethod<[Email], boolean>,
-  'isPromotionUsed' : ActorMethod<[string], Result_13>,
-  'isRegistrationPromoUsed' : ActorMethod<[string], Result_13>,
-  'isSalesPromoUsed' : ActorMethod<[string], Result_13>,
+  'isPromotionUsed' : ActorMethod<[string, string], Result_13>,
+  'isRegistrationPromoUsed' : ActorMethod<[string, string], Result_13>,
+  'isSalesPromoUsed' : ActorMethod<[string, string], Result_13>,
   'isStoreOpen' : ActorMethod<[], boolean>,
+  'issueInvoiceByDevice' : ActorMethod<
+    [string, string, string, string],
+    Result
+  >,
   'issueSalesBonus' : ActorMethod<
     [string, string, string, bigint, Hmac],
     Result_12
@@ -383,13 +399,13 @@ export interface _SERVICE {
   'listDevicesByRole' : ActorMethod<[DeviceRole], Array<Device>>,
   'listMenus' : ActorMethod<[], Array<MenuItem>>,
   'listMyVouchers' : ActorMethod<[string], Array<Voucher>>,
-  'listOrders' : ActorMethod<[], Array<Order>>,
+  'listOrders' : ActorMethod<[string], Array<Order>>,
   'listPaidOrdersForPickup' : ActorMethod<[], Array<Order>>,
-  'listPendingPaymentOrders' : ActorMethod<[string], Array<Order>>,
-  'listPromotions' : ActorMethod<[], Result_11>,
-  'listRegistrationPromos' : ActorMethod<[], Result_10>,
+  'listPendingPaymentOrders' : ActorMethod<[string, string], Array<Order>>,
+  'listPromotions' : ActorMethod<[string], Result_11>,
+  'listRegistrationPromos' : ActorMethod<[string], Result_10>,
   'listRestaurants' : ActorMethod<[], Array<Restaurant>>,
-  'listSalesPromos' : ActorMethod<[], Result_9>,
+  'listSalesPromos' : ActorMethod<[string], Result_9>,
   'markPaymentExpired' : ActorMethod<[string, string], Result>,
   'markPickedUp' : ActorMethod<[string], Result>,
   'pruneOldOrdersNow' : ActorMethod<[string], Result_6>,
@@ -407,9 +423,9 @@ export interface _SERVICE {
   'setStoreHours' : ActorMethod<[StoreHours], Result_7>,
   'setVpsSecret' : ActorMethod<[string], { 'ok' : null } | { 'err' : string }>,
   'snapshotUpgradeState' : ActorMethod<[], Uint8Array>,
-  'stopPromotion' : ActorMethod<[string], Result_4>,
-  'stopRegistrationPromo' : ActorMethod<[string], Result_3>,
-  'stopSalesPromo' : ActorMethod<[string], Result_1>,
+  'stopPromotion' : ActorMethod<[string, string], Result_4>,
+  'stopRegistrationPromo' : ActorMethod<[string, string], Result_3>,
+  'stopSalesPromo' : ActorMethod<[string, string], Result_1>,
   'tryConsumeKmSlot' : ActorMethod<[string, string, bigint, Hmac], Result_6>,
   'updateInvoiceStatus' : ActorMethod<
     [OrderId, InvoiceStatus, string, string, Hmac],
@@ -430,6 +446,7 @@ export interface _SERVICE {
       string,
       string,
       string,
+      string,
       Array<boolean>,
       Array<TimeSlot>,
       bigint,
@@ -441,7 +458,7 @@ export interface _SERVICE {
     Result_4
   >,
   'updateRegistrationPromo' : ActorMethod<
-    [string, string, string, string, bigint, bigint, boolean, string],
+    [string, string, string, string, string, bigint, bigint, boolean, string],
     Result_3
   >,
   'updateRestaurant' : ActorMethod<
@@ -450,6 +467,7 @@ export interface _SERVICE {
   >,
   'updateSalesPromo' : ActorMethod<
     [
+      string,
       string,
       string,
       string,

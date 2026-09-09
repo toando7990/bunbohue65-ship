@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "mopsTomlDepsHash": "d5cf8c5d9e2141e44eecb2a8a5cda16e246b4eba3049c9b313488b36dc18ad5d",
+  "mopsTomlDepsHash": "be4dfe6556ec23549a146a89fa953d2ebabdc5d4f06face839e427a88422fe08",
   "deps": {
     "base": "0.16.0",
     "base@0": "0.16.0",
@@ -9,7 +9,7 @@
     "caffeine-integrations-mail-client": "0.1.0",
     "caffeineai-authorization": "1.0.1",
     "caffeineai-email": "0.1.3",
-    "caffeineai-lints": "0.1.0",
+    "caffeineai-lints": "0.1.1",
     "caffeineai-oql": "0.4.0",
     "cbor@4.1.0": "4.1.0",
     "core": "2.6.1",
@@ -50,7 +50,7 @@
       "caffeine-integrations-mail-client": "0.1.0",
       "core": "2.6.0"
     },
-    "caffeineai-lints@0.1.0": {},
+    "caffeineai-lints@0.1.1": {},
     "caffeineai-oql@0.4.0": {
       "core": "2.2.0",
       "json": "1.4.0"
@@ -201,11 +201,12 @@
       "caffeineai-email@0.1.3/src/emailClient.mo": "453f51e599a69a9ef480e7ad506344c831d32443c86113af9fc24e5fb3cacf70",
       "caffeineai-email@0.1.3/src/emailService.mo": "789ff9fe602991267ff872bea66531cce0c7b430c18162e2e2225f5ff9dfdfc5"
     },
-    "caffeineai-lints@0.1.0": {
-      "caffeineai-lints@0.1.0/README.md": "dce0116e674fef1c29c709c01d3a3c63851783466edcdcdf57e30dce52eb022d",
-      "caffeineai-lints@0.1.0/mops.toml": "a444907d2356e5a7e3f21769a9b95d8e26333fa8c2fcd251bffae2c58025d2f7",
-      "caffeineai-lints@0.1.0/rules/migration-self-contained.toml": "84f6aa103597b5d708218aff3477bac261f30492d2f7bc13f146ee33d2c9bb65",
-      "caffeineai-lints@0.1.0/src/Lib.mo": "5417424c5ea911f4e7a2730705fbd3d3ce5868b6e62b8abfbb91807515995036"
+    "caffeineai-lints@0.1.1": {
+      "caffeineai-lints@0.1.1/README.md": "c0ac968c7d377cf7fd564b2cc2d211ba68055100e2a3c4152498fa11d6411e15",
+      "caffeineai-lints@0.1.1/mops.toml": "e39a54fcbeb6e4e6aad5974dee8fcb1a118c6a9f44cd4dcdde7864f9df2a881d",
+      "caffeineai-lints@0.1.1/rules/migration-self-contained.toml": "84f6aa103597b5d708218aff3477bac261f30492d2f7bc13f146ee33d2c9bb65",
+      "caffeineai-lints@0.1.1/rules/no-base-import.toml": "fe2562d94ca0abbfbe50f51584d9f2e74abc14b1373999f13e4dfd49ca5d11b0",
+      "caffeineai-lints@0.1.1/src/Lib.mo": "5417424c5ea911f4e7a2730705fbd3d3ce5868b6e62b8abfbb91807515995036"
     },
     "caffeineai-oql@0.4.0": {
       "caffeineai-oql@0.4.0/README.md": "75c40cd6822859ddbe9edf9327465dfa0e2a00a07cbb5d58f558a6b642331bfb",

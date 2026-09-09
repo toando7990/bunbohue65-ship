@@ -268,6 +268,60 @@
   );
 }
 
+/* --- Bún Bò Huế 65: theme doanh nghiệp — màn hình quản lý cấp doanh nghiệp
+   (hàng đợi thanh toán, kế toán, báo cáo bán hàng & KM). Nền trung tính lạnh,
+   mật độ thông tin cao, trạng thái thanh toán rõ ràng, giữ vermillion thương hiệu. --- */
+.bbh-enterprise-theme {
+  --background: 0.972 0.006 240;
+  --foreground: 0.22 0.012 250;
+  --card: 0.995 0.004 240;
+  --card-foreground: 0.22 0.012 250;
+  --popover: 0.995 0.004 240;
+  --popover-foreground: 0.22 0.012 250;
+  --primary: 0.53 0.21 28;
+  --primary-foreground: 0.99 0.006 240;
+  --secondary: 0.945 0.008 240;
+  --secondary-foreground: 0.3 0.014 250;
+  --muted: 0.945 0.008 240;
+  --muted-foreground: 0.49 0.015 250;
+  --accent: 0.53 0.21 28;
+  --accent-foreground: 0.99 0.006 240;
+  --destructive: 0.52 0.21 25;
+  --destructive-foreground: 0.99 0.006 25;
+  --success: 0.52 0.15 150;
+  --success-foreground: 0.99 0.006 150;
+  --warning: 0.72 0.15 75;
+  --warning-foreground: 0.2 0.04 75;
+  --info: 0.5 0.15 250;
+  --info-foreground: 0.99 0.006 250;
+  --border: 0.9 0.01 240;
+  --input: 0.9 0.01 240;
+  --ring: 0.53 0.21 28;
+  --sidebar: 0.985 0.005 240;
+  --sidebar-foreground: 0.24 0.012 250;
+  --sidebar-primary: 0.53 0.21 28;
+  --sidebar-primary-foreground: 0.99 0.006 240;
+  --sidebar-accent: 0.945 0.008 240;
+  --sidebar-accent-foreground: 0.3 0.014 250;
+  --sidebar-border: 0.9 0.01 240;
+  --sidebar-ring: 0.53 0.21 28;
+  --chart-1: 0.53 0.21 28;
+  --chart-2: 0.5 0.15 250;
+  --chart-3: 0.52 0.15 150;
+  --chart-4: 0.72 0.15 75;
+  --chart-5: 0.52 0.21 25;
+  --gradient-primary: linear-gradient(
+    135deg,
+    oklch(0.53 0.21 28),
+    oklch(0.58 0.19 35)
+  );
+  --gradient-subtle: linear-gradient(
+    180deg,
+    oklch(0.995 0.004 240),
+    oklch(0.965 0.008 240)
+  );
+}
+
 @layer utilities {
   /* OTP 6-ô nhập mã — hộp vuông riêng cho từng ký tự */
   .otp-input {
@@ -282,5 +336,30 @@
   /* Trạng thái đã xác nhận thành công */
   .verify-success-mark {
     @apply inline-flex h-12 w-12 items-center justify-center rounded-full bg-success/15 text-success;
+  }
+  /* --- Doanh nghiệp: bảng dữ liệu mật độ cao + thẻ KPI + thanh trạng thái --- */
+  .ent-table-row {
+    @apply border-b border-border text-sm transition-smooth last:border-0 hover:bg-muted/40;
+  }
+  .ent-th {
+    @apply px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+  .ent-td {
+    @apply px-3 py-2.5 align-middle;
+  }
+  .ent-kpi {
+    @apply rounded-lg border border-border bg-card p-4 shadow-sm;
+  }
+  .ent-kpi-value {
+    @apply font-display text-2xl font-bold tracking-tight text-foreground;
+  }
+  .ent-kpi-label {
+    @apply text-xs font-medium text-muted-foreground;
+  }
+  .ent-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .ent-toolbar {
+    @apply flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-3 shadow-sm;
   }
 }

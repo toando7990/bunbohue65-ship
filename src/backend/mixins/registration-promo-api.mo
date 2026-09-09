@@ -12,16 +12,27 @@
 import AccessControl "mo:caffeineai-authorization/access-control";
 import Result "mo:core/Result";
 import Time "mo:core/Time";
+import Principal "mo:core/Principal";
 
 import RegistrationPromoTypes "../types/registration-promo";
 import RegistrationPromoLib "../lib/registration-promo";
 import VoucherTypes "../types/voucher";
+import DevicesLib "../lib/devices";
 
 mixin (
   accessControlState : AccessControl.AccessControlState,
+  devices : DevicesLib.DevicesStore,
   registrationPromos : RegistrationPromoTypes.RegistrationPromoStore,
   vouchers : VoucherTypes.VoucherStore,
 ) {
+  // Enterprise gating helper: true when the caller is an admin OR the device
+  // identified by `deviceId` is an active #salesPromoReporting device. Used to
+  // let the "Báo cáo bán hàng và KM" role manage/track registration promos
+  // while admin retains full access.
+  func canManageRegistrationPromos(caller : Principal, deviceId : Text) : Bool {
+    AccessControl.isAdmin(accessControlState, caller) or DevicesLib.deviceHasRole(devices, deviceId, #salesPromoReporting);
+  };
+
   // Chương trình đã có phiếu nào phát ra với programCode này chưa — kiểm
   // tra trực tiếp trên Voucher.programCode (field sẵn có, không cần lưu
   // thêm dữ liệu theo dõi riêng).
@@ -33,6 +44,7 @@ mixin (
   };
 
   public shared ({ caller }) func createRegistrationPromo(
+    deviceId : Text,
     name : Text,
     startDate : Text,
     endDate : Text,
@@ -40,7 +52,7 @@ mixin (
     voucherValidDays : Nat,
     termsUrl : Text,
   ) : async Result.Result<RegistrationPromoTypes.RegistrationPromo, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+    if (not canManageRegistrationPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     let prng = RegistrationPromoLib.newPrngState();
@@ -60,6 +72,7 @@ mixin (
   };
 
   public shared ({ caller }) func updateRegistrationPromo(
+    deviceId : Text,
     code : Text,
     name : Text,
     startDate : Text,
@@ -69,7 +82,7 @@ mixin (
     active : Bool,
     termsUrl : Text,
   ) : async Result.Result<RegistrationPromoTypes.RegistrationPromo, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+    if (not canManageRegistrationPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     if (registrationPromos.get(code) == null) {
@@ -92,8 +105,8 @@ mixin (
     #ok(promo);
   };
 
-  public shared ({ caller }) func deleteRegistrationPromo(code : Text) : async Result.Result<(), Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public shared ({ caller }) func deleteRegistrationPromo(deviceId : Text, code : Text) : async Result.Result<(), Text> {
+    if (not canManageRegistrationPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     switch (registrationPromos.get(code)) {
@@ -107,8 +120,8 @@ mixin (
     #ok;
   };
 
-  public shared ({ caller }) func stopRegistrationPromo(code : Text) : async Result.Result<RegistrationPromoTypes.RegistrationPromo, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public shared ({ caller }) func stopRegistrationPromo(deviceId : Text, code : Text) : async Result.Result<RegistrationPromoTypes.RegistrationPromo, Text> {
+    if (not canManageRegistrationPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     switch (registrationPromos.get(code)) {
@@ -121,15 +134,15 @@ mixin (
     };
   };
 
-  public query ({ caller }) func isRegistrationPromoUsed(code : Text) : async Result.Result<Bool, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public query ({ caller }) func isRegistrationPromoUsed(deviceId : Text, code : Text) : async Result.Result<Bool, Text> {
+    if (not canManageRegistrationPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     #ok(hasIssuedRegistrationVoucher(code));
   };
 
-  public query ({ caller }) func listRegistrationPromos() : async Result.Result<[RegistrationPromoTypes.RegistrationPromo], Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public query ({ caller }) func listRegistrationPromos(deviceId : Text) : async Result.Result<[RegistrationPromoTypes.RegistrationPromo], Text> {
+    if (not canManageRegistrationPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     #ok(registrationPromos.toArray().map(func((_code : Text, p : RegistrationPromoTypes.RegistrationPromo)) : RegistrationPromoTypes.RegistrationPromo = p));

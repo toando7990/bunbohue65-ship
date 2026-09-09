@@ -1,15 +1,18 @@
 {
-  "overview": "Ứng dụng quản lý đặt món và giao hàng Bunbohue65 Ship với hệ thống thiết bị theo vai trò (admin/driver/cashier) và trang quản trị.",
+  "overview": "Bunbohue65 Ship is a Bún Bò Huế 65 ordering app with QR payment and delivery, now adding enterprise-level role-based device management with three business roles: payment queue, accounting, and sales & promo reporting.",
   "features": [
-    "Quản lý thiết bị theo vai trò với trạng thái kích hoạt/thu hồi",
-    "Trang quản trị /admin với nút đăng xuất",
-    "Đặt món, theo dõi đơn, lịch sử đơn hàng"
+    "Manage devices by enterprise roles attached via activation codes",
+    "Payment queue role to view and process pending payment orders",
+    "Accounting role for manual order cleanup, manual invoice issuance, and order lookup with payment verification images",
+    "Sales and promo reporting role combining promotion management, promo tracking, and sales analytics"
   ],
   "category": "productivity",
   "tags": [
-    "quan-ly",
-    "ship",
-    "admin"
+    "enterprise",
+    "device-management",
+    "roles",
+    "restaurant",
+    "reporting"
   ],
-  "last_updated": "2026-09-06T09:22:38.654Z"
+  "last_updated": "2026-09-09T04:12:09.357Z"
 }

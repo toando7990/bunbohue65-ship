@@ -37,8 +37,13 @@ function unwrap<T>(
 }
 
 // ---- Orders (read-only from canister; createOrder goes via VPS) ----
-export async function listOrders(actor: Backend): Promise<Order[]> {
-  return actor.listOrders();
+// deviceId scopes device-role authorization: admin passes regardless (empty
+// deviceId is fine for admin), enterprise devices pass their bound deviceId.
+export async function listOrders(
+  actor: Backend,
+  deviceId = "",
+): Promise<Order[]> {
+  return actor.listOrders(deviceId);
 }
 
 // Lịch sử đặt đơn — tra cứu theo email đã xác thực (khớp không phân biệt hoa
@@ -47,15 +52,17 @@ export async function listOrders(actor: Backend): Promise<Order[]> {
 export async function getOrdersByEmail(
   actor: Backend,
   email: string,
+  deviceId = "",
 ): Promise<Order[]> {
-  return actor.getOrdersByEmail(email);
+  return actor.getOrdersByEmail(email, deviceId);
 }
 
 export async function getOrder(
   actor: Backend,
   orderId: string,
+  deviceId = "",
 ): Promise<Order> {
-  return unwrap(await actor.getOrder(orderId));
+  return unwrap(await actor.getOrder(orderId, deviceId));
 }
 
 export async function getOrderStatus(
@@ -68,8 +75,9 @@ export async function getOrderStatus(
 export async function listPendingPaymentOrders(
   actor: Backend,
   restaurantId: string,
+  deviceId = "",
 ): Promise<Order[]> {
-  return actor.listPendingPaymentOrders(restaurantId);
+  return actor.listPendingPaymentOrders(restaurantId, deviceId);
 }
 
 // ---- Driver pickup queue (today's paid+confirmed orders, no PII for non-admin) ----
@@ -85,6 +93,42 @@ export async function markPickedUp(
   orderId: string,
 ): Promise<Order> {
   return unwrap(await actor.markPickedUp(orderId));
+}
+
+// ---- Enterprise device-gated mutations ----
+// These are gated by the caller's device role (paymentQueue/accounting) instead
+// of HMAC, so the enterprise device pages can perform manual operations. Admin
+// passes regardless; enterprise devices pass their bound deviceId.
+
+// Payment-queue role: manually mark an order's payment as #paid.
+export async function confirmPaymentByDevice(
+  actor: Backend,
+  deviceId: string,
+  orderId: string,
+): Promise<Order> {
+  return unwrap(await actor.confirmPaymentByDevice(deviceId, orderId));
+}
+
+// Accounting role: manually clean up (cancel) an order.
+export async function cleanupOrderByDevice(
+  actor: Backend,
+  deviceId: string,
+  orderId: string,
+): Promise<Order> {
+  return unwrap(await actor.cleanupOrderByDevice(deviceId, orderId));
+}
+
+// Accounting role: manually issue an e-invoice for an order.
+export async function issueInvoiceByDevice(
+  actor: Backend,
+  deviceId: string,
+  orderId: string,
+  invoiceId: string,
+  pdfUrl: string,
+): Promise<Order> {
+  return unwrap(
+    await actor.issueInvoiceByDevice(deviceId, orderId, invoiceId, pdfUrl),
+  );
 }
 
 // ---- Devices ----
@@ -413,16 +457,21 @@ export interface PromotionInput {
   termsUrl: string;
 }
 
-export async function listPromotions(actor: Backend): Promise<Promotion[]> {
-  return unwrap(await actor.listPromotions());
+export async function listPromotions(
+  actor: Backend,
+  deviceId = "",
+): Promise<Promotion[]> {
+  return unwrap(await actor.listPromotions(deviceId));
 }
 
 export async function createPromotion(
   actor: Backend,
+  deviceId: string,
   input: PromotionInput,
 ): Promise<Promotion> {
   return unwrap(
     await actor.createPromotion(
+      deviceId,
       input.name,
       input.startDate,
       input.endDate,
@@ -438,12 +487,14 @@ export async function createPromotion(
 
 export async function updatePromotion(
   actor: Backend,
+  deviceId: string,
   code: string,
   input: PromotionInput,
   active: boolean,
 ): Promise<Promotion> {
   return unwrap(
     await actor.updatePromotion(
+      deviceId,
       code,
       input.name,
       input.startDate,
@@ -461,9 +512,10 @@ export async function updatePromotion(
 
 export async function deletePromotion(
   actor: Backend,
+  deviceId: string,
   code: string,
 ): Promise<void> {
-  unwrap(await actor.deletePromotion(code));
+  unwrap(await actor.deletePromotion(deviceId, code));
 }
 
 // Dừng chương trình (set active=false) — LUÔN dùng được, kể cả chương
@@ -471,18 +523,20 @@ export async function deletePromotion(
 // đã dùng — updatePromotion/deletePromotion sẽ bị canister từ chối.
 export async function stopPromotion(
   actor: Backend,
+  deviceId: string,
   code: string,
 ): Promise<Promotion> {
-  return unwrap(await actor.stopPromotion(code));
+  return unwrap(await actor.stopPromotion(deviceId, code));
 }
 
 // Chương trình đã có khách dùng thành công chưa (Giai đoạn 4f) — quyết
 // định frontend hiện nút Sửa/Xoá hay chỉ Dừng.
 export async function isPromotionUsed(
   actor: Backend,
+  deviceId: string,
   code: string,
 ): Promise<boolean> {
-  return unwrap(await actor.isPromotionUsed(code));
+  return unwrap(await actor.isPromotionUsed(deviceId, code));
 }
 
 // ---- Quản lý "Khuyến mại đăng ký" (admin, /admin/registration-promo) ----
@@ -498,16 +552,19 @@ export interface RegistrationPromoInput {
 
 export async function listRegistrationPromos(
   actor: Backend,
+  deviceId = "",
 ): Promise<RegistrationPromo[]> {
-  return unwrap(await actor.listRegistrationPromos());
+  return unwrap(await actor.listRegistrationPromos(deviceId));
 }
 
 export async function createRegistrationPromo(
   actor: Backend,
+  deviceId: string,
   input: RegistrationPromoInput,
 ): Promise<RegistrationPromo> {
   return unwrap(
     await actor.createRegistrationPromo(
+      deviceId,
       input.name,
       input.startDate,
       input.endDate,
@@ -520,12 +577,14 @@ export async function createRegistrationPromo(
 
 export async function updateRegistrationPromo(
   actor: Backend,
+  deviceId: string,
   code: string,
   input: RegistrationPromoInput,
   active: boolean,
 ): Promise<RegistrationPromo> {
   return unwrap(
     await actor.updateRegistrationPromo(
+      deviceId,
       code,
       input.name,
       input.startDate,
@@ -540,23 +599,26 @@ export async function updateRegistrationPromo(
 
 export async function deleteRegistrationPromo(
   actor: Backend,
+  deviceId: string,
   code: string,
 ): Promise<void> {
-  unwrap(await actor.deleteRegistrationPromo(code));
+  unwrap(await actor.deleteRegistrationPromo(deviceId, code));
 }
 
 export async function stopRegistrationPromo(
   actor: Backend,
+  deviceId: string,
   code: string,
 ): Promise<RegistrationPromo> {
-  return unwrap(await actor.stopRegistrationPromo(code));
+  return unwrap(await actor.stopRegistrationPromo(deviceId, code));
 }
 
 export async function isRegistrationPromoUsed(
   actor: Backend,
+  deviceId: string,
   code: string,
 ): Promise<boolean> {
-  return unwrap(await actor.isRegistrationPromoUsed(code));
+  return unwrap(await actor.isRegistrationPromoUsed(deviceId, code));
 }
 
 // ---- Quản lý "Khuyến mại doanh số tuần/tháng" (admin, /admin/sales-promo) ----
@@ -571,16 +633,21 @@ export interface SalesPromoInput {
   termsUrl: string;
 }
 
-export async function listSalesPromos(actor: Backend): Promise<SalesPromo[]> {
-  return unwrap(await actor.listSalesPromos());
+export async function listSalesPromos(
+  actor: Backend,
+  deviceId = "",
+): Promise<SalesPromo[]> {
+  return unwrap(await actor.listSalesPromos(deviceId));
 }
 
 export async function createSalesPromo(
   actor: Backend,
+  deviceId: string,
   input: SalesPromoInput,
 ): Promise<SalesPromo> {
   return unwrap(
     await actor.createSalesPromo(
+      deviceId,
       input.name,
       input.startDate,
       input.endDate,
@@ -594,12 +661,14 @@ export async function createSalesPromo(
 
 export async function updateSalesPromo(
   actor: Backend,
+  deviceId: string,
   code: string,
   input: SalesPromoInput,
   active: boolean,
 ): Promise<SalesPromo> {
   return unwrap(
     await actor.updateSalesPromo(
+      deviceId,
       code,
       input.name,
       input.startDate,
@@ -615,23 +684,26 @@ export async function updateSalesPromo(
 
 export async function deleteSalesPromo(
   actor: Backend,
+  deviceId: string,
   code: string,
 ): Promise<void> {
-  unwrap(await actor.deleteSalesPromo(code));
+  unwrap(await actor.deleteSalesPromo(deviceId, code));
 }
 
 export async function stopSalesPromo(
   actor: Backend,
+  deviceId: string,
   code: string,
 ): Promise<SalesPromo> {
-  return unwrap(await actor.stopSalesPromo(code));
+  return unwrap(await actor.stopSalesPromo(deviceId, code));
 }
 
 export async function isSalesPromoUsed(
   actor: Backend,
+  deviceId: string,
   code: string,
 ): Promise<boolean> {
-  return unwrap(await actor.isSalesPromoUsed(code));
+  return unwrap(await actor.isSalesPromoUsed(deviceId, code));
 }
 
 // ---- Phiếu giảm giá (khách xem/áp dụng, Giai đoạn 3e) ----

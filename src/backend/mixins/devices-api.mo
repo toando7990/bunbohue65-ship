@@ -13,6 +13,8 @@ mixin (
   pendingActivations : DevicesLib.PendingActivationsStore,
 ) {
   // Issue a 6-char activation code bound to a restaurant + role. Admin only.
+  // `role` may be any DeviceRole including the 3 enterprise roles, so an admin
+  // can issue an activation code that binds an enterprise role to a device.
   public shared ({ caller }) func generateActivationCode(
     restaurantId : Common.RestaurantId,
     role : Devices.DeviceRole,
@@ -48,7 +50,9 @@ mixin (
     );
   };
 
-  // Revoke a device immediately. Admin only.
+  // Revoke a device immediately. Admin only. Admin may revoke enterprise
+  // devices (paymentQueue / accounting / salesPromoReporting) as well as
+  // admin/driver/cashier devices.
   public shared ({ caller }) func revokeDevice(
     deviceId : Common.DeviceId,
   ) : async Result.Result<Devices.Device, Text> {
@@ -73,10 +77,31 @@ mixin (
     DevicesLib.listDevicesByRestaurant(devices, restaurantId);
   };
 
-  // List ALL devices (both active and revoked) for a role.
+  // List ALL devices (both active and revoked) for a role. The admin device
+  // management page uses this to display and filter devices by enterprise role.
   public query func listDevicesByRole(
     role : Devices.DeviceRole,
   ) : async [Devices.Device] {
     DevicesLib.listDevicesByRole(devices, role);
+  };
+
+  // CONTRACT — role-gating helper exposed to the actor. Returns true when the
+  // device identified by `deviceId` is bound to the given enterprise role (and
+  // is active), OR when the caller is an admin. Used by the business-API
+  // mixins (payment queue / accounting / sales+promo reporting) to gate access
+  // to their endpoints to the matching enterprise device role. Admin always
+  // passes.
+  //
+  // NOTE: the device model keys devices by a per-browser hardware `deviceId`
+  // (no principal binding), so the caller must supply the deviceId it is
+  // acting as — the backend cannot infer it from the caller principal alone.
+  public query ({ caller }) func callerHasEnterpriseRole(
+    deviceId : Common.DeviceId,
+    role : Devices.EnterpriseRole,
+  ) : async Bool {
+    if (AccessControl.isAdmin(accessControlState, caller)) {
+      return true;
+    };
+    DevicesLib.deviceHasRole(devices, deviceId, role);
   };
 };

@@ -93,6 +93,8 @@ export default {
         xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
         elevated: "0 8px 24px -8px rgba(0,0,0,0.12), 0 2px 6px -2px rgba(0,0,0,0.08)",
         qr: "0 12px 40px -12px rgba(216,67,30,0.25), 0 4px 12px -4px rgba(0,0,0,0.1)",
+        panel: "0 1px 2px 0 rgba(0,0,0,0.04), 0 1px 3px 0 rgba(0,0,0,0.05)",
+        "panel-hover": "0 4px 16px -4px rgba(0,0,0,0.10), 0 1px 3px 0 rgba(0,0,0,0.06)",
       },
       keyframes: {
         "accordion-down": {
@@ -136,6 +138,14 @@ export default {
           "20%": { opacity: "0", transform: "translateY(-3px)" },
           "100%": { opacity: "0" },
         },
+        "kpi-in": {
+          from: { opacity: "0", transform: "translateY(6px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "row-in": {
+          from: { opacity: "0", transform: "translateY(3px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -146,6 +156,8 @@ export default {
         "order-flow-pulse": "order-flow-pulse 10s ease-in-out infinite",
         "order-flow-run": "order-flow-run 10s linear infinite",
         "order-flow-label-fade": "order-flow-label-fade 10s ease-in-out infinite",
+        "kpi-in": "kpi-in 0.3s ease-out",
+        "row-in": "row-in 0.25s ease-out",
       },
     },
   },

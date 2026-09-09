@@ -1,6 +1,4 @@
 import Map "mo:core/Map";
-import Array "mo:core/Array";
-import Iter "mo:core/Iter";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Result "mo:core/Result";
@@ -14,6 +12,7 @@ module {
   public type Device = Devices.Device;
   public type PendingActivation = Devices.PendingActivation;
   public type DeviceRole = Devices.DeviceRole;
+  public type EnterpriseRole = Devices.EnterpriseRole;
 
   // Stable storage shapes used by the actor.
   public type DevicesStore = Map.Map<Common.DeviceId, Device>;
@@ -73,6 +72,8 @@ module {
   };
 
   // Issue a pending activation for a restaurant + role, store it, return it.
+  // `role` may be any DeviceRole including the 3 enterprise roles, so an admin
+  // can issue an activation code that binds an enterprise role to a device.
   public func createPendingActivation(
     store : PendingActivationsStore,
     restaurantId : Common.RestaurantId,
@@ -186,5 +187,47 @@ module {
         d.role == role;
       })
       .map(func((_id, d) : (Common.DeviceId, Device)) : Device { d });
+  };
+
+  // CONTRACT — role-gating helper. Returns true when the given DeviceRole is
+  // one of the 3 enterprise roles. Used by the devices-api mixin to gate
+  // enterprise business APIs (payment queue / accounting / sales+promo
+  // reporting) to devices bound to the matching enterprise role.
+  public func isEnterpriseRole(role : DeviceRole) : Bool {
+    switch role {
+      case (#paymentQueue) true;
+      case (#accounting) true;
+      case (#salesPromoReporting) true;
+      case (_) false;
+    };
+  };
+
+  // CONTRACT — role-gating helper. Returns true when the given DeviceRole
+  // matches the requested enterprise role. Used to gate a specific business
+  // API to the device role that owns it.
+  public func hasEnterpriseRole(role : DeviceRole, required : EnterpriseRole) : Bool {
+    switch (role, required) {
+      case (#paymentQueue, #paymentQueue) true;
+      case (#accounting, #accounting) true;
+      case (#salesPromoReporting, #salesPromoReporting) true;
+      case (_) false;
+    };
+  };
+
+  // CONTRACT — role-gating helper. Returns true when the device identified by
+  // `deviceId` exists, is active, and is bound to the requested enterprise
+  // role. Used by the business-API mixins (payment queue / accounting /
+  // sales+promo reporting) to gate their endpoints to the matching enterprise
+  // device role. Admin gating is handled separately by the caller via
+  // AccessControl.isAdmin — this helper only checks the device role.
+  public func deviceHasRole(
+    store : DevicesStore,
+    deviceId : Common.DeviceId,
+    required : EnterpriseRole,
+  ) : Bool {
+    switch (store.get(deviceId)) {
+      case null { false };
+      case (?d) { d.active and hasEnterpriseRole(d.role, required) };
+    };
   };
 };

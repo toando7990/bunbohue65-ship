@@ -32,7 +32,10 @@ export const Error = IDL.Variant({
 export const Result_17 = IDL.Variant({ 'ok' : IDL.Null, 'err' : Error });
 export const DeviceId = IDL.Text;
 export const DeviceRole = IDL.Variant({
+  'accounting' : IDL.Null,
+  'paymentQueue' : IDL.Null,
   'admin' : IDL.Null,
+  'salesPromoReporting' : IDL.Null,
   'cashier' : IDL.Null,
   'driver' : IDL.Null,
 });
@@ -75,6 +78,11 @@ export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
+});
+export const EnterpriseRole = IDL.Variant({
+  'accounting' : IDL.Null,
+  'paymentQueue' : IDL.Null,
+  'salesPromoReporting' : IDL.Null,
 });
 export const PaymentStatus = IDL.Variant({
   'expired' : IDL.Null,
@@ -129,6 +137,7 @@ export const Order = IDL.Record({
   'items' : IDL.Vec(OrderItem),
   'voucherDiscountAmount' : IDL.Nat,
   'amount' : IDL.Nat,
+  'paymentVerificationImage' : IDL.Text,
   'cusAddress' : IDL.Text,
   'invoiceStatus' : InvoiceStatus,
   'billId' : IDL.Opt(IDL.Text),
@@ -327,6 +336,11 @@ export const idlService = IDL.Service({
       [],
     ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'callerHasEnterpriseRole' : IDL.Func(
+      [DeviceId, EnterpriseRole],
+      [IDL.Bool],
+      ['query'],
+    ),
   'cancelOrder' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
   'changeOrderRestaurant' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text],
@@ -334,6 +348,8 @@ export const idlService = IDL.Service({
       [],
     ),
   'cleanupExpiredActivations' : IDL.Func([], [IDL.Nat], []),
+  'cleanupOrderByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+  'confirmPaymentByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
   'countVouchersByProgram' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
   'createOrder' : IDL.Func(
       [
@@ -366,6 +382,7 @@ export const idlService = IDL.Service({
         IDL.Text,
         IDL.Text,
         IDL.Text,
+        IDL.Text,
         IDL.Vec(IDL.Bool),
         IDL.Vec(TimeSlot),
         IDL.Nat,
@@ -377,12 +394,13 @@ export const idlService = IDL.Service({
       [],
     ),
   'createRegistrationPromo' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Text],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Text],
       [Result_3],
       [],
     ),
   'createSalesPromo' : IDL.Func(
       [
+        IDL.Text,
         IDL.Text,
         IDL.Text,
         IDL.Text,
@@ -396,10 +414,10 @@ export const idlService = IDL.Service({
     ),
   'deactivateExpiredPromotions' : IDL.Func([Hmac], [Result_6], []),
   'deleteItem' : IDL.Func([IDL.Text], [Result_7], []),
-  'deletePromotion' : IDL.Func([IDL.Text], [Result_7], []),
-  'deleteRegistrationPromo' : IDL.Func([IDL.Text], [Result_7], []),
+  'deletePromotion' : IDL.Func([IDL.Text, IDL.Text], [Result_7], []),
+  'deleteRegistrationPromo' : IDL.Func([IDL.Text, IDL.Text], [Result_7], []),
   'deleteRestaurant' : IDL.Func([IDL.Text], [Result_7], []),
-  'deleteSalesPromo' : IDL.Func([IDL.Text], [Result_7], []),
+  'deleteSalesPromo' : IDL.Func([IDL.Text, IDL.Text], [Result_7], []),
   'execute' : IDL.Func([IDL.Text], [Result__1], ['query']),
   'generateActivationCode' : IDL.Func(
       [RestaurantId, DeviceRole],
@@ -425,19 +443,28 @@ export const idlService = IDL.Service({
   'getKmUsageCount' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], ['query']),
   'getMenu' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
   'getMenuForRestaurant' : IDL.Func([IDL.Text], [IDL.Vec(MenuItem)], ['query']),
-  'getOrder' : IDL.Func([IDL.Text], [Result], []),
+  'getOrder' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
   'getOrderStatus' : IDL.Func([IDL.Text], [Result_14], ['query']),
-  'getOrdersByEmail' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
+  'getOrdersByEmail' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(Order)], []),
   'getPaymentMode' : IDL.Func([], [IDL.Text], ['query']),
   'getRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
   'getStoreHours' : IDL.Func([], [StoreHours], ['query']),
   'getUpgradeState' : IDL.Func([], [UpgradeState], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isEmailVerified' : IDL.Func([Email], [IDL.Bool], ['query']),
-  'isPromotionUsed' : IDL.Func([IDL.Text], [Result_13], ['query']),
-  'isRegistrationPromoUsed' : IDL.Func([IDL.Text], [Result_13], ['query']),
-  'isSalesPromoUsed' : IDL.Func([IDL.Text], [Result_13], ['query']),
+  'isPromotionUsed' : IDL.Func([IDL.Text, IDL.Text], [Result_13], ['query']),
+  'isRegistrationPromoUsed' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [Result_13],
+      ['query'],
+    ),
+  'isSalesPromoUsed' : IDL.Func([IDL.Text, IDL.Text], [Result_13], ['query']),
   'isStoreOpen' : IDL.Func([], [IDL.Bool], ['query']),
+  'issueInvoiceByDevice' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [Result],
+      [],
+    ),
   'issueSalesBonus' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, Hmac],
       [Result_12],
@@ -451,13 +478,17 @@ export const idlService = IDL.Service({
   'listDevicesByRole' : IDL.Func([DeviceRole], [IDL.Vec(Device)], ['query']),
   'listMenus' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
   'listMyVouchers' : IDL.Func([IDL.Text], [IDL.Vec(Voucher)], ['query']),
-  'listOrders' : IDL.Func([], [IDL.Vec(Order)], []),
+  'listOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
   'listPaidOrdersForPickup' : IDL.Func([], [IDL.Vec(Order)], []),
-  'listPendingPaymentOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
-  'listPromotions' : IDL.Func([], [Result_11], ['query']),
-  'listRegistrationPromos' : IDL.Func([], [Result_10], ['query']),
+  'listPendingPaymentOrders' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(Order)],
+      [],
+    ),
+  'listPromotions' : IDL.Func([IDL.Text], [Result_11], ['query']),
+  'listRegistrationPromos' : IDL.Func([IDL.Text], [Result_10], ['query']),
   'listRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
-  'listSalesPromos' : IDL.Func([], [Result_9], ['query']),
+  'listSalesPromos' : IDL.Func([IDL.Text], [Result_9], ['query']),
   'markPaymentExpired' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
   'markPickedUp' : IDL.Func([IDL.Text], [Result], []),
   'pruneOldOrdersNow' : IDL.Func([IDL.Text], [Result_6], []),
@@ -480,9 +511,9 @@ export const idlService = IDL.Service({
       [],
     ),
   'snapshotUpgradeState' : IDL.Func([], [IDL.Vec(IDL.Nat8)], []),
-  'stopPromotion' : IDL.Func([IDL.Text], [Result_4], []),
-  'stopRegistrationPromo' : IDL.Func([IDL.Text], [Result_3], []),
-  'stopSalesPromo' : IDL.Func([IDL.Text], [Result_1], []),
+  'stopPromotion' : IDL.Func([IDL.Text, IDL.Text], [Result_4], []),
+  'stopRegistrationPromo' : IDL.Func([IDL.Text, IDL.Text], [Result_3], []),
+  'stopSalesPromo' : IDL.Func([IDL.Text, IDL.Text], [Result_1], []),
   'tryConsumeKmSlot' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat, Hmac],
       [Result_6],
@@ -529,6 +560,7 @@ export const idlService = IDL.Service({
         IDL.Text,
         IDL.Text,
         IDL.Text,
+        IDL.Text,
         IDL.Vec(IDL.Bool),
         IDL.Vec(TimeSlot),
         IDL.Nat,
@@ -542,6 +574,7 @@ export const idlService = IDL.Service({
     ),
   'updateRegistrationPromo' : IDL.Func(
       [
+        IDL.Text,
         IDL.Text,
         IDL.Text,
         IDL.Text,
@@ -561,6 +594,7 @@ export const idlService = IDL.Service({
     ),
   'updateSalesPromo' : IDL.Func(
       [
+        IDL.Text,
         IDL.Text,
         IDL.Text,
         IDL.Text,
@@ -605,7 +639,10 @@ export const idlFactory = ({ IDL }) => {
   const Result_17 = IDL.Variant({ 'ok' : IDL.Null, 'err' : Error });
   const DeviceId = IDL.Text;
   const DeviceRole = IDL.Variant({
+    'accounting' : IDL.Null,
+    'paymentQueue' : IDL.Null,
     'admin' : IDL.Null,
+    'salesPromoReporting' : IDL.Null,
     'cashier' : IDL.Null,
     'driver' : IDL.Null,
   });
@@ -651,6 +688,11 @@ export const idlFactory = ({ IDL }) => {
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
+  });
+  const EnterpriseRole = IDL.Variant({
+    'accounting' : IDL.Null,
+    'paymentQueue' : IDL.Null,
+    'salesPromoReporting' : IDL.Null,
   });
   const PaymentStatus = IDL.Variant({
     'expired' : IDL.Null,
@@ -705,6 +747,7 @@ export const idlFactory = ({ IDL }) => {
     'items' : IDL.Vec(OrderItem),
     'voucherDiscountAmount' : IDL.Nat,
     'amount' : IDL.Nat,
+    'paymentVerificationImage' : IDL.Text,
     'cusAddress' : IDL.Text,
     'invoiceStatus' : InvoiceStatus,
     'billId' : IDL.Opt(IDL.Text),
@@ -888,6 +931,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'callerHasEnterpriseRole' : IDL.Func(
+        [DeviceId, EnterpriseRole],
+        [IDL.Bool],
+        ['query'],
+      ),
     'cancelOrder' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'changeOrderRestaurant' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text],
@@ -895,6 +943,8 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'cleanupExpiredActivations' : IDL.Func([], [IDL.Nat], []),
+    'cleanupOrderByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+    'confirmPaymentByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'countVouchersByProgram' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     'createOrder' : IDL.Func(
         [
@@ -927,6 +977,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Text,
           IDL.Text,
+          IDL.Text,
           IDL.Vec(IDL.Bool),
           IDL.Vec(TimeSlot),
           IDL.Nat,
@@ -938,12 +989,13 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'createRegistrationPromo' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Text],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Text],
         [Result_3],
         [],
       ),
     'createSalesPromo' : IDL.Func(
         [
+          IDL.Text,
           IDL.Text,
           IDL.Text,
           IDL.Text,
@@ -957,10 +1009,10 @@ export const idlFactory = ({ IDL }) => {
       ),
     'deactivateExpiredPromotions' : IDL.Func([Hmac], [Result_6], []),
     'deleteItem' : IDL.Func([IDL.Text], [Result_7], []),
-    'deletePromotion' : IDL.Func([IDL.Text], [Result_7], []),
-    'deleteRegistrationPromo' : IDL.Func([IDL.Text], [Result_7], []),
+    'deletePromotion' : IDL.Func([IDL.Text, IDL.Text], [Result_7], []),
+    'deleteRegistrationPromo' : IDL.Func([IDL.Text, IDL.Text], [Result_7], []),
     'deleteRestaurant' : IDL.Func([IDL.Text], [Result_7], []),
-    'deleteSalesPromo' : IDL.Func([IDL.Text], [Result_7], []),
+    'deleteSalesPromo' : IDL.Func([IDL.Text, IDL.Text], [Result_7], []),
     'execute' : IDL.Func([IDL.Text], [Result__1], ['query']),
     'generateActivationCode' : IDL.Func(
         [RestaurantId, DeviceRole],
@@ -990,19 +1042,28 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(MenuItem)],
         ['query'],
       ),
-    'getOrder' : IDL.Func([IDL.Text], [Result], []),
+    'getOrder' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'getOrderStatus' : IDL.Func([IDL.Text], [Result_14], ['query']),
-    'getOrdersByEmail' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
+    'getOrdersByEmail' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(Order)], []),
     'getPaymentMode' : IDL.Func([], [IDL.Text], ['query']),
     'getRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
     'getStoreHours' : IDL.Func([], [StoreHours], ['query']),
     'getUpgradeState' : IDL.Func([], [UpgradeState], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isEmailVerified' : IDL.Func([Email], [IDL.Bool], ['query']),
-    'isPromotionUsed' : IDL.Func([IDL.Text], [Result_13], ['query']),
-    'isRegistrationPromoUsed' : IDL.Func([IDL.Text], [Result_13], ['query']),
-    'isSalesPromoUsed' : IDL.Func([IDL.Text], [Result_13], ['query']),
+    'isPromotionUsed' : IDL.Func([IDL.Text, IDL.Text], [Result_13], ['query']),
+    'isRegistrationPromoUsed' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [Result_13],
+        ['query'],
+      ),
+    'isSalesPromoUsed' : IDL.Func([IDL.Text, IDL.Text], [Result_13], ['query']),
     'isStoreOpen' : IDL.Func([], [IDL.Bool], ['query']),
+    'issueInvoiceByDevice' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [Result],
+        [],
+      ),
     'issueSalesBonus' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, Hmac],
         [Result_12],
@@ -1016,13 +1077,17 @@ export const idlFactory = ({ IDL }) => {
     'listDevicesByRole' : IDL.Func([DeviceRole], [IDL.Vec(Device)], ['query']),
     'listMenus' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
     'listMyVouchers' : IDL.Func([IDL.Text], [IDL.Vec(Voucher)], ['query']),
-    'listOrders' : IDL.Func([], [IDL.Vec(Order)], []),
+    'listOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
     'listPaidOrdersForPickup' : IDL.Func([], [IDL.Vec(Order)], []),
-    'listPendingPaymentOrders' : IDL.Func([IDL.Text], [IDL.Vec(Order)], []),
-    'listPromotions' : IDL.Func([], [Result_11], ['query']),
-    'listRegistrationPromos' : IDL.Func([], [Result_10], ['query']),
+    'listPendingPaymentOrders' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(Order)],
+        [],
+      ),
+    'listPromotions' : IDL.Func([IDL.Text], [Result_11], ['query']),
+    'listRegistrationPromos' : IDL.Func([IDL.Text], [Result_10], ['query']),
     'listRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
-    'listSalesPromos' : IDL.Func([], [Result_9], ['query']),
+    'listSalesPromos' : IDL.Func([IDL.Text], [Result_9], ['query']),
     'markPaymentExpired' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'markPickedUp' : IDL.Func([IDL.Text], [Result], []),
     'pruneOldOrdersNow' : IDL.Func([IDL.Text], [Result_6], []),
@@ -1045,9 +1110,9 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'snapshotUpgradeState' : IDL.Func([], [IDL.Vec(IDL.Nat8)], []),
-    'stopPromotion' : IDL.Func([IDL.Text], [Result_4], []),
-    'stopRegistrationPromo' : IDL.Func([IDL.Text], [Result_3], []),
-    'stopSalesPromo' : IDL.Func([IDL.Text], [Result_1], []),
+    'stopPromotion' : IDL.Func([IDL.Text, IDL.Text], [Result_4], []),
+    'stopRegistrationPromo' : IDL.Func([IDL.Text, IDL.Text], [Result_3], []),
+    'stopSalesPromo' : IDL.Func([IDL.Text, IDL.Text], [Result_1], []),
     'tryConsumeKmSlot' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Nat, Hmac],
         [Result_6],
@@ -1094,6 +1159,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Text,
           IDL.Text,
+          IDL.Text,
           IDL.Vec(IDL.Bool),
           IDL.Vec(TimeSlot),
           IDL.Nat,
@@ -1107,6 +1173,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'updateRegistrationPromo' : IDL.Func(
         [
+          IDL.Text,
           IDL.Text,
           IDL.Text,
           IDL.Text,
@@ -1126,6 +1193,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'updateSalesPromo' : IDL.Func(
         [
+          IDL.Text,
           IDL.Text,
           IDL.Text,
           IDL.Text,

@@ -17,6 +17,9 @@ const ROLE_LABELS: Record<DeviceRole, string> = {
   [DeviceRole.admin]: "Quản trị",
   [DeviceRole.cashier]: "Thu ngân",
   [DeviceRole.driver]: "Tài xế",
+  [DeviceRole.paymentQueue]: "Hàng đợi thanh toán",
+  [DeviceRole.accounting]: "Kế toán",
+  [DeviceRole.salesPromoReporting]: "Báo cáo bán hàng & KM",
 };
 
 function formatTimestamp(ns: bigint): string {

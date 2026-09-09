@@ -14,5 +14,15 @@ export default defineConfig({
   },
   test: {
     setupFiles: ["./src/test/setup.ts"],
+    // The sandbox's CPU detection can produce conflicting minThreads/maxThreads
+    // bounds for the default forks pool ("options.minThreads and
+    // options.maxThreads must not conflict"). Run a single fork so the suite
+    // executes regardless of the reported core count.
+    pool: "forks",
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
   },
 });

@@ -94,6 +94,7 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
     invoiceId: "",
     sharedLink: "",
     pdfUrl: "",
+    paymentVerificationImage: "",
     kmDiscountAmount: 0n,
     voucherDiscountAmount: 0n,
     ...overrides,

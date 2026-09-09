@@ -6,13 +6,16 @@ import { listPaidOrdersForPickup as listPaidOrdersForPickupFn } from "@/lib/cani
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 
-export function usePendingOrders(restaurantId: string | undefined) {
+export function usePendingOrders(
+  restaurantId: string | undefined,
+  deviceId?: string,
+) {
   const { actor, isFetching } = useActor(createActor);
   return useQuery({
-    queryKey: ["orders", "pending", restaurantId],
+    queryKey: ["orders", "pending", restaurantId, deviceId],
     queryFn: async () => {
       if (!actor || !restaurantId) return [];
-      return actor.listPendingPaymentOrders(restaurantId);
+      return actor.listPendingPaymentOrders(restaurantId, deviceId ?? "");
     },
     enabled: !!actor && !isFetching && !!restaurantId,
     refetchInterval: 5000,

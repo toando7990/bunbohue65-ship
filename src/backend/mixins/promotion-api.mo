@@ -18,16 +18,19 @@ import AccessControl "mo:caffeineai-authorization/access-control";
 import Result "mo:core/Result";
 import Time "mo:core/Time";
 import Nat "mo:core/Nat";
+import Principal "mo:core/Principal";
 
 import Types "../types/hmac";
 import SecretTypes "../types/secret";
 import PromotionTypes "../types/promotion";
+import DevicesLib "../lib/devices";
 import HmacLib "../lib/hmac";
 import PromotionLib "../lib/promotion";
 import EmailVerificationLib "../lib/email-verification";
 
 mixin (
   accessControlState : AccessControl.AccessControlState,
+  devices : DevicesLib.DevicesStore,
   kmUsage : PromotionTypes.KmUsageStore,
   kmDailyCount : PromotionTypes.KmDailyCountStore,
   promotions : PromotionTypes.PromotionStore,
@@ -35,6 +38,14 @@ mixin (
   otpRecords : EmailVerificationLib.State,
   promotionUsed : PromotionTypes.PromotionUsedStore,
 ) {
+  // Enterprise gating helper: true when the caller is an admin OR the device
+  // identified by `deviceId` is an active #salesPromoReporting device. Used to
+  // let the "Báo cáo bán hàng và KM" role manage/track promotions while admin
+  // retains full access.
+  func canManagePromotions(caller : Principal, deviceId : Text) : Bool {
+    AccessControl.isAdmin(accessControlState, caller) or DevicesLib.deviceHasRole(devices, deviceId, #salesPromoReporting);
+  };
+
   public shared func tryConsumeKmSlot(
     email : Text,
     programCode : Text,
@@ -60,6 +71,7 @@ mixin (
   };
 
   public shared ({ caller }) func createPromotion(
+    deviceId : Text,
     name : Text,
     startDate : Text,
     endDate : Text,
@@ -70,7 +82,7 @@ mixin (
     tiers : [PromotionTypes.DiscountTier],
     termsUrl : Text,
   ) : async Result.Result<PromotionTypes.Promotion, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+    if (not canManagePromotions(caller, deviceId)) {
       return #err("Admin only");
     };
     if (daysOfWeek.size() != 7) {
@@ -102,6 +114,7 @@ mixin (
   };
 
   public shared ({ caller }) func updatePromotion(
+    deviceId : Text,
     code : Text,
     name : Text,
     startDate : Text,
@@ -114,7 +127,7 @@ mixin (
     active : Bool,
     termsUrl : Text,
   ) : async Result.Result<PromotionTypes.Promotion, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+    if (not canManagePromotions(caller, deviceId)) {
       return #err("Admin only");
     };
     if (promotions.get(code) == null) {
@@ -149,8 +162,8 @@ mixin (
     #ok(promo);
   };
 
-  public shared ({ caller }) func deletePromotion(code : Text) : async Result.Result<(), Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public shared ({ caller }) func deletePromotion(deviceId : Text, code : Text) : async Result.Result<(), Text> {
+    if (not canManagePromotions(caller, deviceId)) {
       return #err("Admin only");
     };
     switch (promotions.get(code)) {
@@ -164,8 +177,8 @@ mixin (
     #ok;
   };
 
-  public shared ({ caller }) func stopPromotion(code : Text) : async Result.Result<PromotionTypes.Promotion, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public shared ({ caller }) func stopPromotion(deviceId : Text, code : Text) : async Result.Result<PromotionTypes.Promotion, Text> {
+    if (not canManagePromotions(caller, deviceId)) {
       return #err("Admin only");
     };
     switch (promotions.get(code)) {
@@ -178,15 +191,15 @@ mixin (
     };
   };
 
-  public query ({ caller }) func isPromotionUsed(code : Text) : async Result.Result<Bool, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public query ({ caller }) func isPromotionUsed(deviceId : Text, code : Text) : async Result.Result<Bool, Text> {
+    if (not canManagePromotions(caller, deviceId)) {
       return #err("Admin only");
     };
     #ok(promotionUsed.get(code) == ?true);
   };
 
-  public query ({ caller }) func listPromotions() : async Result.Result<[PromotionTypes.Promotion], Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public query ({ caller }) func listPromotions(deviceId : Text) : async Result.Result<[PromotionTypes.Promotion], Text> {
+    if (not canManagePromotions(caller, deviceId)) {
       return #err("Admin only");
     };
     #ok(promotions.toArray().map(func((_code : Text, p : PromotionTypes.Promotion)) : PromotionTypes.Promotion = p));

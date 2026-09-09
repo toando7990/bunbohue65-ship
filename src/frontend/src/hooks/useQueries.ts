@@ -2,12 +2,14 @@
 // Page tasks import from here; polling hooks live in their own files.
 
 import { type Backend, createActor } from "@/backend";
-import type { DeviceRole, StoreHours } from "@/backend";
+import type { DeviceRole, EnterpriseRole, StoreHours } from "@/backend";
 import {
   activateDevice as activateDeviceFn,
   addItem as addItemFn,
   addRestaurant as addRestaurantFn,
   cleanupExpiredActivations as cleanupFn,
+  cleanupOrderByDevice as cleanupOrderByDeviceFn,
+  confirmPaymentByDevice as confirmPaymentByDeviceFn,
   countVouchersByProgram as countVouchersByProgramFn,
   createPromotion as createPromotionFn,
   createRegistrationPromo as createRegistrationPromoFn,
@@ -35,10 +37,13 @@ import {
   isRegistrationPromoUsed as isRegistrationPromoUsedFn,
   isSalesPromoUsed as isSalesPromoUsedFn,
   isStoreOpen as isStoreOpenFn,
+  issueInvoiceByDevice as issueInvoiceByDeviceFn,
   listDevicesByRestaurant as listDevicesByRestaurantFn,
+  listDevicesByRole as listDevicesByRoleFn,
   listMenus as listMenusFn,
   listMyVouchers as listMyVouchersFn,
   listOrders as listOrdersFn,
+  listPendingPaymentOrders as listPendingPaymentOrdersFn,
   listPromotions as listPromotionsFn,
   listRegistrationPromos as listRegistrationPromosFn,
   listRestaurants as listRestaurantsFn,
@@ -68,11 +73,12 @@ function useActorOrNull() {
 }
 
 // ---- Orders ----
-export function useOrders() {
+export function useOrders(deviceId?: string) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["orders"],
-    queryFn: () => (actor ? listOrdersFn(actor) : Promise.resolve([])),
+    queryKey: ["orders", deviceId],
+    queryFn: () =>
+      actor ? listOrdersFn(actor, deviceId) : Promise.resolve([]),
     enabled: !!actor && !isFetching,
   });
 }
@@ -80,24 +86,28 @@ export function useOrders() {
 // Lịch sử đặt đơn — tra cứu theo email đã xác thực. Chỉ chạy khi có email
 // (đã trim + lowercase phía gọi); hoạt động trên mọi thiết bị vì lọc ở
 // canister thay vì dựa vào localStorage như useOrders/OrderList.
-export function useOrdersByEmail(email: string | null) {
+export function useOrdersByEmail(email: string | null, deviceId?: string) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["ordersByEmail", email],
+    queryKey: ["ordersByEmail", email, deviceId],
     queryFn: () =>
-      actor && email ? getOrdersByEmailFn(actor, email) : Promise.resolve([]),
+      actor && email
+        ? getOrdersByEmailFn(actor, email, deviceId)
+        : Promise.resolve([]),
     enabled: !!actor && !isFetching && !!email,
   });
 }
 
 // Fetch a single full Order (includes createdAt/amount/billId/qrCode/expireAt
 // that OrderStatus does not carry). Used by OrderTracker to render QrPayment.
-export function useGetOrder(orderId: string | undefined) {
+export function useGetOrder(orderId: string | undefined, deviceId?: string) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["order", orderId],
+    queryKey: ["order", orderId, deviceId],
     queryFn: () =>
-      actor && orderId ? getOrderFn(actor, orderId) : Promise.resolve(null),
+      actor && orderId
+        ? getOrderFn(actor, orderId, deviceId)
+        : Promise.resolve(null),
     enabled: !!actor && !isFetching && !!orderId,
     // Poll every 5s so order.paymentStatus (which drives the QrPayment
     // 'Thanh toán' button) refreshes live after a customer pays while on the
@@ -351,6 +361,115 @@ export function useCleanupExpiredActivations() {
   });
 }
 
+// ---- Enterprise roles ----
+
+// List devices bound to a specific role (admin/driver/cashier or one of the
+// 3 enterprise roles). Used by DeviceManager to filter by enterprise role.
+export function useDevicesByRole(role: DeviceRole | undefined) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["devices", "role", role],
+    queryFn: () =>
+      actor && role ? listDevicesByRoleFn(actor, role) : Promise.resolve([]),
+    enabled: !!actor && !isFetching && !!role,
+  });
+}
+
+// Whether the current caller holds a specific enterprise role. Used by the
+// enterprise gate to scope each role to its own module. deviceId is the
+// current device's bound id (from the enterprise activation storage).
+export function useCallerHasEnterpriseRole(
+  role: EnterpriseRole | undefined,
+  deviceId?: string,
+) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["auth", "enterpriseRole", role, deviceId],
+    queryFn: () =>
+      actor && role
+        ? actor.callerHasEnterpriseRole(deviceId ?? "", role)
+        : Promise.resolve(false),
+    enabled: !!actor && !isFetching && !!role,
+    staleTime: 60_000,
+  });
+}
+
+// Orders awaiting payment for a restaurant — the payment-queue module's data
+// source. Scoped to the device's attached restaurant by the caller.
+export function useListPendingPaymentOrders(
+  restaurantId: string | undefined,
+  deviceId?: string,
+  refetchIntervalMs?: number,
+) {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["pendingPaymentOrders", restaurantId, deviceId],
+    queryFn: () =>
+      actor && restaurantId
+        ? listPendingPaymentOrdersFn(actor, restaurantId, deviceId)
+        : Promise.resolve([]),
+    enabled: !!actor && !isFetching && !!restaurantId,
+    refetchInterval: refetchIntervalMs,
+  });
+}
+
+// Payment-queue role: manually mark an order's payment as #paid. deviceId is
+// the payment-queue device's bound id.
+export function useConfirmPaymentByDevice(deviceId?: string) {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (orderId: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return confirmPaymentByDeviceFn(actor, deviceId ?? "", orderId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pendingPaymentOrders"] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+}
+
+// Accounting role: manually clean up (cancel) an order.
+export function useCleanupOrderByDevice(deviceId?: string) {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (orderId: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return cleanupOrderByDeviceFn(actor, deviceId ?? "", orderId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+}
+
+// Accounting role: manually issue an e-invoice for an order.
+export function useIssueInvoiceByDevice(deviceId?: string) {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args: {
+      orderId: string;
+      invoiceId: string;
+      pdfUrl: string;
+    }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return issueInvoiceByDeviceFn(
+        actor,
+        deviceId ?? "",
+        args.orderId,
+        args.invoiceId,
+        args.pdfUrl,
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+}
+
 // ---- Admin / VPS secret ----
 export function useIsAdmin() {
   const { actor, isFetching } = useActorOrNull();
@@ -541,22 +660,23 @@ export function useCurrentSalesPromo() {
 
 // ---- Quản lý chương trình KM (admin) ----
 
-export function usePromotions() {
+export function usePromotions(deviceId?: string) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["promotions"],
-    queryFn: () => (actor ? listPromotionsFn(actor) : Promise.resolve([])),
+    queryKey: ["promotions", deviceId],
+    queryFn: () =>
+      actor ? listPromotionsFn(actor, deviceId) : Promise.resolve([]),
     enabled: !!actor && !isFetching,
   });
 }
 
-export function useCreatePromotion() {
+export function useCreatePromotion(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
-    mutationFn: (input: Parameters<typeof createPromotionFn>[1]) => {
+    mutationFn: (input: Parameters<typeof createPromotionFn>[2]) => {
       if (!actor) throw new Error("Actor not ready");
-      return createPromotionFn(actor, input);
+      return createPromotionFn(actor, deviceId ?? "", input);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });
@@ -565,17 +685,23 @@ export function useCreatePromotion() {
   });
 }
 
-export function useUpdatePromotion() {
+export function useUpdatePromotion(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (args: {
       code: string;
-      input: Parameters<typeof createPromotionFn>[1];
+      input: Parameters<typeof createPromotionFn>[2];
       active: boolean;
     }) => {
       if (!actor) throw new Error("Actor not ready");
-      return updatePromotionFn(actor, args.code, args.input, args.active);
+      return updatePromotionFn(
+        actor,
+        deviceId ?? "",
+        args.code,
+        args.input,
+        args.active,
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });
@@ -584,13 +710,13 @@ export function useUpdatePromotion() {
   });
 }
 
-export function useDeletePromotion() {
+export function useDeletePromotion(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code: string) => {
       if (!actor) throw new Error("Actor not ready");
-      return deletePromotionFn(actor, code);
+      return deletePromotionFn(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });
@@ -602,23 +728,25 @@ export function useDeletePromotion() {
 // Chương trình đã có khách dùng thành công chưa (Giai đoạn 4f) — quyết
 // định hiện nút Sửa/Xoá hay chỉ Dừng. Gọi riêng theo từng dòng bảng (mỗi
 // hàng PromotionTableRow tự gọi hook này cho mã của chính nó).
-export function useIsPromotionUsed(code: string) {
+export function useIsPromotionUsed(code: string, deviceId?: string) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["promotionUsed", code],
+    queryKey: ["promotionUsed", code, deviceId],
     queryFn: () =>
-      actor ? isPromotionUsedFn(actor, code) : Promise.resolve(false),
+      actor
+        ? isPromotionUsedFn(actor, deviceId ?? "", code)
+        : Promise.resolve(false),
     enabled: !!actor && !isFetching && !!code,
   });
 }
 
-export function useStopPromotion() {
+export function useStopPromotion(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code: string) => {
       if (!actor) throw new Error("Actor not ready");
-      return stopPromotionFn(actor, code);
+      return stopPromotionFn(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["promotions"] });
@@ -629,23 +757,23 @@ export function useStopPromotion() {
 
 // ---- Quản lý "Khuyến mại đăng ký" (admin) ----
 
-export function useRegistrationPromos() {
+export function useRegistrationPromos(deviceId?: string) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["registrationPromos"],
+    queryKey: ["registrationPromos", deviceId],
     queryFn: () =>
-      actor ? listRegistrationPromosFn(actor) : Promise.resolve([]),
+      actor ? listRegistrationPromosFn(actor, deviceId) : Promise.resolve([]),
     enabled: !!actor && !isFetching,
   });
 }
 
-export function useCreateRegistrationPromo() {
+export function useCreateRegistrationPromo(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
-    mutationFn: (input: Parameters<typeof createRegistrationPromoFn>[1]) => {
+    mutationFn: (input: Parameters<typeof createRegistrationPromoFn>[2]) => {
       if (!actor) throw new Error("Actor not ready");
-      return createRegistrationPromoFn(actor, input);
+      return createRegistrationPromoFn(actor, deviceId ?? "", input);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["registrationPromos"] });
@@ -653,18 +781,19 @@ export function useCreateRegistrationPromo() {
   });
 }
 
-export function useUpdateRegistrationPromo() {
+export function useUpdateRegistrationPromo(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (args: {
       code: string;
-      input: Parameters<typeof createRegistrationPromoFn>[1];
+      input: Parameters<typeof createRegistrationPromoFn>[2];
       active: boolean;
     }) => {
       if (!actor) throw new Error("Actor not ready");
       return updateRegistrationPromoFn(
         actor,
+        deviceId ?? "",
         args.code,
         args.input,
         args.active,
@@ -676,13 +805,13 @@ export function useUpdateRegistrationPromo() {
   });
 }
 
-export function useDeleteRegistrationPromo() {
+export function useDeleteRegistrationPromo(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code: string) => {
       if (!actor) throw new Error("Actor not ready");
-      return deleteRegistrationPromoFn(actor, code);
+      return deleteRegistrationPromoFn(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["registrationPromos"] });
@@ -690,23 +819,25 @@ export function useDeleteRegistrationPromo() {
   });
 }
 
-export function useIsRegistrationPromoUsed(code: string) {
+export function useIsRegistrationPromoUsed(code: string, deviceId?: string) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["registrationPromoUsed", code],
+    queryKey: ["registrationPromoUsed", code, deviceId],
     queryFn: () =>
-      actor ? isRegistrationPromoUsedFn(actor, code) : Promise.resolve(false),
+      actor
+        ? isRegistrationPromoUsedFn(actor, deviceId ?? "", code)
+        : Promise.resolve(false),
     enabled: !!actor && !isFetching && !!code,
   });
 }
 
-export function useStopRegistrationPromo() {
+export function useStopRegistrationPromo(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code: string) => {
       if (!actor) throw new Error("Actor not ready");
-      return stopRegistrationPromoFn(actor, code);
+      return stopRegistrationPromoFn(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["registrationPromos"] });
@@ -716,22 +847,23 @@ export function useStopRegistrationPromo() {
 
 // ---- Quản lý "Khuyến mại doanh số tuần/tháng" (admin) ----
 
-export function useSalesPromos() {
+export function useSalesPromos(deviceId?: string) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["salesPromos"],
-    queryFn: () => (actor ? listSalesPromosFn(actor) : Promise.resolve([])),
+    queryKey: ["salesPromos", deviceId],
+    queryFn: () =>
+      actor ? listSalesPromosFn(actor, deviceId) : Promise.resolve([]),
     enabled: !!actor && !isFetching,
   });
 }
 
-export function useCreateSalesPromo() {
+export function useCreateSalesPromo(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
-    mutationFn: (input: Parameters<typeof createSalesPromoFn>[1]) => {
+    mutationFn: (input: Parameters<typeof createSalesPromoFn>[2]) => {
       if (!actor) throw new Error("Actor not ready");
-      return createSalesPromoFn(actor, input);
+      return createSalesPromoFn(actor, deviceId ?? "", input);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesPromos"] });
@@ -739,17 +871,23 @@ export function useCreateSalesPromo() {
   });
 }
 
-export function useUpdateSalesPromo() {
+export function useUpdateSalesPromo(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (args: {
       code: string;
-      input: Parameters<typeof createSalesPromoFn>[1];
+      input: Parameters<typeof createSalesPromoFn>[2];
       active: boolean;
     }) => {
       if (!actor) throw new Error("Actor not ready");
-      return updateSalesPromoFn(actor, args.code, args.input, args.active);
+      return updateSalesPromoFn(
+        actor,
+        deviceId ?? "",
+        args.code,
+        args.input,
+        args.active,
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesPromos"] });
@@ -757,13 +895,13 @@ export function useUpdateSalesPromo() {
   });
 }
 
-export function useDeleteSalesPromo() {
+export function useDeleteSalesPromo(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code: string) => {
       if (!actor) throw new Error("Actor not ready");
-      return deleteSalesPromoFn(actor, code);
+      return deleteSalesPromoFn(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesPromos"] });
@@ -771,23 +909,25 @@ export function useDeleteSalesPromo() {
   });
 }
 
-export function useIsSalesPromoUsed(code: string) {
+export function useIsSalesPromoUsed(code: string, deviceId?: string) {
   const { actor, isFetching } = useActorOrNull();
   return useQuery({
-    queryKey: ["salesPromoUsed", code],
+    queryKey: ["salesPromoUsed", code, deviceId],
     queryFn: () =>
-      actor ? isSalesPromoUsedFn(actor, code) : Promise.resolve(false),
+      actor
+        ? isSalesPromoUsedFn(actor, deviceId ?? "", code)
+        : Promise.resolve(false),
     enabled: !!actor && !isFetching && !!code,
   });
 }
 
-export function useStopSalesPromo() {
+export function useStopSalesPromo(deviceId?: string) {
   const qc = useQueryClient();
   const { actor } = useActorOrNull();
   return useMutation({
     mutationFn: (code: string) => {
       if (!actor) throw new Error("Actor not ready");
-      return stopSalesPromoFn(actor, code);
+      return stopSalesPromoFn(actor, deviceId ?? "", code);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesPromos"] });

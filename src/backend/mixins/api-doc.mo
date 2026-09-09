@@ -14,9 +14,14 @@ API.
 
 ## Device domain
 
-Devices (POS / driver / cashier tablets) are registered to a restaurant through
-a one-time activation code. Each device carries a role (`#admin`, `#driver`, or
-`#cashier`) and an `active` flag that controls whether it may operate.
+Devices (POS / driver / cashier / enterprise tablets) are registered to a
+restaurant through a one-time activation code. Each device carries a role and
+an `active` flag that controls whether it may operate. The role set is
+`#admin`, `#driver`, `#cashier`, plus three enterprise roles: `#paymentQueue`
+(hàng đợi thanh toán), `#accounting` (kế toán), and `#salesPromoReporting`
+(báo cáo bán hàng và KM). Enterprise roles are bound to a device at activation
+time via a restaurant+role activation code, consistent with the
+admin/driver/cashier flow. Menu/restaurant edit rights stay with `#admin` only.
 
 ### Public methods
 
@@ -25,7 +30,41 @@ a one-time activation code. Each device carries a role (`#admin`, `#driver`, or
 - `revokeDevice(deviceId : Text) : async Result<Device, Text>` — Deactivates a device by setting its `active` field to `false`. **Admin only.** Returns `#err(\"Not found\")` for an unknown device. A revoked device remains in storage but can no longer operate.
 - `cleanupExpiredActivations() : async Nat` — Removes expired or used pending activations and returns the count removed. **Admin only.** Returns `0` for a non-admin caller.
 - `listDevicesByRestaurant(restaurantId : Text) : async [Device]` — Returns **all** devices for a restaurant, both active and revoked. **Query** (no auth gate).
-- `listDevicesByRole(role : DeviceRole) : async [Device]` — Returns **all** devices with the given role, both active and revoked. **Query** (no auth gate).
+- `listDevicesByRole(role : DeviceRole) : async [Device]` — Returns **all** devices with the given role, both active and revoked. **Query** (no auth gate). The admin device-management page uses this to display and filter devices by enterprise role.
+- `callerHasEnterpriseRole(deviceId : Text, role : EnterpriseRole) : async Bool` — **Query**. Returns `true` when the caller is an admin, or when the device identified by `deviceId` is active and bound to the given enterprise role (`#paymentQueue`, `#accounting`, or `#salesPromoReporting`). Because the device model keys devices by a per-browser hardware `deviceId` with no principal binding, the caller must supply the `deviceId` it is acting as — the backend cannot infer it from the caller principal alone.
+
+### Enterprise device roles
+
+Enterprise roles are bound to a device at activation time via a
+restaurant+role activation code (same flow as admin/driver/cashier). They gate
+business APIs by device role rather than by HMAC:
+
+- **`#paymentQueue`** (hàng đợi thanh toán): may list pending-payment orders
+  (`listPendingPaymentOrders`) and manually confirm an order's payment
+  (`confirmPaymentByDevice`).
+- **`#accounting`** (kế toán): may look up orders with full PII and the payment
+  verification image (`listOrders`, `getOrder`, `getOrdersByEmail`), manually
+  clean up an order (`cleanupOrderByDevice`), and manually issue an e-invoice
+  (`issueInvoiceByDevice`).
+- **`#salesPromoReporting`** (báo cáo bán hàng và KM): may manage and track
+  promotions, sales promos, and registration promos (the promotion/sales/registration
+  CRUD endpoints), while admin retains full access.
+
+Admin always passes every enterprise gate. Menu/restaurant edit rights remain
+with `#admin` only — enterprise roles cannot edit menus or restaurants.
+
+### Enterprise device-gated mutations
+
+The existing order mutation endpoints (`updatePaymentStatus`,
+`updateInvoiceStatus`, `cancelOrder`, `pruneOldOrdersNow`) are HMAC-verified VPS
+endpoints that a device cannot call (a device cannot produce a valid HMAC).
+These new endpoints let enterprise device roles perform their manual operations,
+gated by device role instead of HMAC. The HMAC endpoints are unchanged for the
+VPS.
+
+- `confirmPaymentByDevice(deviceId : Text, orderId : Text) : async Result<Order, Text>` — Marks an order's payment as `#paid` manually. Gated to a `#paymentQueue` device or admin; other callers receive `#err(\"Payment queue role required\")`. Delegates to the same apply logic as the VPS endpoint, so a manual confirmation transitions a `#confirmed` order to `#pickedUp` exactly like an automated `#paid` update. Returns `#err(\"Order not found\")` for an unknown order.
+- `cleanupOrderByDevice(deviceId : Text, orderId : Text) : async Result<Order, Text>` — Manually cleans up (cancels) an order. Gated to a `#accounting` device or admin; other callers receive `#err(\"Accounting role required\")`. Returns `#err(\"Order not found\")` for an unknown order.
+- `issueInvoiceByDevice(deviceId : Text, orderId : Text, invoiceId : Text, pdfUrl : Text) : async Result<Order, Text>` — Manually issues an e-invoice for an order, writing `invoiceStatus = #invoiced` plus the supplied `invoiceId` and `pdfUrl`. Gated to a `#accounting` device or admin; other callers receive `#err(\"Accounting role required\")`. Returns `#err(\"Order not found\")` for an unknown order.
 
 ### Device listing behavior
 
@@ -67,6 +106,15 @@ and `revokeDevice`, and `0` from `cleanupExpiredActivations`.
 code. `listDevicesByRestaurant` and `listDevicesByRole` are public **query**
 methods with no auth gate.
 
+Enterprise device roles gate business APIs by device role. Because the device
+model keys devices by a per-browser hardware `deviceId` with no principal
+binding, the gated endpoints receive the caller's `deviceId` as a parameter and
+the backend checks it against the device store (`deviceHasRole`). Admin always
+passes every enterprise gate. The enterprise-gated mutation endpoints
+(`confirmPaymentByDevice`, `cleanupOrderByDevice`, `issueInvoiceByDevice`)
+return `#err(\"Payment queue role required\")` / `#err(\"Accounting role required\")`
+when the caller is neither an admin nor a device bound to the required role.
+
 ## Units and encodings
 
 - **Timestamps**: `createdAt`, `expiresAt`, and `activatedAt` are `Int`
@@ -75,7 +123,7 @@ methods with no auth gate.
 - **Identifiers**: `deviceId` and `restaurantId` are `Text`.
 - **Activation codes**: 6-character uppercase alphanumeric strings
   (`A-Z0-9`). They are single-use and expire 15 minutes after creation.
-- **DeviceRole**: a variant — `#admin`, `#driver`, or `#cashier`.
+- **DeviceRole**: a variant — `#admin`, `#driver`, `#cashier`, `#paymentQueue`, `#accounting`, or `#salesPromoReporting`.
 - **Device.active**: a `Bool` — `true` means the device is currently usable,
   `false` means it has been revoked.
 

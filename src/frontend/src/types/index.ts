@@ -8,6 +8,7 @@ export {
   PaymentStatus,
   InvoiceStatus,
   DeviceRole,
+  EnterpriseRole,
   UserRole,
 } from "@/backend";
 
@@ -27,6 +28,7 @@ export type {
   PaymentStatus as PaymentStatusType,
   InvoiceStatus as InvoiceStatusType,
   DeviceRole as DeviceRoleType,
+  EnterpriseRole as EnterpriseRoleType,
   UserRole as UserRoleType,
   UpgradeState,
 } from "@/backend";

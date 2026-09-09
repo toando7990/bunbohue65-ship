@@ -2,18 +2,17 @@
 
 ## Direction
 
-Bún Bò Huế 65 Ship — Vietnamese restaurant-chain shipping & payment operations tool (UI tiếng Việt).
+Bún Bò Huế 65 Ship — Vietnamese restaurant-chain shipping & payment tool (UI tiếng Việt) with enterprise role-based device management.
 
 ## Tone
 
-Modern operational tool, not rustic food app — warm vermillion brand accent on a warm neutral base, executed with the discipline of a logistics dashboard; clean, data-dense, mobile-first.
+Modern operational console, not rustic food app — warm vermillion brand accent on a warm neutral base, plus a dedicated cooler-neutral enterprise surface for admin/accounting/promo screens; clean, data-dense, legible.
 
 ## Differentiation
 
-A shipping app that feels like a confident operations console wearing a Vietnamese food brand — vivid vermillion primary, functional status colors, large touch targets for drivers, dense tables for admins.
+A shipping app that feels like a confident operations console wearing a Vietnamese food brand — vivid vermillion primary, functional status colors, large driver touch targets, dense legible enterprise tables.
 
 ## Color Palette
-
 | Token        | OKLCH (light)  | OKLCH (dark)  | Role                              |
 | ------------ | -------------- | ------------- | --------------------------------- |
 | background   | 0.97 0.012 75  | 0.16 0.015 50 | Warm cream / warm charcoal        |
@@ -27,67 +26,65 @@ A shipping app that feels like a confident operations console wearing a Vietname
 | info         | 0.5 0.16 245   | 0.6 0.16 245  | Shipping status (blue)            |
 | warning      | 0.72 0.16 70   | 0.78 0.16 70  | Pending status (amber)            |
 | destructive  | 0.5 0.22 25    | 0.6 0.22 25   | Cancelled status (red)            |
+### Enterprise surface (`.bbh-enterprise-theme`)
 
+| Token        | OKLCH (light)  | Role                              |
+| ------------ | -------------- | --------------------------------- |
+| background   | 0.972 0.006 240 | Cool neutral base for admin      |
+| card         | 0.995 0.004 240 | Crisp elevated surface           |
+| primary      | 0.53 0.21 28   | Vermillion brand CTA             |
+| success      | 0.52 0.15 150  | Paid / confirmed status          |
+| warning      | 0.72 0.15 75   | Pending / awaiting payment       |
+| info         | 0.5 0.15 250   | Lookup / in-progress status      |
 ## Typography
 
 - Display: Space Grotesk — headings, KPI numbers, brand wordmark
 - Body: Plus Jakarta Sans — UI labels, forms, tables (full Vietnamese diacritics)
-- Mono: JetBrains Mono — order IDs, QR payload, admin numeric columns
+- Mono: JetBrains Mono — order IDs, activation codes, amount columns
 - Scale: hero `text-4xl md:text-5xl font-bold tracking-tight`, h2 `text-2xl md:text-3xl font-semibold`, label `text-xs font-semibold tracking-wider uppercase`, body `text-base`, mono IDs `font-mono text-sm`
-
 ## Elevation & Depth
 
-Layered surfaces via `bg-card` on `bg-background`, subtle borders over heavy shadows; `shadow-sm` default, `shadow-elevated` only for popovers/modals/QR card. No glow shadows.
-
+Layered surfaces via `bg-card` on `bg-background`, subtle borders over heavy shadows; `shadow-panel` for enterprise cards, `shadow-elevated` only for popovers/modals/QR card. No glow shadows.
 ## Structural Zones
 
 | Zone       | Background      | Border           | Notes                                  |
 | ---------- | --------------- | ---------------- | -------------------------------------- |
 | Header     | `bg-card`       | `border-b`       | Sticky, brand wordmark + nav           |
 | Content    | `bg-background` | —                | Alternating `bg-muted/30` per section  |
-| Sidebar    | `bg-sidebar`    | `border-r`       | Admin nav (Đặt hàng, Theo dõi, v.v.)   |
+| Sidebar    | `bg-sidebar`    | `border-r`       | Enterprise role nav (Thanh toán, Kế toán, Báo cáo) |
 | Footer     | `bg-muted/40`   | `border-t`       | Compact, optional on mobile            |
 | QR screen  | `bg-background` | —                | Full-bleed, centered QR, no chrome     |
-
 ## Spacing & Rhythm
 
-Mobile-first: 16px base padding, 24px section gaps; admin tables compact 12px row padding; QR screen 32px breathing room around code; touch targets min 44px height on driver flows.
-
+Mobile-first: 16px base padding, 24px section gaps; enterprise tables compact 12px row padding; QR screen 32px breathing room; touch targets min 44px on driver flows.
 ## Component Patterns
 
 - Buttons: primary `bg-primary text-primary-foreground rounded-md`, hover darkens 8%; secondary `bg-secondary`; status confirmations use status colors directly
-- Cards: `bg-card rounded-lg border border-border shadow-sm`, 16-20px padding
+- Cards: `bg-card rounded-lg border border-border shadow-panel`, 16-20px padding
 - Badges: pill `rounded-full border px-2.5 py-0.5 text-xs font-semibold` with `badge-success/warning/info/destructive` utilities
-- Tables: `bg-card` header row `bg-muted/50`, mono font for ID + amount columns, status badge per row
+- Tables: `bg-card` header `bg-muted/50`, mono font for ID + amount columns, status badge per row
 - Forms: labels `text-sm font-medium`, inputs `bg-input rounded-md`, focus ring `ring-primary`
 - QR: centered `bg-card rounded-2xl p-6 shadow-elevated`, code fills 70% viewport on mobile
+## Enterprise Screens (`.bbh-enterprise-theme`)
 
-## Email Verification Gate
-
-Warm-cream light gate (`.bbh-verify-theme`) shown before the menu — blocks ordering until email is confirmed. Centered `bg-card` panel on cream `bg-background`; vermillion primary CTA; brand wordmark + short Vietnamese reassurance copy.
-
-## OTP Component Pattern
-
-- Email field + "Gửi mã xác nhận" primary button; app emails a 6-digit OTP (transactional); resend countdown + "Gửi lại mã" secondary link
-- 6 mono boxes (`.otp-input`): `h-14 w-12 rounded-xl border bg-card text-center font-mono text-2xl`, auto-advance on entry, backspace to previous; filled = `border-primary bg-primary/5`
-- Wrong/expired: `border-destructive bg-destructive/5` + `animate-otp-shake` (`.otp-input-error`), inline error below
-- Success: green `verify-success-mark` (rounded-full `bg-success/15 text-success`) + "Xác nhận thành công", auto-enter menu
-
+- KPI cards (`.ent-kpi`): `bg-card border shadow-panel`, `font-display` value + small label, `animate-kpi-in`
+- Tables (`.ent-table-row/.ent-th/.ent-td`): compact rows, `hover:bg-muted/40`, mono order IDs, per-row status pill
+- Toolbar (`.ent-toolbar`): filter/search/action bar on `bg-card` with `shadow-panel`
+- Payment queue: success pill for paid, warning pill for awaiting, primary confirm action
+- Accounting lookup: shows order + payment verification image (`.badge-info` in-progress)
+- Promo/sales reporting: `--chart-*` colors, KPI row + dense table
 ## Motion
 
-- Entrance: fade + 4px rise, 200ms ease-out, staggered for list items
-- Hover: `transition-smooth` (250ms), primary buttons darken, cards lift `shadow-sm → shadow-elevated`
+- Entrance: fade + rise, `kpi-in` 300ms for KPI cards, `row-in` 250ms staggered for table rows
+- Hover: `transition-smooth` (250ms), primary buttons darken, cards lift `shadow-panel → shadow-panel-hover`
 - QR scan success: brief `animate-pulse-soft` on confirmation badge
 - Polling status: subtle `animate-pulse` on pending badges only
-
 ## Constraints
-
-- All UI labels in Vietnamese (Đặt hàng, Theo dõi đơn, Thanh toán, Quản lý, Menu, Nhà hàng, Báo cáo)
-- Mobile-first for DriverPaymentScreen — QR full screen, 44px+ touch targets
+- All UI labels in Vietnamese (Thanh toán, Kế toán, Báo cáo bán hàng & KM, Hàng đợi, Hoá đơn, Tra cứu đơn)
+- Enterprise roles: Hàng đợi thanh toán, Kế toán, Báo cáo bán hàng & KM only — no extra roles
+- Menu/restaurant edit stays admin-only; enterprise roles scoped to their attached restaurant
 - Status colors are functional only (green=paid, blue=shipping, amber=pending, red=cancelled) — never decorative
 - No purple gradients, no full-page gradient backgrounds, no glow shadows
 - Token-only styling — never raw hex/rgb in components
-
 ## Signature Detail
-
-The vermillion primary (`0.55 0.22 28`) — tuned from Vietnamese flag red into an operational CTA color — paired with a warm cream base that signals "food brand" without resorting to rustic brown/amber cliché, letting the four functional status colors carry the workflow meaning.
+The vermillion primary (`0.55 0.22 28`) tuned from Vietnamese flag red into an operational CTA, paired with a warm cream base for ordering and a cooler-neutral `.bbh-enterprise-theme` for admin/accounting surfaces — enterprise screens feel professional and legible while the brand stays unmistakably Bún Bò Huế 65.

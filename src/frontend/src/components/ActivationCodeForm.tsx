@@ -22,6 +22,9 @@ const ROLE_OPTIONS: Array<{ value: DeviceRole; label: string }> = [
   { value: DeviceRole.cashier, label: "Thu ngân" },
   { value: DeviceRole.driver, label: "Tài xế" },
   { value: DeviceRole.admin, label: "Quản trị" },
+  { value: DeviceRole.paymentQueue, label: "Hàng đợi thanh toán" },
+  { value: DeviceRole.accounting, label: "Kế toán" },
+  { value: DeviceRole.salesPromoReporting, label: "Báo cáo bán hàng & KM" },
 ];
 
 function formatExpiry(ns: bigint): string {

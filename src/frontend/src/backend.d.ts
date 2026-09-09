@@ -172,6 +172,7 @@ export interface Order {
     items: Array<OrderItem>;
     voucherDiscountAmount: bigint;
     amount: bigint;
+    paymentVerificationImage: string;
     cusAddress: string;
     invoiceStatus: InvoiceStatus;
     billId?: string;
@@ -413,9 +414,17 @@ export enum BookingStatus {
     confirmed = "confirmed"
 }
 export enum DeviceRole {
+    accounting = "accounting",
+    paymentQueue = "paymentQueue",
     admin = "admin",
+    salesPromoReporting = "salesPromoReporting",
     cashier = "cashier",
     driver = "driver"
+}
+export enum EnterpriseRole {
+    accounting = "accounting",
+    paymentQueue = "paymentQueue",
+    salesPromoReporting = "salesPromoReporting"
 }
 export enum InvoiceStatus {
     none = "none",
@@ -440,20 +449,23 @@ export interface backendInterface {
     applyPromotion(email: string, orderAmount: bigint, hmac: Hmac): Promise<Result_16>;
     applyVoucher(email: string, code: string, orderAmount: bigint, hmac: Hmac): Promise<Result_6>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    callerHasEnterpriseRole(deviceId: DeviceId, role: EnterpriseRole): Promise<boolean>;
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
     changeOrderRestaurant(orderId: string, newRestaurantId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
+    cleanupOrderByDevice(deviceId: string, orderId: string): Promise<Result>;
+    confirmPaymentByDevice(deviceId: string, orderId: string): Promise<Result>;
     countVouchersByProgram(programCode: string): Promise<bigint>;
     createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, kmDiscountAmount: bigint, voucherDiscountAmount: bigint, hmac: string): Promise<Result>;
-    createPromotion(name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_4>;
-    createRegistrationPromo(name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, termsUrl: string): Promise<Result_3>;
-    createSalesPromo(name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, termsUrl: string): Promise<Result_1>;
+    createPromotion(deviceId: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_4>;
+    createRegistrationPromo(deviceId: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, termsUrl: string): Promise<Result_3>;
+    createSalesPromo(deviceId: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, termsUrl: string): Promise<Result_1>;
     deactivateExpiredPromotions(hmac: Hmac): Promise<Result_6>;
     deleteItem(itemId: string): Promise<Result_7>;
-    deletePromotion(code: string): Promise<Result_7>;
-    deleteRegistrationPromo(code: string): Promise<Result_7>;
+    deletePromotion(deviceId: string, code: string): Promise<Result_7>;
+    deleteRegistrationPromo(deviceId: string, code: string): Promise<Result_7>;
     deleteRestaurant(restaurantId: string): Promise<Result_7>;
-    deleteSalesPromo(code: string): Promise<Result_7>;
+    deleteSalesPromo(deviceId: string, code: string): Promise<Result_7>;
     execute(qJson: string): Promise<Result__1>;
     generateActivationCode(restaurantId: RestaurantId, role: DeviceRole): Promise<Result_15>;
     getApiDoc(): Promise<string>;
@@ -473,31 +485,32 @@ export interface backendInterface {
     getKmUsageCount(email: string, programCode: string): Promise<bigint>;
     getMenu(): Promise<Array<MenuItem>>;
     getMenuForRestaurant(restaurantId: string): Promise<Array<MenuItem>>;
-    getOrder(orderId: string): Promise<Result>;
+    getOrder(orderId: string, deviceId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_14>;
-    getOrdersByEmail(email: string): Promise<Array<Order>>;
+    getOrdersByEmail(email: string, deviceId: string): Promise<Array<Order>>;
     getPaymentMode(): Promise<string>;
     getRestaurants(): Promise<Array<Restaurant>>;
     getStoreHours(): Promise<StoreHours>;
     getUpgradeState(): Promise<UpgradeState>;
     isCallerAdmin(): Promise<boolean>;
     isEmailVerified(email: Email): Promise<boolean>;
-    isPromotionUsed(code: string): Promise<Result_13>;
-    isRegistrationPromoUsed(code: string): Promise<Result_13>;
-    isSalesPromoUsed(code: string): Promise<Result_13>;
+    isPromotionUsed(deviceId: string, code: string): Promise<Result_13>;
+    isRegistrationPromoUsed(deviceId: string, code: string): Promise<Result_13>;
+    isSalesPromoUsed(deviceId: string, code: string): Promise<Result_13>;
     isStoreOpen(): Promise<boolean>;
+    issueInvoiceByDevice(deviceId: string, orderId: string, invoiceId: string, pdfUrl: string): Promise<Result>;
     issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: Hmac): Promise<Result_12>;
     listDevicesByRestaurant(restaurantId: RestaurantId): Promise<Array<Device>>;
     listDevicesByRole(role: DeviceRole): Promise<Array<Device>>;
     listMenus(): Promise<Array<MenuItem>>;
     listMyVouchers(email: string): Promise<Array<Voucher>>;
-    listOrders(): Promise<Array<Order>>;
+    listOrders(deviceId: string): Promise<Array<Order>>;
     listPaidOrdersForPickup(): Promise<Array<Order>>;
-    listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
-    listPromotions(): Promise<Result_11>;
-    listRegistrationPromos(): Promise<Result_10>;
+    listPendingPaymentOrders(restaurantId: string, deviceId: string): Promise<Array<Order>>;
+    listPromotions(deviceId: string): Promise<Result_11>;
+    listRegistrationPromos(deviceId: string): Promise<Result_10>;
     listRestaurants(): Promise<Array<Restaurant>>;
-    listSalesPromos(): Promise<Result_9>;
+    listSalesPromos(deviceId: string): Promise<Result_9>;
     markPaymentExpired(orderId: string, hmac: string): Promise<Result>;
     markPickedUp(orderId: string): Promise<Result>;
     pruneOldOrdersNow(hmac: string): Promise<Result_6>;
@@ -518,18 +531,18 @@ export interface backendInterface {
         err: string;
     }>;
     snapshotUpgradeState(): Promise<Uint8Array>;
-    stopPromotion(code: string): Promise<Result_4>;
-    stopRegistrationPromo(code: string): Promise<Result_3>;
-    stopSalesPromo(code: string): Promise<Result_1>;
+    stopPromotion(deviceId: string, code: string): Promise<Result_4>;
+    stopRegistrationPromo(deviceId: string, code: string): Promise<Result_3>;
+    stopSalesPromo(deviceId: string, code: string): Promise<Result_1>;
     tryConsumeKmSlot(email: string, programCode: string, dailyLimit: bigint, hmac: Hmac): Promise<Result_6>;
     updateInvoiceStatus(orderId: OrderId, invoiceStatus: InvoiceStatus, invoiceId: string, pdfUrl: string, hmac: Hmac): Promise<Result>;
     updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array, visible: boolean): Promise<Result_5>;
     updateOrderQr(orderId: string, qrCode: string | null, billId: string | null, expireAt: bigint | null, hmac: string): Promise<Result>;
     updatePaymentStatus(orderId: OrderId, paymentStatus: PaymentStatus, hmac: Hmac): Promise<Result>;
-    updatePromotion(code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, termsUrl: string): Promise<Result_4>;
-    updateRegistrationPromo(code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_3>;
+    updatePromotion(deviceId: string, code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, termsUrl: string): Promise<Result_4>;
+    updateRegistrationPromo(deviceId: string, code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_3>;
     updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_2>;
-    updateSalesPromo(code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_1>;
+    updateSalesPromo(deviceId: string, code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_1>;
     updateStatus(orderId: OrderId, bookingStatus: BookingStatus, hmac: Hmac): Promise<Result>;
     verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }

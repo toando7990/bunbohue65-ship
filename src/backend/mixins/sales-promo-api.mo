@@ -18,6 +18,7 @@ import AccessControl "mo:caffeineai-authorization/access-control";
 import Result "mo:core/Result";
 import Time "mo:core/Time";
 import Nat "mo:core/Nat";
+import Principal "mo:core/Principal";
 
 import Types "../types/hmac";
 import SecretTypes "../types/secret";
@@ -25,15 +26,25 @@ import SalesPromoTypes "../types/sales-promo";
 import SalesPromoLib "../lib/sales-promo";
 import VoucherTypes "../types/voucher";
 import VoucherLib "../lib/voucher";
+import DevicesLib "../lib/devices";
 import HmacLib "../lib/hmac";
 
 mixin (
   accessControlState : AccessControl.AccessControlState,
+  devices : DevicesLib.DevicesStore,
   salesPromos : SalesPromoTypes.SalesPromoStore,
   salesBonusIssued : SalesPromoTypes.SalesBonusIssuedStore,
   vouchers : VoucherTypes.VoucherStore,
   secretState : SecretTypes.SecretState,
 ) {
+  // Enterprise gating helper: true when the caller is an admin OR the device
+  // identified by `deviceId` is an active #salesPromoReporting device. Used to
+  // let the "Báo cáo bán hàng và KM" role manage/track sales promos while
+  // admin retains full access.
+  func canManageSalesPromos(caller : Principal, deviceId : Text) : Bool {
+    AccessControl.isAdmin(accessControlState, caller) or DevicesLib.deviceHasRole(devices, deviceId, #salesPromoReporting);
+  };
+
   func hasIssuedSalesVoucher(code : Text) : Bool {
     for ((_voucherCode, v) in vouchers.toArray().vals()) {
       if (v.programCode == code) { return true };
@@ -42,6 +53,7 @@ mixin (
   };
 
   public shared ({ caller }) func createSalesPromo(
+    deviceId : Text,
     name : Text,
     startDate : Text,
     endDate : Text,
@@ -50,7 +62,7 @@ mixin (
     voucherValidDays : Nat,
     termsUrl : Text,
   ) : async Result.Result<SalesPromoTypes.SalesPromo, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+    if (not canManageSalesPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     if (weeklyTiers.size() > 3) {
@@ -77,6 +89,7 @@ mixin (
   };
 
   public shared ({ caller }) func updateSalesPromo(
+    deviceId : Text,
     code : Text,
     name : Text,
     startDate : Text,
@@ -87,7 +100,7 @@ mixin (
     active : Bool,
     termsUrl : Text,
   ) : async Result.Result<SalesPromoTypes.SalesPromo, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+    if (not canManageSalesPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     if (salesPromos.get(code) == null) {
@@ -117,8 +130,8 @@ mixin (
     #ok(promo);
   };
 
-  public shared ({ caller }) func deleteSalesPromo(code : Text) : async Result.Result<(), Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public shared ({ caller }) func deleteSalesPromo(deviceId : Text, code : Text) : async Result.Result<(), Text> {
+    if (not canManageSalesPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     switch (salesPromos.get(code)) {
@@ -132,8 +145,8 @@ mixin (
     #ok;
   };
 
-  public shared ({ caller }) func stopSalesPromo(code : Text) : async Result.Result<SalesPromoTypes.SalesPromo, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public shared ({ caller }) func stopSalesPromo(deviceId : Text, code : Text) : async Result.Result<SalesPromoTypes.SalesPromo, Text> {
+    if (not canManageSalesPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     switch (salesPromos.get(code)) {
@@ -146,15 +159,15 @@ mixin (
     };
   };
 
-  public query ({ caller }) func isSalesPromoUsed(code : Text) : async Result.Result<Bool, Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public query ({ caller }) func isSalesPromoUsed(deviceId : Text, code : Text) : async Result.Result<Bool, Text> {
+    if (not canManageSalesPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     #ok(hasIssuedSalesVoucher(code));
   };
 
-  public query ({ caller }) func listSalesPromos() : async Result.Result<[SalesPromoTypes.SalesPromo], Text> {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+  public query ({ caller }) func listSalesPromos(deviceId : Text) : async Result.Result<[SalesPromoTypes.SalesPromo], Text> {
+    if (not canManageSalesPromos(caller, deviceId)) {
       return #err("Admin only");
     };
     #ok(salesPromos.toArray().map(func((_code : Text, p : SalesPromoTypes.SalesPromo)) : SalesPromoTypes.SalesPromo = p));

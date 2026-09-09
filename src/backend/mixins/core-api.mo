@@ -6,6 +6,8 @@ import Text "mo:core/Text";
 import AccessControl "mo:caffeineai-authorization/access-control";
 import CoreTypes "../types/core";
 import CoreLib "../lib/core";
+import DevicesLib "../lib/devices";
+import Devices "../types/devices";
 import HmacLib "../lib/hmac";
 import HmacTypes "../types/hmac";
 
@@ -91,6 +93,7 @@ mixin (
       tingeeQrCode;
       invoiceId = "";
       pdfUrl = "";
+      paymentVerificationImage = "";
       billId = null;
       qrCode = null;
       expireAt = null;
@@ -107,9 +110,14 @@ mixin (
   // callers get the same records with PII fields blanked (cusName, cusPhone,
   // cusAddress, cusTaxCode, receiverEmail) so the customer OrderList and driver
   // DriverPaymentScreen flows keep working without leaking customer PII.
-  public shared ({ caller }) func listOrders() : async [CoreTypes.Order] {
+  //
+  // Enterprise gating: an accounting-role device (deviceId bound to #accounting)
+  // may also list orders. Admin always passes. Any other caller (including an
+  // unregistered deviceId) is treated as a non-admin/anonymous caller and gets
+  // PII-blanked records.
+  public shared ({ caller }) func listOrders(deviceId : Text) : async [CoreTypes.Order] {
     let raw = CoreLib.listOrders(state);
-    if (AccessControl.isAdmin(accessControlState, caller)) {
+    if (AccessControl.isAdmin(accessControlState, caller) or DevicesLib.deviceHasRole(state.devices, deviceId, #accounting)) {
       raw;
     } else {
       raw.map(func(o : CoreTypes.Order) : CoreTypes.Order = sanitizePii(o));
@@ -118,12 +126,13 @@ mixin (
 
   // Get a single order. Admin sees the full record WITH PII; non-admin/anonymous
   // callers get the record with PII fields blanked. Returns #err only if the
-  // order does not exist.
-  public shared ({ caller }) func getOrder(orderId : Text) : async Result.Result<CoreTypes.Order, Text> {
+  // order does not exist. An accounting-role device may also read the full
+  // record (including the payment verification image) for manual reconciliation.
+  public shared ({ caller }) func getOrder(orderId : Text, deviceId : Text) : async Result.Result<CoreTypes.Order, Text> {
     switch (CoreLib.getOrder(state, orderId)) {
       case null { #err("Order not found") };
       case (?o) {
-        if (AccessControl.isAdmin(accessControlState, caller)) {
+        if (AccessControl.isAdmin(accessControlState, caller) or DevicesLib.deviceHasRole(state.devices, deviceId, #accounting)) {
           #ok(o);
         } else {
           #ok(sanitizePii(o));
@@ -139,12 +148,13 @@ mixin (
   // placed from the same browser via localStorage. Same PII-blanking rule as
   // listOrders/getOrder: admin sees full records, non-admin/anonymous callers
   // get PII-blanked records (cusAddress, cusTaxCode, receiverEmail cleared).
-  public shared ({ caller }) func getOrdersByEmail(email : Text) : async [CoreTypes.Order] {
+  // An accounting-role device may also read the full records.
+  public shared ({ caller }) func getOrdersByEmail(email : Text, deviceId : Text) : async [CoreTypes.Order] {
     let normalized = email.toLower();
     let raw = CoreLib.listOrders(state).filter(
       func(o : CoreTypes.Order) : Bool = o.receiverEmail.toLower() == normalized
     );
-    if (AccessControl.isAdmin(accessControlState, caller)) {
+    if (AccessControl.isAdmin(accessControlState, caller) or DevicesLib.deviceHasRole(state.devices, deviceId, #accounting)) {
       raw;
     } else {
       raw.map(func(o : CoreTypes.Order) : CoreTypes.Order = sanitizePii(o));
@@ -169,9 +179,19 @@ mixin (
   // pickupCode is that the "Hàng đợi thanh toán" screen must NOT be able to
   // read it (staff must get it verbally from whoever is physically picking up
   // the order), so it is stripped server-side here, not just hidden in the UI.
+  //
+  // Enterprise gating: this endpoint is owned by the payment-queue role. A
+  // device bound to #paymentQueue (or an admin) may call it; any other caller
+  // receives an empty list. The payment-queue device still gets pickupCode
+  // hidden (it is a non-admin caller), but sees the pending orders to confirm
+  // payment.
   public shared ({ caller }) func listPendingPaymentOrders(
     restaurantId : Text,
+    deviceId : Text,
   ) : async [CoreTypes.Order] {
+    if (not AccessControl.isAdmin(accessControlState, caller) and not DevicesLib.deviceHasRole(state.devices, deviceId, #paymentQueue)) {
+      return [];
+    };
     let raw = CoreLib.listPendingPaymentOrders(state, restaurantId);
     if (AccessControl.isAdmin(accessControlState, caller)) {
       raw;
@@ -299,5 +319,60 @@ mixin (
     let before = state.orders.toArray().size();
     CoreLib.pruneOldOrders(state);
     #ok(before - state.orders.toArray().size());
+  };
+
+  // --- Enterprise device-gated mutations ---
+  //
+  // The existing mutation endpoints (updatePaymentStatus/updateInvoiceStatus/
+  // cancelOrder/pruneOldOrdersNow) are HMAC-verified VPS endpoints that a
+  // device cannot call (a device cannot produce a valid HMAC). These NEW
+  // endpoints let the enterprise device roles perform their manual operations,
+  // gated by the caller's device role instead of HMAC. The existing HMAC
+  // endpoints are left unchanged for the VPS.
+
+  // Payment-queue role: mark an order's payment as #paid manually. Gated to a
+  // #paymentQueue device (or admin). Delegates to the same apply logic the VPS
+  // endpoint uses, so a manual confirmation transitions a #confirmed order to
+  // #pickedUp exactly like an automated #paid update.
+  public shared ({ caller }) func confirmPaymentByDevice(
+    deviceId : Text,
+    orderId : Text,
+  ) : async Result.Result<CoreTypes.Order, Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller) and not DevicesLib.deviceHasRole(state.devices, deviceId, #paymentQueue)) {
+      return #err("Payment queue role required");
+    };
+    HmacLib.applyPaymentStatus(state.orders, orderId, #paid, Time.now());
+  };
+
+  // Accounting role: manually clean up (cancel) an order. Gated to a
+  // #accounting device (or admin). Delegates to the same cancel logic the VPS
+  // endpoint uses.
+  public shared ({ caller }) func cleanupOrderByDevice(
+    deviceId : Text,
+    orderId : Text,
+  ) : async Result.Result<CoreTypes.Order, Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller) and not DevicesLib.deviceHasRole(state.devices, deviceId, #accounting)) {
+      return #err("Accounting role required");
+    };
+    switch (CoreLib.cancelOrder(state, orderId)) {
+      case null { #err("Order not found") };
+      case (?o) { #ok(o) };
+    };
+  };
+
+  // Accounting role: manually issue an e-invoice for an order. Gated to a
+  // #accounting device (or admin). Delegates to the same invoice-apply logic
+  // the VPS endpoint uses, writing invoiceStatus=#invoiced plus the invoiceId
+  // and pdfUrl supplied by the accounting device.
+  public shared ({ caller }) func issueInvoiceByDevice(
+    deviceId : Text,
+    orderId : Text,
+    invoiceId : Text,
+    pdfUrl : Text,
+  ) : async Result.Result<CoreTypes.Order, Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller) and not DevicesLib.deviceHasRole(state.devices, deviceId, #accounting)) {
+      return #err("Accounting role required");
+    };
+    HmacLib.applyInvoiceStatus(state.orders, orderId, #invoiced, invoiceId, pdfUrl, Time.now());
   };
 };

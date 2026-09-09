@@ -1,9 +1,17 @@
 // TanStack Router with Vietnamese routes. Admin routes gated by II auth + admin role.
 
+import { type DeviceRole, EnterpriseRole } from "@/backend";
+import { EnterpriseActivationForm } from "@/components/EnterpriseActivationForm";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Layout } from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
-import { useAuth } from "@/hooks/useAuth";
+import {
+  ENTERPRISE_ROLE_LABELS,
+  useAuth,
+  useEnterpriseRole,
+} from "@/hooks/useAuth";
+import { loadEnterpriseActivation } from "@/lib/enterprise-activation";
+import { AccountingPage } from "@/pages/AccountingPage";
 import { AdminPanel } from "@/pages/AdminPanel";
 import { AdminPromoDashboard } from "@/pages/AdminPromoDashboard";
 import { AnalyticsDashboard } from "@/pages/AnalyticsDashboard";
@@ -18,11 +26,13 @@ import OrderHistory from "@/pages/OrderHistory";
 import OrderList from "@/pages/OrderList";
 import OrderTracker from "@/pages/OrderTracker";
 import OrderingPartners from "@/pages/OrderingPartners";
+import { PaymentQueuePage } from "@/pages/PaymentQueuePage";
 import Profile from "@/pages/Profile";
 import PromotionManager from "@/pages/PromotionManager";
 import RegistrationPromoManager from "@/pages/RegistrationPromoManager";
 import RestaurantManager from "@/pages/RestaurantManager";
 import SalesPromoManager from "@/pages/SalesPromoManager";
+import { SalesPromoReportingPage } from "@/pages/SalesPromoReportingPage";
 import {
   Outlet,
   RouterProvider,
@@ -30,6 +40,7 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
+import { useState } from "react";
 
 // Admin gate component — redirects unauthenticated/non-admin users.
 function AdminGate({ children }: { children: React.ReactNode }) {
@@ -89,6 +100,147 @@ function AdminGate({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+// Enterprise gate — device-role gated. Access is scoped to a single enterprise
+// device role: each enterprise role only sees its own module. A device that is
+// not yet activated sees the enterprise activation form; a device bound to a
+// different role (or a non-enterprise device) is blocked. Admin passes
+// regardless (the backend short-circuits isAdmin on empty deviceId). Unlike the
+// admin gate, this does NOT require Internet Identity — enterprise devices are
+// authorized by their bound device role, not by II auth.
+function EnterpriseGate({
+  requiredRole,
+  moduleTitle,
+  moduleDescription,
+  children,
+}: {
+  requiredRole: EnterpriseRole;
+  moduleTitle: string;
+  moduleDescription: string;
+  children?: React.ReactNode;
+}) {
+  const { isAdmin, isAdminLoading } = useAuth();
+  const [activationVersion, setActivationVersion] = useState(0);
+  // activationVersion forces a re-render after the device is activated so the
+  // gate re-reads loadEnterpriseActivation() on the next render.
+  void activationVersion;
+  const activation = loadEnterpriseActivation();
+  const deviceId = activation?.deviceId ?? "";
+  const { enterpriseRole, isEnterpriseRoleLoading } =
+    useEnterpriseRole(deviceId);
+
+  if (isAdminLoading || isEnterpriseRoleLoading) {
+    return (
+      <section
+        className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6"
+        data-ocid="enterprise.loading_state"
+      >
+        <p className="text-sm text-muted-foreground">Đang kiểm tra quyền…</p>
+      </section>
+    );
+  }
+
+  // Admin passes regardless of device binding (isAdmin short-circuits in the
+  // backend device-role gating methods).
+  if (isAdmin) {
+    return (
+      <section
+        className="bbh-enterprise-theme mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10"
+        data-ocid="enterprise.page"
+      >
+        {children ? (
+          children
+        ) : (
+          <>
+            <div className="flex flex-col gap-1">
+              <h1
+                className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
+                data-ocid="enterprise.title"
+              >
+                {moduleTitle}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {moduleDescription}
+              </p>
+            </div>
+            <div
+              className="mt-6 rounded-lg border border-border bg-card p-6 shadow-panel"
+              data-ocid="enterprise.placeholder"
+            >
+              <p className="text-sm text-muted-foreground">
+                Mô-đun {moduleTitle} đang được triển khai.
+              </p>
+            </div>
+          </>
+        )}
+      </section>
+    );
+  }
+
+  // Non-admin enterprise device: must be activated first. Show the activation
+  // form (bound to this module's role) until the device is bound.
+  if (!activation) {
+    return (
+      <EnterpriseActivationForm
+        expectedRole={requiredRole as unknown as DeviceRole}
+        expectedRoleLabel={ENTERPRISE_ROLE_LABELS[requiredRole]}
+        onActivated={() => setActivationVersion((v) => v + 1)}
+      />
+    );
+  }
+
+  // Device activated but bound to a different role — block.
+  if (enterpriseRole !== requiredRole) {
+    return (
+      <section
+        className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6"
+        data-ocid="enterprise.unauthorized_state"
+      >
+        <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
+          Không có quyền truy cập
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Thiết bị của bạn không được gắn vai trò{" "}
+          <span className="font-semibold text-foreground">
+            {ENTERPRISE_ROLE_LABELS[requiredRole]}
+          </span>
+          . Vui lòng liên hệ quản trị viên.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      className="bbh-enterprise-theme mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10"
+      data-ocid="enterprise.page"
+    >
+      {children ? (
+        children
+      ) : (
+        <>
+          <div className="flex flex-col gap-1">
+            <h1
+              className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
+              data-ocid="enterprise.title"
+            >
+              {moduleTitle}
+            </h1>
+            <p className="text-sm text-muted-foreground">{moduleDescription}</p>
+          </div>
+          <div
+            className="mt-6 rounded-lg border border-border bg-card p-6 shadow-panel"
+            data-ocid="enterprise.placeholder"
+          >
+            <p className="text-sm text-muted-foreground">
+              Mô-đun {moduleTitle} đang được triển khai.
+            </p>
+          </div>
+        </>
+      )}
+    </section>
+  );
 }
 
 const rootRoute = createRootRouteWithContext()({
@@ -256,6 +408,48 @@ const adminPromoDashboardRoute = createRoute({
   ),
 });
 
+const enterprisePaymentQueueRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/enterprise/payment-queue",
+  component: () => (
+    <EnterpriseGate
+      requiredRole={EnterpriseRole.paymentQueue}
+      moduleTitle="Hàng đợi thanh toán"
+      moduleDescription="Danh sách đơn chờ thanh toán của nhà hàng được gắn."
+    >
+      <PaymentQueuePage />
+    </EnterpriseGate>
+  ),
+});
+
+const enterpriseAccountingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/enterprise/accounting",
+  component: () => (
+    <EnterpriseGate
+      requiredRole={EnterpriseRole.accounting}
+      moduleTitle="Kế toán"
+      moduleDescription="Dọn đơn, phát hành hoá đơn và tra cứu đơn hàng trong phạm vi nhà hàng được gắn."
+    >
+      <AccountingPage />
+    </EnterpriseGate>
+  ),
+});
+
+const enterpriseSalesReportingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/enterprise/sales-reporting",
+  component: () => (
+    <EnterpriseGate
+      requiredRole={EnterpriseRole.salesPromoReporting}
+      moduleTitle="Báo cáo bán hàng & KM"
+      moduleDescription="Quản lý khuyến mại, theo dõi KM và báo cáo phân tích bán hàng."
+    >
+      <SalesPromoReportingPage />
+    </EnterpriseGate>
+  ),
+});
+
 const router = createRouter({
   routeTree: rootRoute.addChildren([
     indexRoute,
@@ -277,6 +471,9 @@ const router = createRouter({
     adminSalesPromoRoute,
     adminAnalyticsRoute,
     adminPromoDashboardRoute,
+    enterprisePaymentQueueRoute,
+    enterpriseAccountingRoute,
+    enterpriseSalesReportingRoute,
   ]),
   defaultPreload: "intent",
 });

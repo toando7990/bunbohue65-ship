@@ -3,6 +3,7 @@
 // No hardcoded principals — admin role is assigned via backend assignCallerUserRole.
 
 import { createActor } from "@/backend";
+import { EnterpriseRole } from "@/backend";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
@@ -41,5 +42,59 @@ export function useAuth(): AuthState {
     clear: ii.clear,
     isAdmin: Boolean(adminQuery.data),
     isAdminLoading: adminQuery.isLoading && !!ii.identity,
+  };
+}
+
+// The 3 enterprise device roles, in display order. Each maps to one enterprise
+// module page. A device is bound to exactly one of these at activation time.
+export const ENTERPRISE_ROLES: EnterpriseRole[] = [
+  EnterpriseRole.paymentQueue,
+  EnterpriseRole.accounting,
+  EnterpriseRole.salesPromoReporting,
+];
+
+// Vietnamese labels for the enterprise roles (used by nav + gates).
+export const ENTERPRISE_ROLE_LABELS: Record<EnterpriseRole, string> = {
+  [EnterpriseRole.paymentQueue]: "Hàng đợi thanh toán",
+  [EnterpriseRole.accounting]: "Kế toán",
+  [EnterpriseRole.salesPromoReporting]: "Báo cáo bán hàng & KM",
+};
+
+export interface EnterpriseRoleState {
+  // The enterprise role the current device is bound to, or null when the
+  // caller is not an enterprise device (admin/driver/cashier/guest).
+  enterpriseRole: EnterpriseRole | null;
+  isEnterpriseRoleLoading: boolean;
+}
+
+// Determines which enterprise role the current device has by probing the
+// canister's callerHasEnterpriseRole for each of the 3 roles. Used to gate
+// access to the enterprise module pages so each role only sees its own module.
+// deviceId is the current device's bound id (from the enterprise activation
+// storage); pass it so the canister can authorize the device by role.
+export function useEnterpriseRole(deviceId?: string): EnterpriseRoleState {
+  const { actor, isFetching } = useActor(createActor);
+
+  const roleQuery = useQuery({
+    queryKey: ["auth", "enterpriseRole", deviceId],
+    queryFn: async () => {
+      if (!actor) return null;
+      for (const role of ENTERPRISE_ROLES) {
+        try {
+          if (await actor.callerHasEnterpriseRole(deviceId ?? "", role))
+            return role;
+        } catch {
+          // Probe failure for one role shouldn't block the others.
+        }
+      }
+      return null;
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 60_000,
+  });
+
+  return {
+    enterpriseRole: roleQuery.data ?? null,
+    isEnterpriseRoleLoading: roleQuery.isLoading && !!actor,
   };
 }

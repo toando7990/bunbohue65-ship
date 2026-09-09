@@ -9,6 +9,9 @@ module {
         case (#admin) "admin";
         case (#driver) "driver";
         case (#cashier) "cashier";
+        case (#paymentQueue) "paymentQueue";
+        case (#accounting) "accounting";
+        case (#salesPromoReporting) "salesPromoReporting";
       }
     );
   };
