@@ -5,6 +5,23 @@
 // không khớp (không có đường vòng cho nhân viên tự ghi đè, theo đúng
 // quyết định đã chốt).
 //
+// BUỘC CHỤP TRỰC TIẾP BẰNG CAMERA (capture="environment" trên input) —
+// KHÔNG cho chọn ảnh có sẵn từ thư viện. Chống 1 kiểu gian lận thật: khách
+// quét QR để BIẾT được số tiền + mã tài khoản nhận (thông tin này hiện
+// ngay trên app ngân hàng của họ khi quét, TRƯỚC KHI quyết định có
+// chuyển tiền hay không), rồi KHÔNG thanh toán mà tự làm giả 1 ảnh
+// "giao dịch thành công" bằng phần mềm chỉnh sửa, chuẩn bị sẵn trong thư
+// viện ảnh. Buộc chụp tại chỗ tạo ra tương tác trực tiếp giữa nhân viên
+// và app ngân hàng THẬT trên máy khách, khó chuẩn bị giả từ trước mà
+// không bị nhân viên để ý.
+//
+// GIỚI HẠN KỸ THUẬT CẦN BIẾT: capture="environment" chỉ là GỢI Ý cho
+// trình duyệt, không phải đảm bảo tuyệt đối — trên iOS Safari thường mở
+// thẳng camera (đáng tin cậy); trên 1 số phiên bản Android Chrome vẫn có
+// thể hiện lựa chọn "Camera hoặc Thư viện"; trên máy tính không có tác
+// dụng gì (không có camera, trình duyệt bỏ qua). Đây là 1 lớp rào cản
+// thêm cho kẻ gian ít kỹ thuật, không phải giải pháp chặn tuyệt đối.
+//
 // Chỉ hiện SỐ TIỀN cần khớp trong dialog (không hiện mã tài khoản QR cụ
 // thể — Order từ canister không có field này, chỉ tồn tại ở VPS SQLite;
 // backend vẫn tự đối chiếu đầy đủ CẢ 2 điều kiện, việc UI không hiện mã
@@ -20,7 +37,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { VpsHttpError, confirmManualPaymentByPhoto } from "@/lib/vps-client";
-import { AlertTriangle, Loader2, Upload } from "lucide-react";
+import { AlertTriangle, Camera, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -129,6 +146,7 @@ export function ManualPaymentPhotoDialog({
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          capture="environment"
           onChange={handleFileChange}
           className="hidden"
           data-ocid="manual_payment_photo.file_input"
@@ -153,8 +171,8 @@ export function ManualPaymentPhotoDialog({
             className="flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-border px-4 py-8 text-sm text-muted-foreground transition-smooth hover:border-primary/40"
             data-ocid="manual_payment_photo.upload_zone"
           >
-            <Upload className="h-6 w-6" aria-hidden="true" />
-            Chạm để chọn ảnh xác nhận chuyển khoản
+            <Camera className="h-6 w-6" aria-hidden="true" />
+            Chạm để chụp ảnh xác nhận chuyển khoản
           </button>
         )}
 
