@@ -197,6 +197,20 @@ function initSchema(db) {
   if (!colNames.has('qr_first_created_at')) {
     db.exec("ALTER TABLE orders ADD COLUMN qr_first_created_at INTEGER");
   }
+  // manual_payment_reference: mã giao dịch/số tham chiếu trích từ ảnh xác
+  // nhận thanh toán thủ công (routes/manual-payment-photo.js, lib/ocr.js
+  // extractTransactionReference) — lưu lại khi xác nhận thành công, dùng
+  // để CHỐNG DÙNG LẠI 1 ảnh chuyển khoản THẬT cho nhiều đơn khác nhau:
+  // trước khi chấp nhận 1 ảnh mới, kiểm tra mã trích được (nếu có) đã
+  // từng dùng cho đơn khác chưa. NULL nếu ảnh không trích được mã (nhãn
+  // ngân hàng chưa được đối chiếu, hoặc ảnh không rõ) — không bắt buộc,
+  // chỉ là lớp kiểm tra bổ sung.
+  if (!colNames.has('manual_payment_reference')) {
+    db.exec("ALTER TABLE orders ADD COLUMN manual_payment_reference TEXT");
+  }
+  // Index cho tra cứu trùng mã — chạy MỖI LẦN xác nhận ảnh thủ công, cần
+  // nhanh (bảng orders có thể có hàng chục nghìn dòng qua thời gian).
+  db.exec("CREATE INDEX IF NOT EXISTS idx_orders_manual_payment_reference ON orders(manual_payment_reference)");
   // pickup_code: mã 6 ký tự (chữ hoa + số, không có 0/O 1/I) sinh lúc tạo
   // đơn. Khách xem trong "Theo dõi đơn", tự báo tài xế bằng ngoài luồng
   // (gọi điện, nhắn tin...). Tài xế đọc mã này cho nhân viên quán khi đến

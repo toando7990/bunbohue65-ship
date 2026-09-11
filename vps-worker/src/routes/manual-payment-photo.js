@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const canister = require('../lib/canister');
 const tingee = require('../lib/tingee');
-const { extractTextFromImage, hasSuccessConfirmation, extractTransactionDateTime } = require('../lib/ocr');
+const { extractTextFromImage, hasSuccessConfirmation, extractTransactionDateTime, extractTransactionReference } = require('../lib/ocr');
 const { rateLimit } = require('../middleware/rate-limit');
 
 const router = express.Router();
@@ -162,6 +162,29 @@ router.post(
         });
       }
 
+      // Chống dùng lại 1 ảnh chuyển khoản THẬT cho nhiều đơn khác nhau —
+      // LỚP BỔ SUNG, khác nguyên tắc "không tìm thấy = chặn" ở trên: chỉ
+      // 2 ngân hàng (VCB, BIDV) đã đối chiếu ảnh thật để xác nhận định
+      // dạng nhãn "mã giao dịch"/"số tham chiếu" (xem lib/ocr.js) — các
+      // ngân hàng/app khác CHƯA đối chiếu, ảnh của họ có thể không trích
+      // được mã. KHÔNG tìm thấy mã → BỎ QUA lớp này (coi như chưa có),
+      // KHÔNG chặn — chỉ chặn khi THỰC SỰ trích được mã VÀ mã đó trùng
+      // với 1 đơn KHÁC đã thanh toán (bằng chứng chắc chắn về gian lận,
+      // không phải nghi ngờ chưa đủ căn cứ).
+      const referenceCode = extractTransactionReference(extractedText);
+      if (referenceCode) {
+        const duplicate = db
+          .prepare(`SELECT order_id FROM orders WHERE manual_payment_reference = ? AND payment_status = 'paid' AND order_id != ?`)
+          .get(referenceCode, orderId);
+        if (duplicate) {
+          console.warn(`[manual-payment-photo] Phát hiện dùng lại ảnh — mã ${referenceCode} đã xác nhận cho đơn ${duplicate.order_id}, đang cố dùng lại cho ${orderId}`);
+          return res.status(400).json({
+            ok: false,
+            message: 'Ảnh này đã được dùng để xác nhận thanh toán cho 1 đơn khác — vui lòng dùng đúng ảnh chuyển khoản của đơn này.',
+          });
+        }
+      }
+
       // Khớp cả 2 — lưu ảnh làm bằng chứng kiểm toán, rồi đánh dấu thanh
       // toán (đúng chuỗi hành động giống webhook xác nhận thật).
       fs.mkdirSync(MANUAL_PAYMENT_DIR, { recursive: true });
@@ -179,8 +202,8 @@ router.post(
       );
 
       await canister.updatePaymentStatus(orderId, 'paid');
-      db.prepare(`UPDATE orders SET payment_status = 'paid', updated_at = ? WHERE order_id = ?`)
-        .run(Date.now(), orderId);
+      db.prepare(`UPDATE orders SET payment_status = 'paid', manual_payment_reference = ?, updated_at = ? WHERE order_id = ?`)
+        .run(referenceCode, Date.now(), orderId);
       if (order.tingee_qr_account && order.tingee_bill_id) {
         try {
           await tingee.deleteDynamicQr({ qrAccount: order.tingee_qr_account, billId: order.tingee_bill_id });

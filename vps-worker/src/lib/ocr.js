@@ -105,8 +105,46 @@ function extractTransactionDateTime(text) {
   return null;
 }
 
+// Trích mã giao dịch/số tham chiếu từ text OCR — dùng để CHỐNG DÙNG LẠI 1
+// ảnh chuyển khoản THẬT cho nhiều đơn khác nhau (xem routes/manual-
+// payment-photo.js). ĐÃ ĐỐI CHIẾU OCR THẬT (không đoán mò) trên ảnh biên
+// lai thật của 2 ngân hàng khác nhau:
+//   VCB: "Ma giao dich 15886736125" (nhãn không dấu sau stripDiacritics,
+//        giá trị SỐ THUẦN ngay sau, cùng dòng)
+//   BIDV: "S6tham chiéu |\n6249BIDVE2NIT36G" (nhãn gốc "Số tham chiếu" —
+//        CHỈ khớp phần "tham chi", KHÔNG khớp chữ "Số" phía trước vì OCR
+//        đọc dấu ố thành ký tự lạ không đáng tin, vd "S6"; giá trị
+//        alphanumeric có thể cách nhãn bởi khoảng trắng/xuống dòng/ký tự
+//        nhiễu "|" do OCR đọc nhầm viền bảng)
+//
+// LƯU Ý QUAN TRỌNG (đã xác nhận qua đối chiếu THẬT, cần biết trước khi
+// dùng cho việc chống trùng): OCR có thể đọc SAI 1-2 KÝ TỰ trong mã dài —
+// ảnh BIDV thật ghi "6249BIDVE2N9T36G" nhưng OCR đọc ra
+// "6249BIDVE2NIT36G" (số 9 bị đọc nhầm thành chữ I). Rủi ro CHẤP NHẬN
+// ĐƯỢC: chỉ làm GIẢM khả năng phát hiện trùng (2 lần OCR cùng 1 ảnh có
+// thể ra 2 chuỗi hơi khác nhau), KHÔNG gây chặn oan người dùng thật —
+// nếu không khớp, hệ thống coi như không phát hiện được trùng lặp, vẫn
+// an toàn như khi chưa có lớp kiểm tra này.
+//
+// CHỈ 2 ngân hàng đã đối chiếu (VCB, BIDV) — các ngân hàng/app khác
+// (MB, Techcombank, ACB, MoMo, ZaloPay...) CHƯA có ảnh thật để xác nhận
+// định dạng nhãn — có thể không trích được mã, đây là lý do caller PHẢI
+// coi "không tìm thấy" là "bỏ qua lớp kiểm tra này", KHÔNG PHẢI "chặn".
+function extractTransactionReference(text) {
+  const normalized = stripDiacritics(text);
+
+  const withLabel1 = normalized.match(/ma giao dich\s+(\d{6,20})/i);
+  if (withLabel1) return withLabel1[1];
+
+  const withLabel2 = normalized.match(/tham chi\S*[\s|]*\n?[\s|]*([A-Z0-9]{8,25})/i);
+  if (withLabel2) return withLabel2[1].toUpperCase();
+
+  return null;
+}
+
 module.exports = {
   extractTextFromImage,
   hasSuccessConfirmation,
   extractTransactionDateTime,
+  extractTransactionReference,
 };
