@@ -7,7 +7,7 @@ import { HighlightMatch, matchesQuery } from "@/components/HighlightMatch";
 import { ManualPaymentPhotoDialog } from "@/components/ManualPaymentPhotoDialog";
 import { getManualPhotoConfirmEligibility } from "@/lib/vps-client";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, Clock, Loader2, Search, ShoppingBag } from "lucide-react";
+import { Camera, Clock, Loader2, Search, ShoppingBag, X } from "lucide-react";
 import { useState } from "react";
 
 interface PaymentQueueProps {
@@ -138,6 +138,17 @@ export function PaymentQueue({
             data-ocid="queue.search_input"
             className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Xoá nội dung tìm kiếm"
+              data-ocid="queue.search_clear_button"
+              className="shrink-0 text-muted-foreground transition-smooth hover:text-foreground"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
         <span
           className="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary"
@@ -350,7 +361,7 @@ export function PaymentQueue({
                           className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-card"
                         >
                           <Camera className="h-3.5 w-3.5" aria-hidden="true" />
-                          Xác nhận thủ công bằng ảnh
+                          Xác nhận bằng ảnh
                         </button>
                       </>
                     )}

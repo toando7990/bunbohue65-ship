@@ -24,7 +24,7 @@ import { toOrder } from "@/lib/order-mapping";
 import { getRestaurantHistory } from "@/lib/vps-client";
 import type { RestaurantHistoryPeriod } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { History, Loader2, Search } from "lucide-react";
+import { History, Loader2, Search, X } from "lucide-react";
 import { useState } from "react";
 
 const PERIOD_LABELS: Record<RestaurantHistoryPeriod, string> = {
@@ -110,6 +110,17 @@ export function DriverOrderHistory({
           data-ocid="driver_history.search_input"
           className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            aria-label="Xoá nội dung tìm kiếm"
+            data-ocid="driver_history.search_clear_button"
+            className="shrink-0 text-muted-foreground transition-smooth hover:text-foreground"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {/* Danh sách đơn */}

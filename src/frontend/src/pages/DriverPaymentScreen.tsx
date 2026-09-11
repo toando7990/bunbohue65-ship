@@ -204,7 +204,7 @@ export function DriverPaymentScreen() {
           thành 1 tầng — 4 mục ngang hàng, cố định ở cuối trang (theo
           yêu cầu tối ưu giao diện đã duyệt). */}
       <nav
-        className="flex shrink-0 border-t border-border bg-card"
+        className="flex shrink-0 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]"
         data-ocid="driver.bottom_nav"
       >
         {NAV_ITEMS.map(({ tab, label, icon: Icon }) => (
