@@ -306,7 +306,7 @@ actor Main {
   include SecretApi(secretState, accessControlState);
   include MenuApi(accessControlState, menus, restaurants, restaurantMenuOverrides);
   include MenuSeedApi(accessControlState, menus);
-  include EmailVerificationApi(otpRecords, registrationPromos, registrationBonusIssued, vouchers);
+  include EmailVerificationApi(otpRecords, registrationPromos, registrationBonusIssued, vouchers, secretState);
   include PromotionApi(accessControlState, devices, kmUsage, kmDailyCount, promotions, secretState, otpRecords, promotionUsed);
   include VoucherApi(vouchers, secretState);
   include RegistrationPromoApi(accessControlState, devices, registrationPromos, vouchers);

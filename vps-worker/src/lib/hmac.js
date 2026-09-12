@@ -96,6 +96,16 @@ function signPruneOldOrdersNow(secret) {
   return sign(secret, 'prune-old-orders');
 }
 
+// sendKmNotifyEmails: <email1>,<email2>,...|<subject> — PHẢI khớp CHÍNH XÁC
+// cách canister nối chuỗi (mixins/email-verification-api.mo): MỖI email đều
+// có dấu phẩy theo sau, KỂ CẢ email cuối cùng (không phải join thông thường
+// — ví dụ 2 email ra "a@x.com,b@y.com," có dấu phẩy thừa ở cuối). Mảng rỗng
+// -> chuỗi rỗng (không có dấu phẩy nào).
+function signSendKmNotifyEmails(secret, emails, subject) {
+  const emailsJoined = emails.map((e) => `${e},`).join('');
+  return sign(secret, `${emailsJoined}|${subject}`);
+}
+
 module.exports = {
   sign,
   signCreateOrder,
@@ -108,6 +118,7 @@ module.exports = {
   signIssueSalesBonus,
   signApplyVoucher,
   signChangeOrderRestaurant,
+  signSendKmNotifyEmails,
   signDeactivateExpiredPromotions,
   signPruneOldOrdersNow,
 };

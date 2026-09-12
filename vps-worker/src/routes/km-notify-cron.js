@@ -18,11 +18,20 @@
 // Thời điểm "còn 15 phút" tính CÓ XOAY VÒNG qua nửa đêm (ví dụ khung giờ
 // bắt đầu 00:10 → thời điểm nhắc là 23:55 NGÀY HÔM ĐÓ, vẫn cùng
 // getCurrentPromotion() vì canister chỉ so ngày, không so giờ).
+//
+// SỬA (theo yêu cầu đã duyệt): GỬI QUA KÊNH EMAIL CỦA CANISTER (dịch vụ
+// email nền tảng, cùng cơ chế đã dùng cho OTP xác thực) THAY VÌ SMTP VPS
+// (nodemailer) — canister.sendKmNotifyEmails() gửi TOÀN BỘ danh sách khách
+// opt-in TRONG 1 LỆNH GỌI DUY NHẤT (không lặp từng người), có HMAC bắt
+// buộc. Đánh đổi đã xác nhận với người dùng: nếu lệnh gọi canister thất
+// bại, CẢ ĐỢT gửi của khung giờ đó thất bại cùng lúc (khác SMTP cũ — lỗi
+// 1 email không ảnh hưởng người khác trong vòng lặp) — không có cơ chế
+// thử lại riêng, chấp nhận đổi lấy đơn giản + đồng nhất kênh gửi.
 // ============================================================
 
 const cron = require('node-cron');
-const nodemailer = require('nodemailer');
 const canister = require('./../lib/canister');
+const hmacLib = require('./../lib/hmac');
 
 const UTC7_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -79,34 +88,30 @@ async function sendKmNotifyEmails(db, promotion, slot, slotIndex) {
     'SELECT email FROM customers WHERE km_notify_opt_in = 1',
   ).all();
   if (rows.length === 0) return;
-
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587),
-    secure: Number(process.env.SMTP_PORT) === 465,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
+  const emails = rows.map((r) => r.email);
 
   const timeStr = formatHm(slot.startHour, slot.startMinute);
   const subject = `Khuyến mãi giờ vàng sắp bắt đầu lúc ${timeStr} — Bunbohue65`;
   const tierLines = (promotion.tiers || [])
     .map((t) => `- Đơn từ ${Number(t.minOrderValue).toLocaleString('vi-VN')}đ, giảm ${Number(t.discountAmount).toLocaleString('vi-VN')}đ`)
-    .join('\n');
-  const text =
-    `${promotion.name} sắp bắt đầu lúc ${timeStr} (còn 15 phút nữa), ` +
-    `kéo dài ${slot.durationMinutes} phút.\n\n` +
-    `Mức khuyến mại:\n${tierLines}\n\n` +
-    `Đặt món ngay trong khung giờ để nhận ưu đãi!\n\nBunbohue65`;
+    .join('<br/>');
+  const htmlBody =
+    `<p>${promotion.name} sắp bắt đầu lúc ${timeStr} (còn 15 phút nữa), ` +
+    `kéo dài ${slot.durationMinutes} phút.</p>` +
+    `<p>Mức khuyến mại:<br/>${tierLines}</p>` +
+    `<p>Đặt món ngay trong khung giờ để nhận ưu đãi!</p><p>Bunbohue65</p>`;
 
-  for (const row of rows) {
-    try {
-      await transporter.sendMail({
-        from: process.env.SMTP_USER, to: row.email, subject, text,
-      });
-    } catch (e) {
-      console.error(`[km-notify-cron] Gửi email lỗi cho ${row.email}:`, e.message);
+  const hmac = hmacLib.signSendKmNotifyEmails(process.env.VPS_SECRET, emails, subject);
+  try {
+    const result = await canister.sendKmNotifyEmails(emails, subject, htmlBody, hmac);
+    if (result?.err) {
+      console.error(`[km-notify-cron] canister.sendKmNotifyEmails lỗi: ${result.err}`);
+      return;
     }
+    console.log(`[km-notify-cron] Đã gửi ${emails.length} email nhắc khung giờ ${timeStr} (qua canister)`);
+  } catch (e) {
+    console.error(`[km-notify-cron] Gọi canister.sendKmNotifyEmails lỗi:`, e.message);
   }
-  console.log(`[km-notify-cron] Đã gửi ${rows.length} email nhắc khung giờ ${timeStr}`);
 }
 
 async function checkAndNotify(db, now) {

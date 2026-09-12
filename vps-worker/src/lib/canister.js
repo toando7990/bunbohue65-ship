@@ -148,6 +148,12 @@ const IDL_FACTORY = ({ IDL }) => {
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
     isStoreOpen: IDL.Func([], [IDL.Bool], ['query']),
     callerHasEnterpriseRole: IDL.Func([IDL.Text, EnterpriseRole], [IDL.Bool], ['query']),
+    isEmailVerified: IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+    sendKmNotifyEmails: IDL.Func(
+      [IDL.Vec(IDL.Text), IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Variant({ ok: IDL.Null, err: IDL.Text })],
+      [],
+    ),
     getMenuForRestaurant: IDL.Func([IDL.Text], [IDL.Vec(MenuItemRecord)], ['query']),
     getPaymentMode: IDL.Func([], [IDL.Text], ['query']),
     getCurrentPromotion: IDL.Func([], [IDL.Opt(Promotion)], ['query']),
@@ -313,6 +319,24 @@ async function callerHasEnterpriseRole(deviceId) {
   return isAccounting || isSalesPromoReporting;
 }
 
+// isEmailVerified — query, dùng để CHẶN THẬT ở tầng VPS (routes/customers.js
+// PUT /customers/:email) trước khi cho phép bật cờ nhận email Giờ Vàng —
+// KHÔNG chỉ dựa vào frontend ẩn form (đã xác nhận đây là lỗ hổng thật:
+// gọi thẳng API không qua UI có thể bật cờ cho email chưa xác thực OTP).
+async function isEmailVerified(email) {
+  const actor = getActor();
+  return await actor.isEmailVerified(email);
+}
+
+// sendKmNotifyEmails — update, HMAC bắt buộc (xem lib/hmac.js
+// signSendKmNotifyEmails) — gửi email thông báo Giờ Vàng cho TOÀN BỘ danh
+// sách khách opt-in TRONG 1 LỆNH GỌI (routes/km-notify-cron.js, thay thế
+// nodemailer/SMTP trực tiếp trước đây).
+async function sendKmNotifyEmails(emails, subject, htmlBody, hmac) {
+  const actor = getActor();
+  return await actor.sendKmNotifyEmails(emails, subject, htmlBody, hmac);
+}
+
 // listPendingPaymentOrders — UPDATE (KHÔNG PHẢI query — hàm này gọi
 // pruneOldOrders(state) bên trong, ghi/xoá dữ liệu, bắt buộc phải là
 // update). ĐÃ BỊ GHI SAI THÀNH ['query'] 2 LẦN (lần 1: lỗi có sẵn từ
@@ -448,4 +472,6 @@ module.exports = {
   getCurrentPromotion,
   isStoreOpen,
   callerHasEnterpriseRole,
+  isEmailVerified,
+  sendKmNotifyEmails,
 };

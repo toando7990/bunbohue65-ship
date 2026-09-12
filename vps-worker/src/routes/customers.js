@@ -15,9 +15,16 @@
 // khuyến mãi giờ vàng). Dùng cho trang "Thông tin của bạn" (Profile.tsx)
 // — khách chủ động sửa hồ sơ của mình. KHÁC với POST (create-only, không
 // ghi đè) — PUT LUÔN ghi đè name/phone/notifyKm bằng giá trị mới gửi lên.
+//
+// notifyKm=true CHỈ được chấp nhận nếu email ĐÃ XÁC THỰC OTP (kiểm tra
+// lại qua canister.isEmailVerified — không tin cờ boolean client gửi lên,
+// vì Profile.tsx chỉ ẩn form ở tầng UI, không đủ để coi là bảo vệ thật;
+// ai gọi thẳng API này mà không qua giao diện vẫn có thể bật cờ cho email
+// chưa từng xác thực nếu backend không tự kiểm tra lại).
 // ============================================================
 
 const express = require('express');
+const canister = require('../lib/canister');
 
 const router = express.Router();
 
@@ -81,7 +88,7 @@ router.post('/customers', (req, res) => {
 // frontend, kiểm tra lại ở đây cho chắc (không tin dữ liệu client gửi
 // lên). notifyKm là Bool, mặc định false nếu không gửi lên (không bắt
 // buộc như name/phone).
-router.put('/customers/:email', (req, res) => {
+router.put('/customers/:email', async (req, res) => {
   const db = req.app.locals.db;
   const email = String(req.params.email || '').trim().toLowerCase();
   const body = req.body || {};
@@ -97,6 +104,23 @@ router.put('/customers/:email', (req, res) => {
   }
   if (!phone) {
     return res.status(400).json({ ok: false, error: 'phone must be a non-empty string' });
+  }
+
+  // Chặn thật ở backend (không chỉ ẩn UI phía frontend — Profile.tsx chỉ
+  // hiện form sau khi xác thực, nhưng không có gì ngăn gọi thẳng API này)
+  // — chỉ cho phép bật notifyKm=true nếu email THỰC SỰ đã xác thực OTP,
+  // xác nhận lại qua canister (không tin dữ liệu client gửi lên).
+  if (notifyKm === 1) {
+    let verified = false;
+    try {
+      verified = await canister.isEmailVerified(email);
+    } catch (e) {
+      console.error('[customers] isEmailVerified error:', email, e.message);
+      return res.status(502).json({ ok: false, error: 'Không xác minh được email lúc này, vui lòng thử lại.' });
+    }
+    if (!verified) {
+      return res.status(403).json({ ok: false, error: 'Email chưa được xác thực — vui lòng xác thực email trước khi bật nhận thông báo Giờ Vàng.' });
+    }
   }
 
   const now = Date.now();

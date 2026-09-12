@@ -1,11 +1,15 @@
 import EmailClient "mo:caffeineai-email/emailClient";
 import Time "mo:core/Time";
+import Result "mo:core/Result";
 import EmailVerificationLib "../lib/email-verification";
 import EmailVerificationTypes "../types/email-verification";
 import RegistrationPromoTypes "../types/registration-promo";
 import RegistrationPromoLib "../lib/registration-promo";
 import VoucherTypes "../types/voucher";
 import VoucherLib "../lib/voucher";
+import HmacTypes "../types/hmac";
+import SecretTypes "../types/secret";
+import HmacLib "../lib/hmac";
 
 // Public API surface for the email OTP verification domain. State is injected
 // from main.mo.
@@ -26,6 +30,7 @@ mixin (
   registrationPromos : RegistrationPromoTypes.RegistrationPromoStore,
   registrationBonusIssued : RegistrationPromoTypes.RegistrationBonusIssuedStore,
   vouchers : VoucherTypes.VoucherStore,
+  secretState : SecretTypes.SecretState,
 ) {
   // Generate a 6-digit OTP for `email`, store it (hashed) with a 15-minute
   // expiry, and send the code via the transactional email extension. Sending
@@ -86,5 +91,42 @@ mixin (
   // can confirm state.
   public shared query func isEmailVerified(email : EmailVerificationTypes.Email) : async Bool {
     EmailVerificationLib.isEmailVerified(state, email);
+  };
+
+  // Gửi email thông báo khuyến mại "Giờ Vàng" (km-notify-cron.js ở VPS) cho
+  // TOÀN BỘ danh sách khách đã opt-in TRONG 1 LỆNH GỌI DUY NHẤT — tận dụng
+  // sendServiceEmail nhận `recipients : [Text]`, không cần gọi tuần tự từng
+  // người (đã xác nhận với người dùng: chấp nhận rủi ro cả đợt gửi thất bại
+  // cùng lúc nếu canister lỗi, đổi lại hiệu năng tốt hơn nhiều so với N lệnh
+  // gọi riêng biệt).
+  //
+  // HMAC bắt buộc — đây là hành động GỬI EMAIL THẬT (chi phí + rủi ro spam
+  // nếu bị lạm dụng), chỉ VPS được gọi, đúng nguyên tắc mọi endpoint mutating
+  // khác trong dự án (xem mixins/hmac-api.mo). Payload nối thủ công bằng vòng
+  // lặp (không dùng Text.join/Array API chưa từng có tiền lệ trong codebase —
+  // an toàn hơn khi không thể tự compile-check Motoko trong môi trường này):
+  // <email1>,<email2>,...|<subject>
+  public shared func sendKmNotifyEmails(
+    emails : [Text],
+    subject : Text,
+    htmlBody : Text,
+    hmac : HmacTypes.Hmac,
+  ) : async Result.Result<(), Text> {
+    var emailsJoined = "";
+    for (e in emails.vals()) {
+      emailsJoined := emailsJoined # e # ",";
+    };
+    let payload = emailsJoined # "|" # subject;
+    if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
+      return #err("Invalid HMAC");
+    };
+    if (emails.size() == 0) {
+      return #ok;
+    };
+    let result = await EmailClient.sendServiceEmail("no-reply", emails, subject, htmlBody);
+    switch (result) {
+      case (#ok) { #ok };
+      case (#err e) { #err("Không thể gửi email thông báo: " # e) };
+    };
   };
 };
