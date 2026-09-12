@@ -566,6 +566,7 @@ export interface backendInterface {
     revokeDevice(deviceId: DeviceId): Promise<Result_8>;
     schema(): Promise<string>;
     seedMenuItems(): Promise<boolean>;
+    sendKmNotifyEmails(emails: Array<string>, subject: string, htmlBody: string, hmac: Hmac): Promise<Result_7>;
     sendVerificationCode(email: Email): Promise<SendCodeResult>;
     setItemVisible(itemId: string, visible: boolean): Promise<Result_5>;
     setPaymentMode(mode: string): Promise<Result_7>;
@@ -1589,6 +1590,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.seedMenuItems();
             return result;
+        }
+    }
+    async sendKmNotifyEmails(arg0: Array<string>, arg1: string, arg2: string, arg3: Hmac): Promise<Result_7> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.sendKmNotifyEmails(arg0, arg1, arg2, arg3);
+                return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.sendKmNotifyEmails(arg0, arg1, arg2, arg3);
+            return from_candid_Result_7_n41(this._uploadFile, this._downloadFile, result);
         }
     }
     async sendVerificationCode(arg0: Email): Promise<SendCodeResult> {

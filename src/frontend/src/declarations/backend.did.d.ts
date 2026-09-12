@@ -412,6 +412,7 @@ export interface _SERVICE {
   'revokeDevice' : ActorMethod<[DeviceId], Result_8>,
   'schema' : ActorMethod<[], string>,
   'seedMenuItems' : ActorMethod<[], boolean>,
+  'sendKmNotifyEmails' : ActorMethod<[Array<string>, string, string, Hmac], Result_7>,
   'sendVerificationCode' : ActorMethod<[Email], SendCodeResult>,
   'setItemVisible' : ActorMethod<[string, boolean], Result_5>,
   'setPaymentMode' : ActorMethod<[string], Result_7>,

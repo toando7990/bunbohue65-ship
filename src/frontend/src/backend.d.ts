@@ -517,6 +517,7 @@ export interface backendInterface {
     revokeDevice(deviceId: DeviceId): Promise<Result_8>;
     schema(): Promise<string>;
     seedMenuItems(): Promise<boolean>;
+    sendKmNotifyEmails(emails: Array<string>, subject: string, htmlBody: string, hmac: Hmac): Promise<Result_7>;
     sendVerificationCode(email: Email): Promise<SendCodeResult>;
     setItemVisible(itemId: string, visible: boolean): Promise<Result_5>;
     setPaymentMode(mode: string): Promise<Result_7>;

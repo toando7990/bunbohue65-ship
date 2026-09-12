@@ -101,6 +101,7 @@ export const mockBackend: backendInterface = {
   revokeDevice: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   schema: async () => "{}",
   seedMenuItems: async () => false,
+  sendKmNotifyEmails: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   sendVerificationCode: async () => ({ __kind__: "ok", ok: null }),
   setPaymentMode: async () => ({ __kind__: "ok", ok: null }),
   setRestaurantPriceOverride: async () => ({
