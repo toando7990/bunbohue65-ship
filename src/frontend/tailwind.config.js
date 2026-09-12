@@ -146,6 +146,10 @@ export default {
           from: { opacity: "0", transform: "translateY(3px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "promo-marquee": {
+          from: { transform: "translateX(100%)" },
+          to: { transform: "translateX(-100%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -158,6 +162,7 @@ export default {
         "order-flow-label-fade": "order-flow-label-fade 10s ease-in-out infinite",
         "kpi-in": "kpi-in 0.3s ease-out",
         "row-in": "row-in 0.25s ease-out",
+        "promo-marquee": "promo-marquee 30s linear infinite",
       },
     },
   },
