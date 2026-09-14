@@ -106,6 +106,13 @@ function signSendKmNotifyEmails(secret, emails, subject) {
   return sign(secret, `${emailsJoined}|${subject}`);
 }
 
+// applyPromotionCounter: payload "counter|<orderAmount>" — PHẢI khớp CHÍNH
+// XÁC mixins/promotion-api.mo (Giờ Vàng tự động cho đơn quầy, không có
+// email — khác payload applyPromotion thường "<email>|<orderAmount>").
+function signApplyPromotionCounter(secret, orderAmount) {
+  return sign(secret, `counter|${orderAmount}`);
+}
+
 module.exports = {
   sign,
   signCreateOrder,
@@ -119,6 +126,7 @@ module.exports = {
   signApplyVoucher,
   signChangeOrderRestaurant,
   signSendKmNotifyEmails,
+  signApplyPromotionCounter,
   signDeactivateExpiredPromotions,
   signPruneOldOrdersNow,
 };

@@ -162,6 +162,12 @@ const IDL_FACTORY = ({ IDL }) => {
       [IDL.Variant({ ok: IDL.Record({ promotionCode: IDL.Text, discountAmount: IDL.Nat }), err: IDL.Text })],
       [],
     ),
+    applyPromotionCounter: IDL.Func(
+      [IDL.Nat, IDL.Text],
+      [IDL.Variant({ ok: IDL.Record({ promotionCode: IDL.Text, discountAmount: IDL.Nat }), err: IDL.Text })],
+      [],
+    ),
+    claimOrderEmail: IDL.Func([IDL.Text, IDL.Text], [ResultOrder], []),
     issueSalesBonus: IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
       [IDL.Variant({
@@ -413,6 +419,22 @@ async function applyPromotion(email, orderAmount) {
   return await actor.applyPromotion(email, BigInt(orderAmountInt), hmacSig);
 }
 
+// applyPromotionCounter — Giờ Vàng tự động cho đơn quầy (không cần email).
+async function applyPromotionCounter(orderAmount) {
+  const actor = getActor();
+  const orderAmountInt = Math.round(Number(orderAmount));
+  const hmacSig = hmac.signApplyPromotionCounter(VPS_SECRET, orderAmountInt);
+  return await actor.applyPromotionCounter(BigInt(orderAmountInt), hmacSig);
+}
+
+// claimOrderEmail — không có HMAC (client gọi trực tiếp qua VPS route mới,
+// xem routes/claim-order-email.js). VPS chỉ là cầu nối, KHÔNG tự ký gì —
+// canister tự bảo vệ bằng nguyên tắc "chỉ ghi 1 lần".
+async function claimOrderEmail(orderId, email) {
+  const actor = getActor();
+  return await actor.claimOrderEmail(orderId, email);
+}
+
 // issueSalesBonus — kiểm tra + phát thưởng doanh số (Giai đoạn 3d) cho 1
 // khách trong 1 kỳ (periodType: 'weekly'|'monthly'). Gọi từ
 // routes/sales-bonus-cron.js sau khi tính tổng doanh số kỳ trước. Canister
@@ -474,4 +496,6 @@ module.exports = {
   callerHasEnterpriseRole,
   isEmailVerified,
   sendKmNotifyEmails,
+  applyPromotionCounter,
+  claimOrderEmail,
 };

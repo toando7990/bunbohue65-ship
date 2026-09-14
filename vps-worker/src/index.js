@@ -35,6 +35,7 @@ const uploadRoutes = require('./routes/upload');
 const manualPaymentPhotoRoutes = require('./routes/manual-payment-photo');
 const customersRoutes = require('./routes/customers');
 const orderHistoryRoutes = require('./routes/order-history');
+const claimOrderEmailRoutes = require('./routes/claim-order-email');
 const restaurantHistoryRoutes = require('./routes/restaurant-history');
 const enterpriseHistoryRoutes = require('./routes/enterprise-history');
 
@@ -78,6 +79,7 @@ app.use('/', uploadRoutes);
 app.use('/', manualPaymentPhotoRoutes);
 app.use('/', customersRoutes);
 app.use('/', orderHistoryRoutes);
+app.use('/', claimOrderEmailRoutes);
 app.use('/', restaurantHistoryRoutes);
 app.use('/', enterpriseHistoryRoutes);
 app.use('/', analyticsRoutes);

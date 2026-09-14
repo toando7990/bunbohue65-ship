@@ -7,6 +7,15 @@
 // Gọi requestQr(orderId) KHÔNG kèm pickupCode — routes/qr.js (VPS) chỉ kiểm
 // tra mã khi request có gửi kèm field này, nên luồng quầy không bị chặn,
 // giống hệt cách QrPayment.tsx (khách tự thanh toán) hoạt động.
+//
+// THÊM QR THỨ 2 (tuỳ chọn, dưới QR thanh toán) — "Ghi nhận cho Khách hàng
+// thân thiết": mã hoá URL /claim/{orderId}, khách tự quét bằng ĐIỆN THOẠI
+// RIÊNG của họ (không phải máy quầy) để gắn email vào đơn, tích luỹ doanh
+// số chương trình "Khách hàng thân thiết" (xem pages/ClaimOrder.tsx) —
+// hoàn toàn độc lập với QR thanh toán, khách có thể bỏ qua nếu không quan
+// tâm. Giờ Vàng KHÔNG liên quan tới QR này — đã tự động áp dụng lúc tạo
+// đơn (routes/create.js gọi applyPromotionCounter khi isCounterOrder=true,
+// không cần biết email).
 
 import { type Order, PaymentStatus } from "@/backend";
 import { useCanister } from "@/lib/canister";
@@ -171,6 +180,38 @@ export function CounterQRDisplay({
             <p className="text-center text-xs text-muted-foreground">
               Khách quét mã bằng app ngân hàng để hoàn tất thanh toán
             </p>
+
+            <div className="flex w-full items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[11px] font-semibold text-muted-foreground">
+                TUỲ CHỌN
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <div
+              className="flex flex-col items-center gap-2"
+              data-ocid="counter_qr.claim_block"
+            >
+              <p className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                💛 Ghi nhận cho Khách hàng thân thiết
+              </p>
+              <div className="rounded-lg bg-foreground p-2">
+                <QRCodeCanvas
+                  value={`${window.location.origin}/claim/${order.orderId}`}
+                  size={96}
+                  level="M"
+                  includeMargin={false}
+                  bgColor="#000000"
+                  fgColor="#ffffff"
+                  aria-label="Mã QR ghi nhận đơn cho Khách hàng thân thiết"
+                />
+              </div>
+              <p className="max-w-[220px] text-center text-[10.5px] text-muted-foreground">
+                Quét bằng điện thoại của bạn để tích luỹ đơn này vào chương
+                trình Khách hàng thân thiết
+              </p>
+            </div>
             {isPaid ? (
               <span
                 className="inline-flex items-center gap-2 rounded-full border border-success/40 bg-success/15 px-4 py-1.5 text-sm font-semibold text-success"

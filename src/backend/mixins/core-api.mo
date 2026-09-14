@@ -367,4 +367,36 @@ mixin (
     };
     HmacLib.applyInvoiceStatus(state.orders, orderId, #invoiced, invoiceId, pdfUrl, Time.now());
   };
+
+  // Ghi nhận đơn tại quầy cho email của khách — khách tự quét QR "Ghi nhận"
+  // trên thẻ đơn (CounterQRDisplay.tsx) bằng điện thoại RIÊNG của họ, mở
+  // trang /claim/:orderId, gọi hàm này qua VPS (routes/claim-order-email.js
+  // mới, VPS đồng thời cập nhật orders.receiver_email ở SQLite — cần cho
+  // routes/sales-bonus-cron.js tính doanh số "Khách hàng thân thiết").
+  //
+  // KHÔNG dùng HMAC — đây là hành động từ THIẾT BỊ KHÁCH, không phải VPS
+  // nội bộ (secret HMAC không thể an toàn nếu đưa cho client). An toàn
+  // được đảm bảo bằng nguyên tắc CHỈ CHO GHI 1 LẦN DUY NHẤT: từ chối nếu
+  // đơn đã có receiverEmail (khác rỗng) — chặn việc ai đó biết mã đơn
+  // người khác rồi ghi đè liên tục.
+  public shared func claimOrderEmail(
+    orderId : Text,
+    email : Text,
+  ) : async Result.Result<CoreTypes.Order, Text> {
+    switch (state.orders.get(orderId)) {
+      case null { #err("Không tìm thấy đơn") };
+      case (?order) {
+        if (order.receiverEmail != "") {
+          return #err("Đơn này đã được ghi nhận cho 1 email trước đó");
+        };
+        let updated : CoreTypes.Order = {
+          order with
+          receiverEmail = email;
+          updatedAt = Time.now();
+        };
+        state.orders.add(orderId, updated);
+        #ok(updated);
+      };
+    };
+  };
 };

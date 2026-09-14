@@ -164,6 +164,21 @@ export async function create(
   });
 }
 
+// Khách tự quét QR "Ghi nhận" trên thẻ đơn quầy (CounterQRDisplay.tsx)
+// bằng điện thoại RIÊNG của họ (trang /claim/:orderId) — gắn email của họ
+// vào đơn để tích luỹ doanh số "Khách hàng thân thiết". Không yêu cầu xác
+// thực OTP (nhất quán với cách chương trình này đã hoạt động từ trước).
+export async function claimOrderEmail(
+  orderId: string,
+  email: string,
+): Promise<{ ok: boolean; email?: string; error?: string }> {
+  return vpsFetch<{ ok: boolean; email?: string; error?: string }>({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/claim-email`,
+    body: { email },
+  });
+}
+
 // Get invoice (Bkav e-invoice) for an order — VPS fetches from Bkav SOAP.
 export async function getInvoice(orderId: string): Promise<InvoiceResponse> {
   return vpsFetch<InvoiceResponse>({

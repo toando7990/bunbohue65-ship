@@ -260,4 +260,47 @@ mixin (
     promotionUsed.add(promo.code, true);
     #ok({ promotionCode = promo.code; discountAmount = tier.discountAmount });
   };
+
+  // Giờ Vàng cho ĐƠN TẠI QUẦY (routes/create.js, isCounterOrder=true) — hàm
+  // RIÊNG BIỆT với applyPromotion ở trên, KHÔNG sửa hàm đó, để không ảnh
+  // hưởng luồng đặt online đang hoạt động đúng. Khác biệt CÓ CHỦ Ý (đã xác
+  // nhận với người dùng): khách đến quầy đúng khung giờ vàng được giảm giá
+  // NGAY, không cần biết email/xác thực gì — vì đây là ưu đãi "tại chỗ",
+  // không phải ưu đãi riêng cho khách đã đăng ký. Do đó:
+  //   - KHÔNG kiểm tra isEmailVerified (không có email nào ở bước này).
+  //   - KHÔNG kiểm tra/tiêu thụ perCustomerDailyLimit (kmUsage) — không có
+  //     danh tính khách để tính theo khách; CHỈ giữ dailyOrderLimit (giới
+  //     hạn TỔNG số đơn KM/ngày, không phân biệt khách) — đã xác nhận với
+  //     người dùng: chấp nhận bỏ giới hạn mỗi-khách riêng cho đơn quầy.
+  public shared func applyPromotionCounter(
+    orderAmount : Nat,
+    hmac : Types.Hmac,
+  ) : async Result.Result<{ promotionCode : Text; discountAmount : Nat }, Text> {
+    let payload = "counter|" # orderAmount.toText();
+    if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
+      return #err("Invalid HMAC");
+    };
+    let now = Time.now();
+    var found : ?PromotionTypes.Promotion = null;
+    for ((_code, promo) in promotions.toArray().vals()) {
+      if (found == null and PromotionLib.isPromotionActiveNow(promo, now)) {
+        found := ?promo;
+      };
+    };
+    let promo = switch (found) {
+      case null { return #err("Không có chương trình khuyến mại nào đang diễn ra") };
+      case (?p) { p };
+    };
+    let tier = switch (PromotionLib.findApplicableTier(promo, orderAmount)) {
+      case null { return #err("Đơn chưa đạt mức tối thiểu để nhận khuyến mại") };
+      case (?t) { t };
+    };
+    let dailyCountNow = PromotionLib.getDailyCount(kmDailyCount, promo.code, now);
+    if (dailyCountNow >= promo.dailyOrderLimit) {
+      return #err("Đã đạt giới hạn tổng số đơn khuyến mại hôm nay");
+    };
+    ignore PromotionLib.tryConsumeDailyCount(kmDailyCount, promo.code, promo.dailyOrderLimit, now);
+    promotionUsed.add(promo.code, true);
+    #ok({ promotionCode = promo.code; discountAmount = tier.discountAmount });
+  };
 };

@@ -10,6 +10,7 @@ import { loadEnterpriseActivation } from "@/lib/enterprise-activation";
 import { AdminPanel } from "@/pages/AdminPanel";
 import { AdminPromoDashboard } from "@/pages/AdminPromoDashboard";
 import { AnalyticsDashboard } from "@/pages/AnalyticsDashboard";
+import { ClaimOrder } from "@/pages/ClaimOrder";
 import CounterOrder from "@/pages/CounterOrder";
 import CreateOrder from "@/pages/CreateOrder";
 import { DeviceManager } from "@/pages/DeviceManager";
@@ -273,6 +274,12 @@ const trackRoute = createRoute({
   component: () => <OrderTracker />,
 });
 
+const claimRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/claim/$orderId",
+  component: () => <ClaimOrder />,
+});
+
 const trackIndexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/track",
@@ -439,6 +446,7 @@ const router = createRouter({
     indexRoute,
     trackIndexRoute,
     trackRoute,
+    claimRoute,
     historyRoute,
     profileRoute,
     grabGuideRoute,

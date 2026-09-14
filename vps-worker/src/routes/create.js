@@ -37,7 +37,7 @@ router.post('/order/create', async (req, res, next) => {
     const {
       restaurantId, pickupAddress, cusName, cusPhone, cusAddress, cusTaxCode, receiverEmail,
       items, shippingFee: frontendShippingFee, ahamoveOrderId: frontendAhamoveOrderId,
-      voucherCode,
+      voucherCode, isCounterOrder,
     } = body;
     const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const now = Date.now();
@@ -56,16 +56,32 @@ router.post('/order/create', async (req, res, next) => {
     const goodsAmount = items.reduce((s, it) => s + Number(it.price) * Number(it.quantity), 0);
     const taxTotal = 0;
 
-    // Áp dụng KM (Hệ 1 — theo khung giờ) nếu có email — canister tự kiểm
-    // tra: đang đúng khung giờ + email đã xác thực OTP + còn hạn mức (tổng
-    // đơn/ngày, đơn/ngày/khách). Bất kỳ điều kiện nào không đạt → #err,
-    // KHÔNG chặn tạo đơn — chỉ đơn giản là không có KM (theo quyết định đã
-    // chốt). goodsAmount ở đây CHƯA trừ KM — dùng làm "tổng tiền đơn" để
-    // canister so khớp mức chiết khấu (đã gồm VAT, đúng số khách nhìn thấy
-    // lúc đặt món).
+    // Áp dụng KM (Hệ 1 — theo khung giờ) — 2 đường:
+    //   1. Đơn ONLINE (có receiverEmail): applyPromotion — canister tự kiểm
+    //      tra email đã xác thực OTP + còn hạn mức (tổng đơn/ngày,
+    //      đơn/ngày/khách).
+    //   2. Đơn TẠI QUẦY (isCounterOrder=true, routes CounterOrder.tsx):
+    //      applyPromotionCounter — KHÔNG cần email, chỉ kiểm tra đang đúng
+    //      khung giờ + còn hạn mức TỔNG (không có hạn mức riêng theo khách
+    //      — đã xác nhận với người dùng, xem comment đầy đủ ở
+    //      mixins/promotion-api.mo).
+    // Bất kỳ điều kiện nào không đạt → #err, KHÔNG chặn tạo đơn — chỉ đơn
+    // giản là không có KM (theo quyết định đã chốt). goodsAmount ở đây
+    // CHƯA trừ KM — dùng làm "tổng tiền đơn" để canister so khớp mức chiết
+    // khấu (đã gồm VAT, đúng số khách nhìn thấy lúc đặt món).
     let kmProgramCode = '';
     let kmDiscountAmount = 0;
-    if (receiverEmail) {
+    if (isCounterOrder) {
+      try {
+        const kmResult = await canister.applyPromotionCounter(goodsAmount);
+        if (kmResult?.ok) {
+          kmProgramCode = kmResult.ok.promotionCode;
+          kmDiscountAmount = Number(kmResult.ok.discountAmount);
+        }
+      } catch (e) {
+        console.warn('[create] applyPromotionCounter lỗi (bỏ qua, tạo đơn không KM):', e.message);
+      }
+    } else if (receiverEmail) {
       try {
         const kmResult = await canister.applyPromotion(receiverEmail, goodsAmount);
         if (kmResult?.ok) {

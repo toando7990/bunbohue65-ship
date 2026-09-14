@@ -78,6 +78,11 @@ export interface CreateOrderPayload {
   shippingFee: number;
   ahamoveOrderId: string;
   voucherCode?: string;
+  /** true = đơn tại quầy (CounterOrder.tsx) — VPS routes/create.js gọi
+   * applyPromotionCounter (Giờ Vàng tự động, không cần email) thay vì
+   * applyPromotion (yêu cầu email đã xác thực). Bỏ trống/false = đơn
+   * online, hành vi cũ không đổi. */
+  isCounterOrder?: boolean;
 }
 
 // VPS create-order response — canister orderId + signed payload confirmation.
