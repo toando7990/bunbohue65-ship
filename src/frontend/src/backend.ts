@@ -496,10 +496,12 @@ export interface backendInterface {
     addItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array): Promise<Result_5>;
     addRestaurant(restaurantId: string, name: string, address: string, phone: string): Promise<Result_2>;
     applyPromotion(email: string, orderAmount: bigint, hmac: Hmac): Promise<Result_16>;
+    applyPromotionCounter(orderAmount: bigint, hmac: Hmac): Promise<Result_16>;
     applyVoucher(email: string, code: string, orderAmount: bigint, hmac: Hmac): Promise<Result_6>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     callerHasEnterpriseRole(deviceId: DeviceId, role: EnterpriseRole): Promise<boolean>;
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
+    claimOrderEmail(orderId: string, email: string): Promise<Result>;
     changeOrderRestaurant(orderId: string, newRestaurantId: string, hmac: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
     cleanupOrderByDevice(deviceId: string, orderId: string): Promise<Result>;
@@ -696,6 +698,20 @@ export class Backend implements backendInterface {
             return from_candid_Result_16_n15(this._uploadFile, this._downloadFile, result);
         }
     }
+    async applyPromotionCounter(arg0: bigint, arg1: Hmac): Promise<Result_16> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.applyPromotionCounter(arg0, arg1);
+                return from_candid_Result_16_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.applyPromotionCounter(arg0, arg1);
+            return from_candid_Result_16_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async applyVoucher(arg0: string, arg1: string, arg2: bigint, arg3: Hmac): Promise<Result_6> {
         if (this.processError) {
             try {
@@ -749,6 +765,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.cancelOrder(arg0, arg1);
+            return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async claimOrderEmail(arg0: string, arg1: string): Promise<Result> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.claimOrderEmail(arg0, arg1);
+                return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.claimOrderEmail(arg0, arg1);
             return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
         }
     }

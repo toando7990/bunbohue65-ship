@@ -330,6 +330,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'applyPromotion' : IDL.Func([IDL.Text, IDL.Nat, Hmac], [Result_16], []),
+  'applyPromotionCounter' : IDL.Func([IDL.Nat, Hmac], [Result_16], []),
   'applyVoucher' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat, Hmac],
       [Result_6],
@@ -342,6 +343,7 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'cancelOrder' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+  'claimOrderEmail' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
   'changeOrderRestaurant' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text],
       [Result],
@@ -925,6 +927,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'applyPromotion' : IDL.Func([IDL.Text, IDL.Nat, Hmac], [Result_16], []),
+    'applyPromotionCounter' : IDL.Func([IDL.Nat, Hmac], [Result_16], []),
     'applyVoucher' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Nat, Hmac],
         [Result_6],
@@ -937,6 +940,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'cancelOrder' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+    'claimOrderEmail' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'changeOrderRestaurant' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text],
         [Result],
