@@ -23,12 +23,22 @@
 // order.receiverEmail đã có giá trị thì thay QR bằng dòng xác nhận đã
 // ghi nhận — tránh khách khác quét nhầm/quét lại vô nghĩa.
 //
+// QR "Ghi nhận" CHỈ hiện khi ĐỦ CẢ 3 điều kiện (đã xác nhận với người
+// dùng, xếp SAU bước thanh toán vì đây là việc KHÔNG bắt buộc):
+//   1. paymentStatus === paid (đã xác nhận thanh toán thành công) — nếu
+//      hiện trước khi thanh toán, khách quét gán email cho đơn còn có
+//      thể bị huỷ/không thanh toán, gây nhiễu.
+//   2. Chương trình "Khách hàng thân thiết" đang active VÀ enabledCounter
+//      = true (useCurrentSalesPromo) — admin có thể tắt riêng cho quầy.
+//   3. receiverEmail vẫn rỗng (chưa được ai claim).
+//
 // KHÔNG cho đóng dialog thủ công khi QR đã sẵn sàng và CHƯA thanh toán —
 // bắt buộc phải xác nhận thanh toán thành công (onPaid tự đóng sau 1.5s)
 // mới được quay lại đặt đơn tiếp theo. Vẫn cho đóng khi QR lỗi/chưa tạo
 // được (tránh nhân viên bị kẹt hẳn nếu có sự cố kỹ thuật).
 
 import { type Order, PaymentStatus } from "@/backend";
+import { useCurrentSalesPromo } from "@/hooks/useQueries";
 import { getOrder, useCanister } from "@/lib/canister";
 import { requestQr } from "@/lib/vps-client";
 import type { RequestQrResponse } from "@/types";
@@ -57,6 +67,7 @@ export function CounterQRDisplay({
   onPaid,
 }: CounterQRDisplayProps) {
   const { actor } = useCanister();
+  const { data: salesPromo } = useCurrentSalesPromo();
   const [status, setStatus] = useState<PaymentStatus>(order.paymentStatus);
   const [receiverEmail, setReceiverEmail] = useState<string>(
     order.receiverEmail,
@@ -201,41 +212,44 @@ export function CounterQRDisplay({
               Khách quét mã bằng app ngân hàng để hoàn tất thanh toán
             </p>
 
-            {!receiverEmail && (
-              <>
-                <div className="flex w-full items-center gap-3">
-                  <div className="h-px flex-1 bg-border" />
-                  <span className="text-[11px] font-semibold text-muted-foreground">
-                    TUỲ CHỌN
-                  </span>
-                  <div className="h-px flex-1 bg-border" />
-                </div>
-
-                <div
-                  className="flex flex-col items-center gap-2"
-                  data-ocid="counter_qr.claim_block"
-                >
-                  <p className="flex items-center gap-1.5 text-xs font-bold text-primary">
-                    💛 Ghi nhận cho Khách hàng thân thiết
-                  </p>
-                  <div className="rounded-lg bg-foreground p-2">
-                    <QRCodeCanvas
-                      value={`${window.location.origin}/claim/${order.orderId}`}
-                      size={96}
-                      level="M"
-                      includeMargin={false}
-                      bgColor="#000000"
-                      fgColor="#ffffff"
-                      aria-label="Mã QR ghi nhận đơn cho Khách hàng thân thiết"
-                    />
+            {status === PaymentStatus.paid &&
+              salesPromo?.active &&
+              salesPromo?.enabledCounter &&
+              !receiverEmail && (
+                <>
+                  <div className="flex w-full items-center gap-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-[11px] font-semibold text-muted-foreground">
+                      TUỲ CHỌN
+                    </span>
+                    <div className="h-px flex-1 bg-border" />
                   </div>
-                  <p className="max-w-[220px] text-center text-[10.5px] text-muted-foreground">
-                    Quét bằng điện thoại của bạn để tích luỹ đơn này vào chương
-                    trình Khách hàng thân thiết
-                  </p>
-                </div>
-              </>
-            )}
+
+                  <div
+                    className="flex flex-col items-center gap-2"
+                    data-ocid="counter_qr.claim_block"
+                  >
+                    <p className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                      💛 Ghi nhận cho Khách hàng thân thiết
+                    </p>
+                    <div className="rounded-lg bg-foreground p-2">
+                      <QRCodeCanvas
+                        value={`${window.location.origin}/claim/${order.orderId}`}
+                        size={96}
+                        level="M"
+                        includeMargin={false}
+                        bgColor="#000000"
+                        fgColor="#ffffff"
+                        aria-label="Mã QR ghi nhận đơn cho Khách hàng thân thiết"
+                      />
+                    </div>
+                    <p className="max-w-[220px] text-center text-[10.5px] text-muted-foreground">
+                      Quét bằng điện thoại của bạn để tích luỹ đơn này vào
+                      chương trình Khách hàng thân thiết
+                    </p>
+                  </div>
+                </>
+              )}
             {receiverEmail && (
               <p
                 className="flex items-center gap-1.5 text-xs font-semibold text-success"
