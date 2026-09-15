@@ -19,6 +19,7 @@ import Result "mo:core/Result";
 import Time "mo:core/Time";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
+import EmailClient "mo:caffeineai-email/emailClient";
 
 import Types "../types/hmac";
 import SecretTypes "../types/secret";
@@ -192,7 +193,7 @@ mixin (
       return #err("Invalid HMAC");
     };
     let prng = VoucherLib.newPrngState();
-    SalesPromoLib.tryIssueSalesBonus(
+    let issued = SalesPromoLib.tryIssueSalesBonus(
       salesPromos,
       salesBonusIssued,
       vouchers,
@@ -203,5 +204,19 @@ mixin (
       totalSales,
       Time.now(),
     );
+    // Gửi email báo phiếu giảm giá — không chặn kết quả trả về nếu gửi
+    // lỗi (email chỉ là thông báo phụ, voucher đã phát xong).
+    switch (issued) {
+      case (?voucher) {
+        let subject = "Bạn đã nhận được phiếu giảm giá Khách hàng thân thiết — Bunbohue65";
+        let htmlBody = "<p>Chúc mừng! Đơn hàng của bạn đã đạt mức doanh số của chương trình <b>Khách hàng thân thiết</b>.</p>" #
+          "<p>Bạn đã nhận được phiếu giảm giá <b>" # Nat.toText(voucher.value) #
+          "đ</b> (mã <b>" # voucher.code # "</b>), có hiệu lực đến " #
+          voucher.endDate # ".</p><p>Bunbohue65</p>";
+        ignore await EmailClient.sendServiceEmail("no-reply", [email], subject, htmlBody);
+      };
+      case null {};
+    };
+    #ok(issued);
   };
 };

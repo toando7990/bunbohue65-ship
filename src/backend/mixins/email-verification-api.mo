@@ -1,6 +1,7 @@
 import EmailClient "mo:caffeineai-email/emailClient";
 import Time "mo:core/Time";
 import Result "mo:core/Result";
+import Nat "mo:core/Nat";
 import EmailVerificationLib "../lib/email-verification";
 import EmailVerificationTypes "../types/email-verification";
 import RegistrationPromoTypes "../types/registration-promo";
@@ -73,7 +74,7 @@ mixin (
         // Tạo PRNG mới mỗi lần gọi (giống devices-api.mo generateActivationCode)
         // — không cần state riêng, đủ ngẫu nhiên nhờ seed theo Time.now().
         let voucherPrng = VoucherLib.newPrngState();
-        ignore RegistrationPromoLib.tryIssueRegistrationBonus(
+        let issued = RegistrationPromoLib.tryIssueRegistrationBonus(
           registrationPromos,
           registrationBonusIssued,
           vouchers,
@@ -81,6 +82,20 @@ mixin (
           email,
           Time.now(),
         );
+        // Gửi email báo phiếu giảm giá — KHÔNG chặn verifyEmailCode nếu gửi
+        // lỗi (email chỉ là thông báo phụ, việc xác thực + phát voucher đã
+        // xong; gửi thất bại không nên làm hỏng cả luồng xác thực chính).
+        switch (issued) {
+          case (?voucher) {
+            let subject = "Bạn đã nhận được phiếu giảm giá — Bunbohue65";
+            let htmlBody = "<p>Cảm ơn bạn đã xác thực email!</p>" #
+              "<p>Bạn đã nhận được phiếu giảm giá <b>" # Nat.toText(voucher.value) #
+              "đ</b> (mã <b>" # voucher.code # "</b>), có hiệu lực đến " #
+              voucher.endDate # ".</p><p>Bunbohue65</p>";
+            ignore await EmailClient.sendServiceEmail("no-reply", [email], subject, htmlBody);
+          };
+          case null {};
+        };
       };
       case (#err(_)) {};
     };
