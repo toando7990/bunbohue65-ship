@@ -624,6 +624,8 @@ actor Main {
           perCustomerDailyLimit = 0;
           tiers = [];
           active = false;
+          enabledOnline = false;
+          enabledCounter = false;
           termsUrl = "";
         },
       )
@@ -634,6 +636,8 @@ actor Main {
         .payload("dailyOrderLimit", func(p : PromotionTypes.Promotion) : Nat = p.dailyOrderLimit)
         .payload("perCustomerDailyLimit", func(p : PromotionTypes.Promotion) : Nat = p.perCustomerDailyLimit)
         .payload("active", func(p : PromotionTypes.Promotion) : Bool = p.active)
+        .payload("enabledOnline", func(p : PromotionTypes.Promotion) : Bool = p.enabledOnline)
+        .payload("enabledCounter", func(p : PromotionTypes.Promotion) : Bool = p.enabledCounter)
         .payload("termsUrl", func(p : PromotionTypes.Promotion) : Text = p.termsUrl)
         .controllerOnly()
         .build(),
@@ -693,6 +697,7 @@ actor Main {
           monthlyTiers = [];
           voucherValidDays = 0;
           active = false;
+          enabledCounter = false;
           termsUrl = "";
         },
       )
@@ -702,6 +707,7 @@ actor Main {
         .payload("endDate", func(s : SalesPromoTypes.SalesPromo) : Text = s.endDate)
         .payload("voucherValidDays", func(s : SalesPromoTypes.SalesPromo) : Nat = s.voucherValidDays)
         .payload("active", func(s : SalesPromoTypes.SalesPromo) : Bool = s.active)
+        .payload("enabledCounter", func(s : SalesPromoTypes.SalesPromo) : Bool = s.enabledCounter)
         .payload("termsUrl", func(s : SalesPromoTypes.SalesPromo) : Text = s.termsUrl)
         .controllerOnly()
         .build(),
