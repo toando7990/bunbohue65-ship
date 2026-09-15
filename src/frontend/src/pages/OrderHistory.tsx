@@ -20,7 +20,6 @@ import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
 import { OrderCard } from "@/components/OrderCard";
 import { PeriodSummaryPanel } from "@/components/PeriodSummaryPanel";
 import { SalesProgressPanel } from "@/components/SalesProgressPanel";
-import { VoucherListPanel } from "@/components/VoucherListPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toOrder } from "@/lib/order-mapping";
 import { getVerifiedEmail } from "@/lib/verification-storage";
@@ -119,12 +118,6 @@ export default function OrderHistory() {
             <TabsTrigger value="month" data-ocid="order_history.tab.month">
               Tháng này
             </TabsTrigger>
-            <TabsTrigger
-              value="vouchers"
-              data-ocid="order_history.tab.vouchers"
-            >
-              Phiếu giảm giá
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="history">
@@ -195,10 +188,6 @@ export default function OrderHistory() {
 
           <TabsContent value="month">
             <PeriodSummaryPanel email={searchedEmail} period="month" />
-          </TabsContent>
-
-          <TabsContent value="vouchers">
-            <VoucherListPanel email={searchedEmail} />
           </TabsContent>
         </Tabs>
       )}

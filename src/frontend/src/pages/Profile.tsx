@@ -5,6 +5,7 @@
 // hàng không còn hỏi lại tên/SĐT/email, tự lấy từ đây).
 
 import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
+import { VoucherListPanel } from "@/components/VoucherListPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -213,6 +214,15 @@ export default function Profile() {
             Lưu thông tin
           </Button>
         </form>
+      )}
+
+      {verifiedEmail && (
+        <div className="mt-6" data-ocid="profile.vouchers_section">
+          <h2 className="mb-3 font-display text-lg font-semibold tracking-tight">
+            Phiếu giảm giá của bạn
+          </h2>
+          <VoucherListPanel email={verifiedEmail} />
+        </div>
       )}
 
       <EmailVerificationDialog
