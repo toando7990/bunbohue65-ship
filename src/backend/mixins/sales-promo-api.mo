@@ -207,7 +207,7 @@ mixin (
     // Gửi email báo phiếu giảm giá — không chặn kết quả trả về nếu gửi
     // lỗi (email chỉ là thông báo phụ, voucher đã phát xong).
     switch (issued) {
-      case (?voucher) {
+      case (#ok(?voucher)) {
         let subject = "Bạn đã nhận được phiếu giảm giá Khách hàng thân thiết — Bunbohue65";
         let htmlBody = "<p>Chúc mừng! Đơn hàng của bạn đã đạt mức doanh số của chương trình <b>Khách hàng thân thiết</b>.</p>" #
           "<p>Bạn đã nhận được phiếu giảm giá <b>" # Nat.toText(voucher.value) #
@@ -215,8 +215,9 @@ mixin (
           voucher.endDate # ".</p><p>Bunbohue65</p>";
         ignore await EmailClient.sendServiceEmail("no-reply", [email], subject, htmlBody);
       };
-      case null {};
+      case (#ok(null)) {};
+      case (#err(_)) {};
     };
-    #ok(issued);
+    issued;
   };
 };
