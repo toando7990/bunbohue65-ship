@@ -44,7 +44,7 @@ import { useCurrentPromotion, useMenuForRestaurant } from "@/hooks/useQueries";
 import { getOrder as getOrderFn, useCanister } from "@/lib/canister";
 import { create as vpsCreate } from "@/lib/vps-client";
 import type { CreateOrderPayload } from "@/types";
-import { Flame, Loader2, ShoppingCart, Store } from "lucide-react";
+import { Flame, Loader2, ShoppingCart } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -151,7 +151,11 @@ export default function CounterOrder() {
   // tại 1 thiết bị cố định. Dọn lại (null) khi rời trang.
   useEffect(() => {
     if (deviceId) {
-      setDeviceHeader({ name: deviceName, id: deviceId });
+      setDeviceHeader({
+        name: deviceName,
+        id: deviceId,
+        pageTitle: "Đặt món tại quầy",
+      });
     }
     return () => setDeviceHeader(null);
   }, [deviceId, deviceName, setDeviceHeader]);
@@ -320,13 +324,6 @@ export default function CounterOrder() {
       data-ocid="counter.page"
     >
       <div className="flex-1 px-4 py-5 md:px-6 xl:px-8">
-        <header className="mb-4 flex items-center gap-2">
-          <Store className="h-5 w-5 text-primary" aria-hidden="true" />
-          <h1 className="font-display text-lg font-semibold tracking-tight">
-            Đặt món tại quầy
-          </h1>
-        </header>
-
         <CounterGoldenHourBanner />
 
         <div className="flex items-start gap-5">

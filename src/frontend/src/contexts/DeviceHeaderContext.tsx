@@ -15,6 +15,10 @@ import type { ReactNode } from "react";
 export interface DeviceHeaderInfo {
   name: string;
   id: string;
+  /** Tiêu đề trang (VD "Đặt món tại quầy") — hiện căn phải trong header,
+   * đối diện với tên/mã thiết bị bên trái. Tuỳ chọn — trang nào không
+   * cần thì bỏ trống. */
+  pageTitle?: string;
 }
 
 interface DeviceHeaderContextValue {

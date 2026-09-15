@@ -291,9 +291,11 @@ function LayoutInner({ children }: { children: ReactNode }) {
   const mobileMenuNav = visiblePrimaryNav.filter(
     (item) => !BOTTOM_NAV_PATHS.has(item.to),
   );
-  // Thanh điều hướng đáy cũng ẩn trên /driver — cùng logic hideOnPrefixes
-  // của 4 mục lõi trong PRIMARY_NAV (đều dùng chung ["/driver"]).
-  const showBottomNav = !router.location.pathname.startsWith("/driver");
+  // Thanh điều hướng đáy cũng ẩn trên /driver và bất kỳ trang thiết bị nào
+  // đang đẩy deviceHeader lên (bao gồm /counter) — nhất quán với việc ẩn
+  // toàn bộ menu điều hướng cho các trang thiết bị.
+  const showBottomNav =
+    !router.location.pathname.startsWith("/driver") && !deviceHeader;
 
   // Nút "Đăng xuất" CHỈ hiển thị trên /admin và các trang con /admin/*,
   // và chỉ khi người dùng đã đăng nhập + có quyền quản trị. Không hiện trên
@@ -353,30 +355,43 @@ function LayoutInner({ children }: { children: ReactNode }) {
             </Link>
           )}
 
-          <nav
-            className="hidden items-center gap-1 md:flex"
-            data-ocid="nav.desktop"
-            aria-label="Điều hướng chính"
-          >
-            {visiblePrimaryNav.map((item) => (
-              <NavLink key={item.to} item={item} />
-            ))}
-            {showAdmin &&
-              visibleAdminNav.map((item) => (
+          {!deviceHeader && (
+            <nav
+              className="hidden items-center gap-1 md:flex"
+              data-ocid="nav.desktop"
+              aria-label="Điều hướng chính"
+            >
+              {visiblePrimaryNav.map((item) => (
                 <NavLink key={item.to} item={item} />
               ))}
-            {showLogout && (
-              <button
-                type="button"
-                onClick={handleLogout}
-                data-ocid="nav.logout_button"
-                className="ml-1 inline-flex min-h-[44px] items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-smooth hover:bg-destructive/10 hover:text-destructive md:min-h-0"
-              >
-                <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="truncate">Đăng xuất</span>
-              </button>
-            )}
-          </nav>
+              {showAdmin &&
+                visibleAdminNav.map((item) => (
+                  <NavLink key={item.to} item={item} />
+                ))}
+              {showLogout && (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  data-ocid="nav.logout_button"
+                  className="ml-1 inline-flex min-h-[44px] items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-smooth hover:bg-destructive/10 hover:text-destructive md:min-h-0"
+                >
+                  <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="truncate">Đăng xuất</span>
+                </button>
+              )}
+            </nav>
+          )}
+          {/* Tiêu đề trang (VD "Đặt món tại quầy") — chỉ hiện khi có
+              deviceHeader, căn lề bên phải (justify-between đẩy ra khi
+              nav ở giữa đã ẩn). */}
+          {deviceHeader?.pageTitle && (
+            <h1
+              className="font-display text-lg font-semibold tracking-tight text-foreground"
+              data-ocid="nav.device_page_title"
+            >
+              {deviceHeader.pageTitle}
+            </h1>
+          )}
           {!deviceHeader && (
             <button
               type="button"

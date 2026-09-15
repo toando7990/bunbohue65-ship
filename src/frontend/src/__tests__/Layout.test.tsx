@@ -164,11 +164,15 @@ describe("Layout logout button", () => {
 // Cover tests for DeviceHeaderContext integration — /counter và /driver
 // "đẩy" tên/mã thiết bị lên header dùng chung, thay cho logo/tiêu đề/nút
 // Menu (yêu cầu: các trang thiết bị không cần điều hướng sang trang khác).
-function DeviceHeaderSetter({ name, id }: { name: string; id: string }) {
+function DeviceHeaderSetter({
+  name,
+  id,
+  pageTitle,
+}: { name: string; id: string; pageTitle?: string }) {
   const { setDeviceHeader } = useDeviceHeader();
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ set 1 lần khi mount (setDeviceHeader là state setter, tham chiếu ổn định)
   useEffect(() => {
-    setDeviceHeader({ name, id });
+    setDeviceHeader({ name, id, pageTitle });
     return () => setDeviceHeader(null);
   }, []);
   return <div>device page content</div>;
@@ -213,5 +217,40 @@ describe("Layout device header (used by /counter, /driver)", () => {
 
     renderLayout();
     expect(screen.getByTestId("nav.brand_link")).toBeInTheDocument();
+  });
+
+  it("hides the desktop nav and bottom nav entirely when deviceHeader is set", () => {
+    render(
+      <Layout>
+        <DeviceHeaderSetter name="Quầy 1" id="dev-abc-123" />
+      </Layout>,
+    );
+    expect(screen.queryByTestId("nav.desktop")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("nav.bottom")).not.toBeInTheDocument();
+  });
+
+  it("shows the page title, right-aligned in the header, when provided", () => {
+    render(
+      <Layout>
+        <DeviceHeaderSetter
+          name="Quầy 1"
+          id="dev-abc-123"
+          pageTitle="Đặt món tại quầy"
+        />
+      </Layout>,
+    );
+    const title = screen.getByTestId("nav.device_page_title");
+    expect(title).toHaveTextContent("Đặt món tại quầy");
+  });
+
+  it("does not render a page title element when none is provided", () => {
+    render(
+      <Layout>
+        <DeviceHeaderSetter name="Quầy 1" id="dev-abc-123" />
+      </Layout>,
+    );
+    expect(
+      screen.queryByTestId("nav.device_page_title"),
+    ).not.toBeInTheDocument();
   });
 });

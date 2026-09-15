@@ -96,8 +96,9 @@ vi.mock("@/components/CounterQRDisplay", () => ({
   CounterQRDisplay: () => <div data-ocid="mock-qr-display" />,
 }));
 
+const mockSetDeviceHeader = vi.fn();
 vi.mock("@/contexts/DeviceHeaderContext", () => ({
-  useDeviceHeader: () => ({ setDeviceHeader: vi.fn() }),
+  useDeviceHeader: () => ({ setDeviceHeader: mockSetDeviceHeader }),
 }));
 
 describe("CounterOrder (desktop layout)", () => {
@@ -192,5 +193,14 @@ describe("CounterOrder (desktop layout)", () => {
     expect(payload.receiverEmail).toBe("");
     expect(payload.cusName).toBe("Khách tại quầy");
     expect(payload.cusPhone).not.toBe("");
+  });
+
+  it("pushes the device name/id AND page title 'Đặt món tại quầy' up to the shared header", () => {
+    render(<CounterOrder />);
+    expect(mockSetDeviceHeader).toHaveBeenCalledWith({
+      name: "Quầy 1",
+      id: "dev-1",
+      pageTitle: "Đặt món tại quầy",
+    });
   });
 });
