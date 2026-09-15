@@ -143,6 +143,8 @@ export interface PendingActivationEntry {
 export interface Promotion {
   'tiers' : Array<DiscountTier>,
   'active' : boolean,
+  'enabledOnline' : boolean,
+  'enabledCounter' : boolean,
   'endDate' : string,
   'timeSlots' : Array<TimeSlot>,
   'code' : string,
@@ -220,6 +222,7 @@ export type Result_9 = { 'ok' : Array<SalesPromo> } |
 export interface Result__1 { 'hasMore' : boolean, 'rows' : Array<Array<Cell>> }
 export interface SalesPromo {
   'active' : boolean,
+  'enabledCounter' : boolean,
   'endDate' : string,
   'code' : string,
   'name' : string,
@@ -455,6 +458,8 @@ export interface _SERVICE {
       bigint,
       Array<DiscountTier>,
       boolean,
+      boolean,
+      boolean,
       string,
     ],
     Result_4
@@ -477,6 +482,7 @@ export interface _SERVICE {
       Array<SalesTier>,
       Array<SalesTier>,
       bigint,
+      boolean,
       boolean,
       string,
     ],

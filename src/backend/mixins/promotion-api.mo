@@ -107,6 +107,8 @@ mixin (
       perCustomerDailyLimit;
       tiers;
       active = true;
+      enabledOnline = true;
+      enabledCounter = true;
       termsUrl;
     };
     promotions.add(code, promo);
@@ -125,6 +127,8 @@ mixin (
     perCustomerDailyLimit : Nat,
     tiers : [PromotionTypes.DiscountTier],
     active : Bool,
+    enabledOnline : Bool,
+    enabledCounter : Bool,
     termsUrl : Text,
   ) : async Result.Result<PromotionTypes.Promotion, Text> {
     if (not canManagePromotions(caller, deviceId)) {
@@ -156,6 +160,8 @@ mixin (
       perCustomerDailyLimit;
       tiers;
       active;
+      enabledOnline;
+      enabledCounter;
       termsUrl;
     };
     promotions.add(code, promo);
@@ -235,7 +241,7 @@ mixin (
     let now = Time.now();
     var found : ?PromotionTypes.Promotion = null;
     for ((_code, promo) in promotions.toArray().vals()) {
-      if (found == null and PromotionLib.isPromotionActiveNow(promo, now)) {
+      if (found == null and PromotionLib.isPromotionActiveNow(promo, now) and promo.enabledOnline) {
         found := ?promo;
       };
     };
@@ -283,7 +289,7 @@ mixin (
     let now = Time.now();
     var found : ?PromotionTypes.Promotion = null;
     for ((_code, promo) in promotions.toArray().vals()) {
-      if (found == null and PromotionLib.isPromotionActiveNow(promo, now)) {
+      if (found == null and PromotionLib.isPromotionActiveNow(promo, now) and promo.enabledCounter) {
         found := ?promo;
       };
     };

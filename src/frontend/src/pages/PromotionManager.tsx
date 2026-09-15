@@ -50,10 +50,21 @@ export default function PromotionManager() {
     });
   }
 
-  function handleEditSubmit(input: PromotionInput, active: boolean) {
+  function handleEditSubmit(
+    input: PromotionInput,
+    active: boolean,
+    enabledOnline: boolean,
+    enabledCounter: boolean,
+  ) {
     if (mode.kind !== "edit") return;
     updateMutation.mutate(
-      { code: mode.promotion.code, input, active },
+      {
+        code: mode.promotion.code,
+        input,
+        active,
+        enabledOnline,
+        enabledCounter,
+      },
       {
         onSuccess: () => {
           toast.success("Đã lưu thay đổi.");

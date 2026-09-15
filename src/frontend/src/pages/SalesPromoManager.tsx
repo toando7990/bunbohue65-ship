@@ -211,7 +211,11 @@ interface FormProps {
   initial?: SalesPromo;
   submitting: boolean;
   submitError: string | null;
-  onSubmit: (input: SalesPromoInput, active: boolean) => void;
+  onSubmit: (
+    input: SalesPromoInput,
+    active: boolean,
+    enabledCounter: boolean,
+  ) => void;
   onCancel: () => void;
 }
 
@@ -240,6 +244,9 @@ function SalesPromoForm({
     initial ? String(initial.voucherValidDays) : "30",
   );
   const [active, setActive] = useState(initial?.active ?? true);
+  const [enabledCounter, setEnabledCounter] = useState(
+    initial?.enabledCounter ?? true,
+  );
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
@@ -289,6 +296,7 @@ function SalesPromoForm({
         termsUrl: termsUrl.trim(),
       },
       active,
+      enabledCounter,
     );
   }
 
@@ -382,16 +390,29 @@ function SalesPromoForm({
       </div>
 
       {initial && (
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={active}
-            onChange={(e) => setActive(e.target.checked)}
-            className="h-4 w-4 accent-primary"
-            data-ocid="sales_promo.form.active_checkbox"
-          />
-          Đang hoạt động (bỏ chọn để tạm dừng chương trình)
-        </label>
+        <>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={(e) => setActive(e.target.checked)}
+              className="h-4 w-4 accent-primary"
+              data-ocid="sales_promo.form.active_checkbox"
+            />
+            Đang hoạt động (bỏ chọn để tạm dừng chương trình)
+          </label>
+
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={enabledCounter}
+              onChange={(e) => setEnabledCounter(e.target.checked)}
+              className="h-4 w-4 accent-primary"
+              data-ocid="sales_promo.form.enabled_counter_checkbox"
+            />
+            Cho phép ghi nhận (quét QR) tại quầy (/counter)
+          </label>
+        </>
       )}
 
       {(error || submitError) && (
@@ -570,10 +591,14 @@ export default function SalesPromoManager() {
     });
   }
 
-  function handleEditSubmit(input: SalesPromoInput, active: boolean) {
+  function handleEditSubmit(
+    input: SalesPromoInput,
+    active: boolean,
+    enabledCounter: boolean,
+  ) {
     if (mode.kind !== "edit") return;
     updateMutation.mutate(
-      { code: mode.promo.code, input, active },
+      { code: mode.promo.code, input, active, enabledCounter },
       {
         onSuccess: () => {
           toast.success("Đã lưu thay đổi.");

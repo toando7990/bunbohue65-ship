@@ -156,6 +156,8 @@ export const DiscountTier = IDL.Record({
 export const Promotion = IDL.Record({
   'tiers' : IDL.Vec(DiscountTier),
   'active' : IDL.Bool,
+  'enabledOnline' : IDL.Bool,
+  'enabledCounter' : IDL.Bool,
   'endDate' : IDL.Text,
   'timeSlots' : IDL.Vec(TimeSlot),
   'code' : IDL.Text,
@@ -187,6 +189,7 @@ export const SalesTier = IDL.Record({
 });
 export const SalesPromo = IDL.Record({
   'active' : IDL.Bool,
+  'enabledCounter' : IDL.Bool,
   'endDate' : IDL.Text,
   'code' : IDL.Text,
   'name' : IDL.Text,
@@ -569,6 +572,8 @@ export const idlService = IDL.Service({
         IDL.Nat,
         IDL.Vec(DiscountTier),
         IDL.Bool,
+        IDL.Bool,
+        IDL.Bool,
         IDL.Text,
       ],
       [Result_4],
@@ -604,6 +609,7 @@ export const idlService = IDL.Service({
         IDL.Vec(SalesTier),
         IDL.Vec(SalesTier),
         IDL.Nat,
+        IDL.Bool,
         IDL.Bool,
         IDL.Text,
       ],
@@ -768,6 +774,8 @@ export const idlFactory = ({ IDL }) => {
   const Promotion = IDL.Record({
     'tiers' : IDL.Vec(DiscountTier),
     'active' : IDL.Bool,
+    'enabledOnline' : IDL.Bool,
+    'enabledCounter' : IDL.Bool,
     'endDate' : IDL.Text,
     'timeSlots' : IDL.Vec(TimeSlot),
     'code' : IDL.Text,
@@ -796,6 +804,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const SalesPromo = IDL.Record({
     'active' : IDL.Bool,
+    'enabledCounter' : IDL.Bool,
     'endDate' : IDL.Text,
     'code' : IDL.Text,
     'name' : IDL.Text,
@@ -1170,6 +1179,8 @@ export const idlFactory = ({ IDL }) => {
           IDL.Nat,
           IDL.Vec(DiscountTier),
           IDL.Bool,
+          IDL.Bool,
+          IDL.Bool,
           IDL.Text,
         ],
         [Result_4],
@@ -1205,6 +1216,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Vec(SalesTier),
           IDL.Vec(SalesTier),
           IDL.Nat,
+          IDL.Bool,
           IDL.Bool,
           IDL.Text,
         ],

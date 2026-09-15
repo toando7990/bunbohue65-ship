@@ -22,6 +22,12 @@ module {
     monthlyTiers : [SalesTier]; // Tối đa 3 phần tử.
     voucherValidDays : Nat; // Phiếu phát ra có hiệu lực bao nhiêu ngày.
     active : Bool;
+    // enabledCounter — bật/tắt riêng cho đặt món TẠI QUẦY: quyết định có
+    // hiện QR "Ghi nhận" (claim email) trên thẻ đơn quầy hay không sau khi
+    // thanh toán thành công (xem CounterQRDisplay.tsx). Không ảnh hưởng
+    // cách tính doanh số tích luỹ (vẫn cộng dồn theo receiverEmail như cũ,
+    // không phân biệt kênh) — chỉ là điều kiện hiển thị QR ở quầy.
+    enabledCounter : Bool;
     // termsUrl (Giai đoạn 4f) — link "Điều khoản". Rỗng = không có.
     termsUrl : Text;
   };

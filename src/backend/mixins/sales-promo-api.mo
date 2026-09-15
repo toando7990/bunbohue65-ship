@@ -82,6 +82,7 @@ mixin (
       monthlyTiers;
       voucherValidDays;
       active = true;
+      enabledCounter = true;
       termsUrl;
     };
     salesPromos.add(code, promo);
@@ -98,6 +99,7 @@ mixin (
     monthlyTiers : [SalesPromoTypes.SalesTier],
     voucherValidDays : Nat,
     active : Bool,
+    enabledCounter : Bool,
     termsUrl : Text,
   ) : async Result.Result<SalesPromoTypes.SalesPromo, Text> {
     if (not canManageSalesPromos(caller, deviceId)) {
@@ -124,6 +126,7 @@ mixin (
       monthlyTiers;
       voucherValidDays;
       active;
+      enabledCounter;
       termsUrl;
     };
     salesPromos.add(code, promo);

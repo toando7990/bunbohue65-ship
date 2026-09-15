@@ -60,6 +60,13 @@ module {
     perCustomerDailyLimit : Nat; // Số đơn KM/ngày/khách (dùng KmUsageStore).
     tiers : [DiscountTier]; // Tối đa 5 phần tử, nên sắp xếp tăng dần theo minOrderValue.
     active : Bool; // Admin bật/tắt thủ công — false thì luôn bỏ qua dù còn hiệu lực ngày/giờ.
+    // enabledOnline/enabledCounter — bật/tắt RIÊNG theo kênh đặt món, độc
+    // lập với `active` (công tắc tổng). false ở kênh nào thì kênh đó
+    // KHÔNG được áp dụng Giờ Vàng, dù `active`=true và đang đúng khung giờ.
+    // applyPromotion (đặt từ xa) kiểm tra enabledOnline; applyPromotionCounter
+    // (đặt tại quầy) kiểm tra enabledCounter.
+    enabledOnline : Bool;
+    enabledCounter : Bool;
     // termsUrl (Giai đoạn 4f) — link "Điều khoản" hiện cho khách ngay trên
     // banner khuyến mãi (PromotionBanner.tsx). Rỗng = không hiện link.
     termsUrl : Text;

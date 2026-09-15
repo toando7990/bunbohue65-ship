@@ -56,7 +56,12 @@ export interface PromotionFormProps {
   initial?: Promotion;
   submitting?: boolean;
   submitError?: string | null;
-  onSubmit: (input: PromotionInput, active: boolean) => void;
+  onSubmit: (
+    input: PromotionInput,
+    active: boolean,
+    enabledOnline: boolean,
+    enabledCounter: boolean,
+  ) => void;
   onCancel: () => void;
 }
 
@@ -111,6 +116,12 @@ export function PromotionForm({
       : [{ id: nextDraftId(), minOrderValue: "", discountAmount: "" }],
   );
   const [active, setActive] = useState(initial?.active ?? true);
+  const [enabledOnline, setEnabledOnline] = useState(
+    initial?.enabledOnline ?? true,
+  );
+  const [enabledCounter, setEnabledCounter] = useState(
+    initial?.enabledCounter ?? true,
+  );
   const [error, setError] = useState<string | null>(null);
 
   function addTimeSlot() {
@@ -245,6 +256,8 @@ export function PromotionForm({
         termsUrl: termsUrl.trim(),
       },
       active,
+      enabledOnline,
+      enabledCounter,
     );
   }
 
@@ -535,16 +548,44 @@ export function PromotionForm({
       </div>
 
       {initial && (
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={active}
-            onChange={(e) => setActive(e.target.checked)}
-            className="h-4 w-4 accent-primary"
-            data-ocid="promotion.form.active_checkbox"
-          />
-          Đang hoạt động (bỏ chọn để tạm dừng chương trình)
-        </label>
+        <>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={(e) => setActive(e.target.checked)}
+              className="h-4 w-4 accent-primary"
+              data-ocid="promotion.form.active_checkbox"
+            />
+            Đang hoạt động (bỏ chọn để tạm dừng chương trình)
+          </label>
+
+          <div className="flex flex-col gap-2 rounded-md border border-border bg-secondary/40 p-3">
+            <p className="text-xs font-semibold text-muted-foreground">
+              Áp dụng cho kênh đặt món
+            </p>
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={enabledOnline}
+                onChange={(e) => setEnabledOnline(e.target.checked)}
+                className="h-4 w-4 accent-primary"
+                data-ocid="promotion.form.enabled_online_checkbox"
+              />
+              Đặt món từ xa (trang /)
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={enabledCounter}
+                onChange={(e) => setEnabledCounter(e.target.checked)}
+                className="h-4 w-4 accent-primary"
+                data-ocid="promotion.form.enabled_counter_checkbox"
+              />
+              Đặt món tại quầy (trang /counter)
+            </label>
+          </div>
+        </>
       )}
 
       {(error || submitError) && (

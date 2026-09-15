@@ -485,6 +485,8 @@ export async function updatePromotion(
   code: string,
   input: PromotionInput,
   active: boolean,
+  enabledOnline: boolean,
+  enabledCounter: boolean,
 ): Promise<Promotion> {
   return unwrap(
     await actor.updatePromotion(
@@ -499,6 +501,8 @@ export async function updatePromotion(
       input.perCustomerDailyLimit,
       input.tiers,
       active,
+      enabledOnline,
+      enabledCounter,
       input.termsUrl,
     ),
   );
@@ -659,6 +663,7 @@ export async function updateSalesPromo(
   code: string,
   input: SalesPromoInput,
   active: boolean,
+  enabledCounter: boolean,
 ): Promise<SalesPromo> {
   return unwrap(
     await actor.updateSalesPromo(
@@ -671,6 +676,7 @@ export async function updateSalesPromo(
       input.monthlyTiers,
       input.voucherValidDays,
       active,
+      enabledCounter,
       input.termsUrl,
     ),
   );

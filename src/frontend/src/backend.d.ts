@@ -237,6 +237,7 @@ export interface PendingActivation {
 }
 export interface SalesPromo {
     active: boolean;
+    enabledCounter: boolean;
     endDate: string;
     code: string;
     name: string;
@@ -361,6 +362,8 @@ export type VerifyResult = {
 export interface Promotion {
     tiers: Array<DiscountTier>;
     active: boolean;
+    enabledOnline: boolean;
+    enabledCounter: boolean;
     endDate: string;
     timeSlots: Array<TimeSlot>;
     code: string;
@@ -541,10 +544,10 @@ export interface backendInterface {
     updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array, visible: boolean): Promise<Result_5>;
     updateOrderQr(orderId: string, qrCode: string | null, billId: string | null, expireAt: bigint | null, hmac: string): Promise<Result>;
     updatePaymentStatus(orderId: OrderId, paymentStatus: PaymentStatus, hmac: Hmac): Promise<Result>;
-    updatePromotion(deviceId: string, code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, termsUrl: string): Promise<Result_4>;
+    updatePromotion(deviceId: string, code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, enabledOnline: boolean, enabledCounter: boolean, termsUrl: string): Promise<Result_4>;
     updateRegistrationPromo(deviceId: string, code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_3>;
     updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_2>;
-    updateSalesPromo(deviceId: string, code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_1>;
+    updateSalesPromo(deviceId: string, code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, enabledCounter: boolean, termsUrl: string): Promise<Result_1>;
     updateStatus(orderId: OrderId, bookingStatus: BookingStatus, hmac: Hmac): Promise<Result>;
     verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }

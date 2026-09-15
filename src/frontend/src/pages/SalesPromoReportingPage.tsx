@@ -203,10 +203,21 @@ function PromoSystem1({
         toast.error(e instanceof Error ? e.message : "Lỗi khi tạo."),
     });
   }
-  function handleEditSubmit(input: PromotionInput, active: boolean) {
+  function handleEditSubmit(
+    input: PromotionInput,
+    active: boolean,
+    enabledOnline: boolean,
+    enabledCounter: boolean,
+  ) {
     if (mode.kind !== "edit") return;
     updateMutation.mutate(
-      { code: mode.promotion.code, input, active },
+      {
+        code: mode.promotion.code,
+        input,
+        active,
+        enabledOnline,
+        enabledCounter,
+      },
       {
         onSuccess: () => {
           toast.success("Đã lưu thay đổi.");
@@ -877,7 +888,11 @@ function SalesPromoForm({
   initial?: SalesPromo;
   submitting: boolean;
   submitError: string | null;
-  onSubmit: (input: SalesPromoInput, active: boolean) => void;
+  onSubmit: (
+    input: SalesPromoInput,
+    active: boolean,
+    enabledCounter: boolean,
+  ) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
@@ -898,6 +913,9 @@ function SalesPromoForm({
     initial ? String(initial.voucherValidDays) : "30",
   );
   const [active, setActive] = useState(initial?.active ?? true);
+  const [enabledCounter, setEnabledCounter] = useState(
+    initial?.enabledCounter ?? true,
+  );
   const [error, setError] = useState<string | null>(null);
 
   function updateDraft(
@@ -939,6 +957,7 @@ function SalesPromoForm({
         termsUrl: termsUrl.trim(),
       },
       active,
+      enabledCounter,
     );
   }
 
@@ -1092,16 +1111,29 @@ function SalesPromoForm({
       </div>
 
       {initial && (
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={active}
-            onChange={(e) => setActive(e.target.checked)}
-            className="h-4 w-4 accent-primary"
-            data-ocid="sales_reporting.salespromo.form.active_checkbox"
-          />
-          Đang hoạt động (bỏ chọn để tạm dừng)
-        </label>
+        <>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={(e) => setActive(e.target.checked)}
+              className="h-4 w-4 accent-primary"
+              data-ocid="sales_reporting.salespromo.form.active_checkbox"
+            />
+            Đang hoạt động (bỏ chọn để tạm dừng)
+          </label>
+
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={enabledCounter}
+              onChange={(e) => setEnabledCounter(e.target.checked)}
+              className="h-4 w-4 accent-primary"
+              data-ocid="sales_reporting.salespromo.form.enabled_counter_checkbox"
+            />
+            Cho phép ghi nhận (quét QR) tại quầy (/counter)
+          </label>
+        </>
       )}
 
       {(error || submitError) && (
@@ -1168,10 +1200,14 @@ function PromoSales({
         toast.error(e instanceof Error ? e.message : "Lỗi khi tạo."),
     });
   }
-  function handleEditSubmit(input: SalesPromoInput, active: boolean) {
+  function handleEditSubmit(
+    input: SalesPromoInput,
+    active: boolean,
+    enabledCounter: boolean,
+  ) {
     if (mode.kind !== "edit") return;
     updateMutation.mutate(
-      { code: mode.promo.code, input, active },
+      { code: mode.promo.code, input, active, enabledCounter },
       {
         onSuccess: () => {
           toast.success("Đã lưu thay đổi.");

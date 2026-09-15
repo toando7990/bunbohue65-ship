@@ -661,6 +661,8 @@ export function useUpdatePromotion(deviceId?: string) {
       code: string;
       input: Parameters<typeof createPromotionFn>[2];
       active: boolean;
+      enabledOnline: boolean;
+      enabledCounter: boolean;
     }) => {
       if (!actor) throw new Error("Actor not ready");
       return updatePromotionFn(
@@ -669,6 +671,8 @@ export function useUpdatePromotion(deviceId?: string) {
         args.code,
         args.input,
         args.active,
+        args.enabledOnline,
+        args.enabledCounter,
       );
     },
     onSuccess: () => {
@@ -847,6 +851,7 @@ export function useUpdateSalesPromo(deviceId?: string) {
       code: string;
       input: Parameters<typeof createSalesPromoFn>[2];
       active: boolean;
+      enabledCounter: boolean;
     }) => {
       if (!actor) throw new Error("Actor not ready");
       return updateSalesPromoFn(
@@ -855,6 +860,7 @@ export function useUpdateSalesPromo(deviceId?: string) {
         args.code,
         args.input,
         args.active,
+        args.enabledCounter,
       );
     },
     onSuccess: () => {

@@ -283,6 +283,7 @@ export interface PendingActivation {
 }
 export interface SalesPromo {
     active: boolean;
+    enabledCounter: boolean;
     endDate: string;
     code: string;
     name: string;
@@ -407,6 +408,8 @@ export type VerifyResult = {
 export interface Promotion {
     tiers: Array<DiscountTier>;
     active: boolean;
+    enabledOnline: boolean;
+    enabledCounter: boolean;
     endDate: string;
     timeSlots: Array<TimeSlot>;
     code: string;
@@ -590,10 +593,10 @@ export interface backendInterface {
     updateItem(itemId: string, name: string, price: bigint, unitName: string, vatRate: bigint, category: string, image: Uint8Array, visible: boolean): Promise<Result_5>;
     updateOrderQr(orderId: string, qrCode: string | null, billId: string | null, expireAt: bigint | null, hmac: string): Promise<Result>;
     updatePaymentStatus(orderId: OrderId, paymentStatus: PaymentStatus, hmac: Hmac): Promise<Result>;
-    updatePromotion(deviceId: string, code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, termsUrl: string): Promise<Result_4>;
+    updatePromotion(deviceId: string, code: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, active: boolean, enabledOnline: boolean, enabledCounter: boolean, termsUrl: string): Promise<Result_4>;
     updateRegistrationPromo(deviceId: string, code: string, name: string, startDate: string, endDate: string, voucherValue: bigint, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_3>;
     updateRestaurant(restaurantId: string, name: string, address: string, phone: string, visible: boolean): Promise<Result_2>;
-    updateSalesPromo(deviceId: string, code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, termsUrl: string): Promise<Result_1>;
+    updateSalesPromo(deviceId: string, code: string, name: string, startDate: string, endDate: string, weeklyTiers: Array<SalesTier>, monthlyTiers: Array<SalesTier>, voucherValidDays: bigint, active: boolean, enabledCounter: boolean, termsUrl: string): Promise<Result_1>;
     updateStatus(orderId: OrderId, bookingStatus: BookingStatus, hmac: Hmac): Promise<Result>;
     verifyEmailCode(email: Email, code: string): Promise<VerifyResult>;
 }
@@ -1852,17 +1855,17 @@ export class Backend implements backendInterface {
             return from_candid_Result_n23(this._uploadFile, this._downloadFile, result);
         }
     }
-    async updatePromotion(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: Array<boolean>, arg6: Array<TimeSlot>, arg7: bigint, arg8: bigint, arg9: Array<DiscountTier>, arg10: boolean, arg11: string): Promise<Result_4> {
+    async updatePromotion(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: Array<boolean>, arg6: Array<TimeSlot>, arg7: bigint, arg8: bigint, arg9: Array<DiscountTier>, arg10: boolean, arg11: boolean, arg12: boolean, arg13: string): Promise<Result_4> {
         if (this.processError) {
             try {
-                const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+                const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
                 return from_candid_Result_4_n35(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+            const result = await this.actor.updatePromotion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
             return from_candid_Result_4_n35(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -1894,17 +1897,17 @@ export class Backend implements backendInterface {
             return from_candid_Result_2_n13(this._uploadFile, this._downloadFile, result);
         }
     }
-    async updateSalesPromo(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: Array<SalesTier>, arg6: Array<SalesTier>, arg7: bigint, arg8: boolean, arg9: string): Promise<Result_1> {
+    async updateSalesPromo(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: Array<SalesTier>, arg6: Array<SalesTier>, arg7: bigint, arg8: boolean, arg9: boolean, arg10: string): Promise<Result_1> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
                 return from_candid_Result_1_n39(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            const result = await this.actor.updateSalesPromo(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             return from_candid_Result_1_n39(this._uploadFile, this._downloadFile, result);
         }
     }
