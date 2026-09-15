@@ -29,6 +29,12 @@ interface MenuPickerProps {
    * danh sách này — không phải món khách tự chọn tay.
    */
   groupByCategory?: boolean;
+  /**
+   * Class Tailwind cho số cột lưới món — mặc định "grid-cols-2" (mobile-
+   * first, dùng ở CreateOrder.tsx). CounterOrder.tsx (desktop 15-21 inch)
+   * truyền "grid-cols-4" để tận dụng chiều ngang màn hình lớn.
+   */
+  gridColsClassName?: string;
 }
 
 const ALL_CATEGORY = "Tất cả";
@@ -172,6 +178,7 @@ export function MenuPicker({
   disabled,
   fixedCategory,
   groupByCategory,
+  gridColsClassName = "grid-cols-2",
 }: MenuPickerProps) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>(ALL_CATEGORY);
@@ -229,7 +236,7 @@ export function MenuPicker({
   if (isLoading) {
     return (
       <div
-        className="grid grid-cols-2 gap-x-3 gap-y-4"
+        className={`grid ${gridColsClassName} gap-x-3 gap-y-4`}
         data-ocid="menu_picker.loading_state"
       >
         {Array.from({ length: 4 }, (_, i) => `skel-${i}`).map((id) => (
@@ -332,7 +339,7 @@ export function MenuPicker({
                 >
                   {section.category}
                 </h3>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+                <div className={`grid ${gridColsClassName} gap-x-3 gap-y-4`}>
                   {section.items.map((item, idx) => (
                     <MenuCard
                       key={item.itemId}
@@ -361,7 +368,7 @@ export function MenuPicker({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+        <div className={`grid ${gridColsClassName} gap-x-3 gap-y-4`}>
           {filtered.map((item, idx) => (
             <MenuCard
               key={item.itemId}

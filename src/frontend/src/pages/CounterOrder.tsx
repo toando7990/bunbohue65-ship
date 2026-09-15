@@ -32,13 +32,14 @@ import { ActivationForm } from "@/components/ActivationForm";
 import { CounterQRDisplay } from "@/components/CounterQRDisplay";
 import { MenuPicker } from "@/components/MenuPicker";
 import { Button } from "@/components/ui/button";
+import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
 import { usePromotionCountdown } from "@/hooks/usePromotionCountdown";
 import { useCurrentPromotion, useMenus } from "@/hooks/useQueries";
 import { getOrder as getOrderFn, useCanister } from "@/lib/canister";
 import { create as vpsCreate } from "@/lib/vps-client";
 import type { CreateOrderPayload } from "@/types";
-import { Flame, Loader2, ShoppingCart, Smartphone, Store } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Flame, Loader2, ShoppingCart, Store } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const COUNTER_STORAGE_KEY = "bbh_counter_activation";
@@ -137,6 +138,17 @@ export default function CounterOrder() {
   const [deviceName, setDeviceName] = useState<string>(stored?.name ?? "");
 
   const { actor } = useCanister();
+  const { setDeviceHeader } = useDeviceHeader();
+
+  // Đẩy tên/mã thiết bị lên header dùng chung (Layout.tsx) — thay cho
+  // logo/tiêu đề/nút Menu, vì trang này chỉ dành cho nhân viên thao tác
+  // tại 1 thiết bị cố định. Dọn lại (null) khi rời trang.
+  useEffect(() => {
+    if (deviceId) {
+      setDeviceHeader({ name: deviceName, id: deviceId });
+    }
+    return () => setDeviceHeader(null);
+  }, [deviceId, deviceName, setDeviceHeader]);
   const { data: menu, isLoading: menuLoading } = useMenus();
   const { data: promotion } = useCurrentPromotion();
   const countdown = usePromotionCountdown(promotion);
@@ -305,32 +317,14 @@ export default function CounterOrder() {
       className="flex min-h-[calc(100vh-4rem)] flex-col"
       data-ocid="counter.page"
     >
-      <div
-        className="flex items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6"
-        data-ocid="counter.status_bar"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
-            <Smartphone className="h-5 w-5" aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">
-              {deviceName || "Thiết bị quầy đã kích hoạt"}
-            </p>
-            <p className="truncate font-mono text-xs text-muted-foreground">
-              {deviceId}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex-1 px-4 py-5 md:px-6 xl:px-8">
+        <header className="mb-4 flex items-center gap-2">
           <Store className="h-5 w-5 text-primary" aria-hidden="true" />
           <h1 className="font-display text-lg font-semibold tracking-tight">
             Đặt món tại quầy
           </h1>
-        </div>
-      </div>
+        </header>
 
-      <div className="flex-1 px-4 py-5 md:px-6 xl:px-8">
         <CounterGoldenHourBanner />
 
         <div className="flex items-start gap-5">
@@ -342,6 +336,7 @@ export default function CounterOrder() {
               onQuantityChange={handleQuantityChange}
               disabled={submitting}
               groupByCategory
+              gridColsClassName="grid-cols-4"
             />
           </div>
 
@@ -360,23 +355,67 @@ export default function CounterOrder() {
                   Chưa chọn món nào
                 </p>
               ) : (
-                <div className="max-h-[50vh] overflow-y-auto">
-                  {displayCartLines.map((l) => (
-                    <div
-                      key={l.item.itemId}
-                      className="flex items-center justify-between border-b border-border py-2.5 text-sm last:border-none"
-                    >
-                      <div>
-                        <p className="font-semibold">{l.item.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {l.quantity} × {formatVnd(Number(l.item.price))}
+                <div data-ocid="counter.cart_lines">
+                  {displayCartLines.map((l) => {
+                    // Món "Dụng cụ đựng đồ ăn" tự động thêm theo số lượng
+                    // món chính — không cho sửa trực tiếp bằng +/- (xem
+                    // utensilLine ở trên), chỉ hiển thị số lượng.
+                    const isAutoUtensil = l.item.itemId === utensilItem?.itemId;
+                    return (
+                      <div
+                        key={l.item.itemId}
+                        className="flex items-center justify-between gap-2 border-b border-border py-2.5 text-sm last:border-none"
+                        data-ocid={`counter.cart_line.${l.item.itemId}`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold">
+                            {l.item.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatVnd(Number(l.item.price))}
+                          </p>
+                        </div>
+                        {isAutoUtensil ? (
+                          <span className="px-1 text-sm font-semibold">
+                            × {l.quantity}
+                          </span>
+                        ) : (
+                          <div className="flex shrink-0 items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleQuantityChange(l.item.itemId, -1)
+                              }
+                              disabled={submitting}
+                              aria-label={`Giảm số lượng ${l.item.name}`}
+                              data-ocid={`counter.cart_decrement.${l.item.itemId}`}
+                              className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-sm font-bold transition-smooth hover:bg-secondary disabled:opacity-50"
+                            >
+                              −
+                            </button>
+                            <span className="w-5 text-center text-sm font-bold">
+                              {l.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleQuantityChange(l.item.itemId, 1)
+                              }
+                              disabled={submitting}
+                              aria-label={`Tăng số lượng ${l.item.name}`}
+                              data-ocid={`counter.cart_increment.${l.item.itemId}`}
+                              className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-sm font-bold transition-smooth hover:bg-secondary disabled:opacity-50"
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                        <p className="w-20 shrink-0 text-right font-bold">
+                          {formatVnd(Number(l.item.price) * l.quantity)}
                         </p>
                       </div>
-                      <p className="font-bold">
-                        {formatVnd(Number(l.item.price) * l.quantity)}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 

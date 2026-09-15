@@ -11,7 +11,9 @@
 // observable contract under test.
 
 import { Layout } from "@/components/Layout";
+import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mockClear = vi.fn();
@@ -40,8 +42,14 @@ vi.mock("@/hooks/useQueries", () => ({
 vi.mock("@tanstack/react-router", () => ({
   useRouterState: () => ({ location: { pathname: mockPathname } }),
   useNavigate: () => mockNavigate,
-  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
-    <a href={to}>{children}</a>
+  Link: ({
+    children,
+    to,
+    ...rest
+  }: { children: React.ReactNode; to: string } & Record<string, unknown>) => (
+    <a href={to} {...rest}>
+      {children}
+    </a>
   ),
 }));
 
@@ -150,5 +158,60 @@ describe("Layout logout button", () => {
 
     expect(mockClear).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith({ to: "/" });
+  });
+});
+
+// Cover tests for DeviceHeaderContext integration — /counter và /driver
+// "đẩy" tên/mã thiết bị lên header dùng chung, thay cho logo/tiêu đề/nút
+// Menu (yêu cầu: các trang thiết bị không cần điều hướng sang trang khác).
+function DeviceHeaderSetter({ name, id }: { name: string; id: string }) {
+  const { setDeviceHeader } = useDeviceHeader();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ set 1 lần khi mount (setDeviceHeader là state setter, tham chiếu ổn định)
+  useEffect(() => {
+    setDeviceHeader({ name, id });
+    return () => setDeviceHeader(null);
+  }, []);
+  return <div>device page content</div>;
+}
+
+describe("Layout device header (used by /counter, /driver)", () => {
+  afterEach(() => {
+    cleanup();
+    mockPathname = "/";
+  });
+
+  it("shows the normal brand logo/title/menu button when no device page sets a header", () => {
+    renderLayout();
+    expect(screen.getByTestId("nav.brand_link")).toBeInTheDocument();
+    expect(screen.queryByTestId("nav.device_header")).not.toBeInTheDocument();
+  });
+
+  it("hides the brand logo/title and Menu button, shows the device name/id instead", () => {
+    render(
+      <Layout>
+        <DeviceHeaderSetter name="Quầy 1" id="dev-abc-123" />
+      </Layout>,
+    );
+
+    expect(screen.queryByTestId("nav.brand_link")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("nav.mobile.toggle")).not.toBeInTheDocument();
+
+    const deviceHeader = screen.getByTestId("nav.device_header");
+    expect(deviceHeader).toHaveTextContent("Quầy 1");
+    expect(deviceHeader).toHaveTextContent("dev-abc-123");
+  });
+
+  it("restores the normal header after the device page unmounts", () => {
+    const { unmount } = render(
+      <Layout>
+        <DeviceHeaderSetter name="Quầy 1" id="dev-abc-123" />
+      </Layout>,
+    );
+    expect(screen.queryByTestId("nav.brand_link")).not.toBeInTheDocument();
+
+    unmount();
+
+    renderLayout();
+    expect(screen.getByTestId("nav.brand_link")).toBeInTheDocument();
   });
 });

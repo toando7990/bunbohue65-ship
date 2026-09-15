@@ -80,6 +80,10 @@ vi.mock("@/components/CounterQRDisplay", () => ({
   CounterQRDisplay: () => <div data-ocid="mock-qr-display" />,
 }));
 
+vi.mock("@/contexts/DeviceHeaderContext", () => ({
+  useDeviceHeader: () => ({ setDeviceHeader: vi.fn() }),
+}));
+
 describe("CounterOrder (desktop layout)", () => {
   beforeEach(() => {
     localStorage.setItem(

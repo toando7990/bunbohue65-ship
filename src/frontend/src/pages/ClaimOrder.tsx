@@ -48,6 +48,23 @@ export function ClaimOrder() {
         });
         return;
       }
+      // "Theo dõi đơn" (OrderList.tsx /track) lọc theo danh sách orderId lưu
+      // trong bbh_my_orders CỦA CHÍNH THIẾT BỊ ĐÃ ĐẶT ĐƠN — đơn quầy được
+      // tạo từ MÁY QUẦY, không phải điện thoại khách, nên trước khi sửa ở
+      // đây, "Theo dõi đơn" trên điện thoại khách KHÔNG BAO GIỜ thấy đơn
+      // này dù đã gán email thành công. Ghi thêm vào đây (cùng khoá, cùng
+      // logic CreateOrder.tsx) để khách tự thấy đơn của mình sau khi claim.
+      try {
+        const raw = localStorage.getItem("bbh_my_orders");
+        const arr = raw ? JSON.parse(raw) : [];
+        const list = Array.isArray(arr) ? arr : [];
+        if (!list.includes(orderId)) {
+          list.push(orderId);
+          localStorage.setItem("bbh_my_orders", JSON.stringify(list));
+        }
+      } catch {
+        // bỏ qua nếu localStorage không khả dụng
+      }
       setState({ kind: "success", email });
     } catch (err) {
       setState({

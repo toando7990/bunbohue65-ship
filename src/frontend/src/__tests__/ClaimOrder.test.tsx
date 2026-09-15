@@ -65,6 +65,26 @@ describe("ClaimOrder", () => {
     expect(screen.getByText("sancold@test.com")).toBeInTheDocument();
   });
 
+  it("adds the order id to bbh_my_orders on this device after a successful claim (so 'Theo dõi đơn' shows it)", async () => {
+    localStorage.clear();
+    mockGetVerifiedEmail.mockReturnValue({
+      email: "sancold@test.com",
+      verified: true,
+    });
+    mockClaimOrderEmail.mockResolvedValue({
+      ok: true,
+      email: "sancold@test.com",
+    });
+
+    render(<ClaimOrder />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Đã ghi nhận đơn cho bạn/)).toBeInTheDocument();
+    });
+    const saved = JSON.parse(localStorage.getItem("bbh_my_orders") ?? "[]");
+    expect(saved).toContain("ORD-test-123");
+  });
+
   it("shows the manual email form when the device has no verified email", async () => {
     mockGetVerifiedEmail.mockReturnValue(null);
 

@@ -11,6 +11,10 @@
 // của bạn"). Các mục còn lại (Hướng dẫn Grab, Đối tác đặt món, Giới
 // thiệu) vẫn nằm trong nút "Menu" như cũ trên mobile.
 
+import {
+  DeviceHeaderProvider,
+  useDeviceHeader,
+} from "@/contexts/DeviceHeaderContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useGetStoreHours, useIsStoreOpen } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
@@ -23,6 +27,7 @@ import {
   type LucideIcon,
   Percent,
   ShieldCheck,
+  Smartphone,
   Store,
   Truck,
   User,
@@ -259,6 +264,15 @@ function StoreHoursBar() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
+  return (
+    <DeviceHeaderProvider>
+      <LayoutInner>{children}</LayoutInner>
+    </DeviceHeaderProvider>
+  );
+}
+
+function LayoutInner({ children }: { children: ReactNode }) {
+  const { deviceHeader } = useDeviceHeader();
   const { isAuthenticated, isAdmin, clear } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const showAdmin = isAuthenticated && isAdmin;
@@ -302,23 +316,42 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-card shadow-sm">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
-          <Link
-            to="/"
-            data-ocid="nav.brand_link"
-            className="flex items-center gap-2"
-          >
-            <img
-              src="/assets/images/logo-mark.png"
-              alt="Bún Bò Huế 65"
-              className="h-9 w-9 shrink-0 rounded-full object-contain md:h-10 md:w-10"
-            />
-            <span className="font-display text-lg font-bold tracking-tight text-primary md:text-xl">
-              Bún Bò Huế 65
-            </span>
-            <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
-              Ship
-            </span>
-          </Link>
+          {deviceHeader ? (
+            <div
+              className="flex min-w-0 items-center gap-3"
+              data-ocid="nav.device_header"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
+                <Smartphone className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {deviceHeader.name || "Thiết bị đã kích hoạt"}
+                </p>
+                <p className="truncate font-mono text-xs text-muted-foreground">
+                  {deviceHeader.id}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Link
+              to="/"
+              data-ocid="nav.brand_link"
+              className="flex items-center gap-2"
+            >
+              <img
+                src="/assets/images/logo-mark.png"
+                alt="Bún Bò Huế 65"
+                className="h-9 w-9 shrink-0 rounded-full object-contain md:h-10 md:w-10"
+              />
+              <span className="font-display text-lg font-bold tracking-tight text-primary md:text-xl">
+                Bún Bò Huế 65
+              </span>
+              <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
+                Ship
+              </span>
+            </Link>
+          )}
 
           <nav
             className="hidden items-center gap-1 md:flex"
@@ -344,16 +377,18 @@ export function Layout({ children }: { children: ReactNode }) {
               </button>
             )}
           </nav>
-          <button
-            type="button"
-            onClick={() => setMobileOpen((v) => !v)}
-            data-ocid="nav.mobile.toggle"
-            aria-label="Mở menu"
-            aria-expanded={mobileOpen}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-border p-2 text-foreground md:hidden"
-          >
-            <span className="text-sm font-semibold">Menu</span>
-          </button>
+          {!deviceHeader && (
+            <button
+              type="button"
+              onClick={() => setMobileOpen((v) => !v)}
+              data-ocid="nav.mobile.toggle"
+              aria-label="Mở menu"
+              aria-expanded={mobileOpen}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-border p-2 text-foreground md:hidden"
+            >
+              <span className="text-sm font-semibold">Menu</span>
+            </button>
+          )}
         </div>
 
         {mobileOpen && (

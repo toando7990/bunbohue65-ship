@@ -8,6 +8,7 @@ import { ActivationForm } from "@/components/ActivationForm";
 import { DriverOrderHistory } from "@/components/DriverOrderHistory";
 import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
+import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
 import { usePendingOrders } from "@/hooks/usePendingOrders";
 import { useDevicesByRestaurant, useRestaurants } from "@/hooks/useQueries";
 import type { RestaurantHistoryPeriod } from "@/types";
@@ -17,7 +18,6 @@ import {
   CalendarRange,
   ListOrdered,
   MapPin,
-  Smartphone,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -66,6 +66,16 @@ export function DriverPaymentScreen() {
   const [deviceName, setDeviceName] = useState<string>(stored?.name ?? "");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState<DriverTab>("queue");
+
+  const { setDeviceHeader } = useDeviceHeader();
+  // Đẩy tên/mã thiết bị lên header dùng chung (Layout.tsx) — thay cho
+  // logo/tiêu đề/nút Menu, cùng cách đã làm ở CounterOrder.tsx.
+  useEffect(() => {
+    if (deviceId) {
+      setDeviceHeader({ name: deviceName, id: deviceId });
+    }
+    return () => setDeviceHeader(null);
+  }, [deviceId, deviceName, setDeviceHeader]);
 
   const ordersQuery = usePendingOrders(restaurantId ?? undefined);
   const { data: restaurants } = useRestaurants();
@@ -142,44 +152,27 @@ export function DriverPaymentScreen() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col" data-ocid="driver.page">
-      {/* Device status bar */}
-      <div
-        className="shrink-0 border-b border-border bg-card px-4 py-3 md:px-6"
-        data-ocid="driver.status_bar"
-      >
-        <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/15 text-success"
+      {restaurant && (
+        <div
+          className="shrink-0 border-b border-border bg-card px-4 py-2 md:px-6"
+          data-ocid="driver.restaurant_bar"
+        >
+          <div className="mx-auto flex w-full max-w-2xl items-start gap-1.5">
+            <MapPin
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
               aria-hidden="true"
-            >
-              <Smartphone className="h-5 w-5" />
-            </div>
+            />
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">
-                {deviceName || "Thiết bị đã kích hoạt"}
+              <p className="truncate text-xs font-medium text-foreground">
+                {restaurant.name}
               </p>
-              <p className="truncate font-mono text-xs text-muted-foreground">
-                {deviceId}
+              <p className="line-clamp-1 text-[11px] text-muted-foreground">
+                {restaurant.address}
               </p>
-              {restaurant && (
-                <>
-                  <p className="truncate text-xs font-medium text-foreground">
-                    {restaurant.name}
-                  </p>
-                  <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
-                    <MapPin
-                      className="mt-0.5 h-3 w-3 shrink-0"
-                      aria-hidden="true"
-                    />
-                    <span className="line-clamp-2">{restaurant.address}</span>
-                  </p>
-                </>
-              )}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Bước 2/3: nội dung theo tab đang chọn (Hàng đợi hoặc 1 trong 3
           mốc lịch sử) — cuộn RIÊNG trong khu vực này, để status bar +
