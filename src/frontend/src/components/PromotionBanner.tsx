@@ -48,7 +48,12 @@ function formatDateShort(yyyymmdd: string): string {
 
 export function PromotionBanner() {
   const { data: promotion } = useCurrentPromotion();
-  const countdown = usePromotionCountdown(promotion);
+  // Chỉ áp dụng cho kênh đặt từ xa — chương trình có thể đang active nhưng
+  // bị tắt riêng cho kênh này (enabledOnline=false, đặt tại quầy vẫn dùng
+  // được) — truyền null để usePromotionCountdown tự trả về "hidden".
+  const countdown = usePromotionCountdown(
+    promotion?.enabledOnline ? promotion : null,
+  );
   const [verifyOpen, setVerifyOpen] = useState(false);
   // Đọc mỗi lần render — đủ dùng vì component này không render lại liên
   // tục ngoài nhịp đếm ngược 1s (usePromotionCountdown), và xác thực xong

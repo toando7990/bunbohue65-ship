@@ -84,7 +84,12 @@ function formatVnd(n: number): string {
 // khác PromotionBanner.tsx dùng ở trang đặt online).
 function CounterGoldenHourBanner() {
   const { data: promotion } = useCurrentPromotion();
-  const countdown = usePromotionCountdown(promotion);
+  // Chỉ áp dụng cho kênh tại quầy — chương trình có thể đang active nhưng
+  // bị tắt riêng cho kênh này (enabledCounter=false, đặt từ xa vẫn dùng
+  // được) — truyền null để usePromotionCountdown tự trả về "hidden".
+  const countdown = usePromotionCountdown(
+    promotion?.enabledCounter ? promotion : null,
+  );
 
   if (countdown.kind === "hidden" || !promotion) {
     return null;
@@ -163,7 +168,12 @@ export default function CounterOrder() {
     restaurantId ?? undefined,
   );
   const { data: promotion } = useCurrentPromotion();
-  const countdown = usePromotionCountdown(promotion);
+  // Chỉ áp dụng cho kênh tại quầy — cùng lý do như CounterGoldenHourBanner
+  // ở trên (enabledCounter=false thì countdown luôn "hidden", nên
+  // estimatedDiscount bên dưới tự động không ước tính gì).
+  const countdown = usePromotionCountdown(
+    promotion?.enabledCounter ? promotion : null,
+  );
   const [cart, setCart] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
@@ -229,6 +239,8 @@ export default function CounterOrder() {
   // Ước tính giảm giá Giờ Vàng (client-side, chỉ để HIỂN THỊ THAM KHẢO
   // trước khi đặt đơn) — tìm mức (tier) cao nhất mà itemsTotal đạt được.
   // Số tiền THẬT do canister applyPromotionCounter quyết định lúc tạo đơn.
+  // enabledCounter=false -> không ước tính gì (tránh hiện giảm giá cho
+  // nhân viên/khách nhưng thực tế không được áp dụng khi tạo đơn thật).
   const estimatedDiscount = useMemo(() => {
     if (countdown.kind !== "active" || !promotion || itemsTotal <= 0) {
       return 0;

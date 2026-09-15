@@ -52,28 +52,21 @@ const utensilItem = {
   unitName: "bộ",
 };
 
+const mockUseCurrentPromotion = vi.fn();
 vi.mock("@/hooks/useQueries", () => ({
   useMenuForRestaurant: (...args: unknown[]) =>
     mockUseMenuForRestaurant(...args),
-  useCurrentPromotion: () => ({
-    data: {
-      code: "GV001",
-      name: "Giờ Vàng",
-      tiers: [{ minOrderValue: 80000n, discountAmount: 20000n }],
-      timeSlots: [],
-      active: true,
-      startDate: "20260101",
-      endDate: "20261231",
-    },
-  }),
+  useCurrentPromotion: () => mockUseCurrentPromotion(),
 }));
 
+// usePromotionCountdown thật NHẬN promotion đã lọc enabledCounter từ
+// component (null nếu bị tắt cho quầy) — mock phản ánh đúng hành vi này
+// (không bỏ qua tham số) để kiểm tra được đúng luồng lọc theo kênh.
 vi.mock("@/hooks/usePromotionCountdown", () => ({
-  usePromotionCountdown: () => ({
-    kind: "active",
-    remainingMs: 600000,
-    formatted: "10:00",
-  }),
+  usePromotionCountdown: (p: unknown) =>
+    p
+      ? { kind: "active", remainingMs: 600000, formatted: "10:00" }
+      : { kind: "hidden" },
 }));
 
 // MenuPicker thật khá phức tạp (ảnh, lazy load...) — stub đơn giản chỉ
@@ -101,6 +94,18 @@ vi.mock("@/contexts/DeviceHeaderContext", () => ({
   useDeviceHeader: () => ({ setDeviceHeader: mockSetDeviceHeader }),
 }));
 
+const BASE_PROMOTION = {
+  code: "GV001",
+  name: "Giờ Vàng",
+  tiers: [{ minOrderValue: 80000n, discountAmount: 20000n }],
+  timeSlots: [],
+  active: true,
+  enabledOnline: true,
+  enabledCounter: true,
+  startDate: "20260101",
+  endDate: "20261231",
+};
+
 describe("CounterOrder (desktop layout)", () => {
   beforeEach(() => {
     localStorage.setItem(
@@ -111,6 +116,7 @@ describe("CounterOrder (desktop layout)", () => {
       data: [mainDish, utensilItem],
       isLoading: false,
     });
+    mockUseCurrentPromotion.mockReturnValue({ data: BASE_PROMOTION });
   });
 
   afterEach(() => {
@@ -202,5 +208,22 @@ describe("CounterOrder (desktop layout)", () => {
       id: "dev-1",
       pageTitle: "Đặt món tại quầy",
     });
+  });
+
+  it("does NOT show the Golden Hour banner or estimate a discount when enabledCounter=false, even during an active time slot", () => {
+    mockUseCurrentPromotion.mockReturnValue({
+      data: { ...BASE_PROMOTION, enabledCounter: false },
+    });
+
+    render(<CounterOrder />);
+    fireEvent.click(screen.getByTestId("mock-add-item"));
+    fireEvent.click(screen.getByTestId("mock-add-item"));
+
+    expect(
+      screen.queryByTestId("counter.golden_hour_banner"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/đủ điều kiện Giờ Vàng — giảm/),
+    ).not.toBeInTheDocument();
   });
 });
