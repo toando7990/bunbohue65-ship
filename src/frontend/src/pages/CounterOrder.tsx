@@ -4,6 +4,12 @@
 // vai trò 'cashier'). Không xác thực email, không có bước "Mã nhận hàng"
 // (khách đứng ngay tại quầy) — đặt xong hiện QR thanh toán ngay lập tức.
 //
+// GIÁ MÓN: dùng useMenuForRestaurant(restaurantId) — áp dụng ĐÚNG giá
+// override riêng của nhà hàng gắn với thiết bị (setRestaurantPriceOverride,
+// PriceOverrideEditor.tsx), KHÁC useMenus() (giá chung, không override) mà
+// CreateOrder.tsx (đặt online) đang dùng — đúng mục đích: phân biệt được
+// giá bán online và giá bán tại quầy của cùng 1 món, theo từng nhà hàng.
+//
 // GIAO DIỆN DESKTOP (15-21 inch, theo mockup đã duyệt) — bố cục 2 cột:
 // menu bên trái (toàn bộ 4 danh mục, groupByCategory — không giới hạn chỉ
 // "Món chính" như trước), giỏ hàng bên phải LUÔN CỐ ĐỊNH (sticky, không
@@ -34,7 +40,7 @@ import { MenuPicker } from "@/components/MenuPicker";
 import { Button } from "@/components/ui/button";
 import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
 import { usePromotionCountdown } from "@/hooks/usePromotionCountdown";
-import { useCurrentPromotion, useMenus } from "@/hooks/useQueries";
+import { useCurrentPromotion, useMenuForRestaurant } from "@/hooks/useQueries";
 import { getOrder as getOrderFn, useCanister } from "@/lib/canister";
 import { create as vpsCreate } from "@/lib/vps-client";
 import type { CreateOrderPayload } from "@/types";
@@ -149,7 +155,9 @@ export default function CounterOrder() {
     }
     return () => setDeviceHeader(null);
   }, [deviceId, deviceName, setDeviceHeader]);
-  const { data: menu, isLoading: menuLoading } = useMenus();
+  const { data: menu, isLoading: menuLoading } = useMenuForRestaurant(
+    restaurantId ?? undefined,
+  );
   const { data: promotion } = useCurrentPromotion();
   const countdown = usePromotionCountdown(promotion);
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -171,20 +179,11 @@ export default function CounterOrder() {
     toast.success("Thiết bị quầy đã sẵn sàng nhận đơn");
   }
 
-  const cartLines = useMemo(() => {
-    if (!menu) return [];
-    return menu
-      .filter((m) => (cart[m.itemId] ?? 0) > 0)
-      .map((m) => ({ item: m, quantity: cart[m.itemId] }));
-  }, [menu, cart]);
-
-  const mainDishLines = useMemo(
-    () => cartLines.filter((l) => l.item.category === "Món chính"),
-    [cartLines],
-  );
-
-  // Món dụng cụ tự động thêm theo số lượng món chính — cùng logic nghiệp vụ
-  // với CreateOrder.tsx (xem giải thích chi tiết ở đó).
+  // Món "Dụng cụ đựng đồ ăn" — KHÁC CreateOrder.tsx (đặt online, vẫn tự
+  // động tính theo số lượng món chính): tại quầy, món này LUÔN hiện sẵn
+  // trong giỏ hàng (kể cả số lượng = 0, khác mọi món khác chỉ hiện khi
+  // > 0), có nút +/- bình thường, và số lượng KHÔNG còn phụ thuộc vào
+  // món chính — nhân viên tự quyết định (theo yêu cầu đã xác nhận).
   const utensilItem = useMemo(
     () =>
       menu?.find(
@@ -192,19 +191,22 @@ export default function CounterOrder() {
       ),
     [menu],
   );
-  const utensilQty = useMemo(
-    () => mainDishLines.reduce((sum, l) => sum + l.quantity, 0),
-    [mainDishLines],
-  );
-  const utensilLine = useMemo(() => {
-    if (!utensilItem || utensilQty <= 0) return null;
-    return { item: utensilItem, quantity: utensilQty };
-  }, [utensilItem, utensilQty]);
 
-  const displayCartLines = useMemo(() => {
-    if (!utensilLine) return cartLines;
-    return [...cartLines, utensilLine];
-  }, [cartLines, utensilLine]);
+  const cartLines = useMemo(() => {
+    if (!menu) return [];
+    return menu
+      .filter(
+        (m) => (cart[m.itemId] ?? 0) > 0 || m.itemId === utensilItem?.itemId,
+      )
+      .map((m) => ({ item: m, quantity: cart[m.itemId] ?? 0 }));
+  }, [menu, cart, utensilItem]);
+
+  const mainDishLines = useMemo(
+    () => cartLines.filter((l) => l.item.category === "Món chính"),
+    [cartLines],
+  );
+
+  const displayCartLines = cartLines;
 
   const itemsTotal = useMemo(
     () =>
@@ -350,74 +352,58 @@ export default function CounterOrder() {
                 Giỏ hàng — {itemCount} món
               </p>
 
-              {displayCartLines.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  Chưa chọn món nào
-                </p>
-              ) : (
-                <div data-ocid="counter.cart_lines">
-                  {displayCartLines.map((l) => {
-                    // Món "Dụng cụ đựng đồ ăn" tự động thêm theo số lượng
-                    // món chính — không cho sửa trực tiếp bằng +/- (xem
-                    // utensilLine ở trên), chỉ hiển thị số lượng.
-                    const isAutoUtensil = l.item.itemId === utensilItem?.itemId;
-                    return (
-                      <div
-                        key={l.item.itemId}
-                        className="flex items-center justify-between gap-2 border-b border-border py-2.5 text-sm last:border-none"
-                        data-ocid={`counter.cart_line.${l.item.itemId}`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold">
-                            {l.item.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatVnd(Number(l.item.price))}
-                          </p>
-                        </div>
-                        {isAutoUtensil ? (
-                          <span className="px-1 text-sm font-semibold">
-                            × {l.quantity}
-                          </span>
-                        ) : (
-                          <div className="flex shrink-0 items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleQuantityChange(l.item.itemId, -1)
-                              }
-                              disabled={submitting}
-                              aria-label={`Giảm số lượng ${l.item.name}`}
-                              data-ocid={`counter.cart_decrement.${l.item.itemId}`}
-                              className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-sm font-bold transition-smooth hover:bg-secondary disabled:opacity-50"
-                            >
-                              −
-                            </button>
-                            <span className="w-5 text-center text-sm font-bold">
-                              {l.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleQuantityChange(l.item.itemId, 1)
-                              }
-                              disabled={submitting}
-                              aria-label={`Tăng số lượng ${l.item.name}`}
-                              data-ocid={`counter.cart_increment.${l.item.itemId}`}
-                              className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-sm font-bold transition-smooth hover:bg-secondary disabled:opacity-50"
-                            >
-                              +
-                            </button>
-                          </div>
-                        )}
-                        <p className="w-20 shrink-0 text-right font-bold">
-                          {formatVnd(Number(l.item.price) * l.quantity)}
+              {/* Không còn trạng thái "Chưa chọn món nào" ẩn hẳn danh sách
+                  — "Dụng cụ đựng đồ ăn" LUÔN hiện sẵn (kể cả số lượng 0)
+                  để nhân viên có thể +/- ngay từ đầu, không phụ thuộc món
+                  chính đã chọn hay chưa (theo yêu cầu đã xác nhận). */}
+              <div data-ocid="counter.cart_lines">
+                {displayCartLines.map((l) => {
+                  return (
+                    <div
+                      key={l.item.itemId}
+                      className="flex items-center justify-between gap-2 border-b border-border py-2.5 text-sm last:border-none"
+                      data-ocid={`counter.cart_line.${l.item.itemId}`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold">{l.item.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatVnd(Number(l.item.price))}
                         </p>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleQuantityChange(l.item.itemId, -1)
+                          }
+                          disabled={submitting}
+                          aria-label={`Giảm số lượng ${l.item.name}`}
+                          data-ocid={`counter.cart_decrement.${l.item.itemId}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-sm font-bold transition-smooth hover:bg-secondary disabled:opacity-50"
+                        >
+                          −
+                        </button>
+                        <span className="w-5 text-center text-sm font-bold">
+                          {l.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(l.item.itemId, 1)}
+                          disabled={submitting}
+                          aria-label={`Tăng số lượng ${l.item.name}`}
+                          data-ocid={`counter.cart_increment.${l.item.itemId}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-sm font-bold transition-smooth hover:bg-secondary disabled:opacity-50"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <p className="w-20 shrink-0 text-right font-bold">
+                        {formatVnd(Number(l.item.price) * l.quantity)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
 
               {estimatedDiscount > 0 && (
                 <div className="my-2.5 flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-2 text-xs font-semibold text-primary">

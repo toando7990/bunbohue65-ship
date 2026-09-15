@@ -2,7 +2,10 @@
 // hoạt thiết bị thì bỏ qua ActivationForm; banner Giờ Vàng hiện đúng khi
 // có chương trình active và ước tính giảm giá đúng; đặt đơn gửi đúng
 // payload isCounterOrder=true, KHÔNG có receiverEmail/cusName rỗng (dùng
-// giá trị cố định).
+// giá trị cố định); giá món lấy ĐÚNG theo nhà hàng gắn với thiết bị
+// (useMenuForRestaurant, không phải useMenus dùng chung); món "Dụng cụ
+// đựng đồ ăn" LUÔN hiện sẵn trong giỏ (số lượng mặc định 0) với nút +/-
+// riêng, KHÔNG phụ thuộc số lượng món chính.
 
 import CounterOrder from "@/pages/CounterOrder";
 import {
@@ -16,6 +19,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockCreate = vi.fn();
 const mockGetOrder = vi.fn();
+const mockUseMenuForRestaurant = vi.fn();
 
 vi.mock("@/lib/vps-client", () => ({
   create: (...args: unknown[]) => mockCreate(...args),
@@ -37,8 +41,20 @@ const mainDish = {
   unitName: "tô",
 };
 
+const utensilItem = {
+  itemId: "UTENSIL1",
+  name: "Dụng cụ đựng đồ ăn",
+  visible: true,
+  category: "Khác",
+  image: new Uint8Array(),
+  price: 2000n,
+  vatRate: 0n,
+  unitName: "bộ",
+};
+
 vi.mock("@/hooks/useQueries", () => ({
-  useMenus: () => ({ data: [mainDish], isLoading: false }),
+  useMenuForRestaurant: (...args: unknown[]) =>
+    mockUseMenuForRestaurant(...args),
   useCurrentPromotion: () => ({
     data: {
       code: "GV001",
@@ -90,12 +106,21 @@ describe("CounterOrder (desktop layout)", () => {
       "bbh_counter_activation",
       JSON.stringify({ restaurantId: "R1", deviceId: "dev-1", name: "Quầy 1" }),
     );
+    mockUseMenuForRestaurant.mockReturnValue({
+      data: [mainDish, utensilItem],
+      isLoading: false,
+    });
   });
 
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
     localStorage.clear();
+  });
+
+  it("fetches the menu for the restaurant tied to this device (price override applies), not the shared menu", () => {
+    render(<CounterOrder />);
+    expect(mockUseMenuForRestaurant).toHaveBeenCalledWith("R1");
   });
 
   it("skips ActivationForm when already activated, shows the Golden Hour banner", () => {
@@ -114,6 +139,38 @@ describe("CounterOrder (desktop layout)", () => {
     expect(
       screen.getByText(/đủ điều kiện Giờ Vàng — giảm/),
     ).toBeInTheDocument();
+  });
+
+  it("shows 'Dụng cụ đựng đồ ăn' in the cart from the start, at quantity 0, even with no main dish selected", () => {
+    render(<CounterOrder />);
+    const utensilLine = screen.getByTestId(
+      `counter.cart_line.${utensilItem.itemId}`,
+    );
+    expect(utensilLine).toBeInTheDocument();
+    expect(utensilLine).toHaveTextContent("0");
+    // Có nút +/- riêng (không bị khoá/tự tính như hành vi cũ).
+    expect(
+      screen.getByTestId(`counter.cart_increment.${utensilItem.itemId}`),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId(`counter.cart_decrement.${utensilItem.itemId}`),
+    ).toBeInTheDocument();
+  });
+
+  it("lets staff increment the utensil quantity independently, unaffected by main dish quantity", () => {
+    render(<CounterOrder />);
+    // Không chọn món chính nào — chỉ bấm + cho món dụng cụ 3 lần.
+    const incBtn = screen.getByTestId(
+      `counter.cart_increment.${utensilItem.itemId}`,
+    );
+    fireEvent.click(incBtn);
+    fireEvent.click(incBtn);
+    fireEvent.click(incBtn);
+
+    const utensilLine = screen.getByTestId(
+      `counter.cart_line.${utensilItem.itemId}`,
+    );
+    expect(utensilLine).toHaveTextContent("3");
   });
 
   it("submits with isCounterOrder=true and fixed cusName/cusPhone (no email)", async () => {
