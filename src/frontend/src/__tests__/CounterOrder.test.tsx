@@ -70,18 +70,26 @@ vi.mock("@/hooks/usePromotionCountdown", () => ({
 }));
 
 // MenuPicker thật khá phức tạp (ảnh, lazy load...) — stub đơn giản chỉ
-// cần đủ để tăng số lượng món chính lên 2 (đủ điều kiện tier 80.000đ).
+// cần đủ để tăng số lượng món chính lên 2 (đủ điều kiện tier 80.000đ),
+// và hiện externalQuery để xác nhận thanh công cụ mới truyền đúng giá trị.
 vi.mock("@/components/MenuPicker", () => ({
   MenuPicker: ({
     onQuantityChange,
-  }: { onQuantityChange: (id: string, d: number) => void }) => (
-    <button
-      type="button"
-      data-ocid="mock-add-item"
-      onClick={() => onQuantityChange("I1", 1)}
-    >
-      + Bun bo Hue
-    </button>
+    externalQuery,
+  }: {
+    onQuantityChange: (id: string, d: number) => void;
+    externalQuery?: string;
+  }) => (
+    <div>
+      <button
+        type="button"
+        data-ocid="mock-add-item"
+        onClick={() => onQuantityChange("I1", 1)}
+      >
+        + Bun bo Hue
+      </button>
+      <span data-ocid="mock-menu-picker-external-query">{externalQuery}</span>
+    </div>
   ),
 }));
 
@@ -254,5 +262,25 @@ describe("CounterOrder (desktop layout)", () => {
     expect(
       screen.getByTestId("mock-printer-settings-dialog"),
     ).toBeInTheDocument();
+  });
+
+  it("shares 1 unified toolbar: typing in the search box passes the value down to MenuPicker as externalQuery", () => {
+    render(<CounterOrder />);
+    fireEvent.change(screen.getByTestId("counter.search_input"), {
+      target: { value: "Bún bò" },
+    });
+
+    expect(
+      screen.getByTestId("mock-menu-picker-external-query"),
+    ).toHaveTextContent("Bún bò");
+  });
+
+  it("shows the Golden Hour banner in its compact 1-line form while active", () => {
+    render(<CounterOrder />);
+    const banner = screen.getByTestId("counter.golden_hour_banner");
+    expect(banner).toHaveTextContent("Đang trong Giờ Vàng!");
+    expect(banner).toHaveTextContent("10:00");
+    // Dạng thu gọn KHÔNG có nhãn "Còn lại" (đã bỏ khi gộp thành 1 dòng).
+    expect(banner).not.toHaveTextContent("Còn lại");
   });
 });

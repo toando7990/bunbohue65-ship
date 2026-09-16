@@ -12,9 +12,16 @@
 //
 // GIAO DIỆN DESKTOP (15-21 inch, theo mockup đã duyệt) — bố cục 2 cột:
 // menu bên trái (toàn bộ 4 danh mục, groupByCategory — không giới hạn chỉ
-// "Món chính" như trước), giỏ hàng bên phải LUÔN CỐ ĐỊNH (sticky, không
-// cuộn theo trang) — nhân viên thấy tổng tiền + nút "Đặt đơn" mọi lúc mà
-// không cần cuộn xuống cuối trang.
+// "Món chính" như trước, lưới 5 cột), giỏ hàng bên phải LUÔN CỐ ĐỊNH
+// (sticky, không cuộn theo trang) — nhân viên thấy tổng tiền + nút
+// "Đặt đơn" mọi lúc mà không cần cuộn xuống cuối trang.
+//
+// Tối ưu giao diện (mockup đã duyệt riêng): ô tìm kiếm + nút "Máy in"
+// gộp chung 1 thanh công cụ (thay vì tách rời — search bên trong
+// MenuPicker, nút Máy in đứng riêng 1 hàng) — dùng externalQuery/
+// onExternalQueryChange để MenuPicker uỷ quyền search state ra ngoài,
+// tự ẩn ô tìm kiếm nội bộ của nó. Banner Giờ Vàng thu gọn còn 1 dòng
+// khi đang active — nhường không gian dọc cho lưới món.
 //
 // Banner Giờ Vàng ở đầu trang (dùng usePromotionCountdown/useCurrentPromotion
 // đã có sẵn) — ĐƠN GIẢN HƠN PromotionBanner.tsx: KHÔNG có phần nhắc xác
@@ -39,6 +46,7 @@ import { CounterQRDisplay } from "@/components/CounterQRDisplay";
 import { MenuPicker } from "@/components/MenuPicker";
 import { PrinterSettingsDialog } from "@/components/PrinterSettingsDialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
 import { usePromotionCountdown } from "@/hooks/usePromotionCountdown";
 import { useCurrentPromotion, useMenuForRestaurant } from "@/hooks/useQueries";
@@ -46,7 +54,7 @@ import { getOrder as getOrderFn, useCanister } from "@/lib/canister";
 import { reconnectPrinter } from "@/lib/printer";
 import { create as vpsCreate } from "@/lib/vps-client";
 import type { CreateOrderPayload } from "@/types";
-import { Flame, Loader2, Printer, ShoppingCart } from "lucide-react";
+import { Flame, Loader2, Printer, Search, ShoppingCart } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -83,7 +91,11 @@ function formatVnd(n: number): string {
 }
 
 // Banner Giờ Vàng — bản rút gọn cho quầy (không có phần xác thực email,
-// khác PromotionBanner.tsx dùng ở trang đặt online).
+// khác PromotionBanner.tsx dùng ở trang đặt online). Thu gọn còn 1 DÒNG
+// khi đang active (tên chương trình + các mức giảm + đếm ngược trên
+// cùng 1 hàng) — nhường thêm không gian dọc cho lưới món, giảm cuộn.
+// Giữ dạng đầy đủ (2 dòng) khi "sắp tới" (chưa active) — ít xảy ra hơn,
+// không cần thu gọn.
 function CounterGoldenHourBanner() {
   const { data: promotion } = useCurrentPromotion();
   // Chỉ áp dụng cho kênh tại quầy — chương trình có thể đang active nhưng
@@ -102,6 +114,31 @@ function CounterGoldenHourBanner() {
   );
   const isActive = countdown.kind === "active";
 
+  if (isActive) {
+    return (
+      <div
+        className="mb-3 flex items-center gap-3 overflow-x-auto rounded-xl border border-primary/25 bg-gradient-to-r from-primary/10 to-warning/10 px-4 py-2.5"
+        data-ocid="counter.golden_hour_banner"
+      >
+        <Flame className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+        <span className="shrink-0 whitespace-nowrap font-display text-sm font-bold text-primary">
+          Đang trong Giờ Vàng!
+        </span>
+        <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+          {sortedTiers
+            .map(
+              (t) =>
+                `Từ ${formatVnd(Number(t.minOrderValue))} giảm ${formatVnd(Number(t.discountAmount))}`,
+            )
+            .join(" · ")}
+        </span>
+        <span className="ml-auto shrink-0 whitespace-nowrap rounded-lg bg-primary px-3 py-1 font-display text-sm font-bold text-white">
+          {countdown.formatted}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div
       className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/10 to-warning/10 px-5 py-3.5"
@@ -111,7 +148,7 @@ function CounterGoldenHourBanner() {
         <Flame className="h-7 w-7 text-primary" aria-hidden="true" />
         <div>
           <p className="font-display text-base font-bold text-primary">
-            {isActive ? "Đang trong Giờ Vàng!" : "Sắp tới Giờ Vàng"}
+            Sắp tới Giờ Vàng
           </p>
           <div className="mt-1 flex flex-wrap gap-2">
             {sortedTiers.map((t) => (
@@ -126,11 +163,9 @@ function CounterGoldenHourBanner() {
           </div>
         </div>
       </div>
-      <div
-        className={`flex flex-col items-center rounded-xl px-4 py-2 text-white ${isActive ? "bg-primary" : "bg-warning"}`}
-      >
+      <div className="flex flex-col items-center rounded-xl bg-warning px-4 py-2 text-white">
         <span className="text-[10px] uppercase tracking-wide opacity-85">
-          {isActive ? "Còn lại" : "Bắt đầu sau"}
+          Bắt đầu sau
         </span>
         <span className="font-display text-lg font-bold">
           {countdown.formatted}
@@ -178,6 +213,7 @@ export default function CounterOrder() {
   );
   const [cart, setCart] = useState<Record<string, number>>({});
   const [printerDialogOpen, setPrinterDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Tự động kết nối lại máy in đã ghép nối từ trước (không hiện hộp
   // thoại chọn thiết bị) — nhân viên chỉ cần bấm "Kết nối máy in" 1 lần
@@ -346,12 +382,28 @@ export default function CounterOrder() {
       data-ocid="counter.page"
     >
       <div className="flex-1 px-4 py-5 md:px-6 xl:px-8">
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="relative max-w-[340px] flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm món ăn…"
+              aria-label="Tìm món ăn"
+              data-ocid="counter.search_input"
+              className="h-10 rounded-full pl-9"
+            />
+          </div>
+          <div className="flex-1" />
           <button
             type="button"
             onClick={() => setPrinterDialogOpen(true)}
             data-ocid="counter.open_printer_settings_button"
-            className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-smooth hover:bg-secondary"
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-smooth hover:bg-secondary"
           >
             <Printer className="h-3.5 w-3.5" aria-hidden="true" />
             Máy in
@@ -369,7 +421,9 @@ export default function CounterOrder() {
               onQuantityChange={handleQuantityChange}
               disabled={submitting}
               groupByCategory
-              gridColsClassName="grid-cols-4"
+              gridColsClassName="grid-cols-5"
+              externalQuery={searchQuery}
+              onExternalQueryChange={setSearchQuery}
             />
           </div>
 

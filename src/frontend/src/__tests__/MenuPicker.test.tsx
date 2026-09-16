@@ -119,4 +119,44 @@ describe("MenuPicker (groupByCategory) — continuous list", () => {
       "Trà đá",
     ]);
   });
+
+  it("hides its own search box and filters via externalQuery when controlled from outside", () => {
+    const onExternalQueryChange = vi.fn();
+    render(
+      <MenuPicker
+        menu={MENU}
+        isLoading={false}
+        cart={{}}
+        onQuantityChange={vi.fn()}
+        groupByCategory
+        externalQuery="Trà"
+        onExternalQueryChange={onExternalQueryChange}
+      />,
+    );
+
+    // Ô tìm kiếm nội bộ KHÔNG hiện khi controlled từ bên ngoài.
+    expect(
+      screen.queryByTestId("menu_picker.search_input"),
+    ).not.toBeInTheDocument();
+
+    // Chỉ hiện món khớp externalQuery ("Trà").
+    expect(screen.getByText("Trà đá")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Bún bò Huế truyền thống"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows its own search box when NOT controlled (uncontrolled/internal state, e.g. CreateOrder.tsx)", () => {
+    render(
+      <MenuPicker
+        menu={MENU}
+        isLoading={false}
+        cart={{}}
+        onQuantityChange={vi.fn()}
+        groupByCategory
+      />,
+    );
+
+    expect(screen.getByTestId("menu_picker.search_input")).toBeInTheDocument();
+  });
 });

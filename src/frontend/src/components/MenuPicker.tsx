@@ -34,9 +34,19 @@ interface MenuPickerProps {
   /**
    * Class Tailwind cho số cột lưới món — mặc định "grid-cols-2" (mobile-
    * first, dùng ở CreateOrder.tsx). CounterOrder.tsx (desktop 15-21 inch)
-   * truyền "grid-cols-4" để tận dụng chiều ngang màn hình lớn.
+   * truyền "grid-cols-5" để tận dụng chiều ngang màn hình lớn.
    */
   gridColsClassName?: string;
+  /**
+   * Điều khiển ô tìm kiếm TỪ BÊN NGOÀI — khi truyền CẢ 2 prop này, ô tìm
+   * kiếm nội bộ của MenuPicker bị ẩn đi (tránh trùng 2 ô tìm kiếm), dùng
+   * externalQuery làm nguồn lọc duy nhất. CounterOrder.tsx dùng để gộp ô
+   * tìm kiếm vào 1 thanh công cụ chung với nút "Máy in", thay vì để rời
+   * rạc bên trong MenuPicker. Không truyền thì giữ hành vi cũ (ô tìm
+   * kiếm tự quản lý state, hiện ngay trong MenuPicker — CreateOrder.tsx).
+   */
+  externalQuery?: string;
+  onExternalQueryChange?: (query: string) => void;
 }
 
 const ALL_CATEGORY = "Tất cả";
@@ -181,8 +191,18 @@ export function MenuPicker({
   fixedCategory,
   groupByCategory,
   gridColsClassName = "grid-cols-2",
+  externalQuery,
+  onExternalQueryChange,
 }: MenuPickerProps) {
-  const [query, setQuery] = useState("");
+  const [internalQuery, setInternalQuery] = useState("");
+  // Controlled (externalQuery+onExternalQueryChange truyền vào) hay tự
+  // quản lý state nội bộ — xem giải thích ở MenuPickerProps.
+  const isControlledSearch =
+    externalQuery !== undefined && onExternalQueryChange !== undefined;
+  const query = isControlledSearch ? externalQuery : internalQuery;
+  const setQuery = isControlledSearch
+    ? onExternalQueryChange
+    : setInternalQuery;
   const [category, setCategory] = useState<string>(ALL_CATEGORY);
   // Khi có fixedCategory (ví dụ app quầy chỉ muốn hiện "Món chính"), dùng thẳng
   // giá trị này để lọc, bỏ qua state tab (tab cũng bị ẩn ở JSX bên dưới).
@@ -275,23 +295,25 @@ export function MenuPicker({
 
   return (
     <div className="flex flex-col gap-3" data-ocid="menu_picker.panel">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm món ăn…"
-            aria-label="Tìm món ăn"
-            data-ocid="menu_picker.search_input"
-            className="h-11 rounded-full pl-9"
-          />
+      {!isControlledSearch && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Tìm món ăn…"
+              aria-label="Tìm món ăn"
+              data-ocid="menu_picker.search_input"
+              className="h-11 rounded-full pl-9"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {!fixedCategory && !groupByCategory && (
         <div
