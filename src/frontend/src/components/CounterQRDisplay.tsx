@@ -36,15 +36,27 @@
 // bắt buộc phải xác nhận thanh toán thành công (onPaid tự đóng sau 1.5s)
 // mới được quay lại đặt đơn tiếp theo. Vẫn cho đóng khi QR lỗi/chưa tạo
 // được (tránh nhân viên bị kẹt hẳn nếu có sự cố kỹ thuật).
+//
+// IN PHIẾU TẠI QUẦY (tuỳ chọn, nhân viên chủ động bấm): ngay sau khi
+// thanh toán thành công, thay vì tự đóng ngay sau 1.5s, nhân viên có
+// thể bấm "Chờ in hoá đơn" — huỷ tự động đóng, tiếp tục poll thêm
+// invoiceStatus (hoá đơn Bkav phát hành qua cron, có thể mất tới ~1
+// phút, KHÔNG có ngay lúc vừa thanh toán) cho tới khi invoiced, rồi
+// mới cho bấm "In phiếu" thật (gọi getInvoice() lấy đủ dữ liệu + mã tra
+// cứu/mã CQT, dựng bytes ESC/POS qua lib/printer.ts, gửi tới máy in đã
+// kết nối qua WebUSB). Nếu không bấm "Chờ in hoá đơn", hành vi giữ
+// nguyên như cũ (tự đóng sau 1.5s, không chờ gì cả).
 
-import { type Order, PaymentStatus } from "@/backend";
+import { InvoiceStatus, type Order, PaymentStatus } from "@/backend";
 import { useCurrentSalesPromo } from "@/hooks/useQueries";
 import { getOrder, useCanister } from "@/lib/canister";
-import { requestQr } from "@/lib/vps-client";
+import { isPrinterConnected, printReceipt } from "@/lib/printer";
+import { getInvoice, requestQr } from "@/lib/vps-client";
 import type { RequestQrResponse } from "@/types";
-import { CheckCircle2, Loader2, RefreshCw, X } from "lucide-react";
+import { CheckCircle2, Loader2, Printer, RefreshCw, X } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface CounterQRDisplayProps {
   order: Order;
@@ -69,12 +81,21 @@ export function CounterQRDisplay({
   const { actor } = useCanister();
   const { data: salesPromo } = useCurrentSalesPromo();
   const [status, setStatus] = useState<PaymentStatus>(order.paymentStatus);
+  const [invoiceStatus, setInvoiceStatus] = useState<InvoiceStatus>(
+    order.invoiceStatus,
+  );
   const [receiverEmail, setReceiverEmail] = useState<string>(
     order.receiverEmail,
   );
   const [polling, setPolling] = useState(true);
   const [retryTick, setRetryTick] = useState(0);
   const [qrState, setQrState] = useState<QrState>({ kind: "loading" });
+  // waitingToPrint — nhân viên bấm "Chờ in hoá đơn" trong 1.5s sau khi
+  // thanh toán thành công: huỷ tự động đóng, tiếp tục poll thêm
+  // invoiceStatus (cron phát hành hoá đơn có thể mất tới ~1 phút) cho
+  // tới khi invoiced, rồi mới cho bấm in thật.
+  const [waitingToPrint, setWaitingToPrint] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   // Tạo QR ngay khi mở — không có bước nhập mã (khác QRDisplay.tsx).
   // biome-ignore lint/correctness/useExhaustiveDependencies: retryTick là intentional re-trigger cho nút Thử lại
@@ -123,7 +144,21 @@ export function CounterQRDisplay({
         if (cancelled) return;
         setStatus(o.paymentStatus);
         setReceiverEmail(o.receiverEmail);
-        if (o.paymentStatus === PaymentStatus.paid) {
+        setInvoiceStatus(o.invoiceStatus);
+        // Dừng poll khi đã thanh toán XONG hoá đơn (invoiced/failed) hoặc
+        // khi chưa thanh toán xong không cần chờ in — còn lại (đã paid,
+        // đang chờ in, invoice chưa xong) vẫn tiếp tục poll để cập nhật
+        // invoiceStatus mới nhất.
+        const invoiceDone =
+          o.invoiceStatus === InvoiceStatus.invoiced ||
+          o.invoiceStatus === InvoiceStatus.failed;
+        if (o.paymentStatus === PaymentStatus.paid && !waitingToPrint) {
+          setPolling(false);
+        } else if (
+          o.paymentStatus === PaymentStatus.paid &&
+          waitingToPrint &&
+          invoiceDone
+        ) {
           setPolling(false);
         }
       } catch {
@@ -137,13 +172,13 @@ export function CounterQRDisplay({
       cancelled = true;
       clearInterval(id);
     };
-  }, [actor, order, polling]);
+  }, [actor, order, polling, waitingToPrint]);
 
   useEffect(() => {
-    if (status !== PaymentStatus.paid) return;
+    if (status !== PaymentStatus.paid || waitingToPrint) return;
     const id = setTimeout(() => onPaid(order), 1500);
     return () => clearTimeout(id);
-  }, [status, order, onPaid]);
+  }, [status, order, onPaid, waitingToPrint]);
 
   const isPaid = status === PaymentStatus.paid;
   const qrReady = qrState.kind === "ready";
@@ -260,13 +295,99 @@ export function CounterQRDisplay({
               </p>
             )}
             {isPaid ? (
-              <span
-                className="inline-flex items-center gap-2 rounded-full border border-success/40 bg-success/15 px-4 py-1.5 text-sm font-semibold text-success"
-                data-ocid="counter_qr.success_state"
-              >
-                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                Đã thanh toán
-              </span>
+              <>
+                <span
+                  className="inline-flex items-center gap-2 rounded-full border border-success/40 bg-success/15 px-4 py-1.5 text-sm font-semibold text-success"
+                  data-ocid="counter_qr.success_state"
+                >
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                  Đã thanh toán
+                </span>
+
+                {!waitingToPrint ? (
+                  <button
+                    type="button"
+                    onClick={() => setWaitingToPrint(true)}
+                    data-ocid="counter_qr.wait_to_print_button"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-2 hover:underline"
+                  >
+                    <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+                    Chờ in hoá đơn (tuỳ chọn)
+                  </button>
+                ) : invoiceStatus === InvoiceStatus.invoiced ? (
+                  <button
+                    type="button"
+                    disabled={printing || !isPrinterConnected()}
+                    onClick={async () => {
+                      setPrinting(true);
+                      try {
+                        const invoice = await getInvoice(order.orderId);
+                        if (!invoice.ok) {
+                          throw new Error(
+                            invoice.error || "Không lấy được dữ liệu hoá đơn.",
+                          );
+                        }
+                        await printReceipt({
+                          orderId: order.orderId,
+                          invoice,
+                        });
+                        toast.success("Đã gửi lệnh in phiếu.");
+                      } catch (err) {
+                        toast.error("In phiếu thất bại", {
+                          description:
+                            err instanceof Error
+                              ? err.message
+                              : "Lỗi không xác định.",
+                        });
+                      } finally {
+                        setPrinting(false);
+                      }
+                    }}
+                    data-ocid="counter_qr.print_button"
+                    className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90 disabled:opacity-50"
+                  >
+                    {printing ? (
+                      <Loader2
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Printer className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    In phiếu
+                  </button>
+                ) : invoiceStatus === InvoiceStatus.failed ? (
+                  <p className="text-xs font-medium text-destructive">
+                    Phát hành hoá đơn thất bại — không thể in.
+                  </p>
+                ) : (
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Loader2
+                      className="h-3.5 w-3.5 animate-spin"
+                      aria-hidden="true"
+                    />
+                    Đang chờ phát hành hoá đơn…
+                  </p>
+                )}
+
+                {waitingToPrint && !isPrinterConnected() && (
+                  <p className="max-w-[240px] text-center text-[10.5px] text-muted-foreground">
+                    Chưa kết nối máy in — vào "Cài đặt máy in" trên trang chính
+                    để kết nối trước.
+                  </p>
+                )}
+
+                {waitingToPrint && (
+                  <button
+                    type="button"
+                    onClick={() => onPaid(order)}
+                    data-ocid="counter_qr.done_button"
+                    className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
+                  >
+                    Xong, đặt đơn tiếp theo
+                  </button>
+                )}
+              </>
             ) : (
               <span
                 className="inline-flex items-center gap-2 rounded-full border border-warning/40 bg-warning/20 px-4 py-1.5 text-sm font-semibold text-warning-foreground"
