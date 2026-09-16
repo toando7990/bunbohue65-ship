@@ -246,6 +246,18 @@ function initSchema(db) {
     db.exec('ALTER TABLE orders ADD COLUMN voucher_discount_amount INTEGER NOT NULL DEFAULT 0');
   }
 
+  // bkav_ma_cqt/bkav_ma_tra_cuu — Bkav trả về 2 giá trị này ngay lúc phát
+  // hành hoá đơn (createInvoice) nhưng trước đây KHÔNG được lưu lại (chỉ
+  // nằm thoáng qua trong bkav_logs dạng JSON thô, không truy vấn được) —
+  // cần cho tính năng in phiếu tại quầy (mẫu phiếu yêu cầu hiện đủ "Mã
+  // CQT" + "Mã tra cứu").
+  if (!colNames.has('bkav_ma_cqt')) {
+    db.exec("ALTER TABLE orders ADD COLUMN bkav_ma_cqt TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has('bkav_ma_tra_cuu')) {
+    db.exec("ALTER TABLE orders ADD COLUMN bkav_ma_tra_cuu TEXT NOT NULL DEFAULT ''");
+  }
+
   // customers: thêm km_notify_opt_in (Giai đoạn 4b) nếu DB cũ chưa có.
   const customerCols = db.prepare('PRAGMA table_info(customers)').all();
   const customerColNames = new Set(customerCols.map((c) => c.name));

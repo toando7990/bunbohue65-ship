@@ -157,8 +157,8 @@ function startInvoiceCron(db) {
 
             // Push canister với 5 tham số: orderId, invoiceStatus, invoiceId, pdfUrl, hmac.
             await canister.updateInvoiceStatus(row.order_id, 'invoiced', invoiceNo, pdfUrl);
-            db.prepare(`UPDATE orders SET invoice_status = 'invoiced', invoice_id = ?, updated_at = ? WHERE order_id = ?`)
-              .run(invoiceNo, Date.now(), row.order_id);
+            db.prepare(`UPDATE orders SET invoice_status = 'invoiced', invoice_id = ?, bkav_ma_cqt = ?, bkav_ma_tra_cuu = ?, updated_at = ? WHERE order_id = ?`)
+              .run(invoiceNo, inv.maCQT || '', inv.maTraCuu || '', Date.now(), row.order_id);
             if (pdf816Ok) {
               db.prepare(`INSERT INTO bkav_logs (order_id, invoice_id, command, response_xml, created_at) VALUES (?, ?, 'GetInvoicePDF816', ?, ?)`)
                 .run(row.order_id, invoiceNo, JSON.stringify({ pdf_url: pdfUrl }), Date.now());
@@ -200,12 +200,28 @@ async function buildInvoiceResponse(db, orderId) {
   }
   try {
     const pdf = await bkav.getInvoicePdf816(orderId);
+    const items = db.prepare('SELECT name, price, quantity, unit_name FROM order_items WHERE order_id = ?').all(orderId);
     return {
       status: 200,
       body: {
         invoiceId: row.invoice_id,
         invoiceUrl: pdf?.pdf_url || '',
         sharedLink: row.shared_link || '',
+        maCQT: row.bkav_ma_cqt || '',
+        maTraCuu: row.bkav_ma_tra_cuu || '',
+        // Dữ liệu bổ sung cho việc in phiếu tại quầy (PrintReceipt) — gộp
+        // đủ trong 1 lần gọi API, tránh phải ghép từ nhiều nguồn.
+        cusName: row.cus_name,
+        amount: row.amount,
+        goodsAmount: row.goods_amount,
+        taxTotal: row.tax_total,
+        createdAt: row.created_at,
+        items: items.map((it) => ({
+          name: it.name,
+          price: it.price,
+          quantity: it.quantity,
+          unitName: it.unit_name,
+        })),
         ok: true,
       },
     };
