@@ -38,8 +38,20 @@ function startOfTodayUtc7(nowMs) {
 // nếu seri thay đổi sau này, không cần sửa code.
 const PROD_INVOICE_SERIAL = process.env.BKAV_PROD_INVOICE_SERIAL || 'C26MAA';
 
-// Cron 1 phút: tạo invoice cho các order ĐÃ THANH TOÁN + chưa invoiced,
-// trong NGÀY HIỆN TẠI. SỬA (theo yêu cầu đã duyệt): bỏ điều kiện
+// Số lần TỐI ĐA cron thử phát hành hoá đơn cho 1 đơn trước khi chịu thua
+// hẳn (đánh dấu invoice_status='failed'). Với chu kỳ cron 15s, 5 lần thử
+// ≈ 60-75 giây trước khi chịu thua — đủ để vượt qua sự cố tạm thời phía
+// Bkav/proxy (đã xác nhận qua log thật: lỗi SOAP fault "UNKNOWN" xảy ra
+// cả ở đơn online lẫn đơn quầy, không liên quan dữ liệu đơn cụ thể —
+// nhiều khả năng chỉ là gián đoạn tạm thời bên ngoài, KHÔNG PHẢI lỗi dữ
+// liệu sẽ lặp lại y hệt mãi mãi nếu thử lại).
+const INVOICE_MAX_RETRIES = 5;
+
+// Cron 15 GIÂY (trước đây 1 phút — đổi theo yêu cầu, kết hợp với cơ chế
+// tự động thử lại INVOICE_MAX_RETRIES lần bên dưới, để vượt qua sự cố
+// tạm thời phía Bkav/proxy nhanh hơn): tạo invoice cho các order ĐÃ
+// THANH TOÁN + chưa invoiced, trong NGÀY HIỆN TẠI. SỬA (theo yêu cầu đã
+// duyệt): bỏ điều kiện
 // booking_status='completed' — trước đây hoá đơn CHỈ phát hành sau khi
 // tài xế bấm "Đã nhận hàng", nay phát hành NGAY KHI đã thanh toán, không
 // phụ thuộc đơn đã giao xong hay chưa. Thêm giới hạn "trong ngày hiện
@@ -49,8 +61,31 @@ const PROD_INVOICE_SERIAL = process.env.BKAV_PROD_INVOICE_SERIAL || 'C26MAA';
 // lấy PDF URL (CmdType 816 theo PartnerInvoiceStringID = orderId).
 // Retry 3 lần cho getInvoicePdf816 — nếu retry thất bại, dùng pdfUrl="".
 // Cuối cùng push canister.updateInvoiceStatus(orderId, status, invoiceId, pdfUrl, hmac).
+// Xử lý 1 lần thử phát hành hoá đơn THẤT BẠI (dùng chung cho cả nhánh
+// SOAP fault lẫn exception mạng) — tăng invoice_retry_count; chỉ đánh
+// dấu invoice_status='failed' (và báo canister) khi đã ĐẠT
+// INVOICE_MAX_RETRIES, ngược lại GIỮ NGUYÊN invoice_status='none' để
+// cron tự động thử lại ở lần chạy 15s tiếp theo.
+async function handleInvoiceFailure(db, orderId, currentRetryCount, reason) {
+  const newRetryCount = currentRetryCount + 1;
+  if (newRetryCount >= INVOICE_MAX_RETRIES) {
+    console.error(
+      `[invoice/cron] Đã thử ${newRetryCount}/${INVOICE_MAX_RETRIES} lần, chịu thua hẳn cho ${orderId}: ${reason}`,
+    );
+    await canister.updateInvoiceStatus(orderId, 'failed', '', '');
+    db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, updated_at = ? WHERE order_id = ?`)
+      .run(newRetryCount, Date.now(), orderId);
+    return;
+  }
+  console.warn(
+    `[invoice/cron] Thử lần ${newRetryCount}/${INVOICE_MAX_RETRIES} thất bại cho ${orderId}, sẽ tự động thử lại: ${reason}`,
+  );
+  db.prepare(`UPDATE orders SET invoice_retry_count = ?, updated_at = ? WHERE order_id = ?`)
+    .run(newRetryCount, Date.now(), orderId);
+}
+
 function startInvoiceCron(db) {
-  const task = cron.schedule('* * * * *', async () => {
+  const task = cron.schedule('*/15 * * * * *', async () => {
     if (shutdown.shuttingDown) return;
     try {
       const todayStartMs = startOfTodayUtc7(Date.now());
@@ -167,17 +202,28 @@ function startInvoiceCron(db) {
                 .run(row.order_id, invoiceNo, 'exhausted 3 retries — pdf_url empty', Date.now());
             }
           } else {
-            // Bkav không trả invoiceNo → thất bại thật (raw response đã log ở
-            // trên để xem nguyên nhân cụ thể qua inv.error/errorCode).
+            // Bkav không trả invoiceNo → thất bại — raw response đã log ở
+            // trên để xem nguyên nhân cụ thể qua inv.error/errorCode.
+            // KHÔNG chịu thua ngay — dùng handleInvoiceFailure() để tự
+            // động thử lại vài lần ở các lần cron sau (xem
+            // INVOICE_MAX_RETRIES), trước khi đánh dấu 'failed' hẳn.
             console.error(`[invoice/cron] CreateInvoice: no invoiceNo for ${row.order_id} — ${inv.error || 'unknown'} (code=${inv.errorCode || ''})`);
-            await canister.updateInvoiceStatus(row.order_id, 'failed', '', '');
-            db.prepare(`UPDATE orders SET invoice_status = 'failed', updated_at = ? WHERE order_id = ?`)
-              .run(Date.now(), row.order_id);
+            await handleInvoiceFailure(
+              db,
+              row.order_id,
+              row.invoice_retry_count,
+              `${inv.error || 'unknown'} (code=${inv.errorCode || ''})`,
+            );
           }
         } catch (e) {
           console.error('[invoice/cron] CreateInvoice failed:', row.order_id, e.message);
           db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'CreateInvoice', ?, ?)`)
             .run(row.order_id, e.message, Date.now());
+          // Exception (mạng lỗi, timeout...) — cùng cơ chế thử lại như
+          // SOAP fault, tránh retry VÔ HẠN mãi mãi nếu lỗi lặp lại liên
+          // tục (trước đây nhánh này không tăng gì cả, không bao giờ
+          // dừng lại).
+          await handleInvoiceFailure(db, row.order_id, row.invoice_retry_count, e.message);
         }
       }
     } catch (e) {

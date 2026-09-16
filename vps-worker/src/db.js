@@ -258,6 +258,19 @@ function initSchema(db) {
     db.exec("ALTER TABLE orders ADD COLUMN bkav_ma_tra_cuu TEXT NOT NULL DEFAULT ''");
   }
 
+  // invoice_retry_count — đếm số lần cron ĐÃ THỬ phát hành hoá đơn cho
+  // đơn này (kể cả lần thành công cuối cùng nếu có). Trước đây createInvoice
+  // thất bại (SOAP fault từ Bkav/proxy hoặc exception mạng) → đánh dấu
+  // invoice_status='failed' NGAY LẬP TỨC ở lần đầu tiên, không bao giờ tự
+  // thử lại — kể cả lỗi chỉ là tạm thời phía Bkav/proxy (đã xác nhận qua
+  // log thật: cùng 1 lỗi SOAP fault "UNKNOWN" xảy ra cả ở đơn online lẫn
+  // đơn quầy, không liên quan dữ liệu đơn — nhiều khả năng là sự cố tạm
+  // thời bên ngoài). Giờ chỉ đánh dấu 'failed' sau khi đã thử đủ
+  // INVOICE_MAX_RETRIES lần (xem routes/invoice.js).
+  if (!colNames.has('invoice_retry_count')) {
+    db.exec('ALTER TABLE orders ADD COLUMN invoice_retry_count INTEGER NOT NULL DEFAULT 0');
+  }
+
   // customers: thêm km_notify_opt_in (Giai đoạn 4b) nếu DB cũ chưa có.
   const customerCols = db.prepare('PRAGMA table_info(customers)').all();
   const customerColNames = new Set(customerCols.map((c) => c.name));
