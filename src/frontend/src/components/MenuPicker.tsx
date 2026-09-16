@@ -26,7 +26,9 @@ interface MenuPickerProps {
    * Khi true: bỏ qua fixedCategory, hiển thị TẤT CẢ món theo thứ tự cố định
    * Món chính → Món phụ → Đồ uống → Tráng miệng, mỗi nhóm sắp xếp giá thấp
    * đến cao. Danh mục "Khác" (món dụng cụ tự động thêm) luôn bị loại khỏi
-   * danh sách này — không phải món khách tự chọn tay.
+   * danh sách này — không phải món khách tự chọn tay. Hiển thị LIÊN TỤC
+   * trong 1 lưới duy nhất — KHÔNG có tiêu đề/khoảng ngắt giữa các nhóm
+   * (chỉ ảnh hưởng thứ tự sắp xếp, không tách rời hiển thị).
    */
   groupByCategory?: boolean;
   /**
@@ -233,6 +235,15 @@ export function MenuPicker({
     }).filter((s) => s.items.length > 0);
   }, [menu, groupByCategory, query]);
 
+  // Danh sách phẳng — gộp mọi nhóm thành 1 lưới liên tục, KHÔNG ngắt
+  // quãng theo từng danh mục (bỏ tiêu đề + khoảng cách giữa các nhóm),
+  // nhưng vẫn giữ đúng thứ tự Món chính → Món phụ → Đồ uống → Tráng
+  // miệng (và giá tăng dần trong từng nhóm) từ groupedSections ở trên.
+  const groupedItems = useMemo(
+    () => groupedSections.flatMap((s) => s.items),
+    [groupedSections],
+  );
+
   if (isLoading) {
     return (
       <div
@@ -314,7 +325,7 @@ export function MenuPicker({
       )}
 
       {groupByCategory ? (
-        groupedSections.length === 0 ? (
+        groupedItems.length === 0 ? (
           <div
             className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-8 text-center"
             data-ocid="menu_picker.no_results_state"
@@ -328,30 +339,18 @@ export function MenuPicker({
           </div>
         ) : (
           <div
-            className="flex flex-col gap-5"
+            className={`grid ${gridColsClassName} gap-x-3 gap-y-4`}
             data-ocid="menu_picker.grouped_list"
           >
-            {groupedSections.map((section) => (
-              <div key={section.category}>
-                <h3
-                  className="mb-2.5 font-display text-base font-bold text-foreground"
-                  data-ocid={`menu_picker.category_heading.${section.category}`}
-                >
-                  {section.category}
-                </h3>
-                <div className={`grid ${gridColsClassName} gap-x-3 gap-y-4`}>
-                  {section.items.map((item, idx) => (
-                    <MenuCard
-                      key={item.itemId}
-                      item={item}
-                      index={idx}
-                      quantity={cart[item.itemId] ?? 0}
-                      onQuantityChange={onQuantityChange}
-                      disabled={disabled}
-                    />
-                  ))}
-                </div>
-              </div>
+            {groupedItems.map((item, idx) => (
+              <MenuCard
+                key={item.itemId}
+                item={item}
+                index={idx}
+                quantity={cart[item.itemId] ?? 0}
+                onQuantityChange={onQuantityChange}
+                disabled={disabled}
+              />
             ))}
           </div>
         )

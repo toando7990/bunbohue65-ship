@@ -10,14 +10,13 @@ import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
 import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
 import { usePendingOrders } from "@/hooks/usePendingOrders";
-import { useDevicesByRestaurant, useRestaurants } from "@/hooks/useQueries";
+import { useDevicesByRestaurant } from "@/hooks/useQueries";
 import type { RestaurantHistoryPeriod } from "@/types";
 import {
   Calendar,
   CalendarDays,
   CalendarRange,
   ListOrdered,
-  MapPin,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -78,8 +77,6 @@ export function DriverPaymentScreen() {
   }, [deviceId, deviceName, setDeviceHeader]);
 
   const ordersQuery = usePendingOrders(restaurantId ?? undefined);
-  const { data: restaurants } = useRestaurants();
-  const restaurant = restaurants?.find((r) => r.restaurantId === restaurantId);
 
   // Việc 9/9: kiểm tra định kỳ (15s) xem thiết bị này có bị admin "Thu
   // hồi" (active=false) hay không — trước đây thiết bị đã kích hoạt hoạt
@@ -152,28 +149,6 @@ export function DriverPaymentScreen() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col" data-ocid="driver.page">
-      {restaurant && (
-        <div
-          className="shrink-0 border-b border-border bg-card px-4 py-2 md:px-6"
-          data-ocid="driver.restaurant_bar"
-        >
-          <div className="mx-auto flex w-full max-w-2xl items-start gap-1.5">
-            <MapPin
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-foreground">
-                {restaurant.name}
-              </p>
-              <p className="line-clamp-1 text-[11px] text-muted-foreground">
-                {restaurant.address}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Bước 2/3: nội dung theo tab đang chọn (Hàng đợi hoặc 1 trong 3
           mốc lịch sử) — cuộn RIÊNG trong khu vực này, để status bar +
           bottom nav luôn cố định (không cuộn theo). */}
