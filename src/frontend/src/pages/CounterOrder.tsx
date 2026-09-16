@@ -37,14 +37,16 @@ import type { Order } from "@/backend";
 import { ActivationForm } from "@/components/ActivationForm";
 import { CounterQRDisplay } from "@/components/CounterQRDisplay";
 import { MenuPicker } from "@/components/MenuPicker";
+import { PrinterSettingsDialog } from "@/components/PrinterSettingsDialog";
 import { Button } from "@/components/ui/button";
 import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
 import { usePromotionCountdown } from "@/hooks/usePromotionCountdown";
 import { useCurrentPromotion, useMenuForRestaurant } from "@/hooks/useQueries";
 import { getOrder as getOrderFn, useCanister } from "@/lib/canister";
+import { reconnectPrinter } from "@/lib/printer";
 import { create as vpsCreate } from "@/lib/vps-client";
 import type { CreateOrderPayload } from "@/types";
-import { Flame, Loader2, ShoppingCart } from "lucide-react";
+import { Flame, Loader2, Printer, ShoppingCart } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -175,6 +177,14 @@ export default function CounterOrder() {
     promotion?.enabledCounter ? promotion : null,
   );
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [printerDialogOpen, setPrinterDialogOpen] = useState(false);
+
+  // Tự động kết nối lại máy in đã ghép nối từ trước (không hiện hộp
+  // thoại chọn thiết bị) — nhân viên chỉ cần bấm "Kết nối máy in" 1 lần
+  // duy nhất (PrinterSettingsDialog), các lần vào trang sau tự nối lại.
+  useEffect(() => {
+    void reconnectPrinter();
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
 
@@ -336,6 +346,18 @@ export default function CounterOrder() {
       data-ocid="counter.page"
     >
       <div className="flex-1 px-4 py-5 md:px-6 xl:px-8">
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setPrinterDialogOpen(true)}
+            data-ocid="counter.open_printer_settings_button"
+            className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-smooth hover:bg-secondary"
+          >
+            <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+            Máy in
+          </button>
+        </div>
+
         <CounterGoldenHourBanner />
 
         <div className="flex items-start gap-5">
@@ -495,6 +517,11 @@ export default function CounterOrder() {
           onPaid={handlePaid}
         />
       )}
+
+      <PrinterSettingsDialog
+        open={printerDialogOpen}
+        onOpenChange={setPrinterDialogOpen}
+      />
     </div>
   );
 }

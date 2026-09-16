@@ -89,6 +89,16 @@ vi.mock("@/components/CounterQRDisplay", () => ({
   CounterQRDisplay: () => <div data-ocid="mock-qr-display" />,
 }));
 
+const mockReconnectPrinter = vi.fn();
+vi.mock("@/lib/printer", () => ({
+  reconnectPrinter: (...args: unknown[]) => mockReconnectPrinter(...args),
+}));
+
+vi.mock("@/components/PrinterSettingsDialog", () => ({
+  PrinterSettingsDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-ocid="mock-printer-settings-dialog" /> : null,
+}));
+
 const mockSetDeviceHeader = vi.fn();
 vi.mock("@/contexts/DeviceHeaderContext", () => ({
   useDeviceHeader: () => ({ setDeviceHeader: mockSetDeviceHeader }),
@@ -117,6 +127,7 @@ describe("CounterOrder (desktop layout)", () => {
       isLoading: false,
     });
     mockUseCurrentPromotion.mockReturnValue({ data: BASE_PROMOTION });
+    mockReconnectPrinter.mockResolvedValue(false);
   });
 
   afterEach(() => {
@@ -225,5 +236,23 @@ describe("CounterOrder (desktop layout)", () => {
     expect(
       screen.queryByText(/đủ điều kiện Giờ Vàng — giảm/),
     ).not.toBeInTheDocument();
+  });
+
+  it("attempts to auto-reconnect a previously-paired printer on mount", () => {
+    render(<CounterOrder />);
+    expect(mockReconnectPrinter).toHaveBeenCalled();
+  });
+
+  it("opens the printer settings dialog when the 'Máy in' button is clicked", () => {
+    render(<CounterOrder />);
+    expect(
+      screen.queryByTestId("mock-printer-settings-dialog"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("counter.open_printer_settings_button"));
+
+    expect(
+      screen.getByTestId("mock-printer-settings-dialog"),
+    ).toBeInTheDocument();
   });
 });
