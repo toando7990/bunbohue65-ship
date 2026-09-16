@@ -116,6 +116,21 @@ export interface InvoiceResponse {
   sharedLink: string;
   ok: boolean;
   error?: string;
+  // Bổ sung cho việc in phiếu tại quầy (PrintReceipt) — gộp đủ dữ liệu
+  // trong 1 lần gọi API, xem vps-worker/src/routes/invoice.js.
+  maCQT?: string;
+  maTraCuu?: string;
+  cusName?: string;
+  amount?: number;
+  goodsAmount?: number;
+  taxTotal?: number;
+  createdAt?: number;
+  items?: Array<{
+    name: string;
+    price: number;
+    quantity: number;
+    unitName: string;
+  }>;
 }
 
 // VPS analytics response — aggregated dashboard metrics.

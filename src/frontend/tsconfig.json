@@ -20,7 +20,7 @@
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/.cache/tsbuildinfo",
     "jsx": "react-jsx",
-    "types": ["vite/client", "node"],
+    "types": ["vite/client", "node", "w3c-web-usb"],
     "paths": {
       "declarations/*": ["../declarations/*"],
       "@/*": ["./src/*"]
