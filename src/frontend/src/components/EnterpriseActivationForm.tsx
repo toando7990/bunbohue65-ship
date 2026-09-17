@@ -36,11 +36,17 @@ function getDeviceId(): string {
 }
 
 export function EnterpriseActivationForm({
-  expectedRole,
+  allowedRoles,
   expectedRoleLabel,
   onActivated,
 }: {
-  expectedRole: DeviceRole;
+  // Danh sách vai trò được PHÉP cho module này (VD trang gộp Kế toán +
+  // Báo cáo bán hàng & KM cho phép cả 2). Trước đây chỉ nhận 1 role
+  // (expectedRole = allowedRoles[0] của EnterpriseGate) — BUG THẬT: mã
+  // kích hoạt hợp lệ cho role thứ 2 trở đi (VD salesPromoReporting) bị
+  // TỪ CHỐI SAI vì chỉ so khớp với role ĐẦU TIÊN trong danh sách cho
+  // phép, dù role đó hoàn toàn hợp lệ cho module.
+  allowedRoles: DeviceRole[];
   expectedRoleLabel: string;
   onActivated: () => void;
 }) {
@@ -65,7 +71,7 @@ export function EnterpriseActivationForm({
         name: name.trim(),
         phone: "",
       });
-      if (device.role !== expectedRole) {
+      if (!allowedRoles.includes(device.role)) {
         setError(
           `Mã này không dành cho thiết bị ${expectedRoleLabel}. Vui lòng dùng đúng mã vai trò.`,
         );

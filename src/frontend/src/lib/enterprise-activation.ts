@@ -23,7 +23,17 @@ export function loadEnterpriseActivation(): EnterpriseActivation | null {
     const raw = localStorage.getItem(ENTERPRISE_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (parsed?.restaurantId && parsed?.deviceId) {
+    // LƯU Ý QUAN TRỌNG: restaurantId của thiết bị doanh nghiệp LUÔN là
+    // chuỗi rỗng "" (Kế toán/Báo cáo bán hàng & KM không gắn theo nhà
+    // hàng cụ thể nào — xem EnterpriseActivationCodeForm.tsx). Trước đây
+    // kiểm tra `parsed?.restaurantId && parsed?.deviceId` — nhưng "" là
+    // giá trị FALSY trong JS, nên điều kiện này LUÔN false với thiết bị
+    // doanh nghiệp dù đã lưu đúng dữ liệu — hàm trả về null vĩnh viễn,
+    // khiến EnterpriseGate nghĩ "chưa kích hoạt" và hiện lại form kích
+    // hoạt ngay sau khi kích hoạt THÀNH CÔNG (lặp vô hạn, không bao giờ
+    // vào được trang quản lý). Chỉ kiểm tra deviceId có giá trị (deviceId
+    // không bao giờ rỗng hợp lệ) — restaurantId chỉ cần đúng kiểu string.
+    if (typeof parsed?.restaurantId === "string" && parsed?.deviceId) {
       return {
         restaurantId: parsed.restaurantId,
         deviceId: parsed.deviceId,

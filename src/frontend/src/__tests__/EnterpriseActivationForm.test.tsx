@@ -12,6 +12,7 @@
 
 import { type Device, DeviceRole } from "@/backend";
 import { EnterpriseActivationForm } from "@/components/EnterpriseActivationForm";
+import { loadEnterpriseActivation } from "@/lib/enterprise-activation";
 import {
   cleanup,
   fireEvent,
@@ -36,7 +37,13 @@ function makeDevice(overrides: Partial<Device> = {}): Device {
     activatedAt: 1_700_000_000_000_000_000n,
     name: "Nguyễn Văn A",
     role: DeviceRole.paymentQueue,
-    restaurantId: "R1",
+    // Thiết bị doanh nghiệp THẬT luôn có restaurantId RỖNG (không gắn
+    // theo nhà hàng nào — xem EnterpriseActivationCodeForm.tsx). Dùng
+    // đúng giá trị này (thay vì "R1" trước đây) để test phản ánh đúng
+    // thực tế — đã từng có bug thật do "" bị coi là falsy ở
+    // loadEnterpriseActivation(), chỉ phát hiện được khi test dùng đúng
+    // giá trị rỗng như production.
+    restaurantId: "",
     deviceId: "dev-abc123",
     phone: "0901234567",
     ...overrides,
@@ -69,7 +76,7 @@ describe("EnterpriseActivationForm enterprise device activation", () => {
 
     render(
       <EnterpriseActivationForm
-        expectedRole={DeviceRole.paymentQueue}
+        allowedRoles={[DeviceRole.paymentQueue]}
         expectedRoleLabel="Hàng đợi thanh toán"
         onActivated={onActivated}
       />,
@@ -86,10 +93,17 @@ describe("EnterpriseActivationForm enterprise device activation", () => {
       localStorage.getItem("bbh_enterprise_activation") ?? "{}",
     );
     expect(stored).toMatchObject({
-      restaurantId: "R1",
+      restaurantId: "",
       deviceId: "dev-abc123",
       name: "Nguyễn Văn A",
     });
+
+    // BUG THẬT đã sửa: loadEnterpriseActivation() TRƯỚC ĐÂY trả về null
+    // với restaurantId="" (chuỗi rỗng là falsy trong JS) — khiến
+    // EnterpriseGate không bao giờ nhận ra thiết bị đã kích hoạt, hiện
+    // lại form ngay sau khi kích hoạt THÀNH CÔNG. Xác nhận component
+    // thật (không phải đọc localStorage thô) đọc lại đúng.
+    expect(loadEnterpriseActivation()).not.toBeNull();
 
     // Không còn hỏi SĐT (không có công dụng cho vai trò doanh nghiệp) —
     // vẫn truyền chuỗi rỗng cho tham số phone bắt buộc của canister.
@@ -107,7 +121,7 @@ describe("EnterpriseActivationForm enterprise device activation", () => {
 
     render(
       <EnterpriseActivationForm
-        expectedRole={DeviceRole.paymentQueue}
+        allowedRoles={[DeviceRole.paymentQueue]}
         expectedRoleLabel="Hàng đợi thanh toán"
         onActivated={onActivated}
       />,
@@ -123,5 +137,30 @@ describe("EnterpriseActivationForm enterprise device activation", () => {
     expect(onActivated).not.toHaveBeenCalled();
     // Nothing is persisted on a role mismatch.
     expect(localStorage.getItem("bbh_enterprise_activation")).toBeNull();
+  });
+
+  it("BUG THẬT đã sửa: accepts a role that is SECOND (not first) in allowedRoles — trang gộp nhiều role (VD /enterprise/management với [accounting, salesPromoReporting])", async () => {
+    // Trước đây chỉ so khớp với allowedRoles[0] (accounting) — role hợp
+    // lệ thứ 2 (salesPromoReporting) bị từ chối SAI dù nằm trong danh
+    // sách cho phép.
+    mockActivateDevice.mockResolvedValue(
+      makeDevice({ role: DeviceRole.salesPromoReporting }),
+    );
+    const onActivated = vi.fn();
+
+    render(
+      <EnterpriseActivationForm
+        allowedRoles={[DeviceRole.accounting, DeviceRole.salesPromoReporting]}
+        expectedRoleLabel="Quản lý thiết bị doanh nghiệp"
+        onActivated={onActivated}
+      />,
+    );
+
+    fillForm("XYZ789");
+
+    await waitFor(() => {
+      expect(onActivated).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

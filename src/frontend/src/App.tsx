@@ -184,14 +184,15 @@ function EnterpriseGate({
     );
   }
 
-  // Non-admin enterprise device: must be activated first. Show the activation
-  // form (bound to the FIRST allowed role as the displayed label — chỉ là
-  // nhãn hiển thị lúc chưa kích hoạt, role THẬT được server gán theo đúng mã
-  // admin đã tạo, không phụ thuộc nhãn này).
+  // Non-admin enterprise device: must be activated first. Show the
+  // activation form — device.role được kiểm tra khớp với BẤT KỲ role nào
+  // trong allowedRoles (không chỉ role đầu tiên — sửa bug thật: trước
+  // đây chỉ so với allowedRoles[0], từ chối sai các role hợp lệ khác
+  // trong trang gộp nhiều role như /enterprise/management).
   if (!activation) {
     return (
       <EnterpriseActivationForm
-        expectedRole={allowedRoles[0] as unknown as DeviceRole}
+        allowedRoles={allowedRoles as unknown as DeviceRole[]}
         expectedRoleLabel={moduleTitle}
         onActivated={() => setActivationVersion((v) => v + 1)}
       />
