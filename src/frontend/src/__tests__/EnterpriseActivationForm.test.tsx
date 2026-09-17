@@ -47,9 +47,6 @@ function fillForm(code: string) {
   fireEvent.change(screen.getByLabelText("Tên nhân viên"), {
     target: { value: "Nguyễn Văn A" },
   });
-  fireEvent.change(screen.getByLabelText("Số điện thoại nhân viên"), {
-    target: { value: "0901234567" },
-  });
   fireEvent.change(screen.getByLabelText("Mã kích hoạt 6 ký tự"), {
     target: { value: code },
   });
@@ -93,6 +90,12 @@ describe("EnterpriseActivationForm enterprise device activation", () => {
       deviceId: "dev-abc123",
       name: "Nguyễn Văn A",
     });
+
+    // Không còn hỏi SĐT (không có công dụng cho vai trò doanh nghiệp) —
+    // vẫn truyền chuỗi rỗng cho tham số phone bắt buộc của canister.
+    expect(mockActivateDevice).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: "" }),
+    );
   });
 
   it("rejects a code whose role does not match the expected role", async () => {

@@ -5,6 +5,13 @@
 // khoá localStorage thống nhất bbh_enterprise_activation (xem
 // lib/enterprise-activation.ts) rồi gọi onActivated để hiện mô-đun.
 // Được hiển thị bởi EnterpriseGate trong App.tsx khi thiết bị chưa kích hoạt.
+//
+// KHÔNG hỏi số điện thoại (khác ActivationForm.tsx dùng cho /driver, /counter
+// — nơi SĐT hiển thị trên thẻ đơn để khách liên hệ tài xế/quầy, xem
+// devices-api.mo). Vai trò doanh nghiệp (Kế toán/Báo cáo) không có "thẻ đơn"
+// nào để hiển thị SĐT nhân viên — trường này sẽ không có công dụng gì, chỉ
+// tốn 1 bước nhập liệu không cần thiết. Vẫn truyền chuỗi rỗng cho tham số
+// phone bắt buộc của canister (an toàn, không ảnh hưởng gì).
 
 import type { DeviceRole } from "@/backend";
 import { useActivateDevice } from "@/hooks/useQueries";
@@ -28,9 +35,6 @@ function getDeviceId(): string {
   }
 }
 
-// SĐT Việt Nam: 10 chữ số bắt đầu 0 (di động), hoặc 11 cho một số cố định.
-const PHONE_RE = /^0\d{9,10}$/;
-
 export function EnterpriseActivationForm({
   expectedRole,
   expectedRoleLabel,
@@ -43,13 +47,11 @@ export function EnterpriseActivationForm({
   const activateMutation = useActivateDevice();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const normalized = code.trim().toUpperCase();
   const nameValid = name.trim().length >= 2;
-  const phoneValid = PHONE_RE.test(phone.trim());
-  const isValid = normalized.length === 6 && nameValid && phoneValid;
+  const isValid = normalized.length === 6 && nameValid;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,7 +63,7 @@ export function EnterpriseActivationForm({
         code: normalized,
         deviceId,
         name: name.trim(),
-        phone: phone.trim(),
+        phone: "",
       });
       if (device.role !== expectedRole) {
         setError(
@@ -143,31 +145,6 @@ export function EnterpriseActivationForm({
             placeholder="Nguyễn Văn A"
             aria-label="Tên nhân viên"
             data-ocid="enterprise_activation.name_input"
-            className="min-h-[44px] w-full rounded-lg border border-input bg-card px-3 py-2 text-base text-foreground shadow-sm outline-none transition-smooth focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="ent-phone"
-            className="text-sm font-semibold text-foreground"
-          >
-            Số điện thoại của bạn
-          </label>
-          <input
-            id="ent-phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => {
-              setPhone(e.target.value);
-              setError(null);
-            }}
-            disabled={activateMutation.isPending}
-            placeholder="0912345678"
-            aria-label="Số điện thoại nhân viên"
-            data-ocid="enterprise_activation.phone_input"
             className="min-h-[44px] w-full rounded-lg border border-input bg-card px-3 py-2 text-base text-foreground shadow-sm outline-none transition-smooth focus:border-primary focus:ring-2 focus:ring-ring disabled:opacity-50"
           />
         </div>

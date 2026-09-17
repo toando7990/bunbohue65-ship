@@ -26,6 +26,7 @@ import {
 import {
   useCleanupExpiredActivations,
   useDevicesByRestaurant,
+  useDevicesByRole,
   useRestaurants,
   useRevokeDevice,
 } from "@/hooks/useQueries";
@@ -95,6 +96,18 @@ export function DeviceManager() {
   const [cleanedCount, setCleanedCount] = useState<bigint | null>(null);
 
   const devicesQuery = useDevicesByRestaurant(selectedRestaurant || undefined);
+  // Thiết bị doanh nghiệp (Kế toán/Báo cáo bán hàng & KM) KHÔNG gắn theo
+  // nhà hàng nào (restaurantId rỗng) — useDevicesByRestaurant() không bao
+  // giờ trả về chúng, cần useDevicesByRole() riêng cho từng vai trò rồi
+  // gộp lại (canister chỉ nhận 1 role mỗi lần gọi, không nhận mảng).
+  const accountingDevicesQuery = useDevicesByRole(DeviceRole.accounting);
+  const salesReportingDevicesQuery = useDevicesByRole(
+    DeviceRole.salesPromoReporting,
+  );
+  const enterpriseDevices = [
+    ...(accountingDevicesQuery.data ?? []),
+    ...(salesReportingDevicesQuery.data ?? []),
+  ];
   const revokeMutation = useRevokeDevice();
   const revokeByIdMutation = useRevokeDevice();
   const cleanupMutation = useCleanupExpiredActivations();
@@ -305,8 +318,8 @@ export function DeviceManager() {
 
         <SectionCard
           icon={Building2}
-          title="Quản lý thiết bị doanh nghiệp"
-          description="Tạo mã kích hoạt cho vai trò Kế toán hoặc Báo cáo bán hàng & KM — không gắn theo nhà hàng cụ thể, số liệu tổng hợp toàn bộ chuỗi."
+          title="Tạo mã — Kế toán & Báo cáo doanh nghiệp"
+          description="Tạo mã kích hoạt cho vai trò Kế toán hoặc Báo cáo bán hàng & KM — không gắn theo nhà hàng cụ thể, số liệu tổng hợp toàn bộ chuỗi. Xem danh sách thiết bị đã kích hoạt bên dưới."
           testId="device.enterprise_activation_card"
         >
           <EnterpriseActivationCodeForm />
@@ -387,6 +400,26 @@ export function DeviceManager() {
               </p>
             )}
           </div>
+        </SectionCard>
+      </div>
+
+      <div className="mt-6">
+        <SectionCard
+          icon={Building2}
+          title="Thiết bị doanh nghiệp đã kích hoạt"
+          description="Danh sách thiết bị đang gắn vai trò Kế toán hoặc Báo cáo bán hàng & KM — không gắn theo nhà hàng cụ thể nào."
+          testId="device.enterprise_devices_card"
+        >
+          <DeviceTable
+            devices={enterpriseDevices}
+            isLoading={
+              accountingDevicesQuery.isLoading ||
+              salesReportingDevicesQuery.isLoading
+            }
+            onRevoke={handleRevoke}
+            revokingDeviceId={revokingDeviceId}
+            emptyMessage="Chưa có thiết bị doanh nghiệp nào được kích hoạt."
+          />
         </SectionCard>
       </div>
     </section>
