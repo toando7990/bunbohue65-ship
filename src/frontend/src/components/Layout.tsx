@@ -20,6 +20,7 @@ import { useGetStoreHours, useIsStoreOpen } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  Building2,
   Clock,
   History,
   Info,
@@ -133,21 +134,9 @@ const ADMIN_NAV: NavItem[] = [
     adminOnly: true,
   },
   {
-    to: "/enterprise/payment-queue",
-    label: "Hàng đợi thanh toán",
-    icon: ShieldCheck,
-    adminOnly: true,
-  },
-  {
-    to: "/enterprise/accounting",
-    label: "Kế toán",
-    icon: ShieldCheck,
-    adminOnly: true,
-  },
-  {
-    to: "/enterprise/sales-reporting",
-    label: "Báo cáo bán hàng & KM",
-    icon: ShieldCheck,
+    to: "/enterprise/management",
+    label: "Quản lý thiết bị doanh nghiệp",
+    icon: Building2,
     adminOnly: true,
   },
 ];
