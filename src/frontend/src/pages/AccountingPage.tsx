@@ -46,9 +46,18 @@ import {
   useRestaurants,
 } from "@/hooks/useQueries";
 import { loadEnterpriseActivation } from "@/lib/enterprise-activation";
-import { getEnterpriseHistory } from "@/lib/vps-client";
+import { getEnterpriseHistory, getInvoice } from "@/lib/vps-client";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarRange, Loader2, Receipt, Search, Trash2 } from "lucide-react";
+import {
+  CalendarRange,
+  ChevronDown,
+  Download,
+  ExternalLink,
+  Loader2,
+  Receipt,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -117,6 +126,19 @@ export function AccountingPage() {
   const [toDate, setToDate] = useState(toInputDateValue(today));
   const [wantPaid, setWantPaid] = useState(true);
   const [wantCancelled, setWantCancelled] = useState(false);
+  // Lọc thêm PHÍA TRÌNH DUYỆT (không cần gọi lại API) — dữ liệu nhà hàng/
+  // trạng thái hoá đơn đã có sẵn trong từng đơn trả về.
+  const [filterRestaurantId, setFilterRestaurantId] = useState<string>("all");
+  const [invoiceFilter, setInvoiceFilter] = useState<
+    "all" | InvoiceStatus.none | InvoiceStatus.invoiced | InvoiceStatus.failed
+  >("all");
+  // "Tuỳ chọn nâng cao" — thu gọn 2 thao tác thủ công theo mã đơn (dùng cho
+  // đơn KHÔNG còn trong danh sách lọc hiện tại, ít dùng) — mặc định đóng.
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  // Đang lấy đường dẫn PDF cho đơn nào (bấm "Xem PDF") — disable đúng 1 nút.
+  const [openingPdfOrderId, setOpeningPdfOrderId] = useState<string | null>(
+    null,
+  );
 
   // ---- Hành động thủ công (không đổi) ----
   const [cleanupCode, setCleanupCode] = useState("");
@@ -149,6 +171,16 @@ export function AccountingPage() {
   });
 
   const results = historyQuery.data?.orders ?? [];
+  const filteredResults = results.filter((o) => {
+    if (filterRestaurantId !== "all" && o.restaurantId !== filterRestaurantId)
+      return false;
+    if (invoiceFilter !== "all" && o.invoiceStatus !== invoiceFilter)
+      return false;
+    return true;
+  });
+  const notInvoicedCount = filteredResults.filter(
+    (o) => o.invoiceStatus === InvoiceStatus.none,
+  ).length;
   const isLoading = historyQuery.isLoading;
   const isError = historyQuery.isError;
 
@@ -198,6 +230,65 @@ export function AccountingPage() {
         err instanceof Error ? err.message : "Không thể phát hành hoá đơn.",
       );
     }
+  }
+
+  // "Xem PDF" cho đơn ĐÃ phát hành — gọi API lúc bấm (không phải tải sẵn
+  // cho cả danh sách, tránh gọi Bkav hàng loạt không cần thiết).
+  async function handleViewPdf(orderId: string) {
+    setOpeningPdfOrderId(orderId);
+    try {
+      const res = await getInvoice(orderId);
+      if (!res.ok || !res.invoiceUrl) {
+        throw new Error(res.error || "Không lấy được đường dẫn hoá đơn.");
+      }
+      window.open(res.invoiceUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Không mở được hoá đơn.",
+      );
+    } finally {
+      setOpeningPdfOrderId(null);
+    }
+  }
+
+  // Xuất CSV danh sách đơn ĐANG LỌC (không phải toàn bộ dữ liệu gốc từ
+  // API) — tự viết, không cần thêm thư viện cho nhu cầu đơn giản này.
+  function handleExportCsv() {
+    const header = [
+      "Mã đơn",
+      "Nhà hàng",
+      "Khách hàng",
+      "SĐT",
+      "Tổng tiền",
+      "Trạng thái đơn",
+      "Trạng thái hoá đơn",
+      "Thời gian",
+    ];
+    const escapeCsv = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const rows = filteredResults.map((o) =>
+      [
+        o.orderId,
+        restaurantNameById.get(o.restaurantId) ?? o.restaurantId,
+        o.cusName || "Khách vãng lai",
+        o.cusPhone,
+        String(o.amount),
+        o.bookingStatus === "cancelled" ? "Đã huỷ" : "Đã thanh toán",
+        INVOICE_LABELS[o.invoiceStatus as InvoiceStatus] ?? o.invoiceStatus,
+        formatDateTime(o.createdAt),
+      ]
+        .map(escapeCsv)
+        .join(","),
+    );
+    // \uFEFF (BOM) để Excel Windows nhận đúng UTF-8 (tránh lỗi hiển thị dấu
+    // tiếng Việt) — vấn đề thường gặp khi mở CSV UTF-8 thuần bằng Excel.
+    const csv = `\uFEFF${[header.map(escapeCsv).join(","), ...rows].join("\n")}`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ke-toan_${fromDate}_${toDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -284,16 +375,96 @@ export function AccountingPage() {
                 </button>
               </div>
             </div>
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="restaurant-filter"
+                className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                Nhà hàng
+              </Label>
+              <select
+                id="restaurant-filter"
+                value={filterRestaurantId}
+                onChange={(e) => setFilterRestaurantId(e.target.value)}
+                data-ocid="accounting.restaurant_filter"
+                className="h-10 min-w-[170px] rounded-md border border-input bg-card px-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring"
+              >
+                <option value="all">Tất cả nhà hàng</option>
+                {(restaurants ?? []).map((r) => (
+                  <option key={r.restaurantId} value={r.restaurantId}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Trạng thái hoá đơn
+              </span>
+              <div className="flex gap-2">
+                {(
+                  [
+                    ["all", "Tất cả"],
+                    [InvoiceStatus.none, "Chưa phát hành"],
+                    [InvoiceStatus.invoiced, "Đã phát hành"],
+                    [InvoiceStatus.failed, "Thất bại"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setInvoiceFilter(value)}
+                    data-ocid={`accounting.invoice_filter.${value}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-smooth ${
+                      invoiceFilter === value
+                        ? "border-info bg-info/15 text-info"
+                        : "border-border bg-background text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {historyQuery.data && (
-            <div className="flex gap-2" data-ocid="accounting.summary">
+            <div
+              className="flex flex-wrap gap-2"
+              data-ocid="accounting.summary"
+            >
               <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-                {historyQuery.data.count} đơn
+                {filteredResults.length} đơn
               </span>
               <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-                Tổng {formatVnd(historyQuery.data.total)}
+                Tổng{" "}
+                {formatVnd(
+                  filteredResults.reduce((sum, o) => sum + o.amount, 0),
+                )}
               </span>
+              {notInvoicedCount > 0 && (
+                <span
+                  className="rounded-full bg-destructive/12 px-3 py-1 text-xs font-semibold text-destructive"
+                  data-ocid="accounting.not_invoiced_count"
+                >
+                  {notInvoicedCount} đơn chưa phát hành hoá đơn
+                </span>
+              )}
+            </div>
+          )}
+
+          {results.length > 0 && (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleExportCsv}
+                data-ocid="accounting.export_csv_button"
+              >
+                <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                Xuất CSV
+              </Button>
             </div>
           )}
 
@@ -327,7 +498,7 @@ export function AccountingPage() {
                 Kiểm tra lại khoảng thời gian hoặc thử lại sau.
               </p>
             </div>
-          ) : results.length === 0 ? (
+          ) : filteredResults.length === 0 ? (
             <div
               className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-12 text-center"
               data-ocid="accounting.lookup.empty_state"
@@ -360,7 +531,7 @@ export function AccountingPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {results.map((order, idx) => {
+                  {filteredResults.map((order, idx) => {
                     const isCancelled = order.bookingStatus === "cancelled";
                     return (
                       <TableRow
@@ -439,24 +610,49 @@ export function AccountingPage() {
                                 Dọn dẹp
                               </Button>
                             )}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={invoiceMutation.isPending}
-                              onClick={() => {
-                                setInvoiceOrderId(order.orderId);
-                                setInvoiceId("");
-                                setPdfUrl("");
-                              }}
-                              data-ocid={`accounting.invoice_button.${idx + 1}`}
-                            >
-                              <Receipt
-                                className="h-3.5 w-3.5"
-                                aria-hidden="true"
-                              />
-                              Hoá đơn
-                            </Button>
+                            {order.invoiceStatus === InvoiceStatus.invoiced ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={openingPdfOrderId === order.orderId}
+                                onClick={() => handleViewPdf(order.orderId)}
+                                data-ocid={`accounting.view_pdf_button.${idx + 1}`}
+                                className="text-info hover:text-info"
+                              >
+                                {openingPdfOrderId === order.orderId ? (
+                                  <Loader2
+                                    className="h-3.5 w-3.5 animate-spin"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <ExternalLink
+                                    className="h-3.5 w-3.5"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                Xem PDF
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={invoiceMutation.isPending}
+                                onClick={() => {
+                                  setInvoiceOrderId(order.orderId);
+                                  setInvoiceId("");
+                                  setPdfUrl("");
+                                }}
+                                data-ocid={`accounting.invoice_button.${idx + 1}`}
+                              >
+                                <Receipt
+                                  className="h-3.5 w-3.5"
+                                  aria-hidden="true"
+                                />
+                                Hoá đơn
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -469,107 +665,121 @@ export function AccountingPage() {
         </CardContent>
       </Card>
 
-      {/* Dọn dẹp đơn thủ công + Phát hành hoá đơn thủ công */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card data-ocid="accounting.cleanup_card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Trash2 className="h-4 w-4 text-primary" aria-hidden="true" />
-              Dọn dẹp đơn thủ công
-            </CardTitle>
-            <CardDescription>
-              Huỷ/xoá một đơn hàng cũ hoặc hết hạn theo mã đơn.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form
-              onSubmit={handleCleanupByCode}
-              className="flex flex-col gap-3"
-              data-ocid="accounting.cleanup_form"
-            >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="cleanup-code" className="text-sm font-medium">
-                  Mã đơn
-                </Label>
-                <Input
-                  id="cleanup-code"
-                  value={cleanupCode}
-                  onChange={(e) => setCleanupCode(e.target.value)}
-                  placeholder="Nhập mã đơn cần dọn dẹp…"
-                  data-ocid="accounting.cleanup_input"
-                />
-              </div>
-              <Button
-                type="submit"
-                variant="destructive"
-                disabled={cleanupMutation.isPending || !cleanupCode.trim()}
-                data-ocid="accounting.cleanup_submit_button"
-                className="w-full sm:w-auto"
+      {/* Tuỳ chọn nâng cao — thu gọn (dùng cho đơn KHÔNG còn trong danh
+          sách lọc hiện tại, ít dùng hơn thao tác trực tiếp từ bảng). */}
+      <Card data-ocid="accounting.advanced_card">
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          data-ocid="accounting.advanced_toggle"
+          className="flex w-full items-center justify-between px-6 py-4 text-left"
+        >
+          <span className="flex items-center gap-2 font-display text-base font-semibold">
+            Tuỳ chọn nâng cao — dọn dẹp / phát hành theo mã đơn
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 text-muted-foreground transition-smooth ${advancedOpen ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
+        {advancedOpen && (
+          <div
+            className="grid grid-cols-1 gap-6 border-t border-border px-6 pb-6 pt-4 lg:grid-cols-2"
+            data-ocid="accounting.advanced_content"
+          >
+            <div data-ocid="accounting.cleanup_card">
+              <CardTitle className="mb-1 flex items-center gap-2 font-display text-base">
+                <Trash2 className="h-4 w-4 text-primary" aria-hidden="true" />
+                Dọn dẹp đơn thủ công
+              </CardTitle>
+              <CardDescription className="mb-3">
+                Huỷ/xoá một đơn hàng cũ hoặc hết hạn theo mã đơn.
+              </CardDescription>
+              <form
+                onSubmit={handleCleanupByCode}
+                className="flex flex-col gap-3"
+                data-ocid="accounting.cleanup_form"
               >
-                {cleanupMutation.isPending ? (
-                  <Loader2
-                    className="h-4 w-4 animate-spin"
-                    aria-hidden="true"
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="cleanup-code" className="text-sm font-medium">
+                    Mã đơn
+                  </Label>
+                  <Input
+                    id="cleanup-code"
+                    value={cleanupCode}
+                    onChange={(e) => setCleanupCode(e.target.value)}
+                    placeholder="Nhập mã đơn cần dọn dẹp…"
+                    data-ocid="accounting.cleanup_input"
                   />
-                ) : (
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                )}
-                Dọn dẹp đơn
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                </div>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={cleanupMutation.isPending || !cleanupCode.trim()}
+                  data-ocid="accounting.cleanup_submit_button"
+                  className="w-full sm:w-auto"
+                >
+                  {cleanupMutation.isPending ? (
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  Dọn dẹp đơn
+                </Button>
+              </form>
+            </div>
 
-        <Card data-ocid="accounting.invoice_card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
-              Phát hành hoá đơn thủ công
-            </CardTitle>
-            <CardDescription>
-              Phát hành hoá đơn điện tử cho một đơn hàng theo mã đơn.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!invoiceManualCode.trim()) {
-                  toast.error("Vui lòng nhập mã đơn.");
-                  return;
-                }
-                setInvoiceOrderId(invoiceManualCode.trim());
-                setInvoiceId("");
-                setPdfUrl("");
-              }}
-              className="flex flex-col gap-3"
-              data-ocid="accounting.invoice_form"
-            >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="invoice-code" className="text-sm font-medium">
-                  Mã đơn
-                </Label>
-                <Input
-                  id="invoice-code"
-                  value={invoiceManualCode}
-                  onChange={(e) => setInvoiceManualCode(e.target.value)}
-                  placeholder="Nhập mã đơn cần phát hành hoá đơn…"
-                  data-ocid="accounting.invoice_code_input"
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={!invoiceManualCode.trim()}
-                data-ocid="accounting.invoice_open_button"
-                className="w-full sm:w-auto"
+            <div data-ocid="accounting.invoice_card">
+              <CardTitle className="mb-1 flex items-center gap-2 font-display text-base">
+                <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
+                Phát hành hoá đơn thủ công
+              </CardTitle>
+              <CardDescription className="mb-3">
+                Phát hành hoá đơn điện tử cho một đơn hàng theo mã đơn.
+              </CardDescription>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!invoiceManualCode.trim()) {
+                    toast.error("Vui lòng nhập mã đơn.");
+                    return;
+                  }
+                  setInvoiceOrderId(invoiceManualCode.trim());
+                  setInvoiceId("");
+                  setPdfUrl("");
+                }}
+                className="flex flex-col gap-3"
+                data-ocid="accounting.invoice_form"
               >
-                <Receipt className="h-4 w-4" aria-hidden="true" />
-                Phát hành hoá đơn
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="invoice-code" className="text-sm font-medium">
+                    Mã đơn
+                  </Label>
+                  <Input
+                    id="invoice-code"
+                    value={invoiceManualCode}
+                    onChange={(e) => setInvoiceManualCode(e.target.value)}
+                    placeholder="Nhập mã đơn cần phát hành hoá đơn…"
+                    data-ocid="accounting.invoice_code_input"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={!invoiceManualCode.trim()}
+                  data-ocid="accounting.invoice_open_button"
+                  className="w-full sm:w-auto"
+                >
+                  <Receipt className="h-4 w-4" aria-hidden="true" />
+                  Phát hành hoá đơn
+                </Button>
+              </form>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Dialog phát hành hoá đơn */}
       <Dialog
