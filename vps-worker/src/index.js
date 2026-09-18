@@ -38,6 +38,7 @@ const orderHistoryRoutes = require('./routes/order-history');
 const claimOrderEmailRoutes = require('./routes/claim-order-email');
 const restaurantHistoryRoutes = require('./routes/restaurant-history');
 const enterpriseHistoryRoutes = require('./routes/enterprise-history');
+const cashPaymentRoutes = require('./routes/cash-payment');
 
 const cronJobs = [];
 
@@ -82,6 +83,7 @@ app.use('/', orderHistoryRoutes);
 app.use('/', claimOrderEmailRoutes);
 app.use('/', restaurantHistoryRoutes);
 app.use('/', enterpriseHistoryRoutes);
+app.use('/', cashPaymentRoutes);
 app.use('/', analyticsRoutes);
 
 // Error handler

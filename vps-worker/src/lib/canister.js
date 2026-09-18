@@ -65,6 +65,23 @@ const IDL_FACTORY = ({ IDL }) => {
   const EnterpriseRole = IDL.Variant({
     paymentQueue: IDL.Null, accounting: IDL.Null, salesPromoReporting: IDL.Null,
   });
+  // DeviceRole/Device — dùng cho listDevicesByRestaurant (route mới
+  // /order/:id/confirm-cash-counter: xác nhận deviceId gọi tới là thiết bị
+  // /counter ĐANG active của ĐÚNG nhà hàng, trước khi cho đánh dấu 1 đơn là
+  // đã thanh toán tiền mặt).
+  const DeviceRole = IDL.Variant({
+    accounting: IDL.Null, paymentQueue: IDL.Null, admin: IDL.Null,
+    salesPromoReporting: IDL.Null, cashier: IDL.Null, driver: IDL.Null,
+  });
+  const Device = IDL.Record({
+    active: IDL.Bool,
+    activatedAt: IDL.Int,
+    name: IDL.Text,
+    role: DeviceRole,
+    restaurantId: IDL.Text,
+    deviceId: IDL.Text,
+    phone: IDL.Text,
+  });
   const Order = IDL.Record({
     orderId: IDL.Text,
     restaurantId: IDL.Text,
@@ -148,6 +165,7 @@ const IDL_FACTORY = ({ IDL }) => {
     getOrderStatus: IDL.Func([IDL.Text], [ResultOrderStatus], ['query']),
     isStoreOpen: IDL.Func([], [IDL.Bool], ['query']),
     callerHasEnterpriseRole: IDL.Func([IDL.Text, EnterpriseRole], [IDL.Bool], ['query']),
+    listDevicesByRestaurant: IDL.Func([IDL.Text], [IDL.Vec(Device)], ['query']),
     isEmailVerified: IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     sendKmNotifyEmails: IDL.Func(
       [IDL.Vec(IDL.Text), IDL.Text, IDL.Text, IDL.Text],
@@ -325,6 +343,18 @@ async function callerHasEnterpriseRole(deviceId) {
   return isAccounting || isSalesPromoReporting;
 }
 
+// listDevicesByRestaurant — query có sẵn ở canister, dùng cho route mới
+// POST /order/:id/confirm-cash-counter: xác nhận deviceId gọi tới thực sự
+// là 1 thiết bị ĐANG active của ĐÚNG nhà hàng đang xử lý đơn (không cho
+// thiết bị nhà hàng A đánh dấu tiền mặt cho đơn của nhà hàng B), trước khi
+// cho phép đánh dấu đã thanh toán tiền mặt — không có bước đối chiếu tiền
+// thật nào khác (đã xác nhận với người dùng: đơn tiền mặt vẫn được tính
+// vào doanh thu nên có thể kiểm soát được qua đối soát định kỳ).
+async function listDevicesByRestaurant(restaurantId) {
+  const actor = getActor();
+  return await actor.listDevicesByRestaurant(restaurantId);
+}
+
 // isEmailVerified — query, dùng để CHẶN THẬT ở tầng VPS (routes/customers.js
 // PUT /customers/:email) trước khi cho phép bật cờ nhận email Giờ Vàng —
 // KHÔNG chỉ dựa vào frontend ẩn form (đã xác nhận đây là lỗ hổng thật:
@@ -494,6 +524,7 @@ module.exports = {
   getCurrentPromotion,
   isStoreOpen,
   callerHasEnterpriseRole,
+  listDevicesByRestaurant,
   isEmailVerified,
   sendKmNotifyEmails,
   applyPromotionCounter,
