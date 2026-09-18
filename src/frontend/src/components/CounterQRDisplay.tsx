@@ -51,15 +51,27 @@ import { InvoiceStatus, type Order, PaymentStatus } from "@/backend";
 import { useCurrentSalesPromo } from "@/hooks/useQueries";
 import { getOrder, useCanister } from "@/lib/canister";
 import { isPrinterConnected, printReceipt } from "@/lib/printer";
-import { getInvoice, requestQr } from "@/lib/vps-client";
+import {
+  confirmCashPaymentCounter,
+  getInvoice,
+  requestQr,
+} from "@/lib/vps-client";
 import type { RequestQrResponse } from "@/types";
-import { CheckCircle2, Loader2, Printer, RefreshCw, X } from "lucide-react";
+import {
+  Banknote,
+  CheckCircle2,
+  Loader2,
+  Printer,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface CounterQRDisplayProps {
   order: Order;
+  deviceId: string;
   onClose: () => void;
   onPaid: (order: Order) => void;
 }
@@ -75,6 +87,7 @@ function formatVnd(amount: bigint): string {
 
 export function CounterQRDisplay({
   order,
+  deviceId,
   onClose,
   onPaid,
 }: CounterQRDisplayProps) {
@@ -96,6 +109,7 @@ export function CounterQRDisplay({
   // tới khi invoiced, rồi mới cho bấm in thật.
   const [waitingToPrint, setWaitingToPrint] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [confirmingCash, setConfirmingCash] = useState(false);
 
   // Tạo QR ngay khi mở — không có bước nhập mã (khác QRDisplay.tsx).
   // biome-ignore lint/correctness/useExhaustiveDependencies: retryTick là intentional re-trigger cho nút Thử lại
@@ -179,6 +193,31 @@ export function CounterQRDisplay({
     const id = setTimeout(() => onPaid(order), 1500);
     return () => clearTimeout(id);
   }, [status, order, onPaid, waitingToPrint]);
+
+  // Khách trả tiền mặt thay vì chuyển khoản — đánh dấu đã thanh toán ngay,
+  // không cần đợi QR/webhook Tingee. Bảo vệ bằng deviceId (VPS xác nhận
+  // đúng thiết bị /counter đang active của đúng nhà hàng) — không cần
+  // pickupCode vì khách đứng ngay tại quầy, không qua ai trung gian.
+  async function handleConfirmCash() {
+    if (confirmingCash) return;
+    setConfirmingCash(true);
+    try {
+      const res = await confirmCashPaymentCounter(order.orderId, deviceId);
+      if (!res.ok) {
+        throw new Error(res.message || "Không xác nhận được thanh toán.");
+      }
+      setStatus(PaymentStatus.paid);
+      toast.success("Đã xác nhận thanh toán tiền mặt.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Không xác nhận được thanh toán tiền mặt.",
+      );
+    } finally {
+      setConfirmingCash(false);
+    }
+  }
 
   const isPaid = status === PaymentStatus.paid;
   const qrReady = qrState.kind === "ready";
@@ -389,13 +428,35 @@ export function CounterQRDisplay({
                 )}
               </>
             ) : (
-              <span
-                className="inline-flex items-center gap-2 rounded-full border border-warning/40 bg-warning/20 px-4 py-1.5 text-sm font-semibold text-warning-foreground"
-                data-ocid="counter_qr.pending_state"
-              >
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                Đang chờ
-              </span>
+              <>
+                <span
+                  className="inline-flex items-center gap-2 rounded-full border border-warning/40 bg-warning/20 px-4 py-1.5 text-sm font-semibold text-warning-foreground"
+                  data-ocid="counter_qr.pending_state"
+                >
+                  <Loader2
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                  Đang chờ
+                </span>
+                <button
+                  type="button"
+                  onClick={handleConfirmCash}
+                  disabled={confirmingCash}
+                  data-ocid="counter_qr.cash_payment_button"
+                  className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-success/40 bg-success/10 px-4 py-2.5 text-sm font-semibold text-success transition-smooth hover:bg-success/20 disabled:opacity-50"
+                >
+                  {confirmingCash ? (
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Banknote className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  Tiền mặt
+                </button>
+              </>
             )}
           </div>
         ) : (

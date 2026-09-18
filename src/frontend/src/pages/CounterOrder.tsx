@@ -567,6 +567,7 @@ export default function CounterOrder() {
       {activeOrder && (
         <CounterQRDisplay
           order={activeOrder}
+          deviceId={deviceId ?? ""}
           onClose={handleCloseQr}
           onPaid={handlePaid}
         />

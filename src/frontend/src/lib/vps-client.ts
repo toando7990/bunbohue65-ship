@@ -209,6 +209,39 @@ export async function requestQr(
   });
 }
 
+// Xác nhận thanh toán TIỀN MẶT (không qua QR chuyển khoản/webhook Tingee)
+// — QUYẾT ĐỊNH NGHIỆP VỤ đã trao đổi rõ với người dùng: hệ thống không có
+// cách đối chiếu nhân viên có thực sự nhận tiền hay không, chấp nhận rủi
+// ro này vì đơn tiền mặt vẫn tính vào doanh thu, kiểm soát được qua đối
+// soát định kỳ — xem vps-worker/src/routes/cash-payment.js.
+//
+// pickupCode: BẮT BUỘC cho luồng /driver — cùng mã tài xế đọc cho nghe để
+// tạo QR (VPS kiểm tra khớp, 401 nếu sai).
+export async function confirmCashPaymentDriver(
+  orderId: string,
+  pickupCode: string,
+): Promise<{ ok: boolean; message: string }> {
+  return vpsFetch<{ ok: boolean; message: string }>({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/confirm-cash-driver`,
+    body: { pickupCode },
+  });
+}
+
+// deviceId: BẮT BUỘC cho luồng /counter — VPS xác nhận đây là thiết bị
+// ĐANG active của ĐÚNG nhà hàng đang xử lý đơn (không có pickupCode nào để
+// đối chiếu, khách đứng ngay tại quầy).
+export async function confirmCashPaymentCounter(
+  orderId: string,
+  deviceId: string,
+): Promise<{ ok: boolean; message: string }> {
+  return vpsFetch<{ ok: boolean; message: string }>({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/confirm-cash-counter`,
+    body: { deviceId },
+  });
+}
+
 // Khách tự đổi nhà hàng của đơn CHƯA THANH TOÁN — trường hợp đặt tài xế
 // đến nhầm nhà hàng (Giai đoạn 4a). VPS POST /order/:id/restaurant.
 export async function changeOrderRestaurant(

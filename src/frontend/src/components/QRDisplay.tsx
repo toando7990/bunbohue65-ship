@@ -19,9 +19,14 @@
 import { type Order, PaymentStatus } from "@/backend";
 import { useCanister } from "@/lib/canister";
 import { getOrderStatus } from "@/lib/canister";
-import { VpsHttpError, requestQr } from "@/lib/vps-client";
+import {
+  VpsHttpError,
+  confirmCashPaymentDriver,
+  requestQr,
+} from "@/lib/vps-client";
 import type { RequestQrResponse } from "@/types";
 import {
+  Banknote,
   CheckCircle2,
   KeyRound,
   Loader2,
@@ -31,6 +36,7 @@ import {
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { type FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface QRDisplayProps {
   order: Order;
@@ -63,6 +69,7 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
   const [lastSubmittedCode, setLastSubmittedCode] = useState<string | null>(
     null,
   );
+  const [confirmingCash, setConfirmingCash] = useState(false);
 
   async function generate(code: string) {
     setQrState({ kind: "loading" });
@@ -109,6 +116,33 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
   // không bắt nhân viên gõ lại.
   function handleRetryGenerate() {
     if (lastSubmittedCode) void generate(lastSubmittedCode);
+  }
+
+  // Tài xế trả tiền mặt thay vì chuyển khoản — đánh dấu đã thanh toán ngay,
+  // không cần đợi QR/webhook Tingee. Cần đúng mã nhận hàng đã nhập ở bước
+  // trước (lastSubmittedCode) — VPS kiểm tra lại lần nữa.
+  async function handleConfirmCash() {
+    if (!lastSubmittedCode || confirmingCash) return;
+    setConfirmingCash(true);
+    try {
+      const res = await confirmCashPaymentDriver(
+        order.orderId,
+        lastSubmittedCode,
+      );
+      if (!res.ok) {
+        throw new Error(res.message || "Không xác nhận được thanh toán.");
+      }
+      setStatus(PaymentStatus.paid);
+      toast.success("Đã xác nhận thanh toán tiền mặt.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Không xác nhận được thanh toán tiền mặt.",
+      );
+    } finally {
+      setConfirmingCash(false);
+    }
   }
 
   // Poll getOrderStatus 5s; tự ẩn khi #paid. Polling chạy độc lập với trạng
@@ -287,13 +321,35 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
                 Đã thanh toán
               </span>
             ) : (
-              <span
-                className="inline-flex items-center gap-2 rounded-full border border-warning/40 bg-warning/20 px-4 py-1.5 text-sm font-semibold text-warning-foreground"
-                data-ocid="qr.pending_state"
-              >
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                Đang chờ
-              </span>
+              <>
+                <span
+                  className="inline-flex items-center gap-2 rounded-full border border-warning/40 bg-warning/20 px-4 py-1.5 text-sm font-semibold text-warning-foreground"
+                  data-ocid="qr.pending_state"
+                >
+                  <Loader2
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                  Đang chờ
+                </span>
+                <button
+                  type="button"
+                  onClick={handleConfirmCash}
+                  disabled={confirmingCash}
+                  data-ocid="qr.cash_payment_button"
+                  className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-success/40 bg-success/10 px-4 py-2.5 text-sm font-semibold text-success transition-smooth hover:bg-success/20 disabled:opacity-50"
+                >
+                  {confirmingCash ? (
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Banknote className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  Tiền mặt
+                </button>
+              </>
             )}
           </div>
         ) : (

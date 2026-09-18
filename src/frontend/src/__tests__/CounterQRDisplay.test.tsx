@@ -30,9 +30,12 @@ vi.mock("@/lib/canister", () => ({
   getOrder: (...args: unknown[]) => mockGetOrder(...args),
 }));
 
+const mockConfirmCashPaymentCounter = vi.fn();
 vi.mock("@/lib/vps-client", () => ({
   requestQr: (...args: unknown[]) => mockRequestQr(...args),
   getInvoice: (...args: unknown[]) => mockGetInvoice(...args),
+  confirmCashPaymentCounter: (...args: unknown[]) =>
+    mockConfirmCashPaymentCounter(...args),
 }));
 
 vi.mock("@/lib/printer", () => ({
@@ -82,6 +85,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={vi.fn()}
       />,
@@ -108,6 +112,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={vi.fn()}
       />,
@@ -130,6 +135,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={vi.fn()}
       />,
@@ -153,6 +159,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={vi.fn()}
       />,
@@ -179,6 +186,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={vi.fn()}
       />,
@@ -202,6 +210,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={vi.fn()}
       />,
@@ -227,6 +236,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={vi.fn()}
       />,
@@ -254,6 +264,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={vi.fn()}
       />,
@@ -296,6 +307,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={vi.fn()}
       />,
@@ -335,6 +347,7 @@ describe("CounterQRDisplay", () => {
     render(
       <CounterQRDisplay
         order={makeOrder()}
+        deviceId="dev-1"
         onClose={vi.fn()}
         onPaid={onPaid}
       />,
@@ -349,5 +362,39 @@ describe("CounterQRDisplay", () => {
 
     await new Promise((r) => setTimeout(r, 1700));
     expect(onPaid).not.toHaveBeenCalled();
+  });
+
+  it("shows a 'Tiền mặt' button while pending, and calls confirmCashPaymentCounter with the deviceId prop", async () => {
+    mockRequestQr.mockResolvedValue({ ok: true, qrCode: "qr-data" });
+    mockGetOrder.mockResolvedValue(makeOrder());
+    mockUseCurrentSalesPromo.mockReturnValue({ data: null });
+    mockConfirmCashPaymentCounter.mockResolvedValue({
+      ok: true,
+      message: "Đã xác nhận thanh toán tiền mặt.",
+    });
+
+    render(
+      <CounterQRDisplay
+        order={makeOrder()}
+        deviceId="dev-counter-42"
+        onClose={vi.fn()}
+        onPaid={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("counter_qr.cash_payment_button"),
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("counter_qr.cash_payment_button"));
+
+    await waitFor(() => {
+      expect(mockConfirmCashPaymentCounter).toHaveBeenCalledWith(
+        "ORD-1",
+        "dev-counter-42",
+      );
+    });
   });
 });

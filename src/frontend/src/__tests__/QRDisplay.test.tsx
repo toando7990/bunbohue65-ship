@@ -49,8 +49,11 @@ const { MockVpsHttpError } = vi.hoisted(() => {
   return { MockVpsHttpError };
 });
 
+const mockConfirmCashPaymentDriver = vi.fn();
 vi.mock("@/lib/vps-client", () => ({
   requestQr: (...args: unknown[]) => mockRequestQr(...args),
+  confirmCashPaymentDriver: (...args: unknown[]) =>
+    mockConfirmCashPaymentDriver(...args),
   VpsHttpError: MockVpsHttpError,
 }));
 
@@ -276,6 +279,39 @@ describe("QRDisplay driver Tingee QR payment flow", () => {
     });
     await waitFor(() => {
       expect(mockRequestQr).toHaveBeenLastCalledWith("ORD-1", "AB23CD");
+    });
+  });
+
+  it("shows a 'Tiền mặt' button while pending, and calls confirmCashPaymentDriver with the confirmed pickup code", async () => {
+    mockRequestQr.mockResolvedValue({
+      ok: true,
+      qrCode: "TINGEE-QR-ABC",
+      billId: "bill-1",
+      expireAt: 1_700_000_100_000,
+      reused: false,
+    });
+    mockGetOrderStatus.mockResolvedValue(makeStatus(PaymentStatus.unpaid));
+    mockConfirmCashPaymentDriver.mockResolvedValue({
+      ok: true,
+      message: "Đã xác nhận thanh toán tiền mặt.",
+    });
+
+    render(
+      <QRDisplay order={makeOrder()} onClose={vi.fn()} onPaid={vi.fn()} />,
+    );
+    submitPickupCode("AB23CD");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("qr.cash_payment_button")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("qr.cash_payment_button"));
+
+    await waitFor(() => {
+      expect(mockConfirmCashPaymentDriver).toHaveBeenCalledWith(
+        "ORD-1",
+        "AB23CD",
+      );
     });
   });
 });
