@@ -42,6 +42,11 @@ interface QRDisplayProps {
   order: Order;
   onClose: () => void;
   onPaid: (order: Order) => void;
+  /** Mã nhận hàng đã biết trước (VD từ quét "QR nhận hàng" — xem
+   * QrScannerDialog.tsx) — tự động tạo QR ngay lúc mở, bỏ qua bước nhập
+   * tay "needCode". Không truyền thì giữ nguyên hành vi cũ (luôn bắt đầu
+   * ở form nhập mã). */
+  initialPickupCode?: string;
 }
 
 // Trạng thái tạo QR. "needCode" là bước đầu tiên luôn luôn phải qua — chỉ
@@ -56,7 +61,12 @@ function formatVnd(amount: bigint): string {
   return `${new Intl.NumberFormat("vi-VN").format(Number(amount))}đ`;
 }
 
-export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
+export function QRDisplay({
+  order,
+  onClose,
+  onPaid,
+  initialPickupCode,
+}: QRDisplayProps) {
   const { actor } = useCanister();
   const [status, setStatus] = useState<PaymentStatus>(order.paymentStatus);
   const [polling, setPolling] = useState(true);
@@ -117,6 +127,16 @@ export function QRDisplay({ order, onClose, onPaid }: QRDisplayProps) {
   function handleRetryGenerate() {
     if (lastSubmittedCode) void generate(lastSubmittedCode);
   }
+
+  // Đã biết trước mã nhận hàng (quét "QR nhận hàng" — xem
+  // QrScannerDialog.tsx) — tự động tạo QR ngay, bỏ qua form nhập tay.
+  // Chỉ chạy 1 lần lúc mount (initialPickupCode không đổi sau đó).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy 1 lần lúc mount theo initialPickupCode ban đầu, không cần re-run khi order/generate đổi tham chiếu
+  useEffect(() => {
+    if (initialPickupCode) {
+      void generate(initialPickupCode);
+    }
+  }, [initialPickupCode]);
 
   // Tài xế trả tiền mặt thay vì chuyển khoản — đánh dấu đã thanh toán ngay,
   // không cần đợi QR/webhook Tingee. Cần đúng mã nhận hàng đã nhập ở bước

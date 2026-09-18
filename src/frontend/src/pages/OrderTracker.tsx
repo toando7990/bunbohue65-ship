@@ -31,6 +31,7 @@ import {
   RefreshCw,
   Truck,
 } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 import { useEffect, useState } from "react";
 
 // Trạng thái tải hoá đơn.
@@ -339,7 +340,7 @@ interface OrderStatusViewProps {
   onRestaurantChanged: () => void;
 }
 
-function OrderStatusView({
+export function OrderStatusView({
   status,
   order,
   restaurants,
@@ -429,6 +430,33 @@ function OrderStatusView({
                   value={order.pickupCode}
                   label="Sao chép mã nhận hàng"
                 />
+              </div>
+            )}
+
+            {/* QR "nhận hàng" — khách đưa cho tài xế (chụp màn hình/gửi
+                qua Zalo/Messenger). Tài xế mang QR này tới, nhân viên
+                quán quét ở trang /driver (nút "Quét QR nhận hàng") để tự
+                mở đúng đơn và điền sẵn mã nhận hàng — không cần tài xế
+                đọc mã cho nhân viên nghe. Mã hoá {orderId, pickupCode}
+                dạng JSON — ĐÚNG định dạng QrScannerDialog.tsx mong đợi,
+                sửa 1 bên phải sửa bên kia. */}
+            {order.pickupCode && payment !== PaymentStatus.paid && (
+              <div
+                className="flex flex-col items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-4"
+                data-ocid="order_tracker.pickup_qr"
+              >
+                <p className="text-xs text-muted-foreground">
+                  QR nhận hàng — đưa cho tài xế mang tới quán
+                </p>
+                <div className="rounded-lg bg-white p-2">
+                  <QRCodeCanvas
+                    value={JSON.stringify({
+                      orderId: order.orderId,
+                      pickupCode: order.pickupCode,
+                    })}
+                    size={160}
+                  />
+                </div>
               </div>
             )}
 

@@ -8,15 +8,21 @@ import { ActivationForm } from "@/components/ActivationForm";
 import { DriverOrderHistory } from "@/components/DriverOrderHistory";
 import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
+import {
+  QrScannerDialog,
+  type ScannedPickupQr,
+} from "@/components/QrScannerDialog";
 import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
 import { usePendingOrders } from "@/hooks/usePendingOrders";
 import { useDevicesByRestaurant } from "@/hooks/useQueries";
+import { getOrder, useCanister } from "@/lib/canister";
 import type { RestaurantHistoryPeriod } from "@/types";
 import {
   Calendar,
   CalendarDays,
   CalendarRange,
   ListOrdered,
+  ScanLine,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -65,6 +71,14 @@ export function DriverPaymentScreen() {
   const [deviceName, setDeviceName] = useState<string>(stored?.name ?? "");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState<DriverTab>("queue");
+  const [scannerOpen, setScannerOpen] = useState(false);
+  // Mã nhận hàng đã có sẵn từ lần quét "QR nhận hàng" gần nhất — truyền
+  // vào QRDisplay để tự động tạo QR, bỏ qua bước nhập tay.
+  const [scannedPickupCode, setScannedPickupCode] = useState<string | null>(
+    null,
+  );
+
+  const { actor } = useCanister();
 
   const { setDeviceHeader } = useDeviceHeader();
   // Đẩy tên/mã thiết bị lên header dùng chung (Layout.tsx) — thay cho
@@ -131,12 +145,33 @@ export function DriverPaymentScreen() {
     setActiveOrder(order);
   }
 
+  // Sau khi quét "QR nhận hàng" thành công — lấy đúng đơn từ orderId (kể cả
+  // đơn CHƯA xuất hiện trong hàng đợi ordersQuery.data, VD tài xế đến sớm)
+  // rồi mở thẳng QRDisplay với mã nhận hàng đã biết sẵn.
+  async function handleScanned({ orderId, pickupCode }: ScannedPickupQr) {
+    setScannerOpen(false);
+    if (!actor) return;
+    try {
+      const order = await getOrder(actor, orderId);
+      setScannedPickupCode(pickupCode);
+      setActiveOrder(order);
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Không tìm thấy đơn hàng cho mã QR này.",
+      );
+    }
+  }
+
   function handleCloseQr() {
     setActiveOrder(null);
+    setScannedPickupCode(null);
   }
 
   function handlePaid(order: Order) {
     setActiveOrder(null);
+    setScannedPickupCode(null);
     toast.success(`Đã thanh toán đơn ${order.cusName || order.orderId}`);
     // Invalidate để queue refresh ngay (usePendingOrders poll 5s sẽ tự cập nhật).
     void ordersQuery.refetch();
@@ -153,6 +188,19 @@ export function DriverPaymentScreen() {
           mốc lịch sử) — cuộn RIÊNG trong khu vực này, để status bar +
           bottom nav luôn cố định (không cuộn theo). */}
       <div className="flex-1 overflow-y-auto">
+        {activeTab === "queue" && (
+          <div className="px-4 pt-4">
+            <button
+              type="button"
+              onClick={() => setScannerOpen(true)}
+              data-ocid="driver.open_qr_scanner_button"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition-smooth hover:bg-primary/10"
+            >
+              <ScanLine className="h-4 w-4" aria-hidden="true" />
+              Quét QR nhận hàng
+            </button>
+          </div>
+        )}
         {activeTab === "queue" ? (
           <PaymentQueue
             orders={ordersQuery.data ?? []}
@@ -198,10 +246,17 @@ export function DriverPaymentScreen() {
       {activeOrder && (
         <QRDisplay
           order={activeOrder}
+          initialPickupCode={scannedPickupCode ?? undefined}
           onClose={handleCloseQr}
           onPaid={handlePaid}
         />
       )}
+
+      <QrScannerDialog
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onScanned={handleScanned}
+      />
     </div>
   );
 }
