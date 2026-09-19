@@ -30,11 +30,10 @@ interface CustomerFormProps {
     value: string,
   ) => void;
   disabled?: boolean;
-  // Khi true: ẩn trường địa chỉ giao hàng + mã số thuế, bỏ qua validate 2
-  // trường đó. Dùng cho luồng "khách tự thanh toán" (paymentMode='customer')
-  // — khách không cần nhập địa chỉ vì tự đặt Grab Express để nhận hàng.
-  // KHÔNG còn ảnh hưởng tới receiverEmail — email hiện độc lập, luôn hiện
-  // (trừ khi hideEmail=true riêng).
+  // Khi true: ẩn trường địa chỉ giao hàng khỏi form này — dùng ở
+  // CreateOrder.tsx sau khi tái cấu trúc: địa chỉ giao hàng giờ chọn từ
+  // danh sách địa chỉ đã lưu (xem DeliveryAddressSelector.tsx), hiển thị
+  // RIÊNG bên ngoài form này, không cần gõ tay lặp lại ở đây nữa.
   hideAddress?: boolean;
   // Khi true: ẩn hẳn ô email (dùng cho ngữ cảnh không cần thu thập email,
   // ví dụ app quầy CounterOrder.tsx — khách đứng tại chỗ, không cần hoá đơn
@@ -67,10 +66,11 @@ export function validateCustomerForm(
       errors.cusAddress = "Địa chỉ quá ngắn.";
   }
 
-  // Tax code optional but if provided, validate length (VN MST: 10 or 14 digits).
-  // Skip when hideAddress (customer mode) — field is hidden and will be empty.
+  // Tax code optional but if provided, validate length (VN MST: 10 or 14
+  // digits). Tách riêng khỏi hideAddress — mã số thuế là thông tin hoá
+  // đơn, không liên quan gì tới địa chỉ giao hàng (trước đây gộp chung
+  // điều kiện, bị ẩn/bỏ qua validate nhầm mỗi khi hideAddress=true).
   if (
-    !options.hideAddress &&
     v.cusTaxCode.trim() &&
     !/^\d{10}$|^\d{10}-\d{3}$|^\d{14}$/.test(v.cusTaxCode.trim())
   ) {
@@ -208,28 +208,26 @@ export function CustomerForm({
         </div>
       )}
 
-      {!hideAddress && (
-        <Field
+      <Field
+        id="cus_tax_code"
+        label="Mã số thuế"
+        hint="Tuỳ chọn — để xuất hoá đơn VAT."
+        error={errors.cusTaxCode}
+        className="col-span-2 sm:col-span-1"
+      >
+        <Input
           id="cus_tax_code"
-          label="Mã số thuế"
-          hint="Tuỳ chọn — để xuất hoá đơn VAT."
-          error={errors.cusTaxCode}
-          className="col-span-2 sm:col-span-1"
-        >
-          <Input
-            id="cus_tax_code"
-            type="text"
-            inputMode="numeric"
-            value={values.cusTaxCode}
-            onChange={(e) => onChange("cusTaxCode", e.target.value)}
-            placeholder="0123456789"
-            disabled={disabled}
-            aria-invalid={!!errors.cusTaxCode}
-            data-ocid="customer_form.cus_tax_code_input"
-            className={inputClass(errors.cusTaxCode)}
-          />
-        </Field>
-      )}
+          type="text"
+          inputMode="numeric"
+          value={values.cusTaxCode}
+          onChange={(e) => onChange("cusTaxCode", e.target.value)}
+          placeholder="0123456789"
+          disabled={disabled}
+          aria-invalid={!!errors.cusTaxCode}
+          data-ocid="customer_form.cus_tax_code_input"
+          className={inputClass(errors.cusTaxCode)}
+        />
+      </Field>
 
       {!hideEmail && (
         <Field

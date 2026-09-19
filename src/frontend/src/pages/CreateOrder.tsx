@@ -1,13 +1,19 @@
 // CreateOrder page — Đặt hàng.
-// Flow: chọn nhà hàng → chọn món (MenuPicker) → hồ sơ khách hàng (tự điền
+// Flow: chọn địa chỉ nhận hàng (BẮT BUỘC, từ danh sách đã lưu — xem
+//       DeliveryAddressSelector.tsx) → app tự chọn nhà hàng gần nhất
+//       (lib/geo.ts) → chọn món (MenuPicker) → hồ sơ khách hàng (tự điền
 //       từ "Thông tin của bạn", xem Profile.tsx — không nhập lại trong giỏ)
 //       → đặt đơn (VPS /order/create).
 // Theme: bọc trong .bbh-order-theme (sơn mài đỏ / vàng hoàng cung, xem index.css).
 // UI tiếng Việt. Mobile-first.
 //
-// Khách tự đặt tài xế bằng app ngoài (không qua hệ thống này) nên biểu mẫu
-// KHÔNG có bước đặt tài xế, KHÔNG nhập địa chỉ giao hàng và KHÔNG tính phí ship
-// (khách trả phí trực tiếp bên ngoài). Tổng tiền hiển thị = giá hàng (đã gồm VAT).
+// TÁI CẤU TRÚC (Phần 3/6): trước đây khách tự chọn nhà hàng (dropdown) và
+// tự đặt tài xế bằng app ngoài (không qua hệ thống này) nên KHÔNG cần
+// nhập địa chỉ giao hàng/tính phí ship. Giờ app tự động đặt tài xế
+// (Lalamove — Phần 4-6), cần địa chỉ nhận hàng THẬT của khách để tính
+// khoảng cách/phí ship/thời gian giao — BẮT BUỘC chọn 1 địa chỉ đã lưu
+// trước khi đặt món. Tổng tiền hiển thị = giá hàng (đã gồm VAT) + phí
+// ship (Phần 4, hiện chưa tính — chỉ hiện giá hàng).
 //
 // Chỉ tạo đơn qua POST /order/create (VPS worker) — KHÔNG tạo QR tại thời điểm
 // đặt đơn. QR thanh toán được tạo theo yêu cầu ở trang theo dõi đơn
@@ -15,11 +21,12 @@
 // "Theo dõi đơn" (/track/$orderId).
 
 import type { CustomerFormValues } from "@/components/CustomerForm";
+import { DeliveryAddressSelector } from "@/components/DeliveryAddressSelector";
 import { MenuPicker } from "@/components/MenuPicker";
+import { NearestRestaurantDisplay } from "@/components/NearestRestaurantDisplay";
 import { OrderProcessFlow } from "@/components/OrderProcessFlow";
 import { PromoMarquee } from "@/components/PromoMarquee";
 import { PromotionBanner } from "@/components/PromotionBanner";
-import { RestaurantSelect } from "@/components/RestaurantSelect";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -38,13 +45,19 @@ import {
   useMenus,
   useRestaurants,
 } from "@/hooks/useQueries";
+import { findNearest } from "@/lib/geo";
 import { imageBytesToDataUrl } from "@/lib/utils";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import {
   create as vpsCreate,
   getCustomer as vpsGetCustomer,
 } from "@/lib/vps-client";
-import type { CreateOrderPayload, MenuItem, Restaurant } from "@/types";
+import type {
+  CreateOrderPayload,
+  CustomerAddress,
+  MenuItem,
+  Restaurant,
+} from "@/types";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Clock,
@@ -143,6 +156,15 @@ export default function CreateOrder() {
   );
 
   const [restaurantId, setRestaurantId] = useState<string>("");
+  // Địa chỉ nhận hàng khách đã chọn (BẮT BUỘC — Phần 3/6 tái cấu trúc đặt
+  // món từ xa) — quyết định nhà hàng gần nhất VÀ được dùng làm cusAddress
+  // khi submit thay vì khách gõ tay như trước.
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(() => {
+    const v = getVerifiedEmail();
+    return v ? v.email : null;
+  });
+  const [selectedAddress, setSelectedAddress] =
+    useState<CustomerAddress | null>(null);
   // Menu dùng chung cho toàn bộ chuỗi nhà hàng — hiện ngay từ đầu, không phụ thuộc
   // vào việc đã chọn nhà hàng hay chưa. Chỉ chặn ở bước THÊM MÓN (xem handleQuantityChange).
   const { data: menu, isLoading: menuLoading } = useMenus();
@@ -305,24 +327,23 @@ export default function CreateOrder() {
     };
   }, []);
 
-  const handleRestaurantChange = useCallback(
-    (id: string) => {
-      if (
-        restaurantId &&
-        id !== restaurantId &&
-        itemCount > 0 &&
-        !window.confirm(
-          "Đổi nhà hàng sẽ xoá các món đã chọn trong giỏ hàng. Tiếp tục?",
-        )
-      ) {
-        return;
-      }
-      setRestaurantId(id);
+  // App tự chọn nhà hàng gần nhất theo địa chỉ nhận hàng khách đã chọn —
+  // khách KHÔNG còn tự chọn nhà hàng (bỏ handleRestaurantChange cũ, vốn
+  // chỉ dùng khi RestaurantSelect còn là dropdown cho khách chọn tay).
+  const nearestRestaurant = selectedAddress
+    ? findNearest(visibleRestaurants, selectedAddress.lat, selectedAddress.lng)
+    : null;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ cần chạy lại khi id nhà hàng gần nhất đổi, không cần theo dõi cả object
+  useEffect(() => {
+    if (nearestRestaurant && nearestRestaurant.restaurantId !== restaurantId) {
+      setRestaurantId(nearestRestaurant.restaurantId);
+      // Đổi nhà hàng (VD khách đổi địa chỉ sang khu vực khác) → xoá giỏ
+      // hàng cũ, cùng hành vi đã có khi khách tự đổi nhà hàng trước đây.
       setCart({});
       setUpsellItems([]);
-    },
-    [restaurantId, itemCount],
-  );
+    }
+  }, [nearestRestaurant?.restaurantId]);
 
   async function handleSubmit() {
     if (storeClosed) {
@@ -331,6 +352,12 @@ export default function CreateOrder() {
     }
     if (!profileComplete) {
       toast.error('Vui lòng hoàn thành "Thông tin của bạn" trước khi đặt đơn.');
+      return;
+    }
+    // BẮT BUỘC chọn địa chỉ nhận hàng (Phần 3/6 tái cấu trúc đặt món từ
+    // xa) — không còn cho khách gõ tay/bỏ trống như trước.
+    if (!selectedAddress) {
+      toast.error("Vui lòng chọn địa chỉ nhận hàng trước khi đặt đơn.");
       return;
     }
     if (!restaurantId || cartLines.length === 0) {
@@ -352,7 +379,9 @@ export default function CreateOrder() {
         pickupAddress: selectedRestaurant!.address,
         cusName: customer.cusName.trim(),
         cusPhone: customer.cusPhone.trim(),
-        cusAddress: customer.cusAddress.trim(),
+        // Địa chỉ nhận hàng — từ danh sách địa chỉ đã lưu (bắt buộc chọn,
+        // đã kiểm tra ở trên), KHÔNG còn gõ tay trong form như trước.
+        cusAddress: selectedAddress.address,
         cusTaxCode: customer.cusTaxCode.trim(),
         receiverEmail: customer.receiverEmail.trim(),
         items: displayCartLines.map((l) => ({
@@ -440,12 +469,21 @@ export default function CreateOrder() {
               (xem handleQuantityChange). */}
           <div data-ocid="create_order.menu_card">
             <hr className="mb-5 border-border" />
-            <div className="mb-4" data-ocid="create_order.restaurant_card">
-              <RestaurantSelect
-                restaurants={visibleRestaurants}
+            <div
+              className="mb-4 flex flex-col gap-3"
+              data-ocid="create_order.restaurant_card"
+            >
+              <DeliveryAddressSelector
+                verifiedEmail={verifiedEmail}
+                onVerified={setVerifiedEmail}
+                selectedAddressId={selectedAddress?.id ?? null}
+                onSelectAddress={setSelectedAddress}
+              />
+              <NearestRestaurantDisplay
+                restaurantName={nearestRestaurant?.name ?? null}
+                restaurantAddress={nearestRestaurant?.address ?? null}
                 isLoading={restaurantsLoading}
-                value={restaurantId}
-                onChange={handleRestaurantChange}
+                hasNoResult={!restaurantsLoading && !nearestRestaurant}
               />
             </div>
             <MenuPicker
