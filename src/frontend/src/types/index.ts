@@ -38,6 +38,8 @@ export interface QuoteRequest {
   restaurantId: string;
   pickupAddress: string;
   dropAddress: string;
+  dropLat: number;
+  dropLng: number;
   items: Array<{
     itemId: string;
     name: string;

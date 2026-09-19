@@ -15,9 +15,32 @@
 
 const express = require('express');
 const canister = require('../lib/canister');
+const lalamove = require('../lib/lalamove');
 
 const router = express.Router();
 const VAT_RATE = 0.08; // VAT cố định 8%
+// Tốc độ trung bình xe máy trong thành phố (m/phút) — dùng để ước lượng
+// thời gian giao hàng từ khoảng cách Lalamove trả về, CỘNG thêm thời
+// gian chuẩn bị món cố định bên dưới. Đây là ước lượng, KHÔNG phải số
+// Lalamove tự tính (API "Get Quotation" không trả thời gian giao hàng
+// dự kiến trực tiếp, chỉ trả phí + khoảng cách).
+const AVG_SPEED_M_PER_MIN = 400; // ~24km/h
+const PREP_TIME_MINUTES = 15;
+
+// Lấy toạ độ nhà hàng làm điểm lấy hàng cho Lalamove — trả null nếu
+// không tìm thấy nhà hàng hoặc nhà hàng chưa nhập toạ độ (lat=0,lng=0 —
+// giá trị mặc định khi thêm field, xem Phần 1/6).
+async function findRestaurantCoordinates(restaurantId) {
+  try {
+    const restaurants = await canister.listRestaurants();
+    const r = restaurants.find((r) => r.restaurantId === restaurantId);
+    if (!r || (r.lat === 0 && r.lng === 0)) return null;
+    return { lat: r.lat, lng: r.lng, address: r.address };
+  } catch (e) {
+    console.warn('[quote] listRestaurants failed:', e.message);
+    return null;
+  }
+}
 
 // Lấy price cho mỗi item từ canister getMenuForRestaurant (nếu frontend không gửi price).
 // Trả Map<itemId, price> (price là Number, VND). Nếu canister call fail → trả null
@@ -63,46 +86,64 @@ async function computeGoodsAmount(restaurantId, items) {
   }, 0);
 }
 
-// Fetch paymentMode từ canister (giống routes/create.js). 'customer' → bỏ qua
-// Ahamove quote; 'driver' (default) → flow Ahamove như cũ. Trả 'driver' khi
-// canister call fail để hai route luôn consistent.
-async function fetchPaymentMode() {
-  try {
-    const mode = await canister.getPaymentMode();
-    if (mode === 'customer' || mode === 'driver') {
-      return mode;
-    }
-  } catch (e) {
-    console.warn('[quote] canister getPaymentMode failed, defaulting to driver:', e.message);
-  }
-  return 'driver';
-}
-
 // POST /quote — frontend contract (camelCase response)
-// Body: { restaurantId, pickupAddress, dropAddress, items:[{itemId,name,quantity}] }
+// Body: { restaurantId, pickupAddress, dropAddress, dropLat, dropLng, items:[{itemId,name,quantity}] }
 router.post('/quote', async (req, res, next) => {
   try {
-    const { restaurantId, pickupAddress, dropAddress, items } = req.body || {};
+    const { restaurantId, pickupAddress, dropAddress, dropLat, dropLng, items } = req.body || {};
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'items required' });
     }
 
     const goodsAmount = await computeGoodsAmount(restaurantId, items);
     // Giá menu đã gồm VAT → không cộng thêm 8% VAT.
-    // Khách tự đặt tài xế bằng app ngoài → không cộng phí ship, không quote Ahamove.
     const taxTotal = 0;
-    const shippingFee = 0;
-    const ahamoveOrderId = '';
-    const estimatedDeliveryMinutes = 0;
 
-    const amount = goodsAmount;
+    // Tính phí ship + thời gian giao qua Lalamove "Get Quotation" — CẦN
+    // toạ độ cả 2 đầu (nhà hàng + khách). Thiếu toạ độ nhà hàng (chưa
+    // nhập, Phần 1/6) hoặc thiếu toạ độ khách (dropLat/dropLng) hoặc gọi
+    // Lalamove thất bại (thiếu credentials, mạng lỗi, sai serviceType
+    // cho thị trường...) → KHÔNG chặn đặt món, chỉ fallback về 0 và ghi
+    // log rõ để dễ chẩn đoán — đặt món vẫn phải hoạt động được dù
+    // Lalamove tạm thời có vấn đề.
+    let shippingFee = 0;
+    let estimatedDeliveryMinutes = 0;
+    let lalamoveQuotationId = '';
+    const pickup = await findRestaurantCoordinates(restaurantId);
+    if (!pickup) {
+      console.warn('[quote] Chưa có toạ độ nhà hàng hợp lệ cho', restaurantId, '— bỏ qua Lalamove');
+    } else if (dropLat == null || dropLng == null) {
+      console.warn('[quote] Thiếu dropLat/dropLng trong request — bỏ qua Lalamove');
+    } else {
+      try {
+        const quotation = await lalamove.getQuotation({
+          pickupLat: pickup.lat,
+          pickupLng: pickup.lng,
+          pickupAddress: pickupAddress || pickup.address,
+          dropLat: Number(dropLat),
+          dropLng: Number(dropLng),
+          dropAddress: dropAddress || '',
+        });
+        shippingFee = quotation.feeVnd;
+        lalamoveQuotationId = quotation.quotationId || '';
+        if (quotation.distanceMeters != null) {
+          estimatedDeliveryMinutes = Math.round(
+            quotation.distanceMeters / AVG_SPEED_M_PER_MIN + PREP_TIME_MINUTES,
+          );
+        }
+      } catch (e) {
+        console.error('[quote] Lalamove getQuotation lỗi:', e.message);
+      }
+    }
+
+    const amount = goodsAmount + shippingFee;
     res.json({
       shippingFee,
       goodsAmount,
       taxTotal,
       amount,
       vatRate: VAT_RATE,
-      ahamoveOrderId,
+      ahamoveOrderId: lalamoveQuotationId,
       estimatedDeliveryMinutes,
     });
   } catch (e) {

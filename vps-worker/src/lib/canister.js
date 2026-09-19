@@ -82,6 +82,18 @@ const IDL_FACTORY = ({ IDL }) => {
     deviceId: IDL.Text,
     phone: IDL.Text,
   });
+  // Restaurant — dùng cho listRestaurants (route mới POST /quote gọi
+  // Lalamove "Get Quotation": cần toạ độ nhà hàng làm điểm lấy hàng, xem
+  // lib/lalamove.js). lat/lng thêm ở Phần 1/6 tái cấu trúc đặt món từ xa.
+  const Restaurant = IDL.Record({
+    restaurantId: IDL.Text,
+    name: IDL.Text,
+    address: IDL.Text,
+    phone: IDL.Text,
+    visible: IDL.Bool,
+    lat: IDL.Float64,
+    lng: IDL.Float64,
+  });
   const Order = IDL.Record({
     orderId: IDL.Text,
     restaurantId: IDL.Text,
@@ -166,6 +178,7 @@ const IDL_FACTORY = ({ IDL }) => {
     isStoreOpen: IDL.Func([], [IDL.Bool], ['query']),
     callerHasEnterpriseRole: IDL.Func([IDL.Text, EnterpriseRole], [IDL.Bool], ['query']),
     listDevicesByRestaurant: IDL.Func([IDL.Text], [IDL.Vec(Device)], ['query']),
+    listRestaurants: IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
     isEmailVerified: IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     sendKmNotifyEmails: IDL.Func(
       [IDL.Vec(IDL.Text), IDL.Text, IDL.Text, IDL.Text],
@@ -355,6 +368,14 @@ async function listDevicesByRestaurant(restaurantId) {
   return await actor.listDevicesByRestaurant(restaurantId);
 }
 
+// listRestaurants — query có sẵn ở canister, dùng cho route mới POST
+// /quote: cần toạ độ (lat/lng) nhà hàng để gọi Lalamove "Get Quotation"
+// làm điểm lấy hàng.
+async function listRestaurants() {
+  const actor = getActor();
+  return await actor.listRestaurants();
+}
+
 // isEmailVerified — query, dùng để CHẶN THẬT ở tầng VPS (routes/customers.js
 // PUT /customers/:email) trước khi cho phép bật cờ nhận email Giờ Vàng —
 // KHÔNG chỉ dựa vào frontend ẩn form (đã xác nhận đây là lỗ hổng thật:
@@ -525,6 +546,7 @@ module.exports = {
   isStoreOpen,
   callerHasEnterpriseRole,
   listDevicesByRestaurant,
+  listRestaurants,
   isEmailVerified,
   sendKmNotifyEmails,
   applyPromotionCounter,

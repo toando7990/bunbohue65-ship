@@ -122,9 +122,13 @@ router.post('/order/create', async (req, res, next) => {
     }
     const amountAfterVoucher = amountAfterDiscount - voucherDiscountAmount;
 
-    // Không tạo đơn Ahamove (khách tự đặt tài xế bằng app ngoài, trả phí trực tiếp bên ngoài).
+    // Không tự đặt đơn Lalamove ở bước tạo đơn (việc đó ở Phần 6/6) — chỉ
+    // lưu lại phí ship Lalamove đã báo giá lúc /quote để tham khảo/báo
+    // cáo. Tài xế vẫn thanh toán tiền HÀNG trực tiếp với nhà hàng (không
+    // đổi — quyết định nghiệp vụ đã thống nhất khi tái cấu trúc luồng
+    // này) — QR thanh toán KHÔNG bao gồm phí ship, xem amount bên dưới.
     const ahamoveOrderId = frontendAhamoveOrderId || '';
-    const shippingFee = 0;
+    const shippingFee = Number(frontendShippingFee) || 0;
     const sharedLinkFromAhamove = '';
     const bookingStatus = 'confirmed';
 
