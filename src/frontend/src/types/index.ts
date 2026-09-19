@@ -194,6 +194,18 @@ export interface Customer {
   notifyKm: boolean;
 }
 
+// Địa chỉ nhận hàng đã lưu — tab "Địa chỉ nhận hàng" trong mục "Tôi".
+// lat/lng do khách tự ghim trên bản đồ (MapPicker.tsx), không phải gõ
+// tay — dùng cho Lalamove "Get Quotation" + tính nhà hàng gần nhất.
+export interface CustomerAddress {
+  id: number;
+  email: string;
+  label: string;
+  address: string;
+  lat: number;
+  lng: number;
+}
+
 // Payment mode — who pays the order amount on the driver screen.
 // 'driver' (default): the driver pays the order, then settles with the house.
 // 'customer': the customer pays the driver directly at pickup.

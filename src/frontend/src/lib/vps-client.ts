@@ -8,6 +8,7 @@ import type {
   CreateOrderPayload,
   CreateOrderResponse,
   Customer,
+  CustomerAddress,
   InvoiceResponse,
   QuoteRequest,
   QuoteResponse,
@@ -338,6 +339,53 @@ export async function updateCustomer(
     method: "PUT",
     path: `/customers/${encodeURIComponent(email)}`,
     body: { name, phone, notifyKm },
+  });
+}
+
+// Địa chỉ nhận hàng đã lưu (tab "Địa chỉ nhận hàng" trong mục "Tôi") —
+// CRUD đầy đủ, xem vps-worker/src/routes/customer-addresses.js. Toàn bộ
+// yêu cầu email ĐÃ XÁC THỰC (VPS tự kiểm tra lại qua canister, không tin
+// cờ client — 403 nếu chưa xác thực).
+export async function listCustomerAddresses(
+  email: string,
+): Promise<CustomerAddress[]> {
+  const res = await vpsFetch<{ ok: boolean; addresses: CustomerAddress[] }>({
+    method: "GET",
+    path: `/customers/${encodeURIComponent(email)}/addresses`,
+  });
+  return res.addresses;
+}
+
+export async function addCustomerAddress(
+  email: string,
+  data: { label: string; address: string; lat: number; lng: number },
+): Promise<CustomerAddress> {
+  return vpsFetch<CustomerAddress>({
+    method: "POST",
+    path: `/customers/${encodeURIComponent(email)}/addresses`,
+    body: data,
+  });
+}
+
+export async function updateCustomerAddress(
+  email: string,
+  id: number,
+  data: { label: string; address: string; lat: number; lng: number },
+): Promise<CustomerAddress> {
+  return vpsFetch<CustomerAddress>({
+    method: "PUT",
+    path: `/customers/${encodeURIComponent(email)}/addresses/${id}`,
+    body: data,
+  });
+}
+
+export async function deleteCustomerAddress(
+  email: string,
+  id: number,
+): Promise<void> {
+  await vpsFetch<{ ok: boolean }>({
+    method: "DELETE",
+    path: `/customers/${encodeURIComponent(email)}/addresses/${id}`,
   });
 }
 

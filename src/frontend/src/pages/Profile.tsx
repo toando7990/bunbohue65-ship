@@ -4,6 +4,7 @@
 // /customers/:email. Đây là hồ sơ dùng chung cho CreateOrder.tsx (giỏ
 // hàng không còn hỏi lại tên/SĐT/email, tự lấy từ đây).
 
+import { DeliveryAddressPanel } from "@/components/DeliveryAddressPanel";
 import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
 import { VoucherListPanel } from "@/components/VoucherListPanel";
 import { Button } from "@/components/ui/button";
@@ -214,6 +215,15 @@ export default function Profile() {
             Lưu thông tin
           </Button>
         </form>
+      )}
+
+      {verifiedEmail && (
+        <div className="mt-6" data-ocid="profile.delivery_address_section">
+          <h2 className="mb-3 font-display text-lg font-semibold tracking-tight">
+            Địa chỉ nhận hàng
+          </h2>
+          <DeliveryAddressPanel email={verifiedEmail} />
+        </div>
       )}
 
       {verifiedEmail && (
