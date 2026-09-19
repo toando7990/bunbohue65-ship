@@ -18,6 +18,7 @@ const mockUseIsStoreOpen = vi.fn();
 const mockUseGetStoreHours = vi.fn();
 const mockCreate = vi.fn();
 const mockGetCustomer = vi.fn();
+const mockQuote = vi.fn();
 
 vi.mock("@/hooks/useQueries", () => ({
   useRestaurants: () => mockUseRestaurants(),
@@ -44,14 +45,24 @@ vi.mock("@/hooks/useOpenCountdown", () => ({
 vi.mock("@/lib/vps-client", () => ({
   create: (...args: unknown[]) => mockCreate(...args),
   getCustomer: (...args: unknown[]) => mockGetCustomer(...args),
+  quote: (...args: unknown[]) => mockQuote(...args),
 }));
 
 vi.mock("@/lib/verification-storage", () => ({
   getVerifiedEmail: () => ({ email: "a@test.com" }),
 }));
 
+let capturedOnQuantityChange: ((itemId: string, delta: number) => void) | null =
+  null;
 vi.mock("@/components/MenuPicker", () => ({
-  MenuPicker: () => null,
+  MenuPicker: ({
+    onQuantityChange,
+  }: {
+    onQuantityChange: (itemId: string, delta: number) => void;
+  }) => {
+    capturedOnQuantityChange = onQuantityChange;
+    return <div data-ocid="mock-menu-picker" />;
+  },
 }));
 
 vi.mock("@/components/OrderProcessFlow", () => ({
@@ -125,15 +136,37 @@ const RESTAURANTS = [
   },
 ];
 
+const MENU = [
+  {
+    itemId: "ITEM1",
+    name: "Bún bò Huế",
+    price: 50000,
+    vatRate: 0.08,
+    unitName: "tô",
+    category: "Món chính",
+    visible: true,
+  },
+];
+
 describe("CreateOrder — chọn địa chỉ bắt buộc + tự chọn nhà hàng gần nhất", () => {
   beforeEach(() => {
     mockUseRestaurants.mockReturnValue({ data: RESTAURANTS, isLoading: false });
-    mockUseMenus.mockReturnValue({ data: [], isLoading: false });
+    mockUseMenus.mockReturnValue({ data: MENU, isLoading: false });
     mockUseIsStoreOpen.mockReturnValue({ data: true });
     mockUseGetStoreHours.mockReturnValue({ data: undefined });
     mockGetCustomer.mockResolvedValue(null);
+    mockQuote.mockResolvedValue({
+      shippingFee: 28000,
+      goodsAmount: 50000,
+      taxTotal: 0,
+      amount: 78000,
+      vatRate: 0.08,
+      ahamoveOrderId: "QUOTE-1",
+      estimatedDeliveryMinutes: 24,
+    });
     capturedOnSelectAddress = null;
     capturedNearestProps = null;
+    capturedOnQuantityChange = null;
   });
 
   afterEach(() => {
@@ -175,6 +208,81 @@ describe("CreateOrder — chọn địa chỉ bắt buộc + tự chọn nhà h�
     await waitFor(() => {
       expect(capturedNearestProps?.restaurantName).toBe(
         "Bún Bò Huế 65 - Cầu Giấy",
+      );
+    });
+  });
+
+  it("fetches a real shipping quote (debounced) once address + restaurant + cart items are all set, and passes it down", async () => {
+    render(<CreateOrder />);
+
+    capturedOnSelectAddress?.({
+      id: 1,
+      address: "123 Le Loi",
+      lat: 21.0285,
+      lng: 105.8542,
+    });
+    await waitFor(() => {
+      expect(capturedNearestProps?.restaurantName).toBe("Bún Bò Huế 65 - Láng");
+    });
+
+    // Chưa có món nào trong giỏ → chưa gọi quote.
+    expect(mockQuote).not.toHaveBeenCalled();
+
+    capturedOnQuantityChange?.("ITEM1", 1);
+
+    await waitFor(
+      () => {
+        expect(mockQuote).toHaveBeenCalledWith(
+          expect.objectContaining({
+            restaurantId: "R1",
+            dropLat: 21.0285,
+            dropLng: 105.8542,
+            items: [expect.objectContaining({ itemId: "ITEM1", quantity: 1 })],
+          }),
+        );
+      },
+      { timeout: 2000 },
+    );
+  });
+
+  it("sends the real shippingFee and Lalamove quotationId when creating the order", async () => {
+    mockCreate.mockResolvedValue({ orderId: "ORD-1" });
+    mockGetCustomer.mockResolvedValue({
+      email: "a@test.com",
+      name: "Nguyễn Văn A",
+      phone: "0912345678",
+      notifyKm: false,
+    });
+    render(<CreateOrder />);
+
+    capturedOnSelectAddress?.({
+      id: 1,
+      address: "123 Le Loi",
+      lat: 21.0285,
+      lng: 105.8542,
+    });
+    await waitFor(() => {
+      expect(capturedNearestProps?.restaurantName).toBe("Bún Bò Huế 65 - Láng");
+    });
+    capturedOnQuantityChange?.("ITEM1", 1);
+
+    await waitFor(
+      () => {
+        expect(mockQuote).toHaveBeenCalled();
+      },
+      { timeout: 2000 },
+    );
+
+    fireEvent.click(screen.getByTestId("create_order.open_cart_button"));
+    fireEvent.click(screen.getByTestId("create_order.submit_button"));
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          shippingFee: 28000,
+          ahamoveOrderId: "QUOTE-1",
+          cusAddress: "123 Le Loi",
+        }),
       );
     });
   });

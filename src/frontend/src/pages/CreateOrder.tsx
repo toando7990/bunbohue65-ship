@@ -51,6 +51,7 @@ import { getVerifiedEmail } from "@/lib/verification-storage";
 import {
   create as vpsCreate,
   getCustomer as vpsGetCustomer,
+  quote as vpsQuote,
 } from "@/lib/vps-client";
 import type {
   CreateOrderPayload,
@@ -345,6 +346,71 @@ export default function CreateOrder() {
     }
   }, [nearestRestaurant?.restaurantId]);
 
+  // Phí ship + thời gian giao dự kiến — gọi Lalamove "Get Quotation" qua
+  // VPS (POST /quote) mỗi khi đủ dữ liệu cần thiết (nhà hàng gần nhất +
+  // địa chỉ khách + có ít nhất 1 món trong giỏ). Debounce 500ms — tránh
+  // gọi liên tục khi khách bấm +/- số lượng nhiều lần liên tiếp.
+  const [shipQuote, setShipQuote] = useState<{
+    shippingFee: number;
+    estimatedDeliveryMinutes: number;
+    lalamoveQuotationId: string;
+  } | null>(null);
+  const [shipQuoteLoading, setShipQuoteLoading] = useState(false);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: nearestRestaurant là object mới mỗi lần render — chỉ cần theo dõi 2 field cụ thể ở dependency list bên dưới
+  useEffect(() => {
+    if (
+      !nearestRestaurant ||
+      !selectedAddress ||
+      displayCartLines.length === 0
+    ) {
+      setShipQuote(null);
+      return;
+    }
+    let cancelled = false;
+    setShipQuoteLoading(true);
+    const timer = setTimeout(() => {
+      vpsQuote({
+        restaurantId: nearestRestaurant.restaurantId,
+        pickupAddress: nearestRestaurant.address,
+        dropAddress: selectedAddress.address,
+        dropLat: selectedAddress.lat,
+        dropLng: selectedAddress.lng,
+        items: displayCartLines.map((l) => ({
+          itemId: l.item.itemId,
+          name: l.item.name,
+          quantity: l.quantity,
+        })),
+      })
+        .then((res) => {
+          if (cancelled) return;
+          setShipQuote({
+            shippingFee: res.shippingFee,
+            estimatedDeliveryMinutes: res.estimatedDeliveryMinutes,
+            lalamoveQuotationId: res.ahamoveOrderId,
+          });
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          console.warn("Không lấy được báo giá vận chuyển:", err);
+          setShipQuote(null);
+        })
+        .finally(() => {
+          if (!cancelled) setShipQuoteLoading(false);
+        });
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    nearestRestaurant?.restaurantId,
+    nearestRestaurant?.address,
+    selectedAddress,
+    displayCartLines,
+  ]);
+
   async function handleSubmit() {
     if (storeClosed) {
       toast.error("Ngoài giờ mở cửa — vui lòng quay lại sau.");
@@ -392,9 +458,13 @@ export default function CreateOrder() {
           vatRate: Number(l.item.vatRate),
           unitName: l.item.unitName,
         })),
-        // Không tính phí ship trong hệ thống — khách trả phí trực tiếp bên ngoài.
-        shippingFee: 0,
-        ahamoveOrderId: "",
+        // Phí ship + mã báo giá Lalamove (Phần 4/6) — VPS lưu lại để
+        // tham khảo/báo cáo, KHÔNG cộng vào amount (QR khách/tài xế
+        // thanh toán vẫn chỉ là tiền hàng, xem routes/create.js). Có
+        // thể chưa có (VD Lalamove tạm lỗi lúc đặt) — gửi 0/"" khi đó,
+        // VPS tự fallback, không chặn đặt món.
+        shippingFee: shipQuote?.shippingFee ?? 0,
+        ahamoveOrderId: shipQuote?.lalamoveQuotationId ?? "",
         ...(cartDiscounts.selectedVoucherCode
           ? { voucherCode: cartDiscounts.selectedVoucherCode }
           : {}),
@@ -484,6 +554,11 @@ export default function CreateOrder() {
                 restaurantAddress={nearestRestaurant?.address ?? null}
                 isLoading={restaurantsLoading}
                 hasNoResult={!restaurantsLoading && !nearestRestaurant}
+                shippingFee={shipQuote?.shippingFee ?? null}
+                estimatedDeliveryMinutes={
+                  shipQuote?.estimatedDeliveryMinutes ?? null
+                }
+                isQuoteLoading={shipQuoteLoading}
               />
             </div>
             <MenuPicker

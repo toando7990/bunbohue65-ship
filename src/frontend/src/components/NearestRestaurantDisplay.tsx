@@ -15,6 +15,13 @@ interface NearestRestaurantDisplayProps {
   // Không có địa chỉ nhận hàng hợp lệ hoặc không có nhà hàng nào đã cấu
   // hình toạ độ — chưa tính được nhà hàng gần nhất.
   hasNoResult: boolean;
+  // Phí ship + thời gian giao dự kiến từ Lalamove "Get Quotation" (Phần
+  // 4/6) — null khi đang tải hoặc chưa đủ dữ liệu để gọi (VD giỏ hàng
+  // rỗng), estimatedDeliveryMinutes=0 nghĩa là gọi được nhưng Lalamove
+  // không trả khoảng cách (hiếm, coi như không xác định được).
+  shippingFee: number | null;
+  estimatedDeliveryMinutes: number | null;
+  isQuoteLoading: boolean;
 }
 
 export function NearestRestaurantDisplay({
@@ -22,6 +29,9 @@ export function NearestRestaurantDisplay({
   restaurantAddress,
   isLoading,
   hasNoResult,
+  shippingFee,
+  estimatedDeliveryMinutes,
+  isQuoteLoading,
 }: NearestRestaurantDisplayProps) {
   if (isLoading) {
     return (
@@ -61,15 +71,33 @@ export function NearestRestaurantDisplay({
           <span className="line-clamp-1">{restaurantAddress}</span>
         </span>
       )}
-      {/* Thời gian giao hàng dự kiến — Phần 4/6 (Lalamove "Get
-          Quotation") sẽ điền số thật vào đây, thay placeholder này. */}
+      {/* Thời gian giao hàng dự kiến — từ Lalamove "Get Quotation"
+          (Phần 4/6). Đang tải khi khách vừa đổi địa chỉ/giỏ hàng; chưa
+          xác định khi Lalamove chưa trả kết quả (chưa đủ dữ liệu hoặc
+          lỗi tạm thời — routes/quote.js tự fallback, không chặn đặt
+          món). */}
       <span
         className="flex items-center gap-1 pl-6 text-xs text-muted-foreground"
-        data-ocid="nearest_restaurant.delivery_time_placeholder"
+        data-ocid="nearest_restaurant.delivery_time"
       >
         <Clock className="h-3 w-3 shrink-0" aria-hidden="true" />
-        Đang tính thời gian giao hàng dự kiến…
+        {isQuoteLoading
+          ? "Đang tính thời gian giao hàng dự kiến…"
+          : estimatedDeliveryMinutes
+            ? `Dự kiến giao trong ~${estimatedDeliveryMinutes} phút`
+            : "Chưa xác định được thời gian giao hàng"}
       </span>
+      {!isQuoteLoading && shippingFee !== null && (
+        <span
+          className="flex items-center justify-between pl-6 text-xs"
+          data-ocid="nearest_restaurant.shipping_fee"
+        >
+          <span className="text-muted-foreground">Phí ship</span>
+          <span className="font-semibold">
+            {shippingFee.toLocaleString("vi-VN")}đ
+          </span>
+        </span>
+      )}
     </div>
   );
 }
