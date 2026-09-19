@@ -105,6 +105,8 @@ module {
     name : Text,
     address : Text,
     phone : Text,
+    lat : Float,
+    lng : Float,
   ) : Result.Result<Types.Restaurant, Text> {
     let restaurant : Types.Restaurant = {
       restaurantId;
@@ -112,6 +114,8 @@ module {
       address;
       phone;
       visible = true;
+      lat;
+      lng;
     };
     restaurants.add(restaurantId, restaurant);
     #ok(restaurant);
@@ -125,6 +129,8 @@ module {
     address : Text,
     phone : Text,
     visible : Bool,
+    lat : Float,
+    lng : Float,
   ) : Result.Result<Types.Restaurant, Text> {
     switch (restaurants.get(restaurantId)) {
       case null { #err("Not found") };
@@ -135,6 +141,8 @@ module {
           address;
           phone;
           visible;
+          lat;
+          lng;
         };
         restaurants.add(restaurantId, restaurant);
         #ok(restaurant);

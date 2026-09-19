@@ -269,7 +269,14 @@ export async function addRestaurant(
   r: Omit<Restaurant, "visible"> & { visible?: boolean },
 ): Promise<Restaurant> {
   return unwrap(
-    await actor.addRestaurant(r.restaurantId, r.name, r.address, r.phone),
+    await actor.addRestaurant(
+      r.restaurantId,
+      r.name,
+      r.address,
+      r.phone,
+      r.lat,
+      r.lng,
+    ),
   );
 }
 
@@ -284,6 +291,8 @@ export async function updateRestaurant(
       r.address,
       r.phone,
       r.visible,
+      r.lat,
+      r.lng,
     ),
   );
 }

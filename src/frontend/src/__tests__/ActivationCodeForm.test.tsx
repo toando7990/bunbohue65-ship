@@ -42,6 +42,8 @@ function makeRestaurant(overrides: Partial<Restaurant> = {}): Restaurant {
     address: "123 Le Loi",
     visible: true,
     phone: "0901234567",
+    lat: 21.0285,
+    lng: 105.8542,
     ...overrides,
   };
 }

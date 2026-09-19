@@ -51,6 +51,8 @@ export default function RestaurantManager() {
         address: values.address,
         phone: values.phone,
         visible: values.visible,
+        lat: values.lat,
+        lng: values.lng,
       },
       {
         onSuccess: () => {
@@ -74,6 +76,8 @@ export default function RestaurantManager() {
         address: values.address,
         phone: values.phone,
         visible: values.visible,
+        lat: values.lat,
+        lng: values.lng,
       },
       {
         onSuccess: () => {
@@ -94,6 +98,8 @@ export default function RestaurantManager() {
         address: r.address,
         phone: r.phone,
         visible: !r.visible,
+        lat: r.lat,
+        lng: r.lng,
       },
       {
         onError: (e) =>

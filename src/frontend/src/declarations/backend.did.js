@@ -66,6 +66,8 @@ export const Restaurant = IDL.Record({
   'address' : IDL.Text,
   'visible' : IDL.Bool,
   'phone' : IDL.Text,
+  'lat' : IDL.Float64,
+  'lng' : IDL.Float64,
 });
 export const Result_2 = IDL.Variant({ 'ok' : Restaurant, 'err' : IDL.Text });
 export const Hmac = IDL.Text;
@@ -328,7 +330,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'addRestaurant' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Float64],
       [Result_2],
       [],
     ),
@@ -595,7 +597,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'updateRestaurant' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Bool],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Bool, IDL.Float64, IDL.Float64],
       [Result_2],
       [],
     ),
@@ -681,6 +683,8 @@ export const idlFactory = ({ IDL }) => {
     'address' : IDL.Text,
     'visible' : IDL.Bool,
     'phone' : IDL.Text,
+    'lat' : IDL.Float64,
+    'lng' : IDL.Float64,
   });
   const Result_2 = IDL.Variant({ 'ok' : Restaurant, 'err' : IDL.Text });
   const Hmac = IDL.Text;
@@ -931,7 +935,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'addRestaurant' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Float64],
         [Result_2],
         [],
       ),
@@ -1202,7 +1206,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateRestaurant' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Bool],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Bool, IDL.Float64, IDL.Float64],
         [Result_2],
         [],
       ),

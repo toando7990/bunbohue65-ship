@@ -177,6 +177,13 @@ module {
     address : Text;
     phone : Text;
     visible : Bool;
+    // Toạ độ nhà hàng — admin nhập tay (xem RestaurantManager.tsx). Dùng để
+    // gọi Lalamove "Get Quotation" (cần toạ độ 2 đầu) và tính nhà hàng gần
+    // nhất theo địa chỉ nhận hàng của khách (xem CreateOrder.tsx). 0.0/0.0
+    // (mặc định cho nhà hàng cũ chưa nhập) nghĩa là CHƯA CÓ toạ độ hợp lệ —
+    // frontend phải tự loại các nhà hàng này khỏi phép tính khoảng cách.
+    lat : Float;
+    lng : Float;
   };
 
   // Lightweight status snapshot returned to the frontend poll (5s). Carries no

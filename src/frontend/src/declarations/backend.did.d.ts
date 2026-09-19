@@ -171,6 +171,8 @@ export interface Restaurant {
   'address' : string,
   'visible' : boolean,
   'phone' : string,
+  'lat' : number,
+  'lng' : number,
 }
 export interface RestaurantEntry {
   'restaurantId' : string,
@@ -284,7 +286,7 @@ export interface _SERVICE {
     [string, string, bigint, string, bigint, string, Uint8Array],
     Result_5
   >,
-  'addRestaurant' : ActorMethod<[string, string, string, string], Result_2>,
+  'addRestaurant' : ActorMethod<[string, string, string, string, number, number], Result_2>,
   'applyPromotion' : ActorMethod<[string, bigint, Hmac], Result_16>,
   'applyPromotionCounter' : ActorMethod<[bigint, Hmac], Result_16>,
   'applyVoucher' : ActorMethod<[string, string, bigint, Hmac], Result_6>,
@@ -469,7 +471,7 @@ export interface _SERVICE {
     Result_3
   >,
   'updateRestaurant' : ActorMethod<
-    [string, string, string, string, boolean],
+    [string, string, string, string, boolean, number, number],
     Result_2
   >,
   'updateSalesPromo' : ActorMethod<

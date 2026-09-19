@@ -100,11 +100,13 @@ mixin (
     name : Text,
     address : Text,
     phone : Text,
+    lat : Float,
+    lng : Float,
   ) : async Result.Result<CoreTypes.Restaurant, Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
     };
-    MenuLib.addRestaurant(restaurants, restaurantId, name, address, phone);
+    MenuLib.addRestaurant(restaurants, restaurantId, name, address, phone, lat, lng);
   };
 
   // Admin only. Update an existing Restaurant (including visibility). Returns the updated restaurant.
@@ -114,11 +116,13 @@ mixin (
     address : Text,
     phone : Text,
     visible : Bool,
+    lat : Float,
+    lng : Float,
   ) : async Result.Result<CoreTypes.Restaurant, Text> {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       return #err("Admin only");
     };
-    MenuLib.updateRestaurant(restaurants, restaurantId, name, address, phone, visible);
+    MenuLib.updateRestaurant(restaurants, restaurantId, name, address, phone, visible, lat, lng);
   };
 
   // Admin only. Delete a Restaurant and its related price overrides. Returns success.

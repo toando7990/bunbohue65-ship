@@ -3,7 +3,7 @@
 
 import type { Restaurant } from "@/backend";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Loader2, LocateFixed } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 
 export interface RestaurantFormValues {
@@ -12,6 +12,8 @@ export interface RestaurantFormValues {
   address: string;
   phone: string;
   visible: boolean;
+  lat: number;
+  lng: number;
 }
 
 interface RestaurantFormProps {
@@ -31,6 +33,8 @@ const EMPTY: RestaurantFormValues = {
   address: "",
   phone: "",
   visible: true,
+  lat: 0,
+  lng: 0,
 };
 
 function genId(): string {
@@ -57,6 +61,8 @@ export function RestaurantForm({
           address: initial.address,
           phone: initial.phone,
           visible: initial.visible,
+          lat: initial.lat,
+          lng: initial.lng,
         }
       : { ...EMPTY, restaurantId: genId() },
   );
@@ -73,6 +79,8 @@ export function RestaurantForm({
         address: initial.address,
         phone: initial.phone,
         visible: initial.visible,
+        lat: initial.lat,
+        lng: initial.lng,
       });
     } else {
       setValues({ ...EMPTY, restaurantId: genId() });
@@ -87,6 +95,17 @@ export function RestaurantForm({
     if (!v.phone.trim()) e.phone = "Vui lòng nhập số điện thoại";
     else if (!/^[0-9+\-\s()]{6,20}$/.test(v.phone.trim()))
       e.phone = "Số điện thoại không hợp lệ";
+    // Toạ độ dùng cho Lalamove "Get Quotation" (phí ship/thời gian giao) và
+    // tính nhà hàng gần nhất — bắt buộc phải hợp lệ, không cho lưu 0/0 (giá
+    // trị mặc định cũ chưa nhập) hay ngoài phạm vi toạ độ thật.
+    if (v.lat === 0 && v.lng === 0) {
+      e.lat = "Vui lòng nhập toạ độ (chưa nhập hoặc đang là 0,0)";
+    } else {
+      if (v.lat < -90 || v.lat > 90)
+        e.lat = "Vĩ độ phải trong khoảng -90 đến 90";
+      if (v.lng < -180 || v.lng > 180)
+        e.lng = "Kinh độ phải trong khoảng -180 đến 180";
+    }
     return e;
   }
 
@@ -214,6 +233,99 @@ export function RestaurantForm({
             data-ocid="restaurant.form.phone_error"
           >
             {errors.phone}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-foreground">
+            Toạ độ (dùng tính phí ship & thời gian giao){" "}
+            <span className="text-destructive">*</span>
+          </span>
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => {
+              if (!navigator.geolocation) {
+                setErrors((s) => ({
+                  ...s,
+                  lat: "Trình duyệt không hỗ trợ lấy vị trí.",
+                }));
+                return;
+              }
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  setValues((s) => ({
+                    ...s,
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                  }));
+                  setErrors((s) => ({ ...s, lat: undefined, lng: undefined }));
+                },
+                () => {
+                  setErrors((s) => ({
+                    ...s,
+                    lat: "Không lấy được vị trí — vui lòng cho phép quyền vị trí hoặc nhập tay.",
+                  }));
+                },
+              );
+            }}
+            data-ocid="restaurant.form.locate_button"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground transition-smooth hover:bg-secondary disabled:opacity-50"
+          >
+            <LocateFixed className="h-3.5 w-3.5" aria-hidden="true" />
+            Lấy vị trí hiện tại
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <input
+              id="restaurant-lat"
+              type="number"
+              step="any"
+              value={values.lat}
+              onChange={(e) =>
+                setValues((s) => ({ ...s, lat: Number(e.target.value) }))
+              }
+              placeholder="Vĩ độ (VD: 21.0285)"
+              disabled={submitting}
+              aria-label="Vĩ độ"
+              aria-invalid={!!errors.lat}
+              data-ocid="restaurant.form.lat_input"
+              className={cn(
+                fieldBase,
+                errors.lat && "border-destructive focus:ring-destructive",
+              )}
+            />
+          </div>
+          <div>
+            <input
+              id="restaurant-lng"
+              type="number"
+              step="any"
+              value={values.lng}
+              onChange={(e) =>
+                setValues((s) => ({ ...s, lng: Number(e.target.value) }))
+              }
+              placeholder="Kinh độ (VD: 105.8542)"
+              disabled={submitting}
+              aria-label="Kinh độ"
+              aria-invalid={!!errors.lng}
+              data-ocid="restaurant.form.lng_input"
+              className={cn(
+                fieldBase,
+                errors.lng && "border-destructive focus:ring-destructive",
+              )}
+            />
+          </div>
+        </div>
+        {(errors.lat || errors.lng) && (
+          <p
+            className="text-xs text-destructive"
+            data-ocid="restaurant.form.coordinates_error"
+          >
+            {errors.lat || errors.lng}
           </p>
         )}
       </div>
