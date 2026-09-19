@@ -87,6 +87,25 @@ CREATE TABLE IF NOT EXISTS customers (
   updated_at  INTEGER NOT NULL
 );
 
+-- Địa chỉ nhận hàng đã lưu — tái cấu trúc đặt món từ xa (Phần 2/6): khách
+-- PHẢI chọn 1 địa chỉ đã lưu trước khi đặt (không gõ tay địa chỉ mỗi lần
+-- như trước). Khoá theo email ĐÃ XÁC THỰC (cùng cơ chế customers ở trên —
+-- không có tài khoản đăng nhập thật, email OTP là định danh khách duy
+-- nhất). lat/lng bắt buộc — khách tự ghim trên bản đồ (Leaflet/OSM, không
+-- cần geocoding riêng) khi lưu địa chỉ, dùng để gọi Lalamove "Get
+-- Quotation" và tính nhà hàng gần nhất (xem routes/quote.js, Phần 3-4).
+CREATE TABLE IF NOT EXISTS customer_addresses (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  email       TEXT NOT NULL,
+  label       TEXT NOT NULL DEFAULT '', -- VD "Nhà", "Công ty" — khách tự đặt tên, không bắt buộc
+  address     TEXT NOT NULL,            -- địa chỉ dạng chữ, khách tự gõ để hiển thị/ghi trên đơn
+  lat         REAL NOT NULL,
+  lng         REAL NOT NULL,
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_customer_addresses_email ON customer_addresses(email);
+
 -- Chống gửi trùng email nhắc KM (Giai đoạn 4b) — 1 dòng = đã gửi cho ĐÚNG
 -- ngày + chương trình + khung giờ đó rồi, không gửi lại dù cron chạy
 -- nhiều lần trong đúng phút khớp (hiếm nhưng có thể xảy ra nếu server
