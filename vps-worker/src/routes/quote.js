@@ -109,6 +109,14 @@ router.post('/quote', async (req, res, next) => {
     let shippingFee = 0;
     let estimatedDeliveryMinutes = 0;
     let lalamoveQuotationId = '';
+    // pickupStopId/dropStopId — cần gửi lại khi tạo đơn thật (Phần 6/6:
+    // POST /order/create) để gọi Lalamove "Place Order" đúng 2 điểm này.
+    // Quotation Lalamove thường hết hạn sau ~5 phút — nếu khách mất quá
+    // lâu giữa lúc xem báo giá và lúc bấm đặt, các id này sẽ không còn
+    // dùng được nữa, đó là tình huống BÌNH THƯỜNG (routes/create.js tự xử
+    // lý, không chặn tạo đơn).
+    let lalamovePickupStopId = '';
+    let lalamoveDropStopId = '';
     const pickup = await findRestaurantCoordinates(restaurantId);
     if (!pickup) {
       console.warn('[quote] Chưa có toạ độ nhà hàng hợp lệ cho', restaurantId, '— bỏ qua Lalamove');
@@ -126,6 +134,8 @@ router.post('/quote', async (req, res, next) => {
         });
         shippingFee = quotation.feeVnd;
         lalamoveQuotationId = quotation.quotationId || '';
+        lalamovePickupStopId = quotation.pickupStopId || '';
+        lalamoveDropStopId = quotation.dropStopId || '';
         if (quotation.distanceMeters != null) {
           estimatedDeliveryMinutes = Math.round(
             quotation.distanceMeters / AVG_SPEED_M_PER_MIN + PREP_TIME_MINUTES,
@@ -145,6 +155,8 @@ router.post('/quote', async (req, res, next) => {
       vatRate: VAT_RATE,
       ahamoveOrderId: lalamoveQuotationId,
       estimatedDeliveryMinutes,
+      lalamovePickupStopId,
+      lalamoveDropStopId,
     });
   } catch (e) {
     next(e);

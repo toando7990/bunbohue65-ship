@@ -16,6 +16,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const canister = require('../lib/canister');
+const lalamove = require('../lib/lalamove');
 const { generatePickupCode } = require('../lib/pickup-code');
 const { rateLimit } = require('../middleware/rate-limit');
 
@@ -37,6 +38,7 @@ router.post('/order/create', async (req, res, next) => {
     const {
       restaurantId, pickupAddress, cusName, cusPhone, cusAddress, cusTaxCode, receiverEmail,
       items, shippingFee: frontendShippingFee, ahamoveOrderId: frontendAhamoveOrderId,
+      lalamovePickupStopId, lalamoveDropStopId,
       voucherCode, isCounterOrder,
     } = body;
     const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
@@ -213,6 +215,47 @@ router.post('/order/create', async (req, res, next) => {
       canisterOk = false;
       canisterError = e.message;
       console.error('[create] canister createOrder error:', e.message, '— retry queue sẽ xử lý');
+    }
+
+    // 5. Tự động đặt tài xế Lalamove THẬT (Phần 6/6) — CHỈ khi bật cờ an
+    // toàn LALAMOVE_AUTO_DISPATCH=true (mặc định TẮT — chủ quán cần chủ
+    // động bật sau khi đã test kỹ với sandbox thật). Gọi placeOrder() phát
+    // sinh phí thật ngay lập tức từ tài khoản Lalamove của nhà hàng —
+    // KHÔNG PHẢI thao tác "thử rồi huỷ" miễn phí. KHÔNG BAO GIỜ chặn tạo
+    // đơn nếu bước này lỗi (quotation hết hạn — thường sau ~5 phút kể từ
+    // lúc /quote — là tình huống bình thường, không phải lỗi hệ thống) —
+    // nhà hàng vẫn tự đặt tài xế thủ công qua app ngoài (phương án dự
+    // phòng đã thống nhất từ đầu khi tái cấu trúc luồng này).
+    if (
+      process.env.LALAMOVE_AUTO_DISPATCH === 'true' &&
+      frontendAhamoveOrderId &&
+      lalamovePickupStopId &&
+      lalamoveDropStopId
+    ) {
+      try {
+        const restaurants = await canister.listRestaurants();
+        const restaurant = restaurants.find((r) => r.restaurantId === restaurantId);
+        const placed = await lalamove.placeOrder({
+          quotationId: frontendAhamoveOrderId,
+          pickupStopId: lalamovePickupStopId,
+          dropStopId: lalamoveDropStopId,
+          senderName: restaurant?.name || 'Nhà hàng',
+          senderPhone: restaurant?.phone || '',
+          recipientName: cusName,
+          recipientPhone: cusPhone,
+          recipientRemarks: `Đơn ${orderId} — mã nhận hàng ${pickupCode}`,
+        });
+        db.prepare(
+          `UPDATE orders SET lalamove_order_id = ?, lalamove_driver_id = ?,
+           lalamove_share_link = ?, lalamove_status = ?, updated_at = ? WHERE order_id = ?`,
+        ).run(placed.lalamoveOrderId, placed.driverId, placed.shareLink, placed.status, Date.now(), orderId);
+        console.log('[create] Lalamove placeOrder thành công:', orderId, '→', placed.lalamoveOrderId);
+      } catch (e) {
+        // KHÔNG throw — đơn đã tạo xong trong hệ thống, chỉ là chưa tự
+        // động gọi được tài xế. Log đủ chi tiết để nhà hàng/admin biết mà
+        // tự đặt tài xế thủ công thay thế.
+        console.error('[create] Lalamove placeOrder lỗi (đơn vẫn tạo bình thường):', orderId, e.message);
+      }
     }
 
     // Frontend contract: { orderId, ok, error? }

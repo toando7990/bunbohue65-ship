@@ -143,7 +143,86 @@ async function getQuotation({
     quotationId: data.quotationId,
     feeVnd: Math.round(Number(data.priceBreakdown.total)),
     distanceMeters: data.distance ? Number(data.distance.value) : null,
+    // stopId của từng điểm — BẮT BUỘC để gọi placeOrder() sau này (Place
+    // Order API cần biết điểm nào là pickup/drop trong quotation này).
+    // Theo đúng thứ tự đã gửi lên: index 0 = pickup (nhà hàng), index 1 =
+    // drop (khách) — xem stops trong body getQuotation() ở trên.
+    pickupStopId: data.stops?.[0]?.stopId ?? null,
+    dropStopId: data.stops?.[1]?.stopId ?? null,
   };
 }
 
-module.exports = { getQuotation, LalamoveError };
+// placeOrder — POST /v3/orders. GỌI THẬT SẼ TỰ ĐỘNG ĐIỀU ĐỘNG 1 TÀI XẾ VÀ
+// PHÁT SINH PHÍ THẬT TỪ TÀI KHOẢN LALAMOVE CỦA NHÀ HÀNG — không phải thao
+// tác có thể "thử rồi huỷ" miễn phí. Cần quotationId + pickupStopId/
+// dropStopId CÒN HIỆU LỰC (quotation Lalamove thường hết hạn sau khoảng 5
+// phút kể từ lúc tạo — xem lib getQuotation ở trên) — quotation hết hạn
+// sẽ khiến lệnh này thất bại, đây là tình huống BÌNH THƯỜNG cần xử lý
+// (không phải lỗi hệ thống), không phải chặn tạo đơn trong hệ thống —
+// nhà hàng vẫn có thể tự đặt tài xế thủ công qua app ngoài (phương án dự
+// phòng đã thống nhất từ đầu).
+async function placeOrder({
+  quotationId,
+  pickupStopId,
+  dropStopId,
+  senderName,
+  senderPhone,
+  recipientName,
+  recipientPhone,
+  recipientRemarks,
+}) {
+  const path = '/v3/orders';
+  const body = JSON.stringify({
+    data: {
+      quotationId,
+      sender: {
+        stopId: pickupStopId,
+        name: senderName,
+        phone: senderPhone,
+      },
+      recipients: [
+        {
+          stopId: dropStopId,
+          name: recipientName,
+          phone: recipientPhone,
+          remarks: recipientRemarks || '',
+        },
+      ],
+    },
+  });
+  const headers = buildHeaders('POST', path, body);
+
+  let res;
+  try {
+    res = await client.post(path, body, { headers });
+  } catch (err) {
+    if (err.response) {
+      console.error(
+        '[lalamove] placeOrder lỗi:',
+        err.response.status,
+        JSON.stringify(err.response.data),
+      );
+      throw new LalamoveError(
+        `Lalamove place order failed: ${err.response.status}`,
+        err.response.status,
+        err.response.data,
+      );
+    }
+    console.error('[lalamove] placeOrder lỗi mạng:', err.message);
+    throw new LalamoveError(`Lalamove network error: ${err.message}`, null, null);
+  }
+
+  const data = (res.data || {}).data;
+  if (!data || !data.orderId) {
+    throw new LalamoveError('Lalamove trả về dữ liệu đặt đơn không hợp lệ', res.status, res.data);
+  }
+
+  return {
+    lalamoveOrderId: data.orderId,
+    driverId: data.driverId || '',
+    shareLink: data.shareLink || '',
+    status: data.status || '',
+  };
+}
+
+module.exports = { getQuotation, placeOrder, LalamoveError };

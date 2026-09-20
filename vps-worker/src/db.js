@@ -43,7 +43,15 @@ CREATE TABLE IF NOT EXISTS orders (
   goods_amount        INTEGER NOT NULL,        -- tiền hàng (pre-tax + pre-shipping)
   shipping_fee        INTEGER NOT NULL,
   tax_total           INTEGER NOT NULL,        -- VAT 8% trên goods_amount
-  ahamove_order_id    TEXT NOT NULL DEFAULT '',
+  ahamove_order_id    TEXT NOT NULL DEFAULT '', -- tái dùng cho Lalamove quotationId (Phần 4/6)
+  -- Phần 6/6 — kết quả gọi Lalamove Place Order THẬT (khác quotationId ở
+  -- trên): rỗng nghĩa là CHƯA gọi/gọi thất bại (quotation hết hạn, tắt
+  -- LALAMOVE_AUTO_DISPATCH...) — nhà hàng tự đặt tài xế thủ công qua app
+  -- ngoài (phương án dự phòng), không ảnh hưởng gì tới đơn trong hệ thống.
+  lalamove_order_id   TEXT NOT NULL DEFAULT '',
+  lalamove_driver_id  TEXT NOT NULL DEFAULT '',
+  lalamove_share_link TEXT NOT NULL DEFAULT '', -- link cho khách theo dõi tài xế thật trên bản đồ Lalamove
+  lalamove_status     TEXT NOT NULL DEFAULT '',
   tingee_qr_id        TEXT NOT NULL DEFAULT '',
   tingee_qr_account   TEXT NOT NULL DEFAULT '',   -- account từ generate-dynamic-qr response
   tingee_bill_id      TEXT NOT NULL DEFAULT '',   -- billId từ generate-dynamic-qr response
@@ -288,6 +296,21 @@ function initSchema(db) {
   // INVOICE_MAX_RETRIES lần (xem routes/invoice.js).
   if (!colNames.has('invoice_retry_count')) {
     db.exec('ALTER TABLE orders ADD COLUMN invoice_retry_count INTEGER NOT NULL DEFAULT 0');
+  }
+
+  // Phần 6/6 tái cấu trúc đặt món từ xa — kết quả gọi Lalamove Place
+  // Order thật, nếu DB cũ chưa có.
+  if (!colNames.has('lalamove_order_id')) {
+    db.exec("ALTER TABLE orders ADD COLUMN lalamove_order_id TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has('lalamove_driver_id')) {
+    db.exec("ALTER TABLE orders ADD COLUMN lalamove_driver_id TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has('lalamove_share_link')) {
+    db.exec("ALTER TABLE orders ADD COLUMN lalamove_share_link TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has('lalamove_status')) {
+    db.exec("ALTER TABLE orders ADD COLUMN lalamove_status TEXT NOT NULL DEFAULT ''");
   }
 
   // customers: thêm km_notify_opt_in (Giai đoạn 4b) nếu DB cũ chưa có.
