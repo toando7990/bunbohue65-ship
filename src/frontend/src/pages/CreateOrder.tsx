@@ -354,6 +354,8 @@ export default function CreateOrder() {
     shippingFee: number;
     estimatedDeliveryMinutes: number;
     lalamoveQuotationId: string;
+    lalamovePickupStopId: string;
+    lalamoveDropStopId: string;
   } | null>(null);
   const [shipQuoteLoading, setShipQuoteLoading] = useState(false);
 
@@ -388,6 +390,8 @@ export default function CreateOrder() {
             shippingFee: res.shippingFee,
             estimatedDeliveryMinutes: res.estimatedDeliveryMinutes,
             lalamoveQuotationId: res.ahamoveOrderId,
+            lalamovePickupStopId: res.lalamovePickupStopId,
+            lalamoveDropStopId: res.lalamoveDropStopId,
           });
         })
         .catch((err) => {
@@ -465,6 +469,8 @@ export default function CreateOrder() {
         // VPS tự fallback, không chặn đặt món.
         shippingFee: shipQuote?.shippingFee ?? 0,
         ahamoveOrderId: shipQuote?.lalamoveQuotationId ?? "",
+        lalamovePickupStopId: shipQuote?.lalamovePickupStopId,
+        lalamoveDropStopId: shipQuote?.lalamoveDropStopId,
         ...(cartDiscounts.selectedVoucherCode
           ? { voucherCode: cartDiscounts.selectedVoucherCode }
           : {}),

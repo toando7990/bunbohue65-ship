@@ -59,6 +59,11 @@ export interface QuoteResponse {
   packagingFee: number;
   packagingItemName: string;
   packagingQty: number;
+  // Cần gửi lại khi tạo đơn thật (Phần 6/6 — tự động đặt tài xế
+  // Lalamove) — quotation Lalamove hết hạn sau ~5 phút nên các id này
+  // phải lấy từ ĐÚNG lần /quote gần nhất, không thể tự tạo lại.
+  lalamovePickupStopId: string;
+  lalamoveDropStopId: string;
 }
 // VPS create-order payload — sent to VPS worker /order/create (HMAC signed server-side).
 export interface CreateOrderPayload {
@@ -79,6 +84,11 @@ export interface CreateOrderPayload {
   }>;
   shippingFee: number;
   ahamoveOrderId: string;
+  // Cần gửi lại từ kết quả /quote (Phần 6/6) — quotation Lalamove hết
+  // hạn sau ~5 phút, VPS tự bỏ qua gọi tài xế thật nếu thiếu 2 giá trị
+  // này, không chặn tạo đơn.
+  lalamovePickupStopId?: string;
+  lalamoveDropStopId?: string;
   voucherCode?: string;
   /** true = đơn tại quầy (CounterOrder.tsx) — VPS routes/create.js gọi
    * applyPromotionCounter (Giờ Vàng tự động, không cần email) thay vì

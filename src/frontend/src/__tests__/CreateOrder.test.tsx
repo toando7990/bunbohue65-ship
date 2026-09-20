@@ -163,6 +163,8 @@ describe("CreateOrder — chọn địa chỉ bắt buộc + tự chọn nhà h�
       vatRate: 0.08,
       ahamoveOrderId: "QUOTE-1",
       estimatedDeliveryMinutes: 24,
+      lalamovePickupStopId: "STOP_PICKUP",
+      lalamoveDropStopId: "STOP_DROP",
     });
     capturedOnSelectAddress = null;
     capturedNearestProps = null;
@@ -282,6 +284,8 @@ describe("CreateOrder — chọn địa chỉ bắt buộc + tự chọn nhà h�
           shippingFee: 28000,
           ahamoveOrderId: "QUOTE-1",
           cusAddress: "123 Le Loi",
+          lalamovePickupStopId: "STOP_PICKUP",
+          lalamoveDropStopId: "STOP_DROP",
         }),
       );
     });
