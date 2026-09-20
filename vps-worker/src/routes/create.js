@@ -235,6 +235,13 @@ router.post('/order/create', async (req, res, next) => {
       try {
         const restaurants = await canister.listRestaurants();
         const restaurant = restaurants.find((r) => r.restaurantId === restaurantId);
+        // Link ảnh QR "nhận hàng" — chỉ nhúng nếu VPS_PUBLIC_URL đã cấu
+        // hình (không bắt buộc). Vẫn giữ mã chữ trong mọi trường hợp làm
+        // dự phòng (nếu tài xế không mở được link, hoặc VPS_PUBLIC_URL
+        // chưa cấu hình) — cùng cơ chế đọc mã bằng miệng đã có từ trước.
+        const qrLine = process.env.VPS_PUBLIC_URL
+          ? `\nQR nhận hàng: ${process.env.VPS_PUBLIC_URL}/order/${orderId}/pickup-qr.png`
+          : '';
         const placed = await lalamove.placeOrder({
           quotationId: frontendAhamoveOrderId,
           pickupStopId: lalamovePickupStopId,
@@ -243,7 +250,7 @@ router.post('/order/create', async (req, res, next) => {
           senderPhone: restaurant?.phone || '',
           recipientName: cusName,
           recipientPhone: cusPhone,
-          recipientRemarks: `Đơn ${orderId} — mã nhận hàng ${pickupCode}`,
+          recipientRemarks: `Đơn ${orderId} — mã nhận hàng ${pickupCode}${qrLine}`,
         });
         db.prepare(
           `UPDATE orders SET lalamove_order_id = ?, lalamove_driver_id = ?,
