@@ -46,6 +46,7 @@ import SalesPromoTypes "types/sales-promo";
 // for the variant fields on the exposed entities.
 import DeviceRoleValue "types/DeviceRoleValue";
 import BoolValue "mo:caffeineai-oql/BoolValue";
+import FloatValue "mo:caffeineai-oql/FloatValue";
 import IntValue "mo:caffeineai-oql/IntValue";
 import NatValue "mo:caffeineai-oql/NatValue";
 import RecordValue "mo:caffeineai-oql/RecordValue";
@@ -511,6 +512,8 @@ actor Main {
           address = "";
           phone = "";
           visible = false;
+          lat = 0.0;
+          lng = 0.0;
         },
       )
         .controllerOnly()
