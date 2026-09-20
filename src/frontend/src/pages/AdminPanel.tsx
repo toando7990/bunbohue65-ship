@@ -14,13 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   useCanisterIdText,
-  useGetPaymentMode,
   useGetStoreHours,
-  useSetPaymentMode,
   useSetStoreHours,
   useSetVpsSecret,
 } from "@/hooks/useQueries";
-import type { PaymentMode } from "@/types";
 import {
   Clock,
   Copy,
@@ -28,7 +25,6 @@ import {
   Loader2,
   ShieldOff,
   Trash2,
-  Wallet,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -71,9 +67,6 @@ function SectionCard({
 export function AdminPanel() {
   const [newSecret, setNewSecret] = useState<string>("");
   const [secretInputKey, setSecretInputKey] = useState<number>(0);
-  const [paymentModeDraft, setPaymentModeDraft] = useState<PaymentMode | null>(
-    null,
-  );
   const [openHour, setOpenHour] = useState<string>("");
   const [openMinute, setOpenMinute] = useState<string>("");
   const [closeHour, setCloseHour] = useState<string>("");
@@ -81,8 +74,6 @@ export function AdminPanel() {
 
   const setSecretMutation = useSetVpsSecret();
   const canisterIdQuery = useCanisterIdText();
-  const paymentModeQuery = useGetPaymentMode();
-  const setPaymentModeMutation = useSetPaymentMode();
   const storeHoursQuery = useGetStoreHours();
   const setStoreHoursMutation = useSetStoreHours();
 
@@ -95,10 +86,6 @@ export function AdminPanel() {
       setCloseMinute(storeHoursQuery.data.closeMinute.toString());
     }
   }, [storeHoursQuery.data]);
-
-  const currentPaymentMode: PaymentMode =
-    paymentModeDraft ??
-    (paymentModeQuery.data === "customer" ? "customer" : "driver");
 
   async function handleSetSecret(e: React.FormEvent) {
     e.preventDefault();
@@ -132,21 +119,6 @@ export function AdminPanel() {
       toast.success("Đã sao chép Canister ID.");
     } catch {
       toast.error("Không sao chép được. Vui lòng sao chép thủ công.");
-    }
-  }
-
-  async function handleUpdatePaymentMode(e: React.FormEvent) {
-    e.preventDefault();
-    try {
-      await setPaymentModeMutation.mutateAsync(currentPaymentMode);
-      toast.success("Đã cập nhật chế độ thanh toán đơn.");
-      setPaymentModeDraft(null);
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Không thể cập nhật chế độ thanh toán.";
-      toast.error(message);
     }
   }
 
@@ -296,100 +268,6 @@ export function AdminPanel() {
                 <ShieldOff className="h-4 w-4" aria-hidden="true" />
               )}
               Cập nhật secret
-            </Button>
-          </form>
-        </SectionCard>
-
-        {/* Payment mode */}
-        <SectionCard
-          icon={Wallet}
-          title="Chế độ thanh toán đơn"
-          description="Chọn ai là người thanh toán tiền đơn: tài xế trả trước rồi thanh toán lại, hoặc khách trả trực tiếp cho tài xế khi nhận hàng."
-          testId="admin.payment_mode_card"
-        >
-          <form
-            onSubmit={handleUpdatePaymentMode}
-            className="flex flex-col gap-3"
-            data-ocid="admin.payment_mode_form"
-          >
-            <fieldset
-              className="flex flex-col gap-2"
-              data-ocid="admin.payment_mode_fieldset"
-            >
-              <legend className="sr-only">Chế độ thanh toán đơn</legend>
-              <label
-                className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-smooth hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                data-ocid="admin.payment_mode.option.driver"
-              >
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  value="driver"
-                  checked={currentPaymentMode === "driver"}
-                  onChange={() => setPaymentModeDraft("driver")}
-                  className="mt-0.5 h-4 w-4 accent-primary"
-                  data-ocid="admin.payment_mode.radio.driver"
-                />
-                <span className="flex flex-col">
-                  <span className="text-sm font-medium text-foreground">
-                    Tài xế trả tiền đơn
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Tài xế thanh toán trước cho đơn, sau đó quyết toán với nhà.
-                  </span>
-                </span>
-              </label>
-              <label
-                className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-smooth hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                data-ocid="admin.payment_mode.option.customer"
-              >
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  value="customer"
-                  checked={currentPaymentMode === "customer"}
-                  onChange={() => setPaymentModeDraft("customer")}
-                  className="mt-0.5 h-4 w-4 accent-primary"
-                  data-ocid="admin.payment_mode.radio.customer"
-                />
-                <span className="flex flex-col">
-                  <span className="text-sm font-medium text-foreground">
-                    Khách trả tiền đơn
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Khách thanh toán trực tiếp cho tài xế khi nhận hàng.
-                  </span>
-                </span>
-              </label>
-            </fieldset>
-            <div
-              className="text-xs text-muted-foreground"
-              data-ocid="admin.payment_mode.current_value"
-            >
-              {paymentModeQuery.isLoading
-                ? "Đang tải chế độ hiện tại…"
-                : `Chế độ hiện tại: ${
-                    currentPaymentMode === "driver"
-                      ? "Tài xế trả tiền đơn"
-                      : "Khách trả tiền đơn"
-                  }`}
-            </div>
-            <Button
-              type="submit"
-              disabled={
-                setPaymentModeMutation.isPending ||
-                paymentModeQuery.isLoading ||
-                paymentModeDraft === null
-              }
-              data-ocid="admin.payment_mode.submit_button"
-              className="w-full sm:w-auto"
-            >
-              {setPaymentModeMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Wallet className="h-4 w-4" aria-hidden="true" />
-              )}
-              Cập nhật
             </Button>
           </form>
         </SectionCard>
