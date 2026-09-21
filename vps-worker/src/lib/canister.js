@@ -19,8 +19,18 @@ if (!VPS_SECRET) throw new Error('VPS_SECRET env var required');
 // Candid interface (IDL) cho 4 method VPS push + getOrderStatus + getMenuForRestaurant.
 // createOrder trả Result<Order, Text> → variant { ok, err }.
 // MenuItemRecord khớp chính xác CoreTypes.MenuItem của backend (xem
-// src/backend/types/core.mo:100-109 và frontend bindings
-// src/frontend/src/declarations/backend.did.js:47-56). Sai field → candid decode fail.
+// src/backend/types/core.mo:162-171 và frontend bindings
+// src/frontend/src/declarations/backend.did.js). Sai field → candid decode fail.
+//
+// BUG THẬT rất lâu đời đã sửa (từ commit đầu tiên tạo file này) — field
+// thật của canister là `image : Blob` (ẢNH THẬT, không phải URL), IDL ở
+// đây trước đó khai SAI thành `imageUrl : IDL.Text` — khiến MỌI lần gọi
+// getMenuForRestaurant() decode thất bại hoàn toàn (candid không tìm
+// thấy field imageUrl trong response, hiện field name dạng hash số
+// thay vì tên thật trong log lỗi). Vì Blob ảnh có thể rất lớn (nhiều
+// menu item x nhiều KB mỗi ảnh) và route /quote KHÔNG cần dữ liệu ảnh,
+// chỉ cần đúng field tồn tại để decode qua — dùng IDL.Vec(IDL.Nat8)
+// (kiểu Motoko Blob tương ứng trong candid).
 const IDL_FACTORY = ({ IDL }) => {
   const MenuItemRecord = IDL.Record({
     itemId: IDL.Text,
@@ -29,7 +39,7 @@ const IDL_FACTORY = ({ IDL }) => {
     unitName: IDL.Text,
     vatRate: IDL.Nat,
     category: IDL.Text,
-    imageUrl: IDL.Text,
+    image: IDL.Vec(IDL.Nat8),
     visible: IDL.Bool,
   });
   const OrderItem = IDL.Record({
