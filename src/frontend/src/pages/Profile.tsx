@@ -47,9 +47,18 @@ export default function Profile() {
   // Tự điền khi tải xong hồ sơ đã có — chỉ điền 1 lần lúc mới tải xong,
   // không ghi đè nếu khách đang gõ dở (cùng nguyên tắc đã áp dụng ở
   // MenuItemForm.tsx khi tải ảnh món ăn từ canister).
+  //
+  // BUG THẬT đã sửa: trước đây dùng customerQuery.isFetched (true cả khi
+  // LỖI, không chỉ khi thành công) — nếu lần gọi ĐẦU TIÊN gặp lỗi mạng
+  // tạm thời, prefilled bị đánh dấu true ngay lập tức dù chưa điền được
+  // gì, và React Query tự động thử lại thành công SAU ĐÓ cũng không còn
+  // kích hoạt lại useEffect này nữa (điều kiện !prefilled đã false) —
+  // khách sẽ thấy ô tên/SĐT trống mãi mãi dù dữ liệu thật vẫn còn nguyên
+  // trên server, trông như "mất" dữ liệu. Đổi sang isSuccess — CHỈ đánh
+  // dấu đã điền khi request thực sự thành công.
   const [prefilled, setPrefilled] = useState(false);
   useEffect(() => {
-    if (!prefilled && customerQuery.isFetched) {
+    if (!prefilled && customerQuery.isSuccess) {
       if (customerQuery.data) {
         setName(customerQuery.data.name);
         setPhone(customerQuery.data.phone);
@@ -57,7 +66,7 @@ export default function Profile() {
       }
       setPrefilled(true);
     }
-  }, [prefilled, customerQuery.isFetched, customerQuery.data]);
+  }, [prefilled, customerQuery.isSuccess, customerQuery.data]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();

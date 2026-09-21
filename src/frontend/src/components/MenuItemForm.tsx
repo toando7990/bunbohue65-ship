@@ -98,7 +98,16 @@ export function MenuItemForm({ item, onSaved, onCancel }: MenuItemFormProps) {
   // danh sách menu luôn rỗng (tránh vượt giới hạn kích thước phản hồi IC
   // 3MB). Chỉ điền vào state MỘT LẦN khi tải xong — không ghi đè ảnh mới
   // admin vừa chọn nếu query load lại sau đó (ví dụ do cache invalidate).
-  const { data: fetchedImageBytes, isFetched: imageFetched } = useItemImage(
+  //
+  // BUG THẬT đã sửa (cùng lỗi đã tìm thấy và sửa ở Profile.tsx): trước
+  // đây dùng isFetched (true cả khi LỖI mạng, không chỉ khi thành công)
+  // — nếu lần gọi ĐẦU TIÊN gặp lỗi mạng tạm thời, imageInitFromFetch bị
+  // đánh dấu true ngay dù chưa điền được ảnh gì, và React Query tự động
+  // thử lại thành công SAU ĐÓ cũng không còn kích hoạt lại useEffect này
+  // — admin sẽ thấy ảnh món trống mãi dù ảnh thật vẫn còn nguyên trên
+  // canister. Đổi sang isSuccess — CHỈ đánh dấu đã điền khi request thực
+  // sự thành công.
+  const { data: fetchedImageBytes, isSuccess: imageFetched } = useItemImage(
     item?.itemId,
   );
   const [imageInitFromFetch, setImageInitFromFetch] = useState(false);
