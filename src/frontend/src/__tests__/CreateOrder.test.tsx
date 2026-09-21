@@ -65,9 +65,6 @@ vi.mock("@/components/MenuPicker", () => ({
   },
 }));
 
-vi.mock("@/components/OrderProcessFlow", () => ({
-  OrderProcessFlow: () => null,
-}));
 vi.mock("@/components/PromoMarquee", () => ({ PromoMarquee: () => null }));
 vi.mock("@/components/PromotionBanner", () => ({
   PromotionBanner: () => null,

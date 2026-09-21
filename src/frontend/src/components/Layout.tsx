@@ -33,7 +33,6 @@ import {
   Truck,
   User,
   UtensilsCrossed,
-  Video,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
@@ -72,7 +71,6 @@ const PRIMARY_NAV: NavItem[] = [
     icon: User,
     hideOnPrefixes: ["/driver"],
   },
-  { to: "/grab-guide", label: "Hướng dẫn đặt Grab giao hàng", icon: Video },
   { to: "/ordering-partners", label: "Đối tác đặt món", icon: Store },
   { to: "/gioi-thieu", label: "Giới thiệu", icon: Info },
 ];

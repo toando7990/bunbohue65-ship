@@ -24,7 +24,6 @@ import type { CustomerFormValues } from "@/components/CustomerForm";
 import { DeliveryAddressSelector } from "@/components/DeliveryAddressSelector";
 import { MenuPicker } from "@/components/MenuPicker";
 import { NearestRestaurantDisplay } from "@/components/NearestRestaurantDisplay";
-import { OrderProcessFlow } from "@/components/OrderProcessFlow";
 import { PromoMarquee } from "@/components/PromoMarquee";
 import { PromotionBanner } from "@/components/PromotionBanner";
 import { Button } from "@/components/ui/button";
@@ -529,8 +528,6 @@ export default function CreateOrder() {
         data-ocid="create_order.page"
       >
         <header className="mb-4 flex flex-col gap-2.5">
-          <OrderProcessFlow />
-
           <PromotionBanner />
           <PromoMarquee />
         </header>

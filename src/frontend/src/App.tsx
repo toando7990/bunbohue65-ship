@@ -17,7 +17,6 @@ import { DeviceManager } from "@/pages/DeviceManager";
 import { DriverPaymentScreen } from "@/pages/DriverPaymentScreen";
 import { EnterpriseManagementPage } from "@/pages/EnterpriseManagementPage";
 import GioiThieu from "@/pages/GioiThieu";
-import GrabGuide from "@/pages/GrabGuide";
 import { MenuManager } from "@/pages/MenuManager";
 import OrderHistory from "@/pages/OrderHistory";
 import OrderList from "@/pages/OrderList";
@@ -299,12 +298,6 @@ const profileRoute = createRoute({
   component: () => <Profile />,
 });
 
-const grabGuideRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/grab-guide",
-  component: () => <GrabGuide />,
-});
-
 const gioiThieuRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/gioi-thieu",
@@ -450,7 +443,6 @@ const router = createRouter({
     claimRoute,
     historyRoute,
     profileRoute,
-    grabGuideRoute,
     gioiThieuRoute,
     orderingPartnersRoute,
     driverRoute,
