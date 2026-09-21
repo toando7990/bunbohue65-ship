@@ -644,7 +644,7 @@ export default function CreateOrder() {
             <span className="flex flex-col items-start">
               <span className="text-xs opacity-90">{itemCount} món</span>
               <span className="font-display text-base font-bold">
-                {formatVnd(totalAmount)}
+                {formatVnd(totalAmount + (shipQuote?.shippingFee ?? 0))}
               </span>
             </span>
             <span className="flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold">
@@ -785,6 +785,26 @@ export default function CreateOrder() {
                 <span className="font-mono">{formatVnd(totalAmount)}</span>
               </div>
 
+              {/* BUG THẬT đã sửa: phí ship Lalamove (shipQuote.shippingFee)
+                  trước đây không hiện ở đâu trong giỏ hàng — khách chỉ
+                  thấy tiền hàng + khuyến mãi, "Tổng thanh toán" không hề
+                  cộng phí ship vào dù đã tính được (hiện đúng ở khối
+                  NearestRestaurantDisplay phía trên, nhưng KHÔNG được nối
+                  sang đây). Chỉ hiện khi đã có kết quả (không hiện lúc
+                  đang tính/chưa xác định — tránh hiện 0đ gây hiểu nhầm
+                  miễn phí ship). */}
+              {shipQuote && shipQuote.shippingFee > 0 && (
+                <div
+                  className="flex items-center justify-between text-sm"
+                  data-ocid="create_order.shipping_fee_line"
+                >
+                  <span className="text-muted-foreground">Phí ship</span>
+                  <span className="font-mono">
+                    {formatVnd(shipQuote.shippingFee)}
+                  </span>
+                </div>
+              )}
+
               {cartDiscounts.kmDiscount > 0 && (
                 <div
                   className="flex items-center justify-between text-sm text-destructive"
@@ -850,7 +870,9 @@ export default function CreateOrder() {
                   Tổng thanh toán
                 </span>
                 <span className="font-mono text-lg font-bold text-[oklch(var(--bbh-gold))]">
-                  {formatVnd(cartDiscounts.finalTotal)}
+                  {formatVnd(
+                    cartDiscounts.finalTotal + (shipQuote?.shippingFee ?? 0),
+                  )}
                 </span>
               </div>
 
@@ -892,7 +914,11 @@ export default function CreateOrder() {
                   ) : (
                     <>
                       <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-                      Đặt đơn · {formatVnd(cartDiscounts.finalTotal)}
+                      Đặt đơn ·{" "}
+                      {formatVnd(
+                        cartDiscounts.finalTotal +
+                          (shipQuote?.shippingFee ?? 0),
+                      )}
                     </>
                   )}
                 </Button>

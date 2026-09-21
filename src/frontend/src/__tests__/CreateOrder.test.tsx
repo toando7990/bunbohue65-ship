@@ -29,12 +29,17 @@ vi.mock("@/hooks/useQueries", () => ({
 }));
 
 vi.mock("@/hooks/useCartDiscounts", () => ({
-  useCartDiscounts: () => ({
+  useCartDiscounts: (itemsTotal: number) => ({
     kmDiscount: 0,
     kmLabel: "",
     validVouchers: [],
     selectedVoucherCode: null,
     setSelectedVoucherCode: vi.fn(),
+    voucherDiscount: 0,
+    // finalTotal thật = itemsTotal - kmDiscount - voucherDiscount; ở đây
+    // luôn 0 nên finalTotal = itemsTotal (giữ đúng hành vi thật của hook
+    // thay vì hard-code 1 số cố định không theo dữ liệu test).
+    finalTotal: itemsTotal,
   }),
 }));
 
@@ -286,5 +291,42 @@ describe("CreateOrder — chọn địa chỉ bắt buộc + tự chọn nhà h�
         }),
       );
     });
+  });
+
+  it("shows a 'Phí ship' line in the cart AND adds it to the displayed total (BUG THẬT đã sửa)", async () => {
+    render(<CreateOrder />);
+
+    capturedOnSelectAddress?.({
+      id: 1,
+      address: "123 Le Loi",
+      lat: 21.0285,
+      lng: 105.8542,
+    });
+    await waitFor(() => {
+      expect(capturedNearestProps?.restaurantName).toBe("Bún Bò Huế 65 - Láng");
+    });
+    capturedOnQuantityChange?.("ITEM1", 1);
+
+    await waitFor(
+      () => {
+        expect(mockQuote).toHaveBeenCalled();
+      },
+      { timeout: 2000 },
+    );
+
+    fireEvent.click(screen.getByTestId("create_order.open_cart_button"));
+
+    // Trước khi sửa: dòng "Phí ship" không tồn tại ở đâu cả, và "Tổng
+    // thanh toán" chỉ bằng tiền hàng (50000), thiếu hẳn shippingFee
+    // (28000) dù đã tính được (mockQuote trả đúng shippingFee: 28000).
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("create_order.shipping_fee_line"),
+      ).toHaveTextContent("28.000");
+    });
+    // Tổng thanh toán = tiền hàng (50.000, 1 x 50000) + phí ship (28.000) = 78.000
+    expect(screen.getByTestId("create_order.submit_button")).toHaveTextContent(
+      "78.000",
+    );
   });
 });
