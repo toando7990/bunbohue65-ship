@@ -115,9 +115,51 @@ describe("QrScannerDialog", () => {
     await waitFor(() => {
       expect(screen.getByTestId("qr_scanner.error")).toBeInTheDocument();
     });
-    expect(
-      screen.queryByTestId("qr_scanner.camera_region"),
-    ).not.toBeInTheDocument();
+    // BUG THẬT đã sửa: trước đây ẩn hẳn (unmount) phần tử #qr-scanner-region
+    // khi có lỗi — new Html5Qrcode(id) ở lần mở dialog TIẾP THEO gọi
+    // document.getElementById(id) ĐỒNG BỘ trong constructor, throw ngay
+    // nếu không tìm thấy (không có try/catch bọc trước đây) → React Error
+    // Boundary bắt được, hiện toàn màn hình "Something went wrong!". Giờ
+    // phần tử LUÔN còn trong DOM (chỉ ẩn bằng class "hidden"), không unmount.
+    const region = screen.getByTestId("qr_scanner.camera_region");
+    expect(region).toBeInTheDocument();
+    expect(region).toHaveClass("hidden");
+  });
+
+  it("does not crash when reopening the dialog after a previous camera error (regression test cho bug thật)", async () => {
+    // Lần mở 1: camera lỗi → error state được set.
+    mockStart.mockRejectedValueOnce(new Error("Permission denied"));
+    const onOpenChange = vi.fn();
+    const { rerender } = render(
+      <QrScannerDialog open onOpenChange={onOpenChange} onScanned={vi.fn()} />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("qr_scanner.error")).toBeInTheDocument();
+    });
+
+    // Đóng rồi mở lại (open: true -> false -> true) — TRƯỚC ĐÂY đây là lúc
+    // crash xảy ra vì #qr-scanner-region đã bị unmount ở lần lỗi trước.
+    rerender(
+      <QrScannerDialog
+        open={false}
+        onOpenChange={onOpenChange}
+        onScanned={vi.fn()}
+      />,
+    );
+    mockStart.mockResolvedValueOnce(null); // lần 2 camera mở thành công
+    expect(() => {
+      rerender(
+        <QrScannerDialog
+          open
+          onOpenChange={onOpenChange}
+          onScanned={vi.fn()}
+        />,
+      );
+    }).not.toThrow();
+
+    await waitFor(() => {
+      expect(mockStart).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("does not start the camera when closed (open=false)", () => {

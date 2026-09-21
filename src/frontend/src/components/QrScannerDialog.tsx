@@ -67,7 +67,31 @@ export function QrScannerDialog({
     if (!open) return;
     setError(null);
     scannedRef.current = false;
-    const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
+
+    // QUAN TRỌNG — BUG THẬT đã gây crash "Something went wrong!" (trắng
+    // màn hình): new Html5Qrcode(id) gọi document.getElementById(id) ĐỒNG
+    // BỘ trong constructor và throw NGAY nếu không tìm thấy phần tử —
+    // KHÔNG phải lỗi bất đồng bộ nên .catch() bên dưới không bắt được.
+    // setError(null) ở trên KHÔNG áp dụng vào DOM ngay lập tức (React
+    // gộp cập nhật) — nếu lần mở dialog TRƯỚC đó đã lỗi (error !== null),
+    // DOM tại đúng thời điểm này vẫn đang hiện khối thông báo lỗi cũ
+    // (JSX trước đây ẩn hẳn <div id="qr-scanner-region"> mỗi khi có
+    // error) → document.getElementById trả về null → constructor throw
+    // → không có try/catch bọc → React Error Boundary bắt được, hiện
+    // toàn màn hình "Something went wrong!". Bọc try/catch ở đây +
+    // luôn giữ <div id={SCANNER_ELEMENT_ID}> trong DOM (xem JSX bên
+    // dưới, không còn ẩn hẳn bằng conditional render nữa) để sửa tận
+    // gốc, không chỉ chặn triệu chứng.
+    let scanner: Html5Qrcode;
+    try {
+      scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
+    } catch (err) {
+      console.error("[QrScannerDialog] không khởi tạo được scanner:", err);
+      setError(
+        "Không mở được camera. Vui lòng cấp quyền camera cho trình duyệt, hoặc kiểm tra thiết bị có camera không.",
+      );
+      return;
+    }
     scannerRef.current = scanner;
     let cancelled = false;
 
@@ -127,7 +151,7 @@ export function QrScannerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {error ? (
+        {error && (
           <div
             className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
             data-ocid="qr_scanner.error"
@@ -138,13 +162,18 @@ export function QrScannerDialog({
             />
             <p>{error}</p>
           </div>
-        ) : (
-          <div
-            id={SCANNER_ELEMENT_ID}
-            data-ocid="qr_scanner.camera_region"
-            className="overflow-hidden rounded-lg border border-border"
-          />
         )}
+        {/* LUÔN render (không ẩn hẳn bằng conditional unmount) — xem
+            comment dài ở useEffect phía trên: đây là phần tử
+            document.getElementById() cần tìm thấy MỌI lúc, kể cả khi
+            đang hiện lỗi, để lần mở dialog tiếp theo không bị crash. */}
+        <div
+          id={SCANNER_ELEMENT_ID}
+          data-ocid="qr_scanner.camera_region"
+          className={
+            error ? "hidden" : "overflow-hidden rounded-lg border border-border"
+          }
+        />
       </DialogContent>
     </Dialog>
   );
