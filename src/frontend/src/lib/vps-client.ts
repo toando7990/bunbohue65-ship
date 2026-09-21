@@ -379,6 +379,23 @@ export async function updateCustomerAddress(
   });
 }
 
+// Tự động lấy toạ độ theo địa chỉ chữ (trang Quản lý nhà hàng) — VPS
+// proxy tới Nominatim (OpenStreetMap, miễn phí, không cần API key).
+// Chỉ gọi 1 lần khi admin bấm nút, KHÔNG gọi theo mỗi ký tự gõ.
+export async function geocodeAddress(
+  address: string,
+): Promise<{ lat: number; lng: number; displayName: string }> {
+  return vpsFetch<{
+    ok: boolean;
+    lat: number;
+    lng: number;
+    displayName: string;
+  }>({
+    method: "GET",
+    path: `/geocode?address=${encodeURIComponent(address)}`,
+  });
+}
+
 export async function deleteCustomerAddress(
   email: string,
   id: number,

@@ -3,7 +3,8 @@
 
 import type { Restaurant } from "@/backend";
 import { cn } from "@/lib/utils";
-import { Loader2, LocateFixed } from "lucide-react";
+import { geocodeAddress } from "@/lib/vps-client";
+import { Loader2, LocateFixed, MapPinned } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 
 export interface RestaurantFormValues {
@@ -69,6 +70,14 @@ export function RestaurantForm({
   const [errors, setErrors] = useState<
     Partial<Record<keyof RestaurantFormValues, string>>
   >({});
+  // Trạng thái "Tự động lấy toạ độ từ địa chỉ" — độc lập với errors ở
+  // trên (đây là gợi ý/kết quả tra cứu, không phải lỗi validate form).
+  const [geocodeStatus, setGeocodeStatus] = useState<
+    | { kind: "idle" }
+    | { kind: "loading" }
+    | { kind: "success" }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
 
   // Reset khi chuyển giữa thêm/sửa hoặc đổi initial.
   useEffect(() => {
@@ -107,6 +116,27 @@ export function RestaurantForm({
         e.lng = "Kinh độ phải trong khoảng -180 đến 180";
     }
     return e;
+  }
+
+  // "Tự động lấy toạ độ từ địa chỉ" — gọi VPS proxy tới Nominatim.
+  // Không thay thế nhập tay/GPS — chỉ điền sẵn để admin tự kiểm tra lại.
+  async function handleGeocode() {
+    if (!values.address.trim() || geocodeStatus.kind === "loading") return;
+    setGeocodeStatus({ kind: "loading" });
+    try {
+      const result = await geocodeAddress(values.address.trim());
+      setValues((s) => ({ ...s, lat: result.lat, lng: result.lng }));
+      setErrors((s) => ({ ...s, lat: undefined, lng: undefined }));
+      setGeocodeStatus({ kind: "success" });
+    } catch (err) {
+      setGeocodeStatus({
+        kind: "error",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Không tra cứu được toạ độ lúc này.",
+      });
+    }
   }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -199,6 +229,38 @@ export function RestaurantForm({
             data-ocid="restaurant.form.address_error"
           >
             {errors.address}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={handleGeocode}
+          disabled={!values.address.trim() || geocodeStatus.kind === "loading"}
+          data-ocid="restaurant.form.geocode_button"
+          className="mt-1.5 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-xs font-semibold text-accent transition-smooth hover:bg-secondary/70 disabled:opacity-50"
+        >
+          {geocodeStatus.kind === "loading" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <MapPinned className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          {geocodeStatus.kind === "loading"
+            ? "Đang tìm toạ độ…"
+            : "Tự động lấy toạ độ từ địa chỉ"}
+        </button>
+        {geocodeStatus.kind === "success" && (
+          <p
+            className="text-xs text-accent"
+            data-ocid="restaurant.form.geocode_success"
+          >
+            ✓ Đã tìm thấy — vui lòng kiểm tra lại toạ độ trên trước khi lưu
+          </p>
+        )}
+        {geocodeStatus.kind === "error" && (
+          <p
+            className="text-xs text-destructive"
+            data-ocid="restaurant.form.geocode_error"
+          >
+            ✕ {geocodeStatus.message}
           </p>
         )}
       </div>

@@ -4,8 +4,19 @@
 
 import type { Restaurant } from "@/backend";
 import { RestaurantForm } from "@/components/RestaurantForm";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+const mockGeocodeAddress = vi.fn();
+vi.mock("@/lib/vps-client", () => ({
+  geocodeAddress: (...args: unknown[]) => mockGeocodeAddress(...args),
+}));
 
 function fillRequiredTextFields() {
   fireEvent.change(screen.getByTestId("restaurant.form.name_input"), {
@@ -23,6 +34,7 @@ describe("RestaurantForm — toạ độ (lat/lng)", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    mockGeocodeAddress.mockReset();
   });
 
   it("rejects submission when lat/lng are both still 0 (never entered)", () => {
@@ -125,5 +137,59 @@ describe("RestaurantForm — toạ độ (lat/lng)", () => {
     expect(
       screen.getByTestId("restaurant.form.coordinates_error"),
     ).toBeInTheDocument();
+  });
+
+  it("fills lat/lng from geocodeAddress when 'Tự động lấy toạ độ' is clicked", async () => {
+    mockGeocodeAddress.mockResolvedValue({
+      lat: 10.7723456,
+      lng: 106.6987654,
+      displayName: "123 Le Loi, TP.HCM",
+    });
+
+    render(<RestaurantForm onSubmit={vi.fn()} />);
+    fireEvent.change(screen.getByTestId("restaurant.form.address_input"), {
+      target: { value: "123 Le Loi, TP.HCM" },
+    });
+    fireEvent.click(screen.getByTestId("restaurant.form.geocode_button"));
+
+    await waitFor(() => {
+      expect(mockGeocodeAddress).toHaveBeenCalledWith("123 Le Loi, TP.HCM");
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("restaurant.form.geocode_success"),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("restaurant.form.lat_input")).toHaveValue(
+      10.7723456,
+    );
+    expect(screen.getByTestId("restaurant.form.lng_input")).toHaveValue(
+      106.6987654,
+    );
+  });
+
+  it("shows an error message when geocodeAddress fails, without touching lat/lng", async () => {
+    mockGeocodeAddress.mockRejectedValue(
+      new Error("Không tìm thấy toạ độ cho địa chỉ này."),
+    );
+
+    render(<RestaurantForm onSubmit={vi.fn()} />);
+    fireEvent.change(screen.getByTestId("restaurant.form.address_input"), {
+      target: { value: "quán bún bò gần chợ" },
+    });
+    fireEvent.click(screen.getByTestId("restaurant.form.geocode_button"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("restaurant.form.geocode_error"),
+      ).toHaveTextContent("Không tìm thấy toạ độ cho địa chỉ này.");
+    });
+    expect(screen.getByTestId("restaurant.form.lat_input")).toHaveValue(0);
+    expect(screen.getByTestId("restaurant.form.lng_input")).toHaveValue(0);
+  });
+
+  it("disables the geocode button when the address field is empty", () => {
+    render(<RestaurantForm onSubmit={vi.fn()} />);
+    expect(screen.getByTestId("restaurant.form.geocode_button")).toBeDisabled();
   });
 });

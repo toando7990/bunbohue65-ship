@@ -41,6 +41,7 @@ const restaurantHistoryRoutes = require('./routes/restaurant-history');
 const enterpriseHistoryRoutes = require('./routes/enterprise-history');
 const cashPaymentRoutes = require('./routes/cash-payment');
 const pickupQrImageRoutes = require('./routes/pickup-qr-image');
+const geocodeRoutes = require('./routes/geocode');
 
 const cronJobs = [];
 
@@ -88,6 +89,7 @@ app.use('/', restaurantHistoryRoutes);
 app.use('/', enterpriseHistoryRoutes);
 app.use('/', cashPaymentRoutes);
 app.use('/', pickupQrImageRoutes);
+app.use('/', geocodeRoutes);
 app.use('/', analyticsRoutes);
 
 // Error handler
