@@ -314,4 +314,32 @@ describe("QRDisplay driver Tingee QR payment flow", () => {
       );
     });
   });
+
+  it("shows the FULL amount (goods total, NOT minus shippingFee) on the payment QR screen (BUG THẬT nghiêm trọng đã sửa)", async () => {
+    // order.amount ĐÃ LÀ tiền hàng thuần (không bao giờ cộng shippingFee
+    // vào từ đầu — xem routes/create.js) — trước đây màn hình này trừ
+    // NHẦM order.shippingFee khỏi số hiện ra, khiến tài xế quét QR này
+    // chuyển khoản THIẾU tiền cho quán đúng bằng số phí ship của đơn.
+    mockRequestQr.mockResolvedValue({
+      ok: true,
+      qrCode: "00020101...",
+      billId: "bill-1",
+      expireAt: 1_700_000_100_000,
+      reused: false,
+    });
+    mockGetOrderStatus.mockResolvedValue(makeOrder());
+
+    render(
+      <QRDisplay order={makeOrder()} onClose={vi.fn()} onPaid={vi.fn()} />,
+    );
+    submitPickupCode("AB23CD");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("qr.amount")).toBeInTheDocument();
+    });
+    // makeOrder(): amount = 100.000, shippingFee = 10.000 — trước khi
+    // sửa, màn hình hiện 90.000 (SAI, thiếu đúng bằng phí ship).
+    expect(screen.getByTestId("qr.amount")).toHaveTextContent("100.000");
+    expect(screen.getByTestId("qr.amount")).not.toHaveTextContent("90.000");
+  });
 });

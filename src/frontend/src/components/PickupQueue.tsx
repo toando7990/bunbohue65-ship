@@ -230,10 +230,12 @@ export function PickupQueue({ orders, isLoading, isError }: PickupQueueProps) {
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    {/* Chỉ hiện tiền hàng — không gồm phí ship (khớp với
-                        PaymentQueue để tài xế đối chiếu số tiền nhận). */}
+                    {/* order.amount ĐÃ LÀ tiền hàng thuần — không trừ
+                        thêm shippingFee nữa (BUG THẬT đã sửa, cùng lỗi
+                        đã tìm thấy ở PaymentQueue.tsx: trừ nhầm khiến
+                        số tiền hiện ra thấp hơn số thật). */}
                     <span className="font-display text-xl font-bold text-primary">
-                      {formatVnd(order.amount - order.shippingFee)}
+                      {formatVnd(order.amount)}
                     </span>
                     <button
                       type="button"

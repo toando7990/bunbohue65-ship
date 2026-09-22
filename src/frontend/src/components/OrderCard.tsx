@@ -285,6 +285,22 @@ export function OrderCard({
         </div>
       )}
 
+      {/* Phí ship (Lalamove) — TÁCH RIÊNG khỏi order.amount (tiền hàng
+          thuần), tài xế trả riêng cho Lalamove, không phải khoản quán
+          nhận. BUG THẬT đã sửa: trước đây không hiện ở đâu cả trong
+          thẻ đơn, khách không biết đã tính phí ship chưa/bao nhiêu. */}
+      {order.shippingFee > 0n && (
+        <div
+          className="mt-2 flex items-center justify-between text-xs"
+          data-ocid={`order.card.${index}.shipping_fee_line`}
+        >
+          <span className="text-muted-foreground">Phí ship</span>
+          <span className="font-mono font-medium">
+            {formatVnd(order.shippingFee)}
+          </span>
+        </div>
+      )}
+
       {/* Hàng cuối: số mặt hàng (trái) + Tổng cộng (phải) — theo yêu cầu
           sắp xếp lại, chuyển xuống dòng cuối cùng của thẻ. */}
       <div className="mt-3 flex items-center justify-between border-t border-border pt-3">

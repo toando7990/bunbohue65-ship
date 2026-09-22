@@ -310,11 +310,18 @@ export function PaymentQueue({
                         )}
                       </span>
                     )}
-                    {/* Chỉ hiện tiền hàng — không gồm phí ship (khách tự trả
-                        tài xế bên ngoài, không phải khoản quán nhận). Khớp
+                    {/* Chỉ hiện tiền hàng — order.amount ĐÃ LÀ tiền hàng
+                        thuần (không bao giờ cộng phí ship vào từ đầu —
+                        xem routes/create.js), KHÔNG được trừ thêm
+                        shippingFee nữa (BUG THẬT đã sửa: trước đây trừ
+                        order.amount - order.shippingFee — đúng từ thời
+                        shippingFee luôn = 0, nhưng từ khi tích hợp
+                        Lalamove thật (Phần 4/6) shippingFee có giá trị
+                        thật khác 0, phép trừ này khiến số tiền hiện ra
+                        THẤP HƠN số thật tài xế cần trả cho quán). Khớp
                         với số trên màn QR. */}
                     <span className="font-display text-xl font-bold text-primary">
-                      {formatVnd(order.amount - order.shippingFee)}
+                      {formatVnd(order.amount)}
                     </span>
                     {isCancelled ? (
                       <span
@@ -381,7 +388,7 @@ export function PaymentQueue({
           }}
           orderId={photoConfirmOrder.orderId}
           cusName={photoConfirmOrder.cusName}
-          amount={photoConfirmOrder.amount - photoConfirmOrder.shippingFee}
+          amount={photoConfirmOrder.amount}
           onConfirmed={() => setPhotoConfirmOrder(null)}
         />
       )}

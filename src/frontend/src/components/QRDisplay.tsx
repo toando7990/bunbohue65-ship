@@ -305,7 +305,12 @@ export function QRDisplay({
                 className="font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl"
                 data-ocid="qr.amount"
               >
-                {formatVnd(order.amount - order.shippingFee)}
+                {/* order.amount ĐÃ LÀ tiền hàng thuần — BUG THẬT NGHIÊM
+                    TRỌNG đã sửa: trước đây trừ nhầm order.shippingFee
+                    khỏi số tiền hiện trên QR chuyển khoản thật — tài
+                    xế quét mã này sẽ chuyển khoản THIẾU tiền cho nhà
+                    hàng đúng bằng số phí ship Lalamove của đơn đó. */}
+                {formatVnd(order.amount)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Tiền hàng (không gồm phí ship)
