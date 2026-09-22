@@ -416,4 +416,76 @@ describe("CreateOrder — chọn địa chỉ bắt buộc + tự chọn nhà h�
     });
     expect(capturedNearestProps?.isFavorite).toBe(false);
   });
+
+  it("disables the submit button while the shipping quote is still loading (BUG THẬT đã sửa — có thể là nguyên nhân Lalamove không được gọi tự động)", async () => {
+    mockGetCustomer.mockResolvedValue({
+      email: "a@test.com",
+      name: "Nguyễn Văn A",
+      phone: "0912345678",
+      notifyKm: false,
+      favoriteRestaurantId: "",
+    });
+    // mockQuote KHÔNG BAO GIỜ resolve trong test này — mô phỏng đúng
+    // khoảng thời gian debounce (500ms) + gọi Lalamove thật (có độ trễ
+    // mạng) trước khi /quote trả về kết quả.
+    let resolveQuote: () => void = () => {};
+    mockQuote.mockImplementation(
+      () =>
+        new Promise<unknown>((resolve) => {
+          resolveQuote = () =>
+            resolve({
+              shippingFee: 28000,
+              goodsAmount: 50000,
+              taxTotal: 0,
+              amount: 78000,
+              vatRate: 0.08,
+              ahamoveOrderId: "QUOTE-1",
+              estimatedDeliveryMinutes: 24,
+              lalamovePickupStopId: "STOP_PICKUP",
+              lalamoveDropStopId: "STOP_DROP",
+            });
+        }),
+    );
+
+    render(<CreateOrder />);
+
+    capturedOnSelectAddress?.({
+      id: 1,
+      address: "123 Le Loi",
+      lat: 21.0285,
+      lng: 105.8542,
+    });
+    await waitFor(() => {
+      expect(capturedNearestProps?.restaurantName).toBe("Bún Bò Huế 65 - Láng");
+    });
+    capturedOnQuantityChange?.("ITEM1", 1);
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("create_order.open_cart_button"),
+      ).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId("create_order.open_cart_button"));
+
+    // TRƯỚC KHI SỬA: nút này vẫn bấm được ngay lập tức (không đợi quote
+    // xong) — khách có thể bấm đặt đơn trước khi lalamovePickupStopId/
+    // lalamoveDropStopId kịp có, khiến VPS không đủ dữ liệu gọi tài xế
+    // Lalamove tự động dù LALAMOVE_AUTO_DISPATCH=true.
+    await waitFor(() => {
+      expect(screen.getByTestId("create_order.submit_button")).toBeDisabled();
+    });
+
+    // Quote xong → nút mở lại được.
+    await waitFor(
+      () => {
+        expect(mockQuote).toHaveBeenCalled();
+      },
+      { timeout: 2000 },
+    );
+    resolveQuote();
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("create_order.submit_button"),
+      ).not.toBeDisabled();
+    });
+  });
 });

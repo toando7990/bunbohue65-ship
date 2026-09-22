@@ -929,7 +929,20 @@ export default function CreateOrder() {
                     submitting ||
                     storeClosed ||
                     cartLines.length === 0 ||
-                    !profileComplete
+                    !profileComplete ||
+                    // BUG THẬT rất có khả năng là nguyên nhân "không gọi
+                    // được tài xế Lalamove" — trước đây nút này KHÔNG chờ
+                    // shipQuoteLoading, khách có thể bấm đặt đơn ngay sau
+                    // khi thêm món đầu tiên, TRƯỚC khi /quote (debounce
+                    // 500ms + gọi Lalamove thật) kịp trả về kết quả —
+                    // lalamovePickupStopId/lalamoveDropStopId khi đó vẫn
+                    // rỗng, VPS không đủ điều kiện tự động gọi tài xế
+                    // (routes/create.js chỉ gọi khi có đủ cả 2 giá trị
+                    // này — không phải lỗi, chỉ là thiếu dữ liệu do bấm
+                    // quá nhanh). Buộc đợi quote xong (thành công hay
+                    // thất bại đều được — shipQuoteLoading về false ở cả
+                    // 2 trường hợp) trước khi cho đặt đơn.
+                    shipQuoteLoading
                   }
                   data-ocid="create_order.submit_button"
                 >
@@ -945,6 +958,14 @@ export default function CreateOrder() {
                     <>
                       <Clock className="h-4 w-4" aria-hidden="true" />
                       Ngoài giờ mở cửa
+                    </>
+                  ) : shipQuoteLoading ? (
+                    <>
+                      <Loader2
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                      Đang tính phí ship…
                     </>
                   ) : (
                     <>
