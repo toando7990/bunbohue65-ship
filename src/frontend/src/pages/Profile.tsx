@@ -10,6 +10,7 @@ import { VoucherListPanel } from "@/components/VoucherListPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRestaurants } from "@/hooks/useQueries";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import { getCustomer, updateCustomer } from "@/lib/vps-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,6 +42,11 @@ export default function Profile() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [notifyKm, setNotifyKm] = useState(false);
+  // "Nhà hàng yêu thích" — ưu tiên chọn khi đặt món từ xa, thay cho tự
+  // động chọn nhà hàng gần nhất (CreateOrder.tsx). "" = chưa chọn/không
+  // có nhà hàng yêu thích, dùng lại hành vi tự động như cũ.
+  const [favoriteRestaurantId, setFavoriteRestaurantId] = useState("");
+  const restaurantsQuery = useRestaurants();
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
   const [saving, setSaving] = useState(false);
 
@@ -63,6 +69,7 @@ export default function Profile() {
         setName(customerQuery.data.name);
         setPhone(customerQuery.data.phone);
         setNotifyKm(customerQuery.data.notifyKm);
+        setFavoriteRestaurantId(customerQuery.data.favoriteRestaurantId);
       }
       setPrefilled(true);
     }
@@ -84,7 +91,13 @@ export default function Profile() {
 
     setSaving(true);
     try {
-      await updateCustomer(verifiedEmail, name.trim(), phone.trim(), notifyKm);
+      await updateCustomer(
+        verifiedEmail,
+        name.trim(),
+        phone.trim(),
+        notifyKm,
+        favoriteRestaurantId,
+      );
       queryClient.invalidateQueries({ queryKey: ["customer", verifiedEmail] });
       toast.success("Đã lưu thông tin của bạn.");
     } catch (err) {
@@ -213,6 +226,31 @@ export default function Profile() {
               </span>
             </span>
           </label>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="profile-favorite-restaurant">
+              Nhà hàng yêu thích
+            </Label>
+            <select
+              id="profile-favorite-restaurant"
+              value={favoriteRestaurantId}
+              onChange={(e) => setFavoriteRestaurantId(e.target.value)}
+              className="h-10 rounded-md border border-border bg-card px-3 text-sm"
+              data-ocid="profile.favorite_restaurant_select"
+            >
+              <option value="">Không chọn — tự động chọn gần nhất</option>
+              {(restaurantsQuery.data ?? [])
+                .filter((r) => r.visible)
+                .map((r) => (
+                  <option key={r.restaurantId} value={r.restaurantId}>
+                    {r.name}
+                  </option>
+                ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Khi đặt món từ xa, hệ thống sẽ ưu tiên chọn nhà hàng này thay vì
+              tự động chọn nhà hàng gần nhất.
+            </p>
+          </div>
           <Button
             type="submit"
             disabled={saving || customerQuery.isLoading}

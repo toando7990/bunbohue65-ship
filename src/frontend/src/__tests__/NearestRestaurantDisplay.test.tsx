@@ -14,6 +14,8 @@ const BASE_PROPS = {
   shippingFee: null,
   estimatedDeliveryMinutes: null,
   isQuoteLoading: false,
+  isFavorite: false,
+  nearestIsDifferentFromFavorite: false,
 };
 
 describe("NearestRestaurantDisplay", () => {

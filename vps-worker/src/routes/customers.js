@@ -34,6 +34,7 @@ function toCustomerJson(row) {
     name: row.name,
     phone: row.phone,
     notifyKm: !!row.km_notify_opt_in,
+    favoriteRestaurantId: row.favorite_restaurant_id || '',
   };
 }
 
@@ -46,7 +47,7 @@ router.get('/customers/:email', (req, res) => {
   }
 
   const row = db.prepare(
-    'SELECT email, name, phone, km_notify_opt_in FROM customers WHERE email = ?'
+    'SELECT email, name, phone, km_notify_opt_in, favorite_restaurant_id FROM customers WHERE email = ?'
   ).get(email);
 
   if (!row) {
@@ -70,13 +71,13 @@ router.post('/customers', (req, res) => {
 
   // Chỉ tạo row khi email chưa tồn tại — không ghi đè dữ liệu đã có.
   db.prepare(
-    `INSERT INTO customers (email, name, phone, km_notify_opt_in, created_at, updated_at)
-     VALUES (@email, '', '', 0, @now, @now)
+    `INSERT INTO customers (email, name, phone, km_notify_opt_in, favorite_restaurant_id, created_at, updated_at)
+     VALUES (@email, '', '', 0, '', @now, @now)
      ON CONFLICT(email) DO NOTHING`
   ).run({ email, now });
 
   const row = db.prepare(
-    'SELECT email, name, phone, km_notify_opt_in FROM customers WHERE email = ?'
+    'SELECT email, name, phone, km_notify_opt_in, favorite_restaurant_id FROM customers WHERE email = ?'
   ).get(email);
 
   res.json(toCustomerJson(row));
@@ -95,6 +96,15 @@ router.put('/customers/:email', async (req, res) => {
   const name = String(body.name || '').trim();
   const phone = String(body.phone || '').trim();
   const notifyKm = body.notifyKm === true ? 1 : 0;
+  // "Nhà hàng yêu thích" — TUỲ CHỌN, khác name/phone (bắt buộc). undefined
+  // (không gửi) → giữ nguyên giá trị cũ trong DB (COALESCE), không ghi đè
+  // về rỗng — cho phép gọi PUT chỉ để đổi tên/SĐT mà không đụng tới nhà
+  // hàng yêu thích đã chọn trước đó, và ngược lại (CreateOrder.tsx gọi
+  // riêng để đổi nhà hàng yêu thích, không có form đầy đủ tên/SĐT).
+  const favoriteRestaurantId =
+    body.favoriteRestaurantId !== undefined
+      ? String(body.favoriteRestaurantId).trim()
+      : null;
 
   if (!email) {
     return res.status(400).json({ ok: false, error: 'Missing email' });
@@ -125,13 +135,14 @@ router.put('/customers/:email', async (req, res) => {
 
   const now = Date.now();
   db.prepare(
-    `INSERT INTO customers (email, name, phone, km_notify_opt_in, created_at, updated_at)
-     VALUES (@email, @name, @phone, @notifyKm, @now, @now)
-     ON CONFLICT(email) DO UPDATE SET name = @name, phone = @phone, km_notify_opt_in = @notifyKm, updated_at = @now`
-  ).run({ email, name, phone, notifyKm, now });
+    `INSERT INTO customers (email, name, phone, km_notify_opt_in, favorite_restaurant_id, created_at, updated_at)
+     VALUES (@email, @name, @phone, @notifyKm, COALESCE(@favoriteRestaurantId, ''), @now, @now)
+     ON CONFLICT(email) DO UPDATE SET name = @name, phone = @phone, km_notify_opt_in = @notifyKm,
+       favorite_restaurant_id = COALESCE(@favoriteRestaurantId, favorite_restaurant_id), updated_at = @now`
+  ).run({ email, name, phone, notifyKm, favoriteRestaurantId, now });
 
   const row = db.prepare(
-    'SELECT email, name, phone, km_notify_opt_in FROM customers WHERE email = ?'
+    'SELECT email, name, phone, km_notify_opt_in, favorite_restaurant_id FROM customers WHERE email = ?'
   ).get(email);
 
   res.json(toCustomerJson(row));

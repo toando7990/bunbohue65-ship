@@ -329,16 +329,21 @@ export async function getCustomer(email: string): Promise<Customer | null> {
 // Cập nhật hồ sơ khách hàng (tên + SĐT + đăng ký nhận thông báo KM, Giai
 // đoạn 4b) — LUÔN ghi đè, khác getCustomer/POST (create-only). Dùng cho
 // trang "Thông tin của bạn" (Profile.tsx).
+//
+// favoriteRestaurantId TUỲ CHỌN — không truyền (undefined) thì VPS giữ
+// nguyên giá trị cũ đã lưu, không xoá; truyền "" để khách chủ động bỏ
+// chọn nhà hàng yêu thích.
 export async function updateCustomer(
   email: string,
   name: string,
   phone: string,
   notifyKm: boolean,
+  favoriteRestaurantId?: string,
 ): Promise<Customer> {
   return vpsFetch<Customer>({
     method: "PUT",
     path: `/customers/${encodeURIComponent(email)}`,
-    body: { name, phone, notifyKm },
+    body: { name, phone, notifyKm, favoriteRestaurantId },
   });
 }
 

@@ -69,7 +69,7 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 function formatVnd(value: number): string {
@@ -165,6 +165,11 @@ export default function CreateOrder() {
   });
   const [selectedAddress, setSelectedAddress] =
     useState<CustomerAddress | null>(null);
+  // Nhà hàng yêu thích của khách (Profile.tsx) — "" nếu chưa chọn. Ưu
+  // tiên chọn nhà hàng này khi đặt món từ xa, thay cho tự động chọn gần
+  // nhất — chỉ áp dụng nếu nhà hàng đó vẫn đang hiển thị (visible=true),
+  // xem logic selectedRestaurant bên dưới.
+  const [favoriteRestaurantId, setFavoriteRestaurantId] = useState("");
   // Menu dùng chung cho toàn bộ chuỗi nhà hàng — hiện ngay từ đầu, không phụ thuộc
   // vào việc đã chọn nhà hàng hay chưa. Chỉ chặn ở bước THÊM MÓN (xem handleQuantityChange).
   const { data: menu, isLoading: menuLoading } = useMenus();
@@ -317,6 +322,7 @@ export default function CreateOrder() {
           cusName: customer.name || prev.cusName,
           cusPhone: customer.phone || prev.cusPhone,
         }));
+        setFavoriteRestaurantId(customer.favoriteRestaurantId || "");
       })
       .catch(() => {
         // Không tìm thấy khách (404) hoặc lỗi mạng — bỏ qua, khách tự nhập.
@@ -333,22 +339,43 @@ export default function CreateOrder() {
   const nearestRestaurant = selectedAddress
     ? findNearest(visibleRestaurants, selectedAddress.lat, selectedAddress.lng)
     : null;
+  // Nhà hàng yêu thích ƯU TIÊN hơn nhà hàng gần nhất — chỉ áp dụng khi
+  // nhà hàng đó vẫn đang hiển thị (không bị ẩn/xoá sau khi khách chọn
+  // làm yêu thích). Không hợp lệ (đã ẩn, hoặc chưa chọn) → dùng lại nhà
+  // hàng gần nhất như hành vi cũ.
+  const favoriteRestaurant = favoriteRestaurantId
+    ? (visibleRestaurants.find(
+        (r) => r.restaurantId === favoriteRestaurantId,
+      ) ?? null)
+    : null;
+  const orderRestaurant = favoriteRestaurant ?? nearestRestaurant;
+  // Nhà hàng gần nhất khác nhà hàng yêu thích đang chọn — hiển thị gợi ý
+  // đổi cho khách biết có lựa chọn khác gần hơn (không tự động đổi).
+  const nearestIsDifferentFromFavorite =
+    !!favoriteRestaurant &&
+    !!nearestRestaurant &&
+    nearestRestaurant.restaurantId !== favoriteRestaurant.restaurantId;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ cần chạy lại khi id nhà hàng gần nhất đổi, không cần theo dõi cả object
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ cần chạy lại khi id nhà hàng đã chọn đổi, không cần theo dõi cả object
   useEffect(() => {
-    if (nearestRestaurant && nearestRestaurant.restaurantId !== restaurantId) {
-      setRestaurantId(nearestRestaurant.restaurantId);
+    if (orderRestaurant && orderRestaurant.restaurantId !== restaurantId) {
+      setRestaurantId(orderRestaurant.restaurantId);
       // Đổi nhà hàng (VD khách đổi địa chỉ sang khu vực khác) → xoá giỏ
       // hàng cũ, cùng hành vi đã có khi khách tự đổi nhà hàng trước đây.
       setCart({});
       setUpsellItems([]);
     }
-  }, [nearestRestaurant?.restaurantId]);
+  }, [orderRestaurant?.restaurantId]);
 
   // Phí ship + thời gian giao dự kiến — gọi Lalamove "Get Quotation" qua
-  // VPS (POST /quote) mỗi khi đủ dữ liệu cần thiết (nhà hàng gần nhất +
-  // địa chỉ khách + có ít nhất 1 món trong giỏ). Debounce 500ms — tránh
-  // gọi liên tục khi khách bấm +/- số lượng nhiều lần liên tiếp.
+  // VPS (POST /quote). CHỈ gọi khi đổi nhà hàng/địa chỉ (Kế hoạch A) —
+  // KHÔNG gọi lại khi khách chỉ thêm/bớt món, vì phí ship/thời gian giao
+  // chỉ phụ thuộc khoảng cách 2 điểm, không phụ thuộc số món trong giỏ.
+  // Dùng hasItems (boolean) làm dependency thay vì cả mảng displayCartLines
+  // — mảng đổi reference mỗi lần đổi SỐ LƯỢNG món (dù restaurantId/địa chỉ
+  // không đổi), còn boolean chỉ đổi giá trị khi giỏ hàng chuyển trạng thái
+  // rỗng ⇄ có món — đúng ý "tính ngay khi có địa chỉ + nhà hàng hợp lệ lần
+  // đầu, và tính lại khi có thay đổi địa chỉ + nhà hàng hợp lệ lần sau".
   const [shipQuote, setShipQuote] = useState<{
     shippingFee: number;
     estimatedDeliveryMinutes: number;
@@ -357,27 +384,33 @@ export default function CreateOrder() {
     lalamoveDropStopId: string;
   } | null>(null);
   const [shipQuoteLoading, setShipQuoteLoading] = useState(false);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: nearestRestaurant là object mới mỗi lần render — chỉ cần theo dõi 2 field cụ thể ở dependency list bên dưới
+  // Đọc giỏ hàng MỚI NHẤT tại thời điểm gọi quote, không làm effect chạy
+  // lại mỗi khi giỏ hàng đổi (xem giải thích ở trên).
+  const displayCartLinesRef = useRef(displayCartLines);
   useEffect(() => {
-    if (
-      !nearestRestaurant ||
-      !selectedAddress ||
-      displayCartLines.length === 0
-    ) {
-      setShipQuote(null);
+    displayCartLinesRef.current = displayCartLines;
+  }, [displayCartLines]);
+  const hasItemsInCart = displayCartLines.length > 0;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: orderRestaurant là object mới mỗi lần render — chỉ cần theo dõi id/address cụ thể + hasItemsInCart (boolean) ở dependency list bên dưới
+  useEffect(() => {
+    if (!orderRestaurant || !selectedAddress || !hasItemsInCart) {
+      // Giỏ hàng tạm thời rỗng (khách vừa xoá hết món) mà nhà hàng/địa chỉ
+      // không đổi — giữ nguyên kết quả cũ thay vì xoá, đỡ phải tính lại
+      // ngay khi khách thêm món trở lại (vẫn cùng 2 điểm, số vẫn đúng).
+      if (!orderRestaurant || !selectedAddress) setShipQuote(null);
       return;
     }
     let cancelled = false;
     setShipQuoteLoading(true);
     const timer = setTimeout(() => {
       vpsQuote({
-        restaurantId: nearestRestaurant.restaurantId,
-        pickupAddress: nearestRestaurant.address,
+        restaurantId: orderRestaurant.restaurantId,
+        pickupAddress: orderRestaurant.address,
         dropAddress: selectedAddress.address,
         dropLat: selectedAddress.lat,
         dropLng: selectedAddress.lng,
-        items: displayCartLines.map((l) => ({
+        items: displayCartLinesRef.current.map((l) => ({
           itemId: l.item.itemId,
           name: l.item.name,
           quantity: l.quantity,
@@ -408,10 +441,10 @@ export default function CreateOrder() {
       clearTimeout(timer);
     };
   }, [
-    nearestRestaurant?.restaurantId,
-    nearestRestaurant?.address,
+    orderRestaurant?.restaurantId,
+    orderRestaurant?.address,
     selectedAddress,
-    displayCartLines,
+    hasItemsInCart,
   ]);
 
   async function handleSubmit() {
@@ -553,15 +586,17 @@ export default function CreateOrder() {
                 onSelectAddress={setSelectedAddress}
               />
               <NearestRestaurantDisplay
-                restaurantName={nearestRestaurant?.name ?? null}
-                restaurantAddress={nearestRestaurant?.address ?? null}
+                restaurantName={orderRestaurant?.name ?? null}
+                restaurantAddress={orderRestaurant?.address ?? null}
                 isLoading={restaurantsLoading}
-                hasNoResult={!restaurantsLoading && !nearestRestaurant}
+                hasNoResult={!restaurantsLoading && !orderRestaurant}
                 shippingFee={shipQuote?.shippingFee ?? null}
                 estimatedDeliveryMinutes={
                   shipQuote?.estimatedDeliveryMinutes ?? null
                 }
                 isQuoteLoading={shipQuoteLoading}
+                isFavorite={!!favoriteRestaurant}
+                nearestIsDifferentFromFavorite={nearestIsDifferentFromFavorite}
               />
             </div>
             <MenuPicker

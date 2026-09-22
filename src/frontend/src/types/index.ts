@@ -204,6 +204,7 @@ export interface Customer {
   name: string;
   phone: string;
   notifyKm: boolean;
+  favoriteRestaurantId: string;
 }
 
 // Địa chỉ nhận hàng đã lưu — tab "Địa chỉ nhận hàng" trong mục "Tôi".

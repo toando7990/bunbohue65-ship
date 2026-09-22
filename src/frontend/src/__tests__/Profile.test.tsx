@@ -15,6 +15,10 @@ vi.mock("@/lib/vps-client", () => ({
   updateCustomer: vi.fn(),
 }));
 
+vi.mock("@/hooks/useQueries", () => ({
+  useRestaurants: () => ({ data: [], isLoading: false }),
+}));
+
 vi.mock("@/lib/verification-storage", () => ({
   getVerifiedEmail: () => ({ email: "toandо7990@gmail.com" }),
   setVerifiedEmail: vi.fn(),

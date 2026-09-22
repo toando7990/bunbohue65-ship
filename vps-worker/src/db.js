@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS customers (
   name        TEXT NOT NULL DEFAULT '',
   phone       TEXT NOT NULL DEFAULT '',
   km_notify_opt_in INTEGER NOT NULL DEFAULT 0, -- 1 = đã đăng ký nhận email nhắc KM Hệ 1 (Giai đoạn 4b)
+  favorite_restaurant_id TEXT NOT NULL DEFAULT '', -- nhà hàng yêu thích — ưu tiên chọn khi đặt món từ xa, thay cho tự động chọn gần nhất
   created_at  INTEGER NOT NULL,
   updated_at  INTEGER NOT NULL
 );
@@ -318,6 +319,11 @@ function initSchema(db) {
   const customerColNames = new Set(customerCols.map((c) => c.name));
   if (!customerColNames.has('km_notify_opt_in')) {
     db.exec('ALTER TABLE customers ADD COLUMN km_notify_opt_in INTEGER NOT NULL DEFAULT 0');
+  }
+  // customers: thêm favorite_restaurant_id (tính năng "Nhà hàng yêu thích")
+  // nếu DB cũ chưa có.
+  if (!customerColNames.has('favorite_restaurant_id')) {
+    db.exec("ALTER TABLE customers ADD COLUMN favorite_restaurant_id TEXT NOT NULL DEFAULT ''");
   }
 }
 

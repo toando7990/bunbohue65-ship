@@ -6,7 +6,7 @@
 // Lalamove "Get Quotation" — điền thật; hiện tại là placeholder).
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, MapPin, Store } from "lucide-react";
+import { Clock, Heart, MapPin, Store } from "lucide-react";
 
 interface NearestRestaurantDisplayProps {
   restaurantName: string | null;
@@ -22,6 +22,13 @@ interface NearestRestaurantDisplayProps {
   shippingFee: number | null;
   estimatedDeliveryMinutes: number | null;
   isQuoteLoading: boolean;
+  // Nhà hàng đang hiện là nhà hàng YÊU THÍCH khách đã chọn (Profile.tsx)
+  // — ưu tiên hơn nhà hàng gần nhất. false = đang dùng nhà hàng gần nhất
+  // như hành vi mặc định cũ.
+  isFavorite: boolean;
+  // Có nhà hàng gần nhất khác đang dùng (yêu thích) không — gợi ý cho
+  // khách biết có lựa chọn khác gần hơn, KHÔNG tự động đổi.
+  nearestIsDifferentFromFavorite: boolean;
 }
 
 export function NearestRestaurantDisplay({
@@ -32,6 +39,8 @@ export function NearestRestaurantDisplay({
   shippingFee,
   estimatedDeliveryMinutes,
   isQuoteLoading,
+  isFavorite,
+  nearestIsDifferentFromFavorite,
 }: NearestRestaurantDisplayProps) {
   if (isLoading) {
     return (
@@ -64,11 +73,35 @@ export function NearestRestaurantDisplay({
         <span className="font-semibold" data-ocid="nearest_restaurant.name">
           {restaurantName}
         </span>
+        {isFavorite && (
+          <span
+            className="flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
+            data-ocid="nearest_restaurant.favorite_badge"
+          >
+            <Heart
+              className="h-2.5 w-2.5"
+              aria-hidden="true"
+              fill="currentColor"
+            />
+            Yêu thích
+          </span>
+        )}
       </div>
       {restaurantAddress && (
         <span className="flex items-center gap-1 pl-6 text-xs text-muted-foreground">
           <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
           <span className="line-clamp-1">{restaurantAddress}</span>
+        </span>
+      )}
+      {/* Gợi ý (không ép buộc) — có nhà hàng gần hơn nhà hàng yêu thích
+          đang dùng. Đổi nhà hàng yêu thích vẫn phải qua trang "Tôi". */}
+      {isFavorite && nearestIsDifferentFromFavorite && (
+        <span
+          className="pl-6 text-xs text-muted-foreground"
+          data-ocid="nearest_restaurant.nearer_hint"
+        >
+          Có nhà hàng khác gần bạn hơn — đổi nhà hàng yêu thích ở mục "Tôi" nếu
+          muốn.
         </span>
       )}
       {/* Thời gian giao hàng dự kiến — từ Lalamove "Get Quotation"

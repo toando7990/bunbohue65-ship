@@ -96,11 +96,13 @@ vi.mock("@/components/DeliveryAddressSelector", () => ({
 let capturedNearestProps: {
   restaurantName: string | null;
   hasNoResult: boolean;
+  isFavorite: boolean;
 } | null = null;
 vi.mock("@/components/NearestRestaurantDisplay", () => ({
   NearestRestaurantDisplay: (props: {
     restaurantName: string | null;
     hasNoResult: boolean;
+    isFavorite: boolean;
   }) => {
     capturedNearestProps = props;
     return <div data-ocid="mock-nearest-restaurant-display" />;
@@ -328,5 +330,90 @@ describe("CreateOrder — chọn địa chỉ bắt buộc + tự chọn nhà h�
     expect(screen.getByTestId("create_order.submit_button")).toHaveTextContent(
       "78.000",
     );
+  });
+
+  it("Kế hoạch A: does NOT call quote() again when quantity changes (only calls once for restaurant+address)", async () => {
+    render(<CreateOrder />);
+
+    capturedOnSelectAddress?.({
+      id: 1,
+      address: "123 Le Loi",
+      lat: 21.0285,
+      lng: 105.8542,
+    });
+    await waitFor(() => {
+      expect(capturedNearestProps?.restaurantName).toBe("Bún Bò Huế 65 - Láng");
+    });
+
+    capturedOnQuantityChange?.("ITEM1", 1);
+    await waitFor(
+      () => {
+        expect(mockQuote).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 2000 },
+    );
+
+    // Tăng số lượng thêm 2 lần nữa — giỏ hàng VẪN có món (hasItemsInCart
+    // không đổi giá trị, chỉ số lượng đổi) → KHÔNG được gọi lại quote().
+    capturedOnQuantityChange?.("ITEM1", 1);
+    capturedOnQuantityChange?.("ITEM1", 1);
+
+    // Đợi đủ lâu hơn debounce (500ms) để chắc chắn không có lần gọi trễ nào.
+    await new Promise((r) => setTimeout(r, 700));
+    expect(mockQuote).toHaveBeenCalledTimes(1);
+  });
+
+  it("Kế hoạch B: prefers the customer's favorite restaurant over the nearest one", async () => {
+    // R2 KHÔNG phải nhà hàng gần nhất theo toạ độ (R1 gần hơn), nhưng
+    // khách đã chọn R2 làm nhà hàng yêu thích ở Profile.tsx.
+    mockGetCustomer.mockResolvedValue({
+      email: "a@test.com",
+      name: "Nguyễn Văn A",
+      phone: "0912345678",
+      notifyKm: false,
+      favoriteRestaurantId: "R2",
+    });
+
+    render(<CreateOrder />);
+
+    capturedOnSelectAddress?.({
+      id: 1,
+      address: "123 Le Loi",
+      lat: 21.0285,
+      lng: 105.8542,
+    });
+
+    // Nhà hàng yêu thích (R2 - Cầu Giấy) ĐƯỢC ưu tiên, KHÔNG phải nhà
+    // hàng gần nhất (R1 - Láng, gần toạ độ 21.03/105.85 hơn nhiều).
+    await waitFor(() => {
+      expect(capturedNearestProps?.restaurantName).toBe(
+        "Bún Bò Huế 65 - Cầu Giấy",
+      );
+    });
+    expect(capturedNearestProps?.isFavorite).toBe(true);
+  });
+
+  it("Kế hoạch B: falls back to nearest restaurant when no favorite is set", async () => {
+    mockGetCustomer.mockResolvedValue({
+      email: "a@test.com",
+      name: "Nguyễn Văn A",
+      phone: "0912345678",
+      notifyKm: false,
+      favoriteRestaurantId: "",
+    });
+
+    render(<CreateOrder />);
+
+    capturedOnSelectAddress?.({
+      id: 1,
+      address: "123 Le Loi",
+      lat: 21.0285,
+      lng: 105.8542,
+    });
+
+    await waitFor(() => {
+      expect(capturedNearestProps?.restaurantName).toBe("Bún Bò Huế 65 - Láng");
+    });
+    expect(capturedNearestProps?.isFavorite).toBe(false);
   });
 });
