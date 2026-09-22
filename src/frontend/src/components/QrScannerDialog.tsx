@@ -95,31 +95,70 @@ export function QrScannerDialog({
     scannerRef.current = scanner;
     let cancelled = false;
 
+    const onDecoded = (decodedText: string) => {
+      if (scannedRef.current || cancelled) return;
+      const data = parsePickupQr(decodedText);
+      // Không đúng định dạng "QR nhận hàng" — bỏ qua, tiếp tục quét
+      // (không báo lỗi, khách có thể đang chĩa camera lệch/quét nhầm
+      // vật khác trong lúc dò tìm mã QR thật).
+      if (!data) return;
+      scannedRef.current = true;
+      onScanned(data);
+    };
+    const onDecodeFailure = () => {
+      // Gọi liên tục mỗi frame KHÔNG tìm thấy QR nào — không phải lỗi
+      // thật, im lặng bỏ qua (khác lỗi khởi tạo camera ở catch dưới).
+    };
+
+    // BUG THẬT đã sửa — "Không mở được camera" dù thiết bị CÓ camera và
+    // ĐÃ cấp quyền (xác nhận qua ảnh chụp thật): { facingMode:
+    // "environment" } tuy là ràng buộc "ideal" (không phải "exact"),
+    // nhưng nhiều trình duyệt Android/WebView (đặc biệt in-app browser)
+    // xử lý sai ràng buộc này và từ chối luôn thay vì tự chọn camera gần
+    // đúng nhất. Fallback: nếu cách này thất bại, tự liệt kê danh sách
+    // camera THẬT qua Html5Qrcode.getCameras() và chỉ định đúng
+    // deviceId của camera sau (đáng tin cậy hơn nhiều so với chỉ dựa
+    // vào constraint facingMode) — cách phổ biến để tăng độ tương thích
+    // thiết bị.
     scanner
       .start(
         { facingMode: "environment" },
         { fps: 10, qrbox: 250 },
-        (decodedText) => {
-          if (scannedRef.current || cancelled) return;
-          const data = parsePickupQr(decodedText);
-          // Không đúng định dạng "QR nhận hàng" — bỏ qua, tiếp tục quét
-          // (không báo lỗi, khách có thể đang chĩa camera lệch/quét nhầm
-          // vật khác trong lúc dò tìm mã QR thật).
-          if (!data) return;
-          scannedRef.current = true;
-          onScanned(data);
-        },
-        () => {
-          // Gọi liên tục mỗi frame KHÔNG tìm thấy QR nào — không phải lỗi
-          // thật, im lặng bỏ qua (khác lỗi khởi tạo camera ở catch dưới).
-        },
+        onDecoded,
+        onDecodeFailure,
       )
-      .catch((err: unknown) => {
+      .catch(async (firstErr: unknown) => {
         if (cancelled) return;
-        console.error("[QrScannerDialog] không mở được camera:", err);
-        setError(
-          "Không mở được camera. Vui lòng cấp quyền camera cho trình duyệt, hoặc kiểm tra thiết bị có camera không.",
+        console.warn(
+          "[QrScannerDialog] facingMode 'environment' thất bại, thử liệt kê camera thật:",
+          firstErr,
         );
+        try {
+          const cameras = await Html5Qrcode.getCameras();
+          if (cancelled || cameras.length === 0) throw firstErr;
+          // Ưu tiên camera có nhãn chứa "back"/"rear" (camera sau) —
+          // nếu không tìm thấy, dùng camera CUỐI trong danh sách (trên
+          // đa số điện thoại nhiều camera, camera đầu tiên liệt kê
+          // thường là camera trước).
+          const backCamera =
+            cameras.find((c) => /back|rear|environment/i.test(c.label)) ??
+            cameras[cameras.length - 1];
+          await scanner.start(
+            backCamera.id,
+            { fps: 10, qrbox: 250 },
+            onDecoded,
+            onDecodeFailure,
+          );
+        } catch (fallbackErr) {
+          if (cancelled) return;
+          console.error(
+            "[QrScannerDialog] không mở được camera (cả 2 cách):",
+            fallbackErr,
+          );
+          setError(
+            "Không mở được camera. Vui lòng cấp quyền camera cho trình duyệt, hoặc kiểm tra thiết bị có camera không.",
+          );
+        }
       });
 
     return () => {

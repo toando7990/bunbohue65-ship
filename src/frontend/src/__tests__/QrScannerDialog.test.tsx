@@ -8,16 +8,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockStart = vi.fn();
 const mockStop = vi.fn();
+const mockGetCameras = vi.fn();
 let capturedSuccessCallback: ((decodedText: string) => void) | null = null;
+let capturedStartConfig: unknown = null;
 
 vi.mock("html5-qrcode", () => ({
   Html5Qrcode: class {
     isScanning = false;
+    static async getCameras() {
+      return mockGetCameras();
+    }
     async start(
-      _config: unknown,
+      config: unknown,
       _scanConfig: unknown,
       onSuccess: (decodedText: string) => void,
     ) {
+      capturedStartConfig = config;
       const result = await mockStart();
       capturedSuccessCallback = onSuccess;
       this.isScanning = true;
@@ -34,12 +40,14 @@ describe("QrScannerDialog", () => {
   beforeEach(() => {
     mockStart.mockResolvedValue(null);
     mockStop.mockResolvedValue(undefined);
+    mockGetCameras.mockResolvedValue([]);
   });
 
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
     capturedSuccessCallback = null;
+    capturedStartConfig = null;
   });
 
   it("starts the camera when opened, targeting the environment-facing camera", async () => {
@@ -171,5 +179,40 @@ describe("QrScannerDialog", () => {
       />,
     );
     expect(mockStart).not.toHaveBeenCalled();
+  });
+
+  it("falls back to listing real cameras and picks the 'back' camera by label when facingMode fails (BUG THẬT đã sửa)", async () => {
+    // Lần 1 (facingMode: "environment") thất bại — đúng kịch bản lỗi thật
+    // đã gặp trên thiết bị Android thật ("Không mở được camera" dù có
+    // camera và đã cấp quyền).
+    mockStart
+      .mockRejectedValueOnce(new Error("OverconstrainedError"))
+      .mockResolvedValueOnce(null);
+    mockGetCameras.mockResolvedValue([
+      { id: "cam-front", label: "Front Camera" },
+      { id: "cam-back", label: "Back Camera 0, facing back" },
+    ]);
+
+    render(<QrScannerDialog open onOpenChange={vi.fn()} onScanned={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(mockStart).toHaveBeenCalledTimes(2);
+    });
+    expect(mockGetCameras).toHaveBeenCalled();
+    // Lần gọi thứ 2 (fallback) phải dùng ĐÚNG deviceId của camera có
+    // nhãn chứa "back", không phải camera đầu tiên trong danh sách.
+    expect(capturedStartConfig).toBe("cam-back");
+    expect(screen.queryByTestId("qr_scanner.error")).not.toBeInTheDocument();
+  });
+
+  it("shows the error message only after BOTH facingMode and camera-list fallback fail", async () => {
+    mockStart.mockRejectedValue(new Error("Permission denied"));
+    mockGetCameras.mockResolvedValue([]); // không có camera nào cả
+
+    render(<QrScannerDialog open onOpenChange={vi.fn()} onScanned={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("qr_scanner.error")).toBeInTheDocument();
+    });
   });
 });
