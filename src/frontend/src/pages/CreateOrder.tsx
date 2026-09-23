@@ -476,6 +476,48 @@ export default function CreateOrder() {
 
     setSubmitting(true);
     try {
+      // Lấy lại báo giá Lalamove MỚI NHẤT ngay trước khi tạo đơn thật —
+      // BUG THẬT NGHIÊM TRỌNG đã sửa: quotation Lalamove chỉ có hiệu lực
+      // khoảng 5 phút kể từ lúc gọi. Từ Kế hoạch A (chỉ gọi /quote 1 lần
+      // khi đổi địa chỉ/nhà hàng, KHÔNG gọi lại khi chọn món), nếu khách
+      // dành nhiều thời gian chọn món/điền thông tin trước khi bấm đặt
+      // đơn, shipQuote đang giữ có thể đã hết hạn — placeOrder() ở VPS
+      // sẽ thất bại (Lalamove từ chối quotationId hết hạn), khiến tài
+      // xế KHÔNG được gọi tự động dù mọi thứ khác đều đúng. Gọi lại
+      // NGAY LÚC NÀY (không debounce, đồng bộ với việc tạo đơn) đảm bảo
+      // quotationId luôn mới nhất có thể — nếu lần gọi lại này thất bại
+      // (VD mạng lỗi tạm thời), vẫn dùng shipQuote cũ làm dự phòng thay
+      // vì chặn hẳn việc đặt đơn.
+      let freshShipQuote = shipQuote;
+      if (orderRestaurant && selectedAddress) {
+        try {
+          const res = await vpsQuote({
+            restaurantId: orderRestaurant.restaurantId,
+            pickupAddress: orderRestaurant.address,
+            dropAddress: selectedAddress.address,
+            dropLat: selectedAddress.lat,
+            dropLng: selectedAddress.lng,
+            items: displayCartLines.map((l) => ({
+              itemId: l.item.itemId,
+              name: l.item.name,
+              quantity: l.quantity,
+            })),
+          });
+          freshShipQuote = {
+            shippingFee: res.shippingFee,
+            estimatedDeliveryMinutes: res.estimatedDeliveryMinutes,
+            lalamoveQuotationId: res.ahamoveOrderId,
+            lalamovePickupStopId: res.lalamovePickupStopId,
+            lalamoveDropStopId: res.lalamoveDropStopId,
+          };
+        } catch (err) {
+          console.warn(
+            "Không lấy lại được báo giá mới trước khi đặt đơn, dùng báo giá cũ:",
+            err,
+          );
+        }
+      }
+
       const payload: CreateOrderPayload = {
         restaurantId,
         pickupAddress: selectedRestaurant!.address,
@@ -499,10 +541,10 @@ export default function CreateOrder() {
         // thanh toán vẫn chỉ là tiền hàng, xem routes/create.js). Có
         // thể chưa có (VD Lalamove tạm lỗi lúc đặt) — gửi 0/"" khi đó,
         // VPS tự fallback, không chặn đặt món.
-        shippingFee: shipQuote?.shippingFee ?? 0,
-        ahamoveOrderId: shipQuote?.lalamoveQuotationId ?? "",
-        lalamovePickupStopId: shipQuote?.lalamovePickupStopId,
-        lalamoveDropStopId: shipQuote?.lalamoveDropStopId,
+        shippingFee: freshShipQuote?.shippingFee ?? 0,
+        ahamoveOrderId: freshShipQuote?.lalamoveQuotationId ?? "",
+        lalamovePickupStopId: freshShipQuote?.lalamovePickupStopId,
+        lalamoveDropStopId: freshShipQuote?.lalamoveDropStopId,
         ...(cartDiscounts.selectedVoucherCode
           ? { voucherCode: cartDiscounts.selectedVoucherCode }
           : {}),

@@ -488,4 +488,91 @@ describe("CreateOrder — chọn địa chỉ bắt buộc + tự chọn nhà h�
       ).not.toBeDisabled();
     });
   });
+
+  it("refreshes the Lalamove quote right before creating the order — uses the FRESH quotationId, not a possibly-expired one (BUG THẬT nghiêm trọng đã sửa)", async () => {
+    mockGetCustomer.mockResolvedValue({
+      email: "a@test.com",
+      name: "Nguyễn Văn A",
+      phone: "0912345678",
+      notifyKm: false,
+      favoriteRestaurantId: "",
+    });
+    mockCreate.mockResolvedValue({ orderId: "ORD-1" });
+    // Lần gọi ĐẦU (lúc chọn địa chỉ) trả về quotationId CŨ — mô phỏng
+    // đúng kịch bản lỗi thật: khách dành nhiều thời gian chọn món/điền
+    // thông tin sau đó, quotation Lalamove ~5 phút có thể đã hết hạn.
+    // Lần gọi THỨ 2 (ngay trước khi tạo đơn) phải trả về quotationId
+    // MỚI khác hẳn — payload gửi lên PHẢI dùng giá trị MỚI này.
+    mockQuote
+      .mockResolvedValueOnce({
+        shippingFee: 28000,
+        goodsAmount: 50000,
+        taxTotal: 0,
+        amount: 78000,
+        vatRate: 0.08,
+        ahamoveOrderId: "QUOTE-OLD-EXPIRED",
+        estimatedDeliveryMinutes: 24,
+        lalamovePickupStopId: "STOP_PICKUP_OLD",
+        lalamoveDropStopId: "STOP_DROP_OLD",
+      })
+      .mockResolvedValueOnce({
+        shippingFee: 30000,
+        goodsAmount: 50000,
+        taxTotal: 0,
+        amount: 80000,
+        vatRate: 0.08,
+        ahamoveOrderId: "QUOTE-FRESH",
+        estimatedDeliveryMinutes: 22,
+        lalamovePickupStopId: "STOP_PICKUP_FRESH",
+        lalamoveDropStopId: "STOP_DROP_FRESH",
+      });
+
+    render(<CreateOrder />);
+
+    capturedOnSelectAddress?.({
+      id: 1,
+      address: "123 Le Loi",
+      lat: 21.0285,
+      lng: 105.8542,
+    });
+    await waitFor(() => {
+      expect(capturedNearestProps?.restaurantName).toBe("Bún Bò Huế 65 - Láng");
+    });
+    capturedOnQuantityChange?.("ITEM1", 1);
+
+    await waitFor(
+      () => {
+        expect(mockQuote).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 2000 },
+    );
+
+    fireEvent.click(screen.getByTestId("create_order.open_cart_button"));
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("create_order.submit_button"),
+      ).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId("create_order.submit_button"));
+
+    // handleSubmit() phải gọi LẠI /quote (lần thứ 2) trước khi tạo đơn.
+    await waitFor(() => {
+      expect(mockQuote).toHaveBeenCalledTimes(2);
+    });
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          shippingFee: 30000,
+          ahamoveOrderId: "QUOTE-FRESH",
+          lalamovePickupStopId: "STOP_PICKUP_FRESH",
+          lalamoveDropStopId: "STOP_DROP_FRESH",
+        }),
+      );
+    });
+    // KHÔNG được dùng giá trị CŨ (có thể đã hết hạn).
+    expect(mockCreate).not.toHaveBeenCalledWith(
+      expect.objectContaining({ ahamoveOrderId: "QUOTE-OLD-EXPIRED" }),
+    );
+  });
 });
