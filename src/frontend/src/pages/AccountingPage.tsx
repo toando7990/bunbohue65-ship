@@ -14,6 +14,8 @@
 // qua callerHasEnterpriseRole).
 
 import { InvoiceStatus, PaymentStatus } from "@/backend";
+import { DeviceRole } from "@/backend";
+import { getDeviceId } from "@/components/EnterpriseActivationForm";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -41,11 +43,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  useActivateDevice,
   useCleanupOrderByDevice,
+  useGenerateActivationCode,
   useIssueInvoiceByDevice,
   useRestaurants,
 } from "@/hooks/useQueries";
-import { loadEnterpriseActivation } from "@/lib/enterprise-activation";
+import {
+  loadEnterpriseActivation,
+  saveEnterpriseActivation,
+} from "@/lib/enterprise-activation";
 import { getEnterpriseHistory, getInvoice } from "@/lib/vps-client";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -113,7 +120,47 @@ function invoiceBadgeClass(status: string): string {
 }
 
 export function AccountingPage() {
-  const deviceId = readDeviceId();
+  // BUG THẬT đã sửa ("Missing deviceId"): admin (Internet Identity) vào
+  // trang này KHÔNG có thiết bị Kế toán nào được gắn → deviceId rỗng. VPS
+  // (routes/enterprise-history.js) xác thực bằng cách gọi canister
+  // callerHasEnterpriseRole — nhưng canister thấy danh tính của VPS chứ
+  // KHÔNG phải của admin, nên admin KHÔNG BAO GIỜ qua được, dù trang vẫn
+  // mở (EnterpriseGate cho admin qua). Giải pháp an toàn, không cần sửa
+  // canister: admin bấm 1 nút để tự gắn trình duyệt đang dùng làm thiết
+  // bị Kế toán thật (tạo mã + kích hoạt bằng đúng API sẵn có) — từ đó có
+  // deviceId hợp lệ, canister xác nhận đúng role như thiết bị thường.
+  const [deviceId, setDeviceId] = useState(readDeviceId);
+  const generateCodeMutation = useGenerateActivationCode();
+  const activateMutation = useActivateDevice();
+  const [binding, setBinding] = useState(false);
+  async function handleBindAdminDevice() {
+    setBinding(true);
+    try {
+      const pending = await generateCodeMutation.mutateAsync({
+        restaurantId: "",
+        role: DeviceRole.accounting,
+      });
+      const device = await activateMutation.mutateAsync({
+        code: pending.code,
+        deviceId: getDeviceId(),
+        name: "Admin - Kế toán",
+        phone: "",
+      });
+      saveEnterpriseActivation({
+        restaurantId: device.restaurantId,
+        deviceId: device.deviceId,
+        name: "Admin - Kế toán",
+      });
+      setDeviceId(device.deviceId);
+      toast.success("Đã gắn trình duyệt này làm thiết bị Kế toán.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Không gắn được thiết bị.",
+      );
+    } finally {
+      setBinding(false);
+    }
+  }
   const { data: restaurants } = useRestaurants();
   const restaurantNameById = new Map(
     (restaurants ?? []).map((r) => [r.restaurantId, r.name]),
@@ -167,7 +214,7 @@ export function AccountingPage() {
         inputDateToApiFormat(toDate),
         statuses,
       ),
-    enabled: statuses.length > 0,
+    enabled: statuses.length > 0 && !!deviceId,
   });
 
   const results = historyQuery.data?.orders ?? [];
@@ -297,6 +344,30 @@ export function AccountingPage() {
 
   return (
     <section className="flex flex-col gap-6" data-ocid="accounting.page">
+      {!deviceId && (
+        <Card data-ocid="accounting.bind_admin_card">
+          <CardHeader>
+            <CardTitle>Trình duyệt này chưa gắn thiết bị Kế toán</CardTitle>
+            <CardDescription>
+              Bạn đang đăng nhập quản trị. Để xem đơn hàng (lưu trên máy chủ
+              VPS), cần gắn trình duyệt này làm thiết bị Kế toán — chỉ làm 1
+              lần.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleBindAdminDevice}
+              disabled={binding}
+              data-ocid="accounting.bind_admin_button"
+            >
+              {binding && (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              )}
+              Gắn trình duyệt này làm thiết bị Kế toán
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       <Card data-ocid="accounting.lookup_card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display">

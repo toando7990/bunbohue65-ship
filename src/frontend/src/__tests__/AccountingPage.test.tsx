@@ -26,6 +26,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockCleanup = vi.fn();
 const mockIssueInvoice = vi.fn();
 const mockGetEnterpriseHistory = vi.fn();
+const mockGenerateCode = vi.fn();
+const mockActivateDevice = vi.fn();
 const mockGetInvoice = vi.fn();
 
 vi.mock("@/hooks/useQueries", () => ({
@@ -43,6 +45,8 @@ vi.mock("@/hooks/useQueries", () => ({
       { restaurantId: "R2", name: "Cầu Giấy" },
     ],
   }),
+  useGenerateActivationCode: () => ({ mutateAsync: mockGenerateCode }),
+  useActivateDevice: () => ({ mutateAsync: mockActivateDevice }),
 }));
 
 vi.mock("@/lib/vps-client", () => ({
@@ -332,6 +336,7 @@ describe("AccountingPage enterprise accounting", () => {
     mockGetEnterpriseHistory.mockRejectedValue(
       new Error("Thiết bị không có quyền truy cập dữ liệu này."),
     );
+    setActivation();
 
     renderPage();
 
@@ -343,5 +348,45 @@ describe("AccountingPage enterprise accounting", () => {
     expect(
       screen.getByTestId("accounting.lookup.error_message"),
     ).toHaveTextContent("Thiết bị không có quyền truy cập dữ liệu này.");
+  });
+
+  it("admin (no deviceId): does NOT call VPS with empty deviceId, shows a bind button that creates+activates an accounting device then loads orders (BUG THẬT 'Missing deviceId' đã sửa)", async () => {
+    localStorage.removeItem("bbh_enterprise_activation");
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [],
+      count: 0,
+      total: 0,
+    });
+    mockGenerateCode.mockResolvedValue({ code: "ABC123", expiresAt: 0n });
+    mockActivateDevice.mockResolvedValue({
+      deviceId: "dev-admin-1",
+      restaurantId: "",
+      active: true,
+    });
+
+    renderPage();
+
+    // Trước khi sửa: gọi VPS với deviceId="" → "Missing deviceId".
+    expect(
+      screen.getByTestId("accounting.bind_admin_card"),
+    ).toBeInTheDocument();
+    expect(mockGetEnterpriseHistory).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("accounting.bind_admin_button"));
+
+    await waitFor(() => {
+      expect(mockGetEnterpriseHistory).toHaveBeenCalled();
+    });
+    expect(mockGenerateCode).toHaveBeenCalledWith(
+      expect.objectContaining({ restaurantId: "", role: "accounting" }),
+    );
+    expect(mockGetEnterpriseHistory.mock.calls[0][0]).toBe("dev-admin-1");
+    expect(
+      JSON.parse(localStorage.getItem("bbh_enterprise_activation") ?? "{}")
+        .deviceId,
+    ).toBe("dev-admin-1");
+    expect(
+      screen.queryByTestId("accounting.bind_admin_card"),
+    ).not.toBeInTheDocument();
   });
 });

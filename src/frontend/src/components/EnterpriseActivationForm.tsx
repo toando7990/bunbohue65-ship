@@ -22,7 +22,7 @@ import { toast } from "sonner";
 
 // Sinh deviceId ổn định per browser để canister nhận diện lại thiết bị đã
 // active — cùng pattern với ActivationForm.getDeviceId (bb65.deviceId).
-function getDeviceId(): string {
+export function getDeviceId(): string {
   const KEY = "bb65.deviceId";
   try {
     const existing = localStorage.getItem(KEY);
