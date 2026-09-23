@@ -84,7 +84,7 @@ router.get('/orders/restaurant-history', (req, res) => {
 
   const orderRows = db.prepare(
     `SELECT order_id, restaurant_id, cus_name, cus_phone, amount,
-            booking_status, payment_status, created_at,
+            booking_status, payment_status, payment_method, created_at,
             km_discount_amount, voucher_discount_amount
      FROM orders
      WHERE restaurant_id = ? AND created_at >= ?
@@ -136,6 +136,7 @@ router.get('/orders/restaurant-history', (req, res) => {
     amount: r.amount,
     bookingStatus: r.booking_status,
     paymentStatus: r.payment_status,
+    paymentMethod: r.payment_method || '',
     createdAt: r.created_at,
     kmDiscountAmount: r.km_discount_amount,
     voucherDiscountAmount: r.voucher_discount_amount,

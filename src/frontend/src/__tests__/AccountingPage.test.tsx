@@ -422,4 +422,65 @@ describe("AccountingPage enterprise accounting", () => {
     [, from, to] = mockGetEnterpriseHistory.mock.calls[0];
     expect([from, to]).toEqual([monthStartApi, todayApi]);
   });
+
+  it("filters paid orders by payment method (Tiền mặt / Chuyển khoản) and shows the method under the status", async () => {
+    setActivation();
+    const base = {
+      restaurantId: "R1",
+      cusName: "A",
+      cusPhone: "0900000000",
+      bookingStatus: "confirmed",
+      invoiceStatus: "none",
+      createdAt: Date.now(),
+    };
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [
+        {
+          ...base,
+          orderId: "ORD-CASH",
+          amount: 50000,
+          paymentStatus: "paid",
+          paymentMethod: "cash",
+        },
+        {
+          ...base,
+          orderId: "ORD-TRANSFER",
+          amount: 70000,
+          paymentStatus: "paid",
+          paymentMethod: "transfer",
+        },
+        {
+          ...base,
+          orderId: "ORD-CANCEL",
+          amount: 30000,
+          paymentStatus: "unpaid",
+          paymentMethod: "",
+          bookingStatus: "cancelled",
+        },
+      ],
+      count: 3,
+      total: 150000,
+    });
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("ORD-CASH")).toBeInTheDocument(),
+    );
+    expect(screen.getByText("ORD-CANCEL")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByTestId("accounting.payment_method_filter.transfer"),
+    );
+    expect(screen.getByText("ORD-TRANSFER")).toBeInTheDocument();
+    expect(screen.queryByText("ORD-CASH")).not.toBeInTheDocument();
+    expect(screen.queryByText("ORD-CANCEL")).not.toBeInTheDocument();
+    expect(screen.getByTestId("accounting.payment_method.1")).toHaveTextContent(
+      "Chuyển khoản",
+    );
+
+    fireEvent.click(
+      screen.getByTestId("accounting.payment_method_filter.cash"),
+    );
+    expect(screen.getByText("ORD-CASH")).toBeInTheDocument();
+    expect(screen.queryByText("ORD-TRANSFER")).not.toBeInTheDocument();
+  });
 });

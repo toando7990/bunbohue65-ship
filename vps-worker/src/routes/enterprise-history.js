@@ -105,7 +105,7 @@ router.get('/orders/enterprise-history', async (req, res, next) => {
 
     const rows = db.prepare(
       `SELECT order_id, restaurant_id, cus_name, cus_phone, amount,
-              booking_status, payment_status, invoice_status, created_at
+              booking_status, payment_status, payment_method, invoice_status, created_at
        FROM orders
        WHERE created_at >= ? AND created_at < ? AND (${conditions.join(' OR ')})
        ORDER BY created_at DESC
@@ -123,6 +123,7 @@ router.get('/orders/enterprise-history', async (req, res, next) => {
       bookingStatus: r.booking_status,
       paymentStatus: r.payment_status,
       invoiceStatus: r.invoice_status,
+      paymentMethod: r.payment_method || '',
       createdAt: r.created_at,
     }));
 

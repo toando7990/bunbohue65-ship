@@ -206,7 +206,7 @@ router.post('/webhook/tingee', verifyTingeeWebhook, async (req, res, next) => {
     }
 
     await canister.updatePaymentStatus(orderId, 'paid');
-    db.prepare(`UPDATE orders SET payment_status = 'paid', updated_at = ? WHERE order_id = ?`)
+    db.prepare(`UPDATE orders SET payment_status = 'paid', payment_method = 'transfer', updated_at = ? WHERE order_id = ?`)
       .run(Date.now(), orderId);
     if (order.tingee_qr_account && order.tingee_bill_id) {
       try {
@@ -286,7 +286,7 @@ function startTingeePoll(db) {
             const fresh = db.prepare(`SELECT payment_status FROM orders WHERE order_id = ?`).get(row.order_id);
             if (fresh && fresh.payment_status === 'paid') continue;
             await canister.updatePaymentStatus(row.order_id, 'paid');
-            db.prepare(`UPDATE orders SET payment_status = 'paid', updated_at = ? WHERE order_id = ?`)
+            db.prepare(`UPDATE orders SET payment_status = 'paid', payment_method = 'transfer', updated_at = ? WHERE order_id = ?`)
               .run(Date.now(), row.order_id);
             try {
               await tingee.deleteDynamicQr({ qrAccount: row.tingee_qr_account, billId: row.tingee_bill_id });

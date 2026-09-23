@@ -52,6 +52,10 @@ CREATE TABLE IF NOT EXISTS orders (
   lalamove_driver_id  TEXT NOT NULL DEFAULT '',
   lalamove_share_link TEXT NOT NULL DEFAULT '', -- link cho khách theo dõi tài xế thật trên bản đồ Lalamove
   lalamove_status     TEXT NOT NULL DEFAULT '',
+  -- Hình thức thanh toán: 'cash' (tiền mặt) | 'transfer' (chuyển khoản:
+  -- QR Tingee hoặc xác nhận bằng ảnh) | '' (chưa thanh toán / đơn cũ trước
+  -- khi có cột này — không suy đoán được).
+  payment_method      TEXT NOT NULL DEFAULT '',
   tingee_qr_id        TEXT NOT NULL DEFAULT '',
   tingee_qr_account   TEXT NOT NULL DEFAULT '',   -- account từ generate-dynamic-qr response
   tingee_bill_id      TEXT NOT NULL DEFAULT '',   -- billId từ generate-dynamic-qr response
@@ -312,6 +316,15 @@ function initSchema(db) {
   }
   if (!colNames.has('lalamove_status')) {
     db.exec("ALTER TABLE orders ADD COLUMN lalamove_status TEXT NOT NULL DEFAULT ''");
+  }
+  // Hình thức thanh toán (lọc Tiền mặt / Chuyển khoản). Đơn cũ trước khi có
+  // cột này chỉ suy ra được CHẮC CHẮN 1 trường hợp: có mã tham chiếu ảnh
+  // chuyển khoản → 'transfer'. Còn lại để '' (không rõ) — không đoán bừa.
+  if (!colNames.has('payment_method')) {
+    db.exec("ALTER TABLE orders ADD COLUMN payment_method TEXT NOT NULL DEFAULT ''");
+    db.exec(
+      "UPDATE orders SET payment_method = 'transfer' WHERE payment_status = 'paid' AND manual_payment_reference IS NOT NULL AND manual_payment_reference <> ''",
+    );
   }
 
   // customers: thêm km_notify_opt_in (Giai đoạn 4b) nếu DB cũ chưa có.

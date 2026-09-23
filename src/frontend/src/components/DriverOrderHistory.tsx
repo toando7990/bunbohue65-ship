@@ -21,6 +21,11 @@
 import { matchesQuery } from "@/components/HighlightMatch";
 import { OrderCard } from "@/components/OrderCard";
 import { toOrder } from "@/lib/order-mapping";
+import {
+  PAYMENT_METHOD_FILTERS,
+  type PaymentMethodFilter,
+  matchesPaymentMethod,
+} from "@/lib/payment-method";
 import { getRestaurantHistory } from "@/lib/vps-client";
 import type { RestaurantHistoryPeriod } from "@/types";
 import { useQuery } from "@tanstack/react-query";
@@ -49,6 +54,9 @@ export function DriverOrderHistory({
   period: RestaurantHistoryPeriod;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  // Lọc theo hình thức thanh toán (cấp nhà hàng) — lọc trên dữ liệu gốc từ
+  // VPS vì toOrder() không mang paymentMethod.
+  const [methodFilter, setMethodFilter] = useState<PaymentMethodFilter>("all");
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["restaurantHistory", restaurantId, period],
@@ -57,7 +65,18 @@ export function DriverOrderHistory({
     refetchOnWindowFocus: false,
   });
 
-  const results = (data?.orders ?? [])
+  const methodFiltered = (data?.orders ?? []).filter((o) =>
+    matchesPaymentMethod(o, methodFilter),
+  );
+  // Đang lọc → số liệu tổng hợp tính lại theo đúng tập đã lọc (mọi đơn trong
+  // tập này đều đã thanh toán); không lọc → dùng số tổng hợp của VPS.
+  const statOrders =
+    methodFilter === "all" ? (data?.totalOrders ?? 0) : methodFiltered.length;
+  const statPaid =
+    methodFilter === "all"
+      ? (data?.totalPaidAmount ?? 0)
+      : methodFiltered.reduce((sum, o) => sum + Number(o.amount), 0);
+  const results = methodFiltered
     .map(toOrder)
     .filter(
       (o) =>
@@ -84,16 +103,39 @@ export function DriverOrderHistory({
             className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 font-semibold text-muted-foreground"
             data-ocid="driver_history.total_orders"
           >
-            {isLoading ? "…" : (data?.totalOrders ?? 0)} đơn
+            {isLoading ? "…" : statOrders} đơn
           </span>
           <span
             className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 font-semibold text-foreground"
             data-ocid="driver_history.total_paid"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-success" />
-            {isLoading ? "…" : formatVnd(data?.totalPaidAmount ?? 0)} đã TT
+            {isLoading ? "…" : formatVnd(statPaid)} đã TT
           </span>
         </div>
+      </div>
+
+      {/* Lọc theo hình thức thanh toán. */}
+      <div
+        className="mb-3 flex flex-wrap gap-2"
+        data-ocid="driver_history.payment_method_filters"
+      >
+        {PAYMENT_METHOD_FILTERS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setMethodFilter(value)}
+            aria-pressed={methodFilter === value}
+            data-ocid={`driver_history.payment_method_filter.${value}`}
+            className={
+              methodFilter === value
+                ? "rounded-full border border-primary bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
+                : "rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary"
+            }
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Ô tìm kiếm — cùng cách đã làm ở PaymentQueue.tsx (Hàng đợi). */}

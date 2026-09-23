@@ -236,6 +236,9 @@ export interface VpsHistoryOrder {
   amount: number;
   bookingStatus: string;
   paymentStatus: string;
+  // Hình thức thanh toán: "cash" | "transfer" | "" (chưa thanh toán, hoặc đơn
+  // cũ trước khi hệ thống ghi nhận hình thức — không suy đoán được).
+  paymentMethod: string;
   createdAt: number;
   kmDiscountAmount: number;
   voucherDiscountAmount: number;
@@ -273,6 +276,9 @@ export interface VpsEnterpriseHistoryOrder {
   amount: number;
   bookingStatus: string;
   paymentStatus: string;
+  // Hình thức thanh toán: "cash" | "transfer" | "" (chưa thanh toán, hoặc đơn
+  // cũ trước khi hệ thống ghi nhận hình thức — không suy đoán được).
+  paymentMethod: string;
   invoiceStatus: string;
   createdAt: number;
 }

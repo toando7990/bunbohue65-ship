@@ -48,7 +48,7 @@ router.use(
 // quét nhầm QR cũ sau khi đã trả tiền mặt.
 async function markPaidCash(db, order) {
   await canister.updatePaymentStatus(order.order_id, 'paid');
-  db.prepare(`UPDATE orders SET payment_status = 'paid', updated_at = ? WHERE order_id = ?`)
+  db.prepare(`UPDATE orders SET payment_status = 'paid', payment_method = 'cash', updated_at = ? WHERE order_id = ?`)
     .run(Date.now(), order.order_id);
   if (order.tingee_qr_account && order.tingee_bill_id) {
     try {

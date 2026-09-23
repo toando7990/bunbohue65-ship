@@ -53,6 +53,12 @@ import {
   saveEnterpriseActivation,
 } from "@/lib/enterprise-activation";
 import {
+  PAYMENT_METHOD_FILTERS,
+  type PaymentMethodFilter,
+  matchesPaymentMethod,
+  paymentMethodLabel,
+} from "@/lib/payment-method";
+import {
   enterpriseCleanupOrder,
   enterpriseRecordInvoice,
   getEnterpriseHistory,
@@ -205,6 +211,10 @@ export function AccountingPage() {
   // Lọc thêm PHÍA TRÌNH DUYỆT (không cần gọi lại API) — dữ liệu nhà hàng/
   // trạng thái hoá đơn đã có sẵn trong từng đơn trả về.
   const [filterRestaurantId, setFilterRestaurantId] = useState<string>("all");
+  // Lọc theo hình thức thanh toán (Tiền mặt / Chuyển khoản) — chỉ áp dụng
+  // cho đơn ĐÃ thanh toán; lọc phía client như invoiceFilter.
+  const [paymentMethodFilter, setPaymentMethodFilter] =
+    useState<PaymentMethodFilter>("all");
   const [invoiceFilter, setInvoiceFilter] = useState<
     "all" | InvoiceStatus.none | InvoiceStatus.invoiced | InvoiceStatus.failed
   >("all");
@@ -252,6 +262,7 @@ export function AccountingPage() {
       return false;
     if (invoiceFilter !== "all" && o.invoiceStatus !== invoiceFilter)
       return false;
+    if (!matchesPaymentMethod(o, paymentMethodFilter)) return false;
     return true;
   });
   const notInvoicedCount = filteredResults.filter(
@@ -359,6 +370,7 @@ export function AccountingPage() {
       "Tổng tiền",
       "Trạng thái đơn",
       "Trạng thái hoá đơn",
+      "Hình thức thanh toán",
       "Thời gian",
     ];
     const escapeCsv = (v: string) => `"${v.replace(/"/g, '""')}"`;
@@ -371,6 +383,7 @@ export function AccountingPage() {
         String(o.amount),
         o.bookingStatus === "cancelled" ? "Đã huỷ" : "Đã thanh toán",
         INVOICE_LABELS[o.invoiceStatus as InvoiceStatus] ?? o.invoiceStatus,
+        paymentMethodLabel(o.paymentMethod),
         formatDateTime(o.createdAt),
       ]
         .map(escapeCsv)
@@ -575,6 +588,29 @@ export function AccountingPage() {
                 ))}
               </div>
             </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Hình thức thanh toán
+              </span>
+              <div className="flex gap-2">
+                {PAYMENT_METHOD_FILTERS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPaymentMethodFilter(value)}
+                    aria-pressed={paymentMethodFilter === value}
+                    data-ocid={`accounting.payment_method_filter.${value}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-smooth ${
+                      paymentMethodFilter === value
+                        ? "border-info bg-info/15 text-info"
+                        : "border-border bg-background text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {historyQuery.data && (
@@ -737,6 +773,15 @@ export function AccountingPage() {
                           >
                             {isCancelled ? "Đã huỷ" : "Đã thanh toán"}
                           </span>
+                          {!isCancelled &&
+                            paymentMethodLabel(order.paymentMethod) && (
+                              <span
+                                className="mt-1 block text-xs text-muted-foreground"
+                                data-ocid={`accounting.payment_method.${idx + 1}`}
+                              >
+                                {paymentMethodLabel(order.paymentMethod)}
+                              </span>
+                            )}
                         </TableCell>
                         <TableCell className="ent-td">
                           <span

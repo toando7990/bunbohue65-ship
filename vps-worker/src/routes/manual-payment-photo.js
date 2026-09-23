@@ -202,7 +202,7 @@ router.post(
       );
 
       await canister.updatePaymentStatus(orderId, 'paid');
-      db.prepare(`UPDATE orders SET payment_status = 'paid', manual_payment_reference = ?, updated_at = ? WHERE order_id = ?`)
+      db.prepare(`UPDATE orders SET payment_status = 'paid', payment_method = 'transfer', manual_payment_reference = ?, updated_at = ? WHERE order_id = ?`)
         .run(referenceCode, Date.now(), orderId);
       if (order.tingee_qr_account && order.tingee_bill_id) {
         try {
