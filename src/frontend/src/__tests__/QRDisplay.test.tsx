@@ -119,10 +119,17 @@ function makeStatus(paymentStatus: PaymentStatus) {
 
 // Types the given code into the pickup-code input and submits the form —
 // mirrors what a staff device does after the driver reads the code aloud.
-function submitPickupCode(code: string) {
+// Nhập mã nhận hàng rồi (mặc định) chọn "Chuyển khoản" để tạo QR — bước
+// chọn cách thanh toán (Tiền mặt / Chuyển khoản) được thêm theo yêu cầu,
+// không tạo QR ngay sau khi nhập mã nữa. chooseTransfer=false: chỉ nhập mã,
+// dừng ở màn chọn cách thanh toán.
+function submitPickupCode(code: string, chooseTransfer = true) {
   const input = screen.getByTestId("qr.code_input");
   fireEvent.change(input, { target: { value: code } });
   fireEvent.submit(screen.getByTestId("qr.code_form"));
+  if (chooseTransfer) {
+    fireEvent.click(screen.getByTestId("qr.transfer_payment_button"));
+  }
 }
 
 describe("QRDisplay driver Tingee QR payment flow", () => {
@@ -341,5 +348,30 @@ describe("QRDisplay driver Tingee QR payment flow", () => {
     // sửa, màn hình hiện 90.000 (SAI, thiếu đúng bằng phí ship).
     expect(screen.getByTestId("qr.amount")).toHaveTextContent("100.000");
     expect(screen.getByTestId("qr.amount")).not.toHaveTextContent("90.000");
+  });
+
+  it("after entering the pickup code shows ONLY 'Tiền mặt' and 'Chuyển khoản' — no QR is generated until 'Chuyển khoản' is chosen; 'Tiền mặt' pays without ever creating a QR", async () => {
+    mockConfirmCashPaymentDriver.mockResolvedValue({ ok: true });
+    render(
+      <QRDisplay order={makeOrder()} onClose={vi.fn()} onPaid={vi.fn()} />,
+    );
+    submitPickupCode("AB23CD", false);
+
+    expect(screen.getByTestId("qr.choose_method_card")).toBeInTheDocument();
+    expect(screen.getByTestId("qr.cash_payment_button")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("qr.transfer_payment_button"),
+    ).toBeInTheDocument();
+    expect(mockRequestQr).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("qr.card")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("qr.cash_payment_button"));
+    await waitFor(() => {
+      expect(mockConfirmCashPaymentDriver).toHaveBeenCalledWith(
+        "ORD-1",
+        "AB23CD",
+      );
+    });
+    expect(mockRequestQr).not.toHaveBeenCalled();
   });
 });

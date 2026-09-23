@@ -31,6 +31,7 @@ import {
   KeyRound,
   Loader2,
   Phone,
+  QrCode,
   RefreshCw,
   X,
 } from "lucide-react";
@@ -53,6 +54,10 @@ interface QRDisplayProps {
 // chuyển sang "loading" sau khi nhân viên submit mã.
 type QrState =
   | { kind: "needCode"; error?: string }
+  // Đã có mã nhận hàng — chờ nhân viên CHỌN cách thanh toán (theo yêu cầu:
+  // không tạo QR ngay nữa, chỉ hiện 2 nút "Tiền mặt" / "Chuyển khoản"; QR
+  // chuyển khoản chỉ được tạo khi chọn "Chuyển khoản").
+  | { kind: "chooseMethod"; code: string }
   | { kind: "loading" }
   | { kind: "ready"; qrCode: string }
   | { kind: "error"; retryable: boolean; message: string };
@@ -118,7 +123,8 @@ export function QRDisplay({
       setQrState({ kind: "needCode", error: "Vui lòng nhập đủ mã nhận hàng." });
       return;
     }
-    void generate(code);
+    setLastSubmittedCode(code);
+    setQrState({ kind: "chooseMethod", code });
   }
 
   // Nút "Thử lại" ở lỗi tạo QR (không phải lỗi sai mã) — dùng lại mã đã gửi
@@ -134,7 +140,8 @@ export function QRDisplay({
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy 1 lần lúc mount theo initialPickupCode ban đầu, không cần re-run khi order/generate đổi tham chiếu
   useEffect(() => {
     if (initialPickupCode) {
-      void generate(initialPickupCode);
+      setLastSubmittedCode(initialPickupCode);
+      setQrState({ kind: "chooseMethod", code: initialPickupCode });
     }
   }, [initialPickupCode]);
 
@@ -155,6 +162,12 @@ export function QRDisplay({
       setStatus(PaymentStatus.paid);
       toast.success("Đã xác nhận thanh toán tiền mặt.");
     } catch (err) {
+      if (err instanceof VpsHttpError && err.status === 401) {
+        // Sai mã nhận hàng — quay lại form nhập (giống nhánh tạo QR).
+        setLastSubmittedCode(null);
+        setQrState({ kind: "needCode", error: err.message });
+        return;
+      }
       toast.error(
         err instanceof Error
           ? err.message
@@ -286,12 +299,50 @@ export function QRDisplay({
               data-ocid="qr.code_submit_button"
               className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-smooth hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              Xác nhận, tạo QR
+              Xác nhận
             </button>
             <p className="text-center text-xs text-muted-foreground">
               Đơn hàng: {order.orderId}
             </p>
           </form>
+        ) : qrState.kind === "chooseMethod" ? (
+          <div
+            className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl bg-background p-6 shadow-2xl md:p-8"
+            data-ocid="qr.choose_method_card"
+          >
+            <div className="text-center">
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                Chọn cách thanh toán
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {order.cusName} · {formatVnd(order.amount)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleConfirmCash}
+              disabled={confirmingCash}
+              data-ocid="qr.cash_payment_button"
+              className="inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl border border-success/40 bg-success/10 px-4 py-3 text-base font-semibold text-success transition-smooth hover:bg-success/20 disabled:opacity-50"
+            >
+              {confirmingCash ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+              ) : (
+                <Banknote className="h-5 w-5" aria-hidden="true" />
+              )}
+              Tiền mặt
+            </button>
+            <button
+              type="button"
+              onClick={() => void generate(qrState.code)}
+              disabled={confirmingCash}
+              data-ocid="qr.transfer_payment_button"
+              className="inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-semibold text-primary-foreground transition-smooth hover:bg-primary/90 disabled:opacity-50"
+            >
+              <QrCode className="h-5 w-5" aria-hidden="true" />
+              Chuyển khoản
+            </button>
+          </div>
         ) : qrReady ? (
           <div
             className="flex w-full max-w-sm flex-col items-center gap-5 rounded-2xl bg-background p-6 shadow-2xl md:p-8"

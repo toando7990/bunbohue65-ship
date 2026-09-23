@@ -100,57 +100,25 @@ describe("DriverPaymentScreen — QR nhận hàng scan flow", () => {
     vi.clearAllMocks();
   });
 
-  it("opens the QR scanner dialog when 'Quét QR nhận hàng' is clicked", () => {
+  it("no longer shows the in-browser 'Quét QR nhận hàng' button (bỏ theo yêu cầu — quét bằng camera gốc điện thoại qua link)", () => {
     render(<DriverPaymentScreen />);
-
     expect(
-      screen.queryByTestId("mock-qr-scanner-dialog"),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("driver.open_qr_scanner_button"));
-
-    expect(screen.getByTestId("mock-qr-scanner-dialog")).toBeInTheDocument();
-  });
-
-  it("fetches the order via getOrder(orderId) and opens QRDisplay with the scanned pickupCode pre-filled", async () => {
-    mockGetOrder.mockResolvedValue({
-      orderId: "ORD-9",
-      cusName: "Khách B",
-    });
-
-    render(<DriverPaymentScreen />);
-    fireEvent.click(screen.getByTestId("driver.open_qr_scanner_button"));
-
-    expect(capturedOnScanned).not.toBeNull();
-    capturedOnScanned?.({ orderId: "ORD-9", pickupCode: "XYZ789" });
-
-    await waitFor(() => {
-      expect(mockGetOrder).toHaveBeenCalledWith({}, "ORD-9");
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId("mock-qr-display")).toBeInTheDocument();
-    });
-    expect(capturedQRDisplayProps?.order.orderId).toBe("ORD-9");
-    expect(capturedQRDisplayProps?.initialPickupCode).toBe("XYZ789");
-
-    // Dialog quét QR tự đóng lại sau khi quét xong.
-    expect(
-      screen.queryByTestId("mock-qr-scanner-dialog"),
+      screen.queryByTestId("driver.open_qr_scanner_button"),
     ).not.toBeInTheDocument();
   });
 
-  it("shows an error toast and does NOT open QRDisplay when getOrder fails (order not found)", async () => {
+  it("does NOT open QRDisplay when the scanned link points to an order that cannot be found", async () => {
+    mockUseSearch.mockReturnValue({
+      scan_order: "ORD-MISSING",
+      scan_code: "AAA111",
+    });
     mockGetOrder.mockRejectedValue(new Error("Không tìm thấy đơn hàng."));
 
     render(<DriverPaymentScreen />);
-    fireEvent.click(screen.getByTestId("driver.open_qr_scanner_button"));
-    capturedOnScanned?.({ orderId: "ORD-MISSING", pickupCode: "AAA111" });
 
     await waitFor(() => {
       expect(mockGetOrder).toHaveBeenCalled();
     });
-
     expect(screen.queryByTestId("mock-qr-display")).not.toBeInTheDocument();
   });
 

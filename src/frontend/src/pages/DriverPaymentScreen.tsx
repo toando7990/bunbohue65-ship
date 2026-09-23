@@ -8,10 +8,6 @@ import { ActivationForm } from "@/components/ActivationForm";
 import { DriverOrderHistory } from "@/components/DriverOrderHistory";
 import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
-import {
-  QrScannerDialog,
-  type ScannedPickupQr,
-} from "@/components/QrScannerDialog";
 import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
 import { usePendingOrders } from "@/hooks/usePendingOrders";
 import { useDevicesByRestaurant } from "@/hooks/useQueries";
@@ -23,7 +19,6 @@ import {
   CalendarDays,
   CalendarRange,
   ListOrdered,
-  ScanLine,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -88,7 +83,6 @@ export function DriverPaymentScreen() {
   const [deviceName, setDeviceName] = useState<string>(stored?.name ?? "");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState<DriverTab>("queue");
-  const [scannerOpen, setScannerOpen] = useState(false);
   // Mã nhận hàng đã có sẵn từ lần quét "QR nhận hàng" gần nhất — truyền
   // vào QRDisplay để tự động tạo QR, bỏ qua bước nhập tay.
   const [scannedPickupCode, setScannedPickupCode] = useState<string | null>(
@@ -182,11 +176,6 @@ export function DriverPaymentScreen() {
     }
   }
 
-  async function handleScanned({ orderId, pickupCode }: ScannedPickupQr) {
-    setScannerOpen(false);
-    await openOrderByPickupQr(orderId, pickupCode);
-  }
-
   // Tự động mở đơn khi trang được tải qua link "QR nhận hàng" (camera
   // gốc điện thoại quét, không qua QrScannerDialog) — chỉ chạy 1 lần
   // sau khi đã kích hoạt xong (actor sẵn sàng), tránh chạy lặp nếu
@@ -223,19 +212,10 @@ export function DriverPaymentScreen() {
           mốc lịch sử) — cuộn RIÊNG trong khu vực này, để status bar +
           bottom nav luôn cố định (không cuộn theo). */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === "queue" && (
-          <div className="px-4 pt-4">
-            <button
-              type="button"
-              onClick={() => setScannerOpen(true)}
-              data-ocid="driver.open_qr_scanner_button"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition-smooth hover:bg-primary/10"
-            >
-              <ScanLine className="h-4 w-4" aria-hidden="true" />
-              Quét QR nhận hàng
-            </button>
-          </div>
-        )}
+        {/* Nút "Quét QR nhận hàng" (camera trong trình duyệt) đã BỎ theo
+            yêu cầu — nhân viên quét "QR nhận hàng" bằng CAMERA GỐC của
+            điện thoại (QR mã hoá link /driver?scan_order=&scan_code=, xem
+            effect tự mở đơn ở trên). */}
         {activeTab === "queue" ? (
           <PaymentQueue
             orders={ordersQuery.data ?? []}
@@ -286,12 +266,6 @@ export function DriverPaymentScreen() {
           onPaid={handlePaid}
         />
       )}
-
-      <QrScannerDialog
-        open={scannerOpen}
-        onOpenChange={setScannerOpen}
-        onScanned={handleScanned}
-      />
     </div>
   );
 }
