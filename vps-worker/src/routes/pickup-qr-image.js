@@ -35,7 +35,12 @@ router.use(
   rateLimit({ windowMs: 60000, max: 20, message: 'Too many pickup-qr requests' }),
 );
 
-router.get('/order/:id/pickup-qr.png', async (req, res, next) => {
+// Đường dẫn NGẮN /q/:id (cùng xử lý) — dùng trong ghi chú gửi Lalamove:
+// link càng ngắn, đứng riêng 1 dòng thì app tài xế càng dễ nhận diện thành
+// siêu liên kết bấm được (việc có biến thành link hay không do app Lalamove
+// quyết định, hệ thống không điều khiển được).
+router.use('/q/:id', rateLimit({ windowMs: 60000, max: 20, message: 'Too many pickup-qr requests' }));
+router.get(['/order/:id/pickup-qr.png', '/q/:id'], async (req, res, next) => {
   try {
     const db = req.app.locals.db;
     const orderId = req.params.id;

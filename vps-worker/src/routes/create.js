@@ -240,7 +240,9 @@ router.post('/order/create', async (req, res, next) => {
         // dự phòng (nếu tài xế không mở được link, hoặc VPS_PUBLIC_URL
         // chưa cấu hình) — cùng cơ chế đọc mã bằng miệng đã có từ trước.
         const qrLine = process.env.VPS_PUBLIC_URL
-          ? `\nQR nhận hàng: ${process.env.VPS_PUBLIC_URL}/order/${orderId}/pickup-qr.png`
+          ? // Link NGẮN, ĐỨNG RIÊNG 1 DÒNG (không dính chữ phía trước/sau) —
+            // tăng khả năng app tài xế Lalamove nhận diện thành link bấm được.
+            `\nQR nhận hàng (bấm link):\n${process.env.VPS_PUBLIC_URL.replace(/\/+$/, '')}/q/${orderId}\n`
           : '';
         const placed = await lalamove.placeOrder({
           quotationId: frontendAhamoveOrderId,
