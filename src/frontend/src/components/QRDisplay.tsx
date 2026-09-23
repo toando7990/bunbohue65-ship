@@ -134,10 +134,8 @@ export function QRDisplay({
     if (lastSubmittedCode) void generate(lastSubmittedCode);
   }
 
-  // Đã biết trước mã nhận hàng (quét "QR nhận hàng" — xem
-  // QrScannerDialog.tsx) — tự động tạo QR ngay, bỏ qua form nhập tay.
-  // Chỉ chạy 1 lần lúc mount (initialPickupCode không đổi sau đó).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy 1 lần lúc mount theo initialPickupCode ban đầu, không cần re-run khi order/generate đổi tham chiếu
+  // Đã biết trước mã nhận hàng (mở từ link "QR nhận hàng") — chuyển thẳng
+  // sang bước chọn cách thanh toán, bỏ qua form nhập tay.
   useEffect(() => {
     if (initialPickupCode) {
       setLastSubmittedCode(initialPickupCode);

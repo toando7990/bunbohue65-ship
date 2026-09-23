@@ -1,7 +1,7 @@
 // Coverage cho DriverPaymentScreen — tập trung vào luồng MỚI: nút "Quét QR
-// nhận hàng" mở QrScannerDialog, sau khi quét thành công gọi đúng
+// nhận hàng" (link camera gốc) tự mở đơn, gọi đúng
 // getOrder(orderId) rồi mở QRDisplay với initialPickupCode đã biết sẵn
-// (bỏ qua bước nhập tay). Mock QrScannerDialog/QRDisplay/PaymentQueue
+// (bỏ qua bước nhập tay). Mock QRDisplay/PaymentQueue
 // hoàn toàn — không cần test lại camera thật hay luồng hàng đợi cũ.
 
 import {
@@ -46,22 +46,6 @@ vi.mock("@/components/DriverOrderHistory", () => ({
   DriverOrderHistory: () => null,
 }));
 
-let capturedOnScanned:
-  | ((data: { orderId: string; pickupCode: string }) => void)
-  | null = null;
-vi.mock("@/components/QrScannerDialog", () => ({
-  QrScannerDialog: ({
-    open,
-    onScanned,
-  }: {
-    open: boolean;
-    onScanned: (data: { orderId: string; pickupCode: string }) => void;
-  }) => {
-    capturedOnScanned = onScanned;
-    return open ? <div data-ocid="mock-qr-scanner-dialog" /> : null;
-  },
-}));
-
 let capturedQRDisplayProps: {
   order: { orderId: string };
   initialPickupCode?: string;
@@ -90,7 +74,6 @@ describe("DriverPaymentScreen — QR nhận hàng scan flow", () => {
     );
     mockUseCanister.mockReturnValue({ actor: {} });
     mockUseSearch.mockReturnValue({});
-    capturedOnScanned = null;
     capturedQRDisplayProps = null;
   });
 
