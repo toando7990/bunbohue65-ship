@@ -31,14 +31,6 @@ const mockActivateDevice = vi.fn();
 const mockGetInvoice = vi.fn();
 
 vi.mock("@/hooks/useQueries", () => ({
-  useCleanupOrderByDevice: () => ({
-    mutateAsync: mockCleanup,
-    isPending: false,
-  }),
-  useIssueInvoiceByDevice: () => ({
-    mutateAsync: mockIssueInvoice,
-    isPending: false,
-  }),
   useRestaurants: () => ({
     data: [
       { restaurantId: "R1", name: "Đường Láng" },
@@ -53,6 +45,14 @@ vi.mock("@/lib/vps-client", () => ({
   getEnterpriseHistory: (...args: unknown[]) =>
     mockGetEnterpriseHistory(...args),
   getInvoice: (...args: unknown[]) => mockGetInvoice(...args),
+  enterpriseCleanupOrder: (deviceId: string, orderId: string) =>
+    mockCleanup(deviceId, orderId),
+  enterpriseRecordInvoice: (
+    deviceId: string,
+    orderId: string,
+    invoiceId: string,
+    pdfUrl: string,
+  ) => mockIssueInvoice({ deviceId, orderId, invoiceId, pdfUrl }),
 }));
 
 function setActivation() {
@@ -139,7 +139,7 @@ describe("AccountingPage enterprise accounting", () => {
     fireEvent.click(screen.getByTestId("accounting.cleanup_submit_button"));
 
     await waitFor(() => {
-      expect(mockCleanup).toHaveBeenCalledWith("ORD-1");
+      expect(mockCleanup).toHaveBeenCalledWith("dev-acc", "ORD-1");
     });
   });
 
@@ -173,6 +173,7 @@ describe("AccountingPage enterprise accounting", () => {
 
     await waitFor(() => {
       expect(mockIssueInvoice).toHaveBeenCalledWith({
+        deviceId: "dev-acc",
         orderId: "ORD-1",
         invoiceId: "INV-2026-0001",
         pdfUrl: "https://pdf/hoa-don.pdf",

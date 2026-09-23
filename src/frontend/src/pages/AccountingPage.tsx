@@ -44,17 +44,20 @@ import {
 } from "@/components/ui/table";
 import {
   useActivateDevice,
-  useCleanupOrderByDevice,
   useGenerateActivationCode,
-  useIssueInvoiceByDevice,
   useRestaurants,
 } from "@/hooks/useQueries";
 import {
   loadEnterpriseActivation,
   saveEnterpriseActivation,
 } from "@/lib/enterprise-activation";
-import { getEnterpriseHistory, getInvoice } from "@/lib/vps-client";
-import { useQuery } from "@tanstack/react-query";
+import {
+  enterpriseCleanupOrder,
+  enterpriseRecordInvoice,
+  getEnterpriseHistory,
+  getInvoice,
+} from "@/lib/vps-client";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CalendarRange,
   ChevronDown,
@@ -235,8 +238,25 @@ export function AccountingPage() {
       ? historyQuery.error.message
       : "Kiểm tra lại khoảng thời gian hoặc thử lại sau.";
 
-  const cleanupMutation = useCleanupOrderByDevice(deviceId);
-  const invoiceMutation = useIssueInvoiceByDevice(deviceId);
+  // Ghi qua VPS (không gọi thẳng canister nữa) — xem routes/enterprise-
+  // actions.js: canister chỉ giữ đơn trong ngày nên đơn cũ báo "Order not
+  // found", và danh sách (đọc từ VPS) không phản ánh thay đổi.
+  const cleanupMutation = useMutation({
+    mutationFn: (orderId: string) => enterpriseCleanupOrder(deviceId, orderId),
+  });
+  const invoiceMutation = useMutation({
+    mutationFn: (args: {
+      orderId: string;
+      invoiceId: string;
+      pdfUrl: string;
+    }) =>
+      enterpriseRecordInvoice(
+        deviceId,
+        args.orderId,
+        args.invoiceId,
+        args.pdfUrl,
+      ),
+  });
 
   async function handleCleanup(orderId: string) {
     try {

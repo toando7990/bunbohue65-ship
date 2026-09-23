@@ -542,3 +542,31 @@ export async function getAnalytics(
 // read the configured value. Resolved at module-eval time from the runtime
 // config loaded by loadEnv() at boot.
 export const vpsBaseUrl: string = getVpsUrl();
+
+// Thao tác GHI của vai trò Kế toán — ghi vào VPS SQLite (nguồn của danh
+// sách Kế toán, giữ nhiều ngày) và đồng bộ canister nếu đơn còn trên đó.
+// Thay cho cleanupOrderByDevice/issueInvoiceByDevice gọi thẳng canister
+// (canister chỉ giữ đơn trong ngày → "Order not found" với đơn cũ).
+export async function enterpriseCleanupOrder(
+  deviceId: string,
+  orderId: string,
+): Promise<{ ok: boolean; canisterSynced: boolean }> {
+  return vpsFetch({
+    method: "POST",
+    path: `/orders/enterprise/${encodeURIComponent(orderId)}/cleanup`,
+    body: { deviceId },
+  });
+}
+
+export async function enterpriseRecordInvoice(
+  deviceId: string,
+  orderId: string,
+  invoiceId: string,
+  pdfUrl: string,
+): Promise<{ ok: boolean; canisterSynced: boolean }> {
+  return vpsFetch({
+    method: "POST",
+    path: `/orders/enterprise/${encodeURIComponent(orderId)}/invoice`,
+    body: { deviceId, invoiceId, pdfUrl },
+  });
+}

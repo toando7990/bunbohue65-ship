@@ -366,6 +366,15 @@ async function callerHasEnterpriseRole(deviceId) {
   return isAccounting || isSalesPromoReporting;
 }
 
+// Chỉ vai trò Kế toán (#accounting) — dùng cho các THAO TÁC GHI (dọn dẹp /
+// ghi nhận hoá đơn) ở routes/enterprise-actions.js, khớp đúng quyền
+// canister yêu cầu cho cleanupOrderByDevice/issueInvoiceByDevice (Báo cáo
+// bán hàng & KM chỉ được XEM, không được ghi).
+async function deviceHasAccountingRole(deviceId) {
+  const actor = getActor();
+  return await actor.callerHasEnterpriseRole(deviceId, { accounting: null });
+}
+
 // listDevicesByRestaurant — query có sẵn ở canister, dùng cho route mới
 // POST /order/:id/confirm-cash-counter: xác nhận deviceId gọi tới thực sự
 // là 1 thiết bị ĐANG active của ĐÚNG nhà hàng đang xử lý đơn (không cho
@@ -555,6 +564,7 @@ module.exports = {
   getCurrentPromotion,
   isStoreOpen,
   callerHasEnterpriseRole,
+  deviceHasAccountingRole,
   listDevicesByRestaurant,
   listRestaurants,
   isEmailVerified,

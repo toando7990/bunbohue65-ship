@@ -43,6 +43,7 @@ const cashPaymentRoutes = require('./routes/cash-payment');
 const pickupQrImageRoutes = require('./routes/pickup-qr-image');
 const geocodeRoutes = require('./routes/geocode');
 const orderLalamoveStatusRoutes = require('./routes/order-lalamove-status');
+const enterpriseActionsRoutes = require('./routes/enterprise-actions');
 
 const cronJobs = [];
 
@@ -92,6 +93,7 @@ app.use('/', cashPaymentRoutes);
 app.use('/', pickupQrImageRoutes);
 app.use('/', geocodeRoutes);
 app.use('/', orderLalamoveStatusRoutes);
+app.use('/', enterpriseActionsRoutes);
 app.use('/', analyticsRoutes);
 
 // Error handler
