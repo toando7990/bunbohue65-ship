@@ -161,6 +161,24 @@ async function getQuotation({
 // (không phải lỗi hệ thống), không phải chặn tạo đơn trong hệ thống —
 // nhà hàng vẫn có thể tự đặt tài xế thủ công qua app ngoài (phương án dự
 // phòng đã thống nhất từ đầu).
+// Chuẩn hoá SĐT Việt Nam sang E.164 (+84...) — BUG THẬT NGHIÊM TRỌNG đã
+// sửa: Lalamove CHỈ chấp nhận số điện thoại định dạng E.164 (kiểm tra bằng
+// libphonenumber của Google), nhưng hệ thống lưu SĐT nhà hàng/khách theo
+// định dạng nội địa ("0838656865") — MỌI lệnh placeOrder() trước đây đều
+// bị Lalamove từ chối (422), tài xế không bao giờ được gọi tự động dù
+// quotation hợp lệ. Bỏ khoảng trắng/dấu chấm/gạch ngang, rồi:
+//   "0xxxxxxxxx"  → "+84xxxxxxxxx"
+//   "84xxxxxxxxx" → "+84xxxxxxxxx"
+//   "+..."        → giữ nguyên (đã đúng E.164)
+function toE164Vn(phone) {
+  const cleaned = String(phone || '').replace(/[\s.\-()]/g, '');
+  if (!cleaned) return '';
+  if (cleaned.startsWith('+')) return cleaned;
+  if (cleaned.startsWith('84')) return `+${cleaned}`;
+  if (cleaned.startsWith('0')) return `+84${cleaned.slice(1)}`;
+  return `+84${cleaned}`;
+}
+
 async function placeOrder({
   quotationId,
   pickupStopId,
@@ -178,13 +196,13 @@ async function placeOrder({
       sender: {
         stopId: pickupStopId,
         name: senderName,
-        phone: senderPhone,
+        phone: toE164Vn(senderPhone),
       },
       recipients: [
         {
           stopId: dropStopId,
           name: recipientName,
-          phone: recipientPhone,
+          phone: toE164Vn(recipientPhone),
           remarks: recipientRemarks || '',
         },
       ],
@@ -225,4 +243,4 @@ async function placeOrder({
   };
 }
 
-module.exports = { getQuotation, placeOrder, LalamoveError };
+module.exports = { getQuotation, placeOrder, toE164Vn, LalamoveError };
