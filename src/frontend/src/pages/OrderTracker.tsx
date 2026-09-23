@@ -85,7 +85,40 @@ const LALAMOVE_STATUS_LABELS: Record<string, string> = {
   COMPLETED: "Đã giao xong",
   CANCELED: "Đơn giao hàng đã bị huỷ",
   REJECTED: "Không tìm được tài xế",
+  EXPIRED: "Hết thời gian tìm tài xế",
 };
+
+// Hành trình giao theo Lalamove — 4 bước tuần tự. Trạng thái kết thúc bất
+// thường (CANCELED/REJECTED/EXPIRED) hiện riêng thay vì đánh dấu bước.
+const LALAMOVE_STEPS: Array<{
+  status: string;
+  label: string;
+  description: string;
+}> = [
+  {
+    status: "ASSIGNING_DRIVER",
+    label: "Đang tìm tài xế",
+    description: "Lalamove đang tìm tài xế gần nhà hàng.",
+  },
+  {
+    status: "ON_GOING",
+    label: "Tài xế đang đến nhà hàng",
+    description: "Tài xế đã nhận đơn, đang tới lấy hàng.",
+  },
+  {
+    status: "PICKED_UP",
+    label: "Tài xế đã lấy hàng",
+    description: "Đang giao tới địa chỉ của bạn.",
+  },
+  {
+    status: "COMPLETED",
+    label: "Đã giao xong",
+    description: "Đơn hàng đã được giao.",
+  },
+];
+function lalamoveStepIndex(status: string): number {
+  return LALAMOVE_STEPS.findIndex((s) => s.status === status);
+}
 function lalamoveStatusLabel(status: string): string {
   return LALAMOVE_STATUS_LABELS[status] ?? status;
 }
@@ -558,23 +591,78 @@ export function OrderStatusView({
           <h2 className="font-display text-lg font-semibold">
             Hành trình giao
           </h2>
-          <div className="mt-4 flex items-center gap-3 rounded-md border border-primary/30 bg-primary/5 p-3">
-            <Truck
-              className="h-8 w-8 shrink-0 text-primary"
-              aria-hidden="true"
-            />
-            <div className="min-w-0 flex-1">
-              <p
-                className="text-sm font-semibold text-foreground"
-                data-ocid="order_tracker.lalamove_status"
-              >
-                {lalamoveStatusLabel(lalamoveInfo.lalamoveStatus)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Tài xế Lalamove đang xử lý đơn của bạn.
+          <p
+            className="mt-1 text-sm font-semibold text-primary"
+            data-ocid="order_tracker.lalamove_status"
+          >
+            {lalamoveStatusLabel(lalamoveInfo.lalamoveStatus)}
+          </p>
+          {lalamoveStepIndex(lalamoveInfo.lalamoveStatus) >= 0 ? (
+            <ol
+              className="mt-4 space-y-4"
+              data-ocid="order_tracker.lalamove_steps"
+            >
+              {LALAMOVE_STEPS.map((step, i) => {
+                const current = lalamoveStepIndex(lalamoveInfo.lalamoveStatus);
+                const done =
+                  i < current || lalamoveInfo.lalamoveStatus === "COMPLETED";
+                const active = i === current && !done;
+                return (
+                  <li
+                    key={step.status}
+                    className="flex items-start gap-3"
+                    data-ocid={`order_tracker.lalamove_step.${step.status}`}
+                    data-state={done ? "done" : active ? "active" : "pending"}
+                  >
+                    <span
+                      className={cn(
+                        "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold",
+                        done
+                          ? "border-success bg-success text-success-foreground"
+                          : active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-card text-muted-foreground",
+                      )}
+                    >
+                      {done ? (
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        i + 1
+                      )}
+                    </span>
+                    <div>
+                      <p
+                        className={cn(
+                          "text-sm font-medium",
+                          active
+                            ? "text-foreground"
+                            : done
+                              ? "text-foreground"
+                              : "text-muted-foreground",
+                        )}
+                      >
+                        {step.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {step.description}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <div className="mt-3 flex items-center gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+              <Truck
+                className="h-6 w-6 shrink-0 text-destructive"
+                aria-hidden="true"
+              />
+              <p className="text-sm text-foreground">
+                Lalamove không giao được đơn này — nhà hàng sẽ liên hệ đặt tài
+                xế khác.
               </p>
             </div>
-          </div>
+          )}
           {lalamoveInfo.lalamoveShareLink && (
             <a
               href={lalamoveInfo.lalamoveShareLink}

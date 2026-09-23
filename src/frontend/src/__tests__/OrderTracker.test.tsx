@@ -204,4 +204,36 @@ describe("OrderStatusView — QR nhận hàng", () => {
       screen.getByTestId("order_tracker.lalamove_status"),
     ).toHaveTextContent("SOME_NEW_STATUS_LALAMOVE_ADDED");
   });
+
+  it("marks Lalamove timeline steps done/active/pending according to the REAL Lalamove status (PICKED_UP)", () => {
+    renderView(makeOrder({}), {
+      lalamoveOrderId: "LALA-1",
+      lalamoveDriverId: "DRV-1",
+      lalamoveShareLink: "",
+      lalamoveStatus: "PICKED_UP",
+    });
+    const state = (s: string) =>
+      screen
+        .getByTestId(`order_tracker.lalamove_step.${s}`)
+        .getAttribute("data-state");
+    expect(state("ASSIGNING_DRIVER")).toBe("done");
+    expect(state("ON_GOING")).toBe("done");
+    expect(state("PICKED_UP")).toBe("active");
+    expect(state("COMPLETED")).toBe("pending");
+  });
+
+  it("shows a failure notice instead of the timeline when Lalamove REJECTED/EXPIRED the order", () => {
+    renderView(makeOrder({}), {
+      lalamoveOrderId: "LALA-1",
+      lalamoveDriverId: "",
+      lalamoveShareLink: "",
+      lalamoveStatus: "EXPIRED",
+    });
+    expect(
+      screen.queryByTestId("order_tracker.lalamove_steps"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId("order_tracker.lalamove_status"),
+    ).toHaveTextContent("Hết thời gian tìm tài xế");
+  });
 });

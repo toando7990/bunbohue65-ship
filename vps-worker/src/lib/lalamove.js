@@ -243,4 +243,34 @@ async function placeOrder({
   };
 }
 
-module.exports = { getQuotation, placeOrder, toE164Vn, LalamoveError };
+// getOrderDetails — GET /v3/orders/:orderId. Lấy trạng thái THẬT hiện tại
+// của đơn Lalamove (ASSIGNING_DRIVER → ON_GOING → PICKED_UP → COMPLETED /
+// CANCELED / REJECTED / EXPIRED), driverId và shareLink — dùng để trang
+// "Theo dõi đơn" cập nhật hành trình giao theo Lalamove thay vì giữ nguyên
+// trạng thái chụp lúc đặt tài xế. GET ký với body rỗng (theo tài liệu).
+async function getOrderDetails(lalamoveOrderId) {
+  const path = `/v3/orders/${encodeURIComponent(lalamoveOrderId)}`;
+  const headers = buildHeaders('GET', path, '');
+  let res;
+  try {
+    res = await client.get(path, { headers });
+  } catch (err) {
+    if (err.response) {
+      throw new LalamoveError(
+        `Lalamove get order failed: ${err.response.status}`,
+        err.response.status,
+        err.response.data,
+      );
+    }
+    throw new LalamoveError(`Lalamove network error: ${err.message}`, null, null);
+  }
+  const data = (res.data || {}).data;
+  if (!data) throw new LalamoveError('Lalamove trả về dữ liệu đơn không hợp lệ', res.status, res.data);
+  return {
+    status: data.status || '',
+    driverId: data.driverId || '',
+    shareLink: data.shareLink || '',
+  };
+}
+
+module.exports = { getQuotation, placeOrder, getOrderDetails, toE164Vn, LalamoveError };
