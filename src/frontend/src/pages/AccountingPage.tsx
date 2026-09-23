@@ -15,6 +15,7 @@
 
 import { InvoiceStatus, PaymentStatus } from "@/backend";
 import { DeviceRole } from "@/backend";
+import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { getDeviceId } from "@/components/EnterpriseActivationForm";
 import { Button } from "@/components/ui/button";
 import {
@@ -692,8 +693,14 @@ export function AccountingPage() {
                       >
                         <TableCell className="ent-td">
                           <div className="flex flex-col">
-                            <span className="font-mono text-xs font-semibold text-foreground">
-                              {order.orderId}
+                            <span className="flex items-center gap-1.5">
+                              <span className="font-mono text-xs font-semibold text-foreground">
+                                {order.orderId}
+                              </span>
+                              <CopyOrderIdButton
+                                orderId={order.orderId}
+                                ocid={`accounting.copy_order_id.${idx + 1}`}
+                              />
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {formatDateTime(order.createdAt)}

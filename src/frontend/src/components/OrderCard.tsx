@@ -6,6 +6,7 @@
 // ngoài; "Xem chi tiết" là <Link> riêng, không lồng trong link/button nào
 // khác.
 
+import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useDevicesByRestaurant, useRestaurants } from "@/hooks/useQueries";
 import { PaymentStatus } from "@/types";
@@ -169,6 +170,10 @@ export function OrderCard({
           >
             {shortOrderId(order.orderId)}
           </span>
+          <CopyOrderIdButton
+            orderId={order.orderId}
+            ocid={`order.card.${index}.copy_order_id`}
+          />
         </div>
         {!compactRestaurantInfo && restaurantAddress && (
           <div className="flex min-w-0 shrink-0 flex-col items-end gap-1">

@@ -8,6 +8,7 @@
 
 import type { Restaurant } from "@/backend";
 import { ChangeRestaurantDialog } from "@/components/ChangeRestaurantDialog";
+import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
 import { useGetOrder, useRestaurants } from "@/hooks/useQueries";
@@ -293,12 +294,15 @@ export default function OrderTracker() {
       >
         Theo dõi đơn
       </h1>
-      <p
-        className="mt-1 break-all font-mono text-sm text-muted-foreground"
-        data-ocid="order_tracker.order_id"
-      >
-        {orderId}
-      </p>
+      <div className="mt-1 flex items-center gap-2">
+        <p
+          className="break-all font-mono text-sm text-muted-foreground"
+          data-ocid="order_tracker.order_id"
+        >
+          {orderId}
+        </p>
+        {orderId && <CopyOrderIdButton orderId={orderId} />}
+      </div>
 
       {/* Loading state */}
       {isLoading && (

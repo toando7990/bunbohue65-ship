@@ -3,6 +3,7 @@
 // Mobile-first cards, large touch targets, Vietnamese labels.
 
 import { BookingStatus, type Order, PaymentStatus } from "@/backend";
+import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { HighlightMatch, matchesQuery } from "@/components/HighlightMatch";
 import { ManualPaymentPhotoDialog } from "@/components/ManualPaymentPhotoDialog";
 import { printPaymentSlip } from "@/lib/payment-slip";
@@ -270,9 +271,15 @@ export function PaymentQueue({
                         "Khách vãng lai"
                       )}
                     </h3>
-                    <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-                      {order.orderId}
-                    </p>
+                    <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+                      <p className="truncate font-mono text-xs text-muted-foreground">
+                        {order.orderId}
+                      </p>
+                      <CopyOrderIdButton
+                        orderId={order.orderId}
+                        ocid={`queue.copy_order_id.${idx + 1}`}
+                      />
+                    </div>
                     {order.cusPhone && (
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         SĐT:{" "}

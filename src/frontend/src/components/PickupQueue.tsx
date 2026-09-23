@@ -4,6 +4,7 @@
 // cùng cấu trúc thông tin với PaymentQueue (#idx, time, customer, items, tiền hàng).
 
 import type { Order } from "@/backend";
+import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { useMarkPickedUp } from "@/hooks/useQueries";
 import {
   CheckCircle2,
@@ -203,9 +204,12 @@ export function PickupQueue({ orders, isLoading, isError }: PickupQueueProps) {
                         Đã thanh toán
                       </span>
                     </div>
-                    <p className="mt-1.5 truncate font-mono text-xs text-muted-foreground">
-                      {order.orderId}
-                    </p>
+                    <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
+                      <p className="truncate font-mono text-xs text-muted-foreground">
+                        {order.orderId}
+                      </p>
+                      <CopyOrderIdButton orderId={order.orderId} />
+                    </div>
                     {order.items && order.items.length > 0 && (
                       <ul
                         className="mt-2 flex flex-col gap-0.5 border-t border-border/60 pt-2"
