@@ -15,10 +15,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUseCanister = vi.fn();
 const mockGetOrder = vi.fn();
+const mockUseSearch = vi.fn();
 
 vi.mock("@/lib/canister", () => ({
   useCanister: () => mockUseCanister(),
   getOrder: (...args: unknown[]) => mockGetOrder(...args),
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  useSearch: () => mockUseSearch(),
 }));
 
 vi.mock("@/hooks/usePendingOrders", () => ({
@@ -84,6 +89,7 @@ describe("DriverPaymentScreen — QR nhận hàng scan flow", () => {
       }),
     );
     mockUseCanister.mockReturnValue({ actor: {} });
+    mockUseSearch.mockReturnValue({});
     capturedOnScanned = null;
     capturedQRDisplayProps = null;
   });
@@ -146,5 +152,36 @@ describe("DriverPaymentScreen — QR nhận hàng scan flow", () => {
     });
 
     expect(screen.queryByTestId("mock-qr-display")).not.toBeInTheDocument();
+  });
+
+  it("auto-opens the order when the page loads with ?scan_order=&scan_code= (camera GỐC của điện thoại quét link, không qua QrScannerDialog)", async () => {
+    mockUseSearch.mockReturnValue({
+      scan_order: "ORD-9",
+      scan_code: "XYZ789",
+    });
+    mockGetOrder.mockResolvedValue({
+      orderId: "ORD-9",
+      cusName: "Khách B",
+    });
+
+    render(<DriverPaymentScreen />);
+
+    // KHÔNG cần bấm "Quét QR nhận hàng" hay tương tác gì — chỉ cần URL
+    // có sẵn 2 tham số này là tự động mở đơn ngay khi trang tải xong.
+    await waitFor(() => {
+      expect(mockGetOrder).toHaveBeenCalledWith({}, "ORD-9");
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("mock-qr-display")).toBeInTheDocument();
+    });
+    expect(capturedQRDisplayProps?.order.orderId).toBe("ORD-9");
+    expect(capturedQRDisplayProps?.initialPickupCode).toBe("XYZ789");
+  });
+
+  it("does not call getOrder when the URL has no scan_order/scan_code (normal page load)", async () => {
+    render(<DriverPaymentScreen />);
+
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockGetOrder).not.toHaveBeenCalled();
   });
 });

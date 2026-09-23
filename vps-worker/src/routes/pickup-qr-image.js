@@ -3,13 +3,19 @@
 // ============================================================
 // Ảnh QR "nhận hàng" dạng PNG, phục vụ qua 1 đường link công khai — dùng
 // để nhúng vào trường remarks khi gọi Lalamove "Place Order" (Phần 6/6):
-// tài xế Lalamove mở link này trong app/trình duyệt của họ, nhân viên
-// quán quét ảnh hiện ra bằng camera ở /driver (QrScannerDialog.tsx, tính
-// năng "QR nhận hàng" đã có từ trước) — tự động mở đúng đơn + điền sẵn
-// mã nhận hàng, không cần đọc mã bằng miệng/gõ tay nữa.
+// tài xế Lalamove mở link này trong app/trình duyệt của họ, NHÂN VIÊN
+// QUÁN DÙNG CAMERA GỐC CỦA ĐIỆN THOẠI (không phải camera trong trình
+// duyệt — hay bị từ chối quyền trên 1 số thiết bị Android, xem
+// QrScannerDialog.tsx) quét trực tiếp ảnh trên màn hình tài xế.
 //
-// Mã hoá CÙNG định dạng JSON {orderId, pickupCode} mà QrScannerDialog.tsx
-// đã mong đợi — sửa 1 bên phải sửa bên kia.
+// Mã hoá 1 ĐƯỜNG LINK trỏ về FRONTEND_PUBLIC_URL/driver kèm orderId +
+// pickupCode (KHÔNG còn là JSON thuần như trước) — điện thoại tự nhận
+// diện đây là link, mở thẳng /driver và tự động hiện đúng đơn + điền
+// sẵn mã nhận hàng. Nếu FRONTEND_PUBLIC_URL CHƯA cấu hình, fallback về
+// JSON thuần {orderId, pickupCode} như cũ (vẫn quét được bằng camera
+// trong trình duyệt qua QrScannerDialog.tsx, chỉ là không mở được bằng
+// camera gốc điện thoại) — không để tính năng hỏng hẳn nếu admin chưa
+// kịp cấu hình biến môi trường mới này.
 //
 // BẢO MẬT: orderId có 8 ký tự hex ngẫu nhiên (crypto.randomBytes(4)) —
 // khó đoán nhưng không phải không thể (2^32 khả năng). Rate-limit chặt
@@ -47,7 +53,9 @@ router.get('/order/:id/pickup-qr.png', async (req, res, next) => {
       return res.status(410).json({ ok: false, message: 'Đơn này đã thanh toán, không cần quét mã nhận hàng nữa.' });
     }
 
-    const qrValue = JSON.stringify({ orderId: order.order_id, pickupCode: order.pickup_code });
+    const qrValue = process.env.FRONTEND_PUBLIC_URL
+      ? `${process.env.FRONTEND_PUBLIC_URL}/driver?scan_order=${encodeURIComponent(order.order_id)}&scan_code=${encodeURIComponent(order.pickup_code)}`
+      : JSON.stringify({ orderId: order.order_id, pickupCode: order.pickup_code });
     const png = await QRCode.toBuffer(qrValue, { type: 'png', width: 400, margin: 2 });
 
     res.set('Content-Type', 'image/png');

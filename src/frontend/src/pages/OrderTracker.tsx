@@ -464,13 +464,17 @@ export function OrderStatusView({
               </div>
             )}
 
-            {/* QR "nhận hàng" — khách đưa cho tài xế (chụp màn hình/gửi
-                qua Zalo/Messenger). Tài xế mang QR này tới, nhân viên
-                quán quét ở trang /driver (nút "Quét QR nhận hàng") để tự
-                mở đúng đơn và điền sẵn mã nhận hàng — không cần tài xế
-                đọc mã cho nhân viên nghe. Mã hoá {orderId, pickupCode}
-                dạng JSON — ĐÚNG định dạng QrScannerDialog.tsx mong đợi,
-                sửa 1 bên phải sửa bên kia. */}
+            {/* QR "nhận hàng" — mã hoá 1 ĐƯỜNG LINK trỏ về /driver kèm
+                orderId + pickupCode (thay vì JSON thuần trước đây) —
+                cho phép NHÂN VIÊN QUÁN dùng CAMERA GỐC của điện thoại
+                (không phải camera trong trình duyệt, hay bị từ chối
+                quyền trên 1 số thiết bị) quét trực tiếp: điện thoại tự
+                nhận diện đây là link, mở thẳng /driver và tự động hiện
+                đúng đơn + điền sẵn mã nhận hàng — không cần bấm nút
+                "Quét QR nhận hàng" (camera trong trình duyệt) nữa,
+                dù tính năng đó vẫn còn làm phương án dự phòng. Dùng
+                window.location.origin — luôn đúng domain thật đang
+                chạy, không hard-code. */}
             {order.pickupCode && payment !== PaymentStatus.paid && (
               <div
                 className="flex flex-col items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-4"
@@ -481,10 +485,7 @@ export function OrderStatusView({
                 </p>
                 <div className="rounded-lg bg-white p-2">
                   <QRCodeCanvas
-                    value={JSON.stringify({
-                      orderId: order.orderId,
-                      pickupCode: order.pickupCode,
-                    })}
+                    value={`${window.location.origin}/driver?scan_order=${encodeURIComponent(order.orderId)}&scan_code=${encodeURIComponent(order.pickupCode)}`}
                     size={160}
                   />
                 </div>

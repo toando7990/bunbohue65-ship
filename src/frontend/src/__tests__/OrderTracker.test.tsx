@@ -120,7 +120,7 @@ describe("OrderStatusView — QR nhận hàng", () => {
     cleanup();
   });
 
-  it("shows the pickup QR, encoding {orderId, pickupCode} as JSON, when there is a pickup code and payment is not yet paid", () => {
+  it("shows the pickup QR, encoding a link to /driver?scan_order=...&scan_code=... (so staff can scan with the phone's NATIVE camera app, not just the in-browser camera), when there is a pickup code and payment is not yet paid", () => {
     renderView(
       makeOrder({ pickupCode: "AB23CD", paymentStatus: PaymentStatus.unpaid }),
     );
@@ -130,7 +130,7 @@ describe("OrderStatusView — QR nhận hàng", () => {
     const canvas = wrapper.querySelector("canvas");
     expect(canvas).toHaveAttribute(
       "data-qr-value",
-      JSON.stringify({ orderId: "ORD-1", pickupCode: "AB23CD" }),
+      `${window.location.origin}/driver?scan_order=ORD-1&scan_code=AB23CD`,
     );
   });
 

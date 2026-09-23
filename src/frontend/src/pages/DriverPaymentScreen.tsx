@@ -17,6 +17,7 @@ import { usePendingOrders } from "@/hooks/usePendingOrders";
 import { useDevicesByRestaurant } from "@/hooks/useQueries";
 import { getOrder, useCanister } from "@/lib/canister";
 import type { RestaurantHistoryPeriod } from "@/types";
+import { useSearch } from "@tanstack/react-router";
 import {
   Calendar,
   CalendarDays,
@@ -58,6 +59,22 @@ function loadStoredActivation(): {
 }
 
 export function DriverPaymentScreen() {
+  // Đọc query string ?scan_order=...&scan_code=... — cách nhân viên
+  // dùng CAMERA GỐC của điện thoại (không phải camera trong trình
+  // duyệt) quét "QR nhận hàng": mã QR giờ mã hoá 1 ĐƯỜNG LINK (xem
+  // OrderTracker.tsx + pickup-qr-image.js) trỏ thẳng về đây kèm 2 tham
+  // số này — điện thoại tự nhận diện là link và mở thẳng trang này,
+  // không cần bấm nút "Quét QR nhận hàng" (camera trong trình duyệt)
+  // nữa — tính năng đó vẫn giữ lại làm phương án dự phòng cho thiết bị
+  // không quét được bằng camera gốc (VD máy tính bàn).
+  const search = useSearch({ strict: false }) as {
+    scan_order?: string;
+    scan_code?: string;
+  };
+  // Đã xử lý xong query param này chưa — tránh xử lý lặp lại nếu
+  // component re-render nhiều lần trong lúc vẫn còn cùng URL.
+  const [scanQueryHandled, setScanQueryHandled] = useState(false);
+
   // Trạng thái kích hoạt: restaurantId + deviceId sau khi activateDevice thành công.
   // Lưu thêm vào localStorage để thiết bị nhớ trạng thái qua các lần tải lại trang/
   // tắt mở app — tài xế không phải kích hoạt lại mỗi lần.
@@ -145,11 +162,12 @@ export function DriverPaymentScreen() {
     setActiveOrder(order);
   }
 
-  // Sau khi quét "QR nhận hàng" thành công — lấy đúng đơn từ orderId (kể cả
-  // đơn CHƯA xuất hiện trong hàng đợi ordersQuery.data, VD tài xế đến sớm)
-  // rồi mở thẳng QRDisplay với mã nhận hàng đã biết sẵn.
-  async function handleScanned({ orderId, pickupCode }: ScannedPickupQr) {
-    setScannerOpen(false);
+  // Sau khi có "QR nhận hàng" thành công (dù từ quét camera trong trình
+  // duyệt hay từ link camera gốc điện thoại mở tới) — lấy đúng đơn từ
+  // orderId (kể cả đơn CHƯA xuất hiện trong hàng đợi ordersQuery.data,
+  // VD tài xế đến sớm) rồi mở thẳng QRDisplay với mã nhận hàng đã biết
+  // sẵn.
+  async function openOrderByPickupQr(orderId: string, pickupCode: string) {
     if (!actor) return;
     try {
       const order = await getOrder(actor, orderId);
@@ -163,6 +181,23 @@ export function DriverPaymentScreen() {
       );
     }
   }
+
+  async function handleScanned({ orderId, pickupCode }: ScannedPickupQr) {
+    setScannerOpen(false);
+    await openOrderByPickupQr(orderId, pickupCode);
+  }
+
+  // Tự động mở đơn khi trang được tải qua link "QR nhận hàng" (camera
+  // gốc điện thoại quét, không qua QrScannerDialog) — chỉ chạy 1 lần
+  // sau khi đã kích hoạt xong (actor sẵn sàng), tránh chạy lặp nếu
+  // component re-render nhiều lần trong lúc vẫn còn cùng URL.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: openOrderByPickupQr đọc actor mới nhất qua closure, không cần liệt kê (hàm định nghĩa lại mỗi render nhưng logic bên trong không đổi theo cách ảnh hưởng ở đây)
+  useEffect(() => {
+    if (scanQueryHandled) return;
+    if (!actor || !search.scan_order || !search.scan_code) return;
+    setScanQueryHandled(true);
+    void openOrderByPickupQr(search.scan_order, search.scan_code);
+  }, [actor, search.scan_order, search.scan_code, scanQueryHandled]);
 
   function handleCloseQr() {
     setActiveOrder(null);
