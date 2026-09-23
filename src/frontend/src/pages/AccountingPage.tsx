@@ -183,6 +183,10 @@ export function AccountingPage() {
   ).length;
   const isLoading = historyQuery.isLoading;
   const isError = historyQuery.isError;
+  const errorMessage =
+    historyQuery.error instanceof Error
+      ? historyQuery.error.message
+      : "Kiểm tra lại khoảng thời gian hoặc thử lại sau.";
 
   const cleanupMutation = useCleanupOrderByDevice(deviceId);
   const invoiceMutation = useIssueInvoiceByDevice(deviceId);
@@ -494,8 +498,11 @@ export function AccountingPage() {
               <p className="font-medium text-destructive">
                 Không tải được đơn hàng.
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Kiểm tra lại khoảng thời gian hoặc thử lại sau.
+              <p
+                className="mt-1 text-sm text-muted-foreground"
+                data-ocid="accounting.lookup.error_message"
+              >
+                {errorMessage}
               </p>
             </div>
           ) : filteredResults.length === 0 ? (

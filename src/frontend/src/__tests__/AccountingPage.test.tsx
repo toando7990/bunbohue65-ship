@@ -327,4 +327,21 @@ describe("AccountingPage enterprise accounting", () => {
     createUrlSpy.mockRestore();
     revokeUrlSpy.mockRestore();
   });
+
+  it("shows the real error message from the failed request, not a generic one (giúp chẩn đoán 'không tải được đơn hàng' ngay lập tức)", async () => {
+    mockGetEnterpriseHistory.mockRejectedValue(
+      new Error("Thiết bị không có quyền truy cập dữ liệu này."),
+    );
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("accounting.lookup.error_state"),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByTestId("accounting.lookup.error_message"),
+    ).toHaveTextContent("Thiết bị không có quyền truy cập dữ liệu này.");
+  });
 });
