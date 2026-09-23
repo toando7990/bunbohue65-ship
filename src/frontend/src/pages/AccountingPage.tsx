@@ -100,6 +100,31 @@ function toInputDateValue(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+// Bộ lọc nhanh "Hôm nay / Tuần này / Tháng này" — tuần bắt đầu từ Thứ Hai
+// (cách tính tuần thông dụng ở Việt Nam), kết thúc luôn là hôm nay.
+type QuickRange = "today" | "week" | "month";
+function quickRangeDates(
+  range: QuickRange,
+  now = new Date(),
+): {
+  from: string;
+  to: string;
+} {
+  const start = new Date(now);
+  if (range === "week") {
+    const daysSinceMonday = (now.getDay() + 6) % 7;
+    start.setDate(now.getDate() - daysSinceMonday);
+  } else if (range === "month") {
+    start.setDate(1);
+  }
+  return { from: toInputDateValue(start), to: toInputDateValue(now) };
+}
+const QUICK_RANGES: Array<{ value: QuickRange; label: string }> = [
+  { value: "today", label: "Hôm nay" },
+  { value: "week", label: "Tuần này" },
+  { value: "month", label: "Tháng này" },
+];
+
 function inputDateToApiFormat(v: string): string {
   const [y, m, d] = v.split("-");
   return `${d}/${m}/${y}`;
@@ -403,6 +428,34 @@ export function AccountingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <div
+            className="flex flex-wrap gap-2"
+            data-ocid="accounting.quick_ranges"
+          >
+            {QUICK_RANGES.map(({ value, label }) => {
+              const r = quickRangeDates(value);
+              const active = fromDate === r.from && toDate === r.to;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    setFromDate(r.from);
+                    setToDate(r.to);
+                  }}
+                  data-ocid={`accounting.quick_range.${value}`}
+                  aria-pressed={active}
+                  className={
+                    active
+                      ? "rounded-full border border-primary bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary"
+                      : "rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
+                  }
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1.5">
               <Label

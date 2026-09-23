@@ -390,4 +390,36 @@ describe("AccountingPage enterprise accounting", () => {
       screen.queryByTestId("accounting.bind_admin_card"),
     ).not.toBeInTheDocument();
   });
+
+  it("quick range 'Hôm nay' / 'Tháng này' sets the date range and re-queries with it", async () => {
+    setActivation();
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [],
+      count: 0,
+      total: 0,
+    });
+    renderPage();
+    await waitFor(() => expect(mockGetEnterpriseHistory).toHaveBeenCalled());
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const todayApi = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+    const monthStartApi = `01/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+
+    mockGetEnterpriseHistory.mockClear();
+    fireEvent.click(screen.getByTestId("accounting.quick_range.today"));
+    await waitFor(() => expect(mockGetEnterpriseHistory).toHaveBeenCalled());
+    let [, from, to] = mockGetEnterpriseHistory.mock.calls[0];
+    expect([from, to]).toEqual([todayApi, todayApi]);
+    expect(screen.getByTestId("accounting.quick_range.today")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    mockGetEnterpriseHistory.mockClear();
+    fireEvent.click(screen.getByTestId("accounting.quick_range.month"));
+    await waitFor(() => expect(mockGetEnterpriseHistory).toHaveBeenCalled());
+    [, from, to] = mockGetEnterpriseHistory.mock.calls[0];
+    expect([from, to]).toEqual([monthStartApi, todayApi]);
+  });
 });
