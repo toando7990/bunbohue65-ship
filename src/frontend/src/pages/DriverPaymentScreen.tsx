@@ -6,6 +6,7 @@
 import type { Order } from "@/backend";
 import { ActivationForm } from "@/components/ActivationForm";
 import { DriverOrderHistory } from "@/components/DriverOrderHistory";
+import { DriverPrinterSettingsDialog } from "@/components/DriverPrinterSettingsDialog";
 import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
 import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
@@ -19,6 +20,7 @@ import {
   CalendarDays,
   CalendarRange,
   ListOrdered,
+  Printer,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -69,6 +71,7 @@ export function DriverPaymentScreen() {
   // Đã xử lý xong query param này chưa — tránh xử lý lặp lại nếu
   // component re-render nhiều lần trong lúc vẫn còn cùng URL.
   const [scanQueryHandled, setScanQueryHandled] = useState(false);
+  const [printerDialogOpen, setPrinterDialogOpen] = useState(false);
 
   // Trạng thái kích hoạt: restaurantId + deviceId sau khi activateDevice thành công.
   // Lưu thêm vào localStorage để thiết bị nhớ trạng thái qua các lần tải lại trang/
@@ -215,7 +218,21 @@ export function DriverPaymentScreen() {
         {/* Nút "Quét QR nhận hàng" (camera trong trình duyệt) đã BỎ theo
             yêu cầu — nhân viên quét "QR nhận hàng" bằng CAMERA GỐC của
             điện thoại (QR mã hoá link /driver?scan_order=&scan_code=, xem
-            effect tự mở đơn ở trên). */}
+            effect tự mở đơn ở trên). Chỗ này giờ là nút cấu hình máy in
+            (dùng được trên cả điện thoại lẫn máy tính). */}
+        {activeTab === "queue" && (
+          <div className="flex justify-end px-4 pt-4">
+            <button
+              type="button"
+              onClick={() => setPrinterDialogOpen(true)}
+              data-ocid="driver.printer_settings_button"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted"
+            >
+              <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+              Cấu hình máy in
+            </button>
+          </div>
+        )}
         {activeTab === "queue" ? (
           <PaymentQueue
             orders={ordersQuery.data ?? []}
@@ -266,6 +283,11 @@ export function DriverPaymentScreen() {
           onPaid={handlePaid}
         />
       )}
+
+      <DriverPrinterSettingsDialog
+        open={printerDialogOpen}
+        onOpenChange={setPrinterDialogOpen}
+      />
     </div>
   );
 }

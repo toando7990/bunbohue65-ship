@@ -156,7 +156,7 @@ export function forgetPrinter(): void {
   }
 }
 
-async function sendBytes(bytes: Uint8Array): Promise<void> {
+export async function sendBytes(bytes: Uint8Array): Promise<void> {
   if (!activeHandle) {
     throw new Error("Chưa kết nối máy in.");
   }
