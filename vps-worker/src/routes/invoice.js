@@ -66,15 +66,39 @@ const INVOICE_MAX_RETRIES = 5;
 // dấu invoice_status='failed' (và báo canister) khi đã ĐẠT
 // INVOICE_MAX_RETRIES, ngược lại GIỮ NGUYÊN invoice_status='none' để
 // cron tự động thử lại ở lần chạy 15s tiếp theo.
+// Đồng bộ trạng thái hoá đơn sang canister — BEST-EFFORT, KHÔNG BAO GIỜ
+// throw. BUG THẬT NGHIÊM TRỌNG đã sửa: trước đây gọi canister TRƯỚC khi ghi
+// VPS DB, và không bọc try/catch riêng —
+//  (1) sau khi Bkav phát hành THÀNH CÔNG, nếu lời gọi canister lỗi (đơn đã
+//      bị canister dọn khỏi bộ nhớ trong ngày, mạng tới IC chập chờn...),
+//      luồng rơi vào catch → handleInvoiceFailure → cron GỌI BKAV TẠO LẠI
+//      hoá đơn đã tạo rồi → Bkav từ chối vì trùng PartnerInvoiceStringID →
+//      sau 5 lần đánh dấu 'failed' dù hoá đơn thật ĐÃ phát hành;
+//  (2) trong handleInvoiceFailure, lỗi canister thoát ra khỏi vòng lặp →
+//      MỌI đơn phía sau trong hàng đợi không bao giờ được xử lý, lặp lại
+//      mỗi 15 giây mãi mãi.
+// Giờ VPS DB (nguồn sự thật cho kết quả Bkav) luôn được ghi TRƯỚC, canister
+// chỉ đồng bộ phụ.
+async function syncInvoiceStatusToCanister(orderId, status, invoiceId, pdfUrl) {
+  try {
+    const r = await canister.updateInvoiceStatus(orderId, status, invoiceId, pdfUrl);
+    if (r && r.err !== undefined && !/not found/i.test(String(r.err))) {
+      console.warn(`[invoice/cron] canister updateInvoiceStatus ${orderId}: ${r.err}`);
+    }
+  } catch (e) {
+    console.warn(`[invoice/cron] canister updateInvoiceStatus lỗi ${orderId} (bỏ qua, VPS DB đã ghi): ${e.message}`);
+  }
+}
+
 async function handleInvoiceFailure(db, orderId, currentRetryCount, reason) {
   const newRetryCount = currentRetryCount + 1;
   if (newRetryCount >= INVOICE_MAX_RETRIES) {
     console.error(
       `[invoice/cron] Đã thử ${newRetryCount}/${INVOICE_MAX_RETRIES} lần, chịu thua hẳn cho ${orderId}: ${reason}`,
     );
-    await canister.updateInvoiceStatus(orderId, 'failed', '', '');
     db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, updated_at = ? WHERE order_id = ?`)
       .run(newRetryCount, Date.now(), orderId);
+    await syncInvoiceStatusToCanister(orderId, 'failed', '', '');
     return;
   }
   console.warn(
@@ -191,9 +215,9 @@ function startInvoiceCron(db) {
             }
 
             // Push canister với 5 tham số: orderId, invoiceStatus, invoiceId, pdfUrl, hmac.
-            await canister.updateInvoiceStatus(row.order_id, 'invoiced', invoiceNo, pdfUrl);
-            db.prepare(`UPDATE orders SET invoice_status = 'invoiced', invoice_id = ?, bkav_ma_cqt = ?, bkav_ma_tra_cuu = ?, updated_at = ? WHERE order_id = ?`)
-              .run(invoiceNo, inv.maCQT || '', inv.maTraCuu || '', Date.now(), row.order_id);
+            db.prepare(`UPDATE orders SET invoice_status = 'invoiced', invoice_id = ?, pdf_url = ?, bkav_ma_cqt = ?, bkav_ma_tra_cuu = ?, updated_at = ? WHERE order_id = ?`)
+              .run(invoiceNo, pdfUrl, inv.maCQT || '', inv.maTraCuu || '', Date.now(), row.order_id);
+            await syncInvoiceStatusToCanister(row.order_id, 'invoiced', invoiceNo, pdfUrl);
             if (pdf816Ok) {
               db.prepare(`INSERT INTO bkav_logs (order_id, invoice_id, command, response_xml, created_at) VALUES (?, ?, 'GetInvoicePDF816', ?, ?)`)
                 .run(row.order_id, invoiceNo, JSON.stringify({ pdf_url: pdfUrl }), Date.now());
