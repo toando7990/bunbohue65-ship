@@ -11,6 +11,7 @@ import {
   type OrderStatus,
   PaymentStatus,
 } from "@/backend";
+import type { LalamoveTrackingInfo } from "@/lib/vps-client";
 import { OrderStatusView } from "@/pages/OrderTracker";
 import { cleanup, render, screen } from "@testing-library/react";
 import type React from "react";
@@ -97,7 +98,7 @@ function makeStatus(order: Order): OrderStatus {
   };
 }
 
-function renderView(order: Order) {
+function renderView(order: Order, lalamoveInfo?: LalamoveTrackingInfo | null) {
   return render(
     <OrderStatusView
       status={makeStatus(order)}
@@ -109,6 +110,7 @@ function renderView(order: Order) {
       invoiceState={{ kind: "idle" }}
       onDownloadInvoice={vi.fn()}
       onRestaurantChanged={vi.fn()}
+      lalamoveInfo={lalamoveInfo ?? null}
     />,
   );
 }
@@ -150,5 +152,56 @@ describe("OrderStatusView — QR nhận hàng", () => {
     expect(
       screen.queryByTestId("order_tracker.pickup_qr"),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the real Lalamove tracking panel (with map link) instead of the old 2-step timeline when the order has a lalamoveOrderId", () => {
+    renderView(makeOrder({}), {
+      lalamoveOrderId: "LALA-1",
+      lalamoveDriverId: "DRV-1",
+      lalamoveShareLink: "https://share.lalamove.com/xyz",
+      lalamoveStatus: "ON_GOING",
+    });
+
+    expect(
+      screen.getByTestId("order_tracker.lalamove_panel"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("order_tracker.lalamove_status"),
+    ).toHaveTextContent("Tài xế đang di chuyển");
+    const mapLink = screen.getByTestId("order_tracker.lalamove_map_link");
+    expect(mapLink).toHaveAttribute("href", "https://share.lalamove.com/xyz");
+    // Timeline 2 bước cũ (dự phòng) KHÔNG hiện khi đã có Lalamove thật.
+    expect(
+      screen.queryByTestId("order_tracker.timeline_panel"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("falls back to the old 2-step timeline when the order has no Lalamove tracking (LALAMOVE_AUTO_DISPATCH off, or dispatch failed)", () => {
+    renderView(makeOrder({}), {
+      lalamoveOrderId: "",
+      lalamoveDriverId: "",
+      lalamoveShareLink: "",
+      lalamoveStatus: "",
+    });
+
+    expect(
+      screen.getByTestId("order_tracker.timeline_panel"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("order_tracker.lalamove_panel"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows an unrecognized Lalamove status verbatim instead of hiding it", () => {
+    renderView(makeOrder({}), {
+      lalamoveOrderId: "LALA-1",
+      lalamoveDriverId: "",
+      lalamoveShareLink: "",
+      lalamoveStatus: "SOME_NEW_STATUS_LALAMOVE_ADDED",
+    });
+
+    expect(
+      screen.getByTestId("order_tracker.lalamove_status"),
+    ).toHaveTextContent("SOME_NEW_STATUS_LALAMOVE_ADDED");
   });
 });

@@ -401,6 +401,26 @@ export async function geocodeAddress(
   });
 }
 
+// Trạng thái theo dõi Lalamove THẬT của 1 đơn — chỉ có giá trị khi đơn
+// đã được tự động gọi tài xế thành công (LALAMOVE_AUTO_DISPATCH=true,
+// Phần 6/6). Rỗng ("") ở mọi field nghĩa là chưa gọi được/không bật —
+// OrderTracker.tsx dùng để quyết định hiện theo dõi trực quan Lalamove
+// thật hay giữ timeline 2 bước dự phòng (tài xế tự đặt qua app ngoài).
+export interface LalamoveTrackingInfo {
+  lalamoveOrderId: string;
+  lalamoveDriverId: string;
+  lalamoveShareLink: string;
+  lalamoveStatus: string;
+}
+export async function getLalamoveStatus(
+  orderId: string,
+): Promise<LalamoveTrackingInfo> {
+  return vpsFetch<{ ok: boolean } & LalamoveTrackingInfo>({
+    method: "GET",
+    path: `/order/${encodeURIComponent(orderId)}/lalamove-status`,
+  });
+}
+
 export async function deleteCustomerAddress(
   email: string,
   id: number,

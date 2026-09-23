@@ -12,10 +12,11 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
 import { useGetOrder, useRestaurants } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
-import { getInvoice } from "@/lib/vps-client";
+import { getInvoice, getLalamoveStatus } from "@/lib/vps-client";
+import type { LalamoveTrackingInfo } from "@/lib/vps-client";
 import type { Order, OrderStatus } from "@/types";
 import { BookingStatus, InvoiceStatus, PaymentStatus } from "@/types";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   AlertCircle,
@@ -71,6 +72,22 @@ function stepIndex(status: BookingStatus): number {
     return 1;
   }
   return 0;
+}
+
+// Map trạng thái Lalamove thật sang tiếng Việt dễ hiểu cho khách. Các giá
+// trị theo tài liệu chính thức Lalamove — nếu gặp giá trị lạ chưa từng
+// thấy (Lalamove có thể thêm mới), hiện NGUYÊN VĂN thay vì ẩn đi, tránh
+// mất thông tin cho khách.
+const LALAMOVE_STATUS_LABELS: Record<string, string> = {
+  ASSIGNING_DRIVER: "Đang tìm tài xế",
+  ON_GOING: "Tài xế đang di chuyển",
+  PICKED_UP: "Tài xế đã lấy hàng",
+  COMPLETED: "Đã giao xong",
+  CANCELED: "Đơn giao hàng đã bị huỷ",
+  REJECTED: "Không tìm được tài xế",
+};
+function lalamoveStatusLabel(status: string): string {
+  return LALAMOVE_STATUS_LABELS[status] ?? status;
 }
 
 // Định dạng số tiền VND từ bigint (đơn vị đồng).
@@ -139,6 +156,14 @@ export default function OrderTracker() {
   const { data: order } = useGetOrder(orderId);
   // Tra cứu địa chỉ nhà hàng theo restaurantId của đơn.
   const { data: restaurants } = useRestaurants();
+  // Theo dõi trực quan Lalamove thật (Phần 6/6) — poll 10s (không cần
+  // nhanh như getOrderStatus's 5s, trạng thái Lalamove ít đổi hơn).
+  const { data: lalamoveInfo } = useQuery({
+    queryKey: ["lalamoveStatus", orderId],
+    queryFn: () => getLalamoveStatus(orderId as string),
+    enabled: !!orderId,
+    refetchInterval: 10000,
+  });
   const queryClient = useQueryClient();
   const [invoiceState, setInvoiceState] = useState<InvoiceState>({
     kind: "idle",
@@ -322,6 +347,7 @@ export default function OrderTracker() {
           onRestaurantChanged={() =>
             queryClient.invalidateQueries({ queryKey: ["order", orderId] })
           }
+          lalamoveInfo={lalamoveInfo}
         />
       )}
     </section>
@@ -338,6 +364,10 @@ interface OrderStatusViewProps {
   invoiceState: InvoiceState;
   onDownloadInvoice: () => void;
   onRestaurantChanged: () => void;
+  // Theo dõi trực quan Lalamove thật (Phần 6/6) — undefined khi chưa
+  // tải xong/lỗi mạng, null khi tải xong nhưng đơn không có Lalamove
+  // (chưa bật LALAMOVE_AUTO_DISPATCH hoặc gọi thất bại lúc tạo đơn).
+  lalamoveInfo: LalamoveTrackingInfo | null | undefined;
 }
 
 export function OrderStatusView({
@@ -350,6 +380,7 @@ export function OrderStatusView({
   invoiceState,
   onDownloadInvoice,
   onRestaurantChanged,
+  lalamoveInfo,
 }: OrderStatusViewProps) {
   const [changeRestaurantOpen, setChangeRestaurantOpen] = useState(false);
   const booking = status.bookingStatus as BookingStatus;
@@ -513,83 +544,130 @@ export function OrderStatusView({
         </div>
       )}
 
-      {/* Hành trình giao hàng — 2 bước */}
-      <div
-        className="rounded-lg border border-border bg-card p-5 shadow-sm"
-        data-ocid="order_tracker.timeline_panel"
-      >
-        <h2 className="font-display text-lg font-semibold">Hành trình giao</h2>
-        {isCancelled ? (
-          <div
-            className="mt-4 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-            data-ocid="order_tracker.cancelled_state"
-          >
-            <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
-            Đơn hàng đã bị huỷ.
+      {/* Hành trình giao hàng — theo dõi trực quan Lalamove thật khi có
+          (Phần 6/6, đơn được tự động gọi tài xế thành công), nếu không
+          thì giữ nguyên timeline 2 bước dự phòng (tài xế tự đặt qua app
+          ngoài — vẫn cần khi LALAMOVE_AUTO_DISPATCH tắt hoặc gọi thất
+          bại lúc tạo đơn). */}
+      {!isCancelled && lalamoveInfo?.lalamoveOrderId ? (
+        <div
+          className="rounded-lg border border-border bg-card p-5 shadow-sm"
+          data-ocid="order_tracker.lalamove_panel"
+        >
+          <h2 className="font-display text-lg font-semibold">
+            Hành trình giao
+          </h2>
+          <div className="mt-4 flex items-center gap-3 rounded-md border border-primary/30 bg-primary/5 p-3">
+            <Truck
+              className="h-8 w-8 shrink-0 text-primary"
+              aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1">
+              <p
+                className="text-sm font-semibold text-foreground"
+                data-ocid="order_tracker.lalamove_status"
+              >
+                {lalamoveStatusLabel(lalamoveInfo.lalamoveStatus)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tài xế Lalamove đang xử lý đơn của bạn.
+              </p>
+            </div>
           </div>
-        ) : (
-          <ol className="mt-4 space-y-1">
-            {TIMELINE.map((step, i) => {
-              const Icon = step.icon;
-              const isDone = i < currentStep;
-              const isCurrent = i === currentStep;
-              const isFuture = i > currentStep;
-              return (
-                <li
-                  key={step.key}
-                  data-ocid={`order_tracker.timeline.step.${i + 1}`}
-                  className="relative flex gap-3 pb-4 last:pb-0"
-                >
-                  {/* Connector line */}
-                  {i < TIMELINE.length - 1 && (
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "absolute left-[15px] top-8 h-[calc(100%-1.5rem)] w-0.5",
-                        isDone ? "bg-success" : "bg-border",
-                      )}
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-smooth",
-                      isDone &&
-                        "border-success bg-success text-success-foreground",
-                      isCurrent &&
-                        "border-primary bg-primary text-primary-foreground",
-                      isFuture && "border-border bg-card text-muted-foreground",
-                    )}
+          {lalamoveInfo.lalamoveShareLink && (
+            <a
+              href={lalamoveInfo.lalamoveShareLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-ocid="order_tracker.lalamove_map_link"
+              className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-smooth hover:bg-secondary"
+            >
+              <MapPin className="h-4 w-4" aria-hidden="true" />
+              Xem vị trí tài xế trên bản đồ Lalamove
+            </a>
+          )}
+        </div>
+      ) : (
+        <div
+          className="rounded-lg border border-border bg-card p-5 shadow-sm"
+          data-ocid="order_tracker.timeline_panel"
+        >
+          <h2 className="font-display text-lg font-semibold">
+            Hành trình giao
+          </h2>
+          {isCancelled ? (
+            <div
+              className="mt-4 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+              data-ocid="order_tracker.cancelled_state"
+            >
+              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Đơn hàng đã bị huỷ.
+            </div>
+          ) : (
+            <ol className="mt-4 space-y-1">
+              {TIMELINE.map((step, i) => {
+                const Icon = step.icon;
+                const isDone = i < currentStep;
+                const isCurrent = i === currentStep;
+                const isFuture = i > currentStep;
+                return (
+                  <li
+                    key={step.key}
+                    data-ocid={`order_tracker.timeline.step.${i + 1}`}
+                    className="relative flex gap-3 pb-4 last:pb-0"
                   >
-                    {isDone ? (
-                      <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                    ) : isCurrent ? (
-                      <Loader2
-                        className="h-4 w-4 animate-spin"
+                    {/* Connector line */}
+                    {i < TIMELINE.length - 1 && (
+                      <span
                         aria-hidden="true"
+                        className={cn(
+                          "absolute left-[15px] top-8 h-[calc(100%-1.5rem)] w-0.5",
+                          isDone ? "bg-success" : "bg-border",
+                        )}
                       />
-                    ) : (
-                      <Icon className="h-4 w-4" aria-hidden="true" />
                     )}
-                  </span>
-                  <div className="min-w-0 flex-1 pt-1">
-                    <p
+                    <span
                       className={cn(
-                        "text-sm font-medium",
-                        isFuture && "text-muted-foreground",
+                        "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-smooth",
+                        isDone &&
+                          "border-success bg-success text-success-foreground",
+                        isCurrent &&
+                          "border-primary bg-primary text-primary-foreground",
+                        isFuture &&
+                          "border-border bg-card text-muted-foreground",
                       )}
                     >
-                      {step.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {step.description}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-      </div>
+                      {isDone ? (
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                      ) : isCurrent ? (
+                        <Loader2
+                          className="h-4 w-4 animate-spin"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1 pt-1">
+                      <p
+                        className={cn(
+                          "text-sm font-medium",
+                          isFuture && "text-muted-foreground",
+                        )}
+                      >
+                        {step.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {step.description}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      )}
 
       {/* Hành động */}
       <div
