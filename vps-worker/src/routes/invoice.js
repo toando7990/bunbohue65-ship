@@ -33,6 +33,27 @@ function startOfTodayUtc7(nowMs) {
   return dayStartShifted - UTC7_OFFSET_MS;
 }
 
+// Khung phát hành bù hoá đơn — theo Nghị định 70/2025/NĐ-CP (sửa Nghị định
+// 123/2020): hoá đơn phải lập TẠI THỜI ĐIỂM bán hàng/hoàn thành dịch vụ
+// (không phân biệt đã thu tiền) và KHÔNG được ghi lùi ngày; nếu thời điểm
+// lập và ký số khác nhau, việc ký số/gửi dữ liệu tới cơ quan thuế chậm
+// nhất là NGÀY LÀM VIỆC TIẾP THEO sau ngày lập. Trước đây cron chỉ xử lý
+// đơn trong ngày → đơn đã thanh toán lỡ ngày (VD máy chủ gián đoạn) không
+// bao giờ được phát hành. Giờ quét từ đầu NGÀY LÀM VIỆC TRƯỚC hôm nay (Thứ
+// 2–Thứ 6): hôm nay Thứ 2 → quét từ Thứ 6 (gồm cả cuối tuần); Thứ 3 → từ
+// Thứ 2... Hoá đơn luôn mang ngày phát hành thực tế (lib/bkav.js dùng
+// new Date()), KHÔNG ghi lùi ngày. CHƯA tính ngày lễ (chỉ bỏ Thứ 7/CN) —
+// đơn cũ hơn khung này cần Kế toán xử lý thủ công.
+function startOfPreviousWorkingDayUtc7(nowMs) {
+  let dayStart = startOfTodayUtc7(nowMs) - DAY_MS;
+  for (;;) {
+    // Thứ trong tuần theo giờ VN (0 = Chủ nhật, 6 = Thứ 7).
+    const weekday = new Date(dayStart + UTC7_OFFSET_MS).getUTCDay();
+    if (weekday !== 0 && weekday !== 6) return dayStart;
+    dayStart -= DAY_MS;
+  }
+}
+
 // Seri hoá đơn production Bkav — công ty đã có seri riêng (C26MAA), không
 // dùng seri demo/auto-assign. Đổi qua biến môi trường BKAV_PROD_INVOICE_SERIAL
 // nếu seri thay đổi sau này, không cần sửa code.
@@ -112,10 +133,10 @@ function startInvoiceCron(db) {
   const task = cron.schedule('*/15 * * * * *', async () => {
     if (shutdown.shuttingDown) return;
     try {
-      const todayStartMs = startOfTodayUtc7(Date.now());
+      const windowStartMs = startOfPreviousWorkingDayUtc7(Date.now());
       const rows = db.prepare(
-        `SELECT * FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none' AND created_at >= ?`,
-      ).all(todayStartMs);
+        `SELECT * FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none' AND created_at >= ? ORDER BY created_at ASC`,
+      ).all(windowStartMs);
       for (const row of rows) {
         try {
           const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(row.order_id);
@@ -418,3 +439,4 @@ router.post('/order/:id/invoice/email', async (req, res, next) => {
 
 module.exports = router;
 module.exports.startInvoiceCron = startInvoiceCron;
+module.exports.startOfPreviousWorkingDayUtc7 = startOfPreviousWorkingDayUtc7;
