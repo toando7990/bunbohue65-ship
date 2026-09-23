@@ -1,6 +1,7 @@
 // ============================================================
 // routes/enterprise-actions.js — thao tác GHI của vai trò Kế toán
-//   POST /orders/enterprise/:id/cleanup  { deviceId }
+//   POST /orders/enterprise/:id/delete   { deviceId }  — xoá 1 đơn đã huỷ
+//   POST /orders/enterprise/delete-cancelled { deviceId, dryRun? } — xoá hàng loạt
 //   POST /orders/enterprise/:id/invoice  { deviceId, invoiceId, pdfUrl }
 // ============================================================
 // BUG THẬT đã sửa ("Order not found" khi bấm "Dọn dẹp"): danh sách Kế toán
@@ -63,23 +64,116 @@ function isNotFound(result) {
   return result && result.err !== undefined && /not found/i.test(String(result.err));
 }
 
-router.post('/orders/enterprise/:id/cleanup', async (req, res, next) => {
+// ---------------------------------------------------------------------
+// "Xoá" đơn (thay cho "Dọn dẹp" = huỷ đơn trước đây — Kế toán KHÔNG còn
+// chức năng huỷ đơn thủ công, theo yêu cầu). XOÁ VĨNH VIỄN khỏi VPS, chỉ
+// với đơn đủ CẢ 4 điều kiện:
+//   1. Đã huỷ (booking_status = 'cancelled');
+//   2. CHƯA TỪNG thanh toán — payment_status khác 'paid', chưa ghi nhận
+//      hình thức thanh toán, không có mã tham chiếu ảnh chuyển khoản (đơn
+//      "đã huỷ + đã thanh toán" liên quan tiền thật → KHÔNG xoá);
+//   3. Chưa có hoá đơn Bkav (chứng từ phải lưu giữ);
+//   4. Tạo TRƯỚC hôm nay (giờ VN) — đơn huỷ trong ngày còn đang xử lý.
+// Xoá sạch trong 1 giao dịch (món, nhật ký Tingee/Bkav/Ahamove, đơn) + ghi
+// deleted_orders_log; sau đó xoá ảnh xác nhận chuyển khoản trên đĩa (nếu có).
+// ---------------------------------------------------------------------
+const fs = require('fs');
+const path = require('path');
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const UTC7_MS = 7 * 60 * 60 * 1000;
+function startOfTodayUtc7(nowMs) {
+  return Math.floor((nowMs + UTC7_MS) / DAY_MS) * DAY_MS - UTC7_MS;
+}
+const MANUAL_PAYMENT_DIR = path.join(
+  process.env.UPLOAD_DIR || path.join(__dirname, '..', '..', 'uploads'),
+  'manual-payment',
+);
+
+const DELETABLE_WHERE = `booking_status = 'cancelled'
+  AND payment_status <> 'paid'
+  AND COALESCE(payment_method, '') = ''
+  AND COALESCE(manual_payment_reference, '') = ''
+  AND invoice_status <> 'invoiced'
+  AND COALESCE(invoice_id, '') = ''
+  AND created_at < ?`;
+
+// Lý do KHÔNG được xoá (tiếng Việt, hiện cho Kế toán) — null nếu được xoá.
+function notDeletableReason(o, todayStart) {
+  if (o.booking_status !== 'cancelled') return 'Chỉ xoá được đơn đã huỷ.';
+  if (o.payment_status === 'paid' || o.payment_method || o.manual_payment_reference) {
+    return 'Đơn đã thanh toán — không thể xoá.';
+  }
+  if (o.invoice_status === 'invoiced' || o.invoice_id) return 'Đơn đã có hoá đơn — không thể xoá.';
+  if (o.created_at >= todayStart) return 'Chỉ xoá được đơn từ hôm trước trở về trước.';
+  return null;
+}
+
+function deleteOrdersTx(db, rows, deviceId) {
+  const now = Date.now();
+  const tx = db.transaction((list) => {
+    for (const o of list) {
+      db.prepare(
+        `INSERT INTO deleted_orders_log (order_id, restaurant_id, cus_name, cus_phone, amount, order_created_at, deleted_by_device, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(o.order_id, o.restaurant_id || '', o.cus_name || '', o.cus_phone || '', o.amount || 0, o.created_at || 0, deviceId, now);
+      for (const t of ['order_items', 'ahamove_logs', 'tingee_logs', 'bkav_logs']) {
+        db.prepare(`DELETE FROM ${t} WHERE order_id = ?`).run(o.order_id);
+      }
+      db.prepare('DELETE FROM orders WHERE order_id = ?').run(o.order_id);
+    }
+  });
+  tx(rows);
+  // Ảnh xác nhận chuyển khoản: tên file `${orderId}-${timestamp}.(jpg|png)`.
+  // Ngoài giao dịch DB — lỗi xoá file chỉ ghi log, không hoàn tác việc xoá.
+  let files = [];
+  try {
+    files = fs.readdirSync(MANUAL_PAYMENT_DIR);
+  } catch {
+    files = [];
+  }
+  for (const o of rows) {
+    const esc = o.order_id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`^${esc}-\\d+\\.(jpg|png)$`);
+    for (const f of files.filter((x) => re.test(x))) {
+      try {
+        fs.unlinkSync(path.join(MANUAL_PAYMENT_DIR, f));
+      } catch (e) {
+        console.warn('[enterprise-actions] không xoá được ảnh', f, e.message);
+      }
+    }
+  }
+}
+
+// Xoá 1 đơn.
+router.post('/orders/enterprise/:id/delete', async (req, res, next) => {
   try {
     const g = await guard(req, res);
     if (!g) return;
-    g.db.prepare(`UPDATE orders SET booking_status = 'cancelled', updated_at = ? WHERE order_id = ?`)
-      .run(Date.now(), g.order.order_id);
-    let canisterSynced = false;
-    try {
-      const r = await canister.cancelOrder(g.order.order_id);
-      canisterSynced = !!(r && r.ok);
-      if (!canisterSynced && !isNotFound(r)) {
-        console.warn('[enterprise-actions] canister cancelOrder:', g.order.order_id, r && r.err);
-      }
-    } catch (e) {
-      console.warn('[enterprise-actions] canister cancelOrder error:', g.order.order_id, e.message);
+    const o = g.db.prepare('SELECT * FROM orders WHERE order_id = ?').get(req.params.id);
+    const reason = notDeletableReason(o, startOfTodayUtc7(Date.now()));
+    if (reason) return res.status(409).json({ ok: false, error: reason });
+    deleteOrdersTx(g.db, [o], String(req.body.deviceId).trim());
+    res.json({ ok: true, deleted: 1 });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Xoá HÀNG LOẠT mọi đơn đủ điều kiện. dryRun=true → chỉ đếm (để hộp thoại
+// xác nhận hiện đúng số lượng sẽ bị xoá), không xoá gì.
+router.post('/orders/enterprise/delete-cancelled', async (req, res, next) => {
+  try {
+    const deviceId = String((req.body || {}).deviceId || '').trim();
+    if (!deviceId) return res.status(400).json({ ok: false, error: 'Missing deviceId' });
+    if (!(await isAccountingDevice(deviceId))) {
+      return res.status(403).json({ ok: false, error: 'Chỉ thiết bị Kế toán được thực hiện thao tác này.' });
     }
-    res.json({ ok: true, canisterSynced });
+    const db = req.app.locals.db;
+    const rows = db.prepare(`SELECT * FROM orders WHERE ${DELETABLE_WHERE}`).all(startOfTodayUtc7(Date.now()));
+    if (req.body.dryRun === true) return res.json({ ok: true, count: rows.length });
+    if (rows.length > 0) deleteOrdersTx(db, rows, deviceId);
+    res.json({ ok: true, deleted: rows.length });
   } catch (e) {
     next(e);
   }

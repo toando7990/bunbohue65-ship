@@ -135,7 +135,7 @@ function startInvoiceCron(db) {
     try {
       const windowStartMs = startOfPreviousWorkingDayUtc7(Date.now());
       const rows = db.prepare(
-        `SELECT * FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none' AND created_at >= ? ORDER BY created_at ASC`,
+        `SELECT * FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none' AND booking_status <> 'cancelled' AND created_at >= ? ORDER BY created_at ASC`,
       ).all(windowStartMs);
       for (const row of rows) {
         try {

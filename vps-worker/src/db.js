@@ -142,6 +142,21 @@ CREATE TABLE IF NOT EXISTS km_notifications_sent (
   PRIMARY KEY (date_key, promotion_code, slot_index)
 );
 
+-- Nhật ký XOÁ đơn (Kế toán "Xoá" đơn đã huỷ, chưa từng thanh toán, từ
+-- trước hôm nay) — đơn bị xoá vĩnh viễn nên giữ lại dấu vết tối thiểu để
+-- tra cứu "đơn X đâu rồi": ai xoá, lúc nào, số tiền, khách.
+CREATE TABLE IF NOT EXISTS deleted_orders_log (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id      TEXT NOT NULL,
+  restaurant_id TEXT NOT NULL DEFAULT '',
+  cus_name      TEXT NOT NULL DEFAULT '',
+  cus_phone     TEXT NOT NULL DEFAULT '',
+  amount        INTEGER NOT NULL DEFAULT 0,
+  order_created_at INTEGER NOT NULL DEFAULT 0,
+  deleted_by_device TEXT NOT NULL DEFAULT '',
+  deleted_at    INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS ahamove_logs (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   order_id        TEXT NOT NULL,

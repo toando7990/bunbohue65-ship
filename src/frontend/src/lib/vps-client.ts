@@ -547,14 +547,31 @@ export const vpsBaseUrl: string = getVpsUrl();
 // sách Kế toán, giữ nhiều ngày) và đồng bộ canister nếu đơn còn trên đó.
 // Thay cho cleanupOrderByDevice/issueInvoiceByDevice gọi thẳng canister
 // (canister chỉ giữ đơn trong ngày → "Order not found" với đơn cũ).
-export async function enterpriseCleanupOrder(
+// "Xoá" đơn (thay cho "Dọn dẹp" = huỷ đơn trước đây): XOÁ VĨNH VIỄN khỏi VPS
+// đơn đã huỷ, CHƯA TỪNG thanh toán, chưa có hoá đơn, từ hôm trước trở về
+// trước. VPS kiểm tra lại toàn bộ điều kiện và trả 409 kèm lý do nếu không
+// được xoá.
+export async function enterpriseDeleteOrder(
   deviceId: string,
   orderId: string,
-): Promise<{ ok: boolean; canisterSynced: boolean }> {
+): Promise<{ ok: boolean; deleted: number }> {
   return vpsFetch({
     method: "POST",
-    path: `/orders/enterprise/${encodeURIComponent(orderId)}/cleanup`,
+    path: `/orders/enterprise/${encodeURIComponent(orderId)}/delete`,
     body: { deviceId },
+  });
+}
+
+// Xoá hàng loạt mọi đơn đủ điều kiện. dryRun=true → chỉ đếm (hiện số lượng
+// trong hộp thoại xác nhận), không xoá gì.
+export async function enterpriseDeleteCancelledOrders(
+  deviceId: string,
+  dryRun: boolean,
+): Promise<{ ok: boolean; count?: number; deleted?: number }> {
+  return vpsFetch({
+    method: "POST",
+    path: "/orders/enterprise/delete-cancelled",
+    body: { deviceId, dryRun },
   });
 }
 

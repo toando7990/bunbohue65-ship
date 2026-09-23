@@ -23,7 +23,8 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockCleanup = vi.fn();
+const mockDeleteOrder = vi.fn();
+const mockDeleteCancelled = vi.fn();
 const mockIssueInvoice = vi.fn();
 const mockGetEnterpriseHistory = vi.fn();
 const mockGenerateCode = vi.fn();
@@ -45,8 +46,10 @@ vi.mock("@/lib/vps-client", () => ({
   getEnterpriseHistory: (...args: unknown[]) =>
     mockGetEnterpriseHistory(...args),
   getInvoice: (...args: unknown[]) => mockGetInvoice(...args),
-  enterpriseCleanupOrder: (deviceId: string, orderId: string) =>
-    mockCleanup(deviceId, orderId),
+  enterpriseDeleteOrder: (deviceId: string, orderId: string) =>
+    mockDeleteOrder(deviceId, orderId),
+  enterpriseDeleteCancelledOrders: (deviceId: string, dryRun: boolean) =>
+    mockDeleteCancelled(deviceId, dryRun),
   enterpriseRecordInvoice: (
     deviceId: string,
     orderId: string,
@@ -123,24 +126,96 @@ describe("AccountingPage enterprise accounting", () => {
     expect(statusesArg.sort()).toEqual(["cancelled", "paid"]);
   });
 
-  it("cleans up an order by code via useCleanupOrderByDevice", async () => {
+  it("'Xoá' is enabled only for cancelled, never-paid orders from before today, asks for confirmation, then deletes via VPS", async () => {
     setActivation();
-    mockCleanup.mockResolvedValue({});
-
+    const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+    const base = {
+      restaurantId: "R1",
+      cusName: "Nam",
+      cusPhone: "0914",
+      amount: 55000,
+      bookingStatus: "cancelled",
+      invoiceStatus: "none",
+    };
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [
+        {
+          ...base,
+          orderId: "ORD-OLD",
+          paymentStatus: "unpaid",
+          paymentMethod: "",
+          createdAt: twoDaysAgo,
+        },
+        {
+          ...base,
+          orderId: "ORD-PAID",
+          paymentStatus: "paid",
+          paymentMethod: "cash",
+          createdAt: twoDaysAgo,
+        },
+        {
+          ...base,
+          orderId: "ORD-TODAY",
+          paymentStatus: "unpaid",
+          paymentMethod: "",
+          createdAt: Date.now(),
+        },
+      ],
+      count: 3,
+      total: 165000,
+    });
+    mockDeleteOrder.mockResolvedValue({ ok: true, deleted: 1 });
     renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("ORD-OLD")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId("accounting.status_chip.cancelled"));
 
-    // "Dọn dẹp/Phát hành theo mã" thu gọn trong "Tuỳ chọn nâng cao" — cần
-    // bấm mở trước khi tương tác với các ô nhập bên trong.
-    fireEvent.click(screen.getByTestId("accounting.advanced_toggle"));
+    const btn = (orderId: string) =>
+      screen
+        .getByText(orderId)
+        .closest("tr")
+        ?.querySelector(
+          '[data-ocid^="accounting.delete_button"]',
+        ) as HTMLButtonElement;
+    await waitFor(() => expect(btn("ORD-OLD")).toBeTruthy());
+    expect(btn("ORD-OLD")).not.toBeDisabled();
+    expect(btn("ORD-PAID")).toBeDisabled();
+    expect(btn("ORD-PAID")).toHaveAttribute(
+      "title",
+      "Đơn đã thanh toán — không thể xoá.",
+    );
+    expect(btn("ORD-TODAY")).toBeDisabled();
 
-    fireEvent.change(screen.getByTestId("accounting.cleanup_input"), {
-      target: { value: "ORD-1" },
-    });
-    fireEvent.click(screen.getByTestId("accounting.cleanup_submit_button"));
+    fireEvent.click(btn("ORD-OLD"));
+    expect(
+      screen.getByTestId("accounting.delete_confirm_dialog"),
+    ).toBeInTheDocument();
+    expect(mockDeleteOrder).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("accounting.delete_confirm_button"));
+    await waitFor(() =>
+      expect(mockDeleteOrder).toHaveBeenCalledWith("dev-acc", "ORD-OLD"),
+    );
+  });
 
-    await waitFor(() => {
-      expect(mockCleanup).toHaveBeenCalledWith("dev-acc", "ORD-1");
-    });
+  it("bulk delete first counts (dryRun) and shows the count in the confirmation, deletes only after confirming", async () => {
+    setActivation();
+    mockDeleteCancelled
+      .mockResolvedValueOnce({ ok: true, count: 4 })
+      .mockResolvedValueOnce({ ok: true, deleted: 4 });
+    renderPage();
+    fireEvent.click(await screen.findByTestId("accounting.bulk_delete_button"));
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("accounting.delete_confirm_dialog"),
+      ).toHaveTextContent("Xoá 4 đơn đã huỷ"),
+    );
+    expect(mockDeleteCancelled).toHaveBeenCalledTimes(1);
+    expect(mockDeleteCancelled).toHaveBeenLastCalledWith("dev-acc", true);
+    fireEvent.click(screen.getByTestId("accounting.delete_confirm_button"));
+    await waitFor(() =>
+      expect(mockDeleteCancelled).toHaveBeenLastCalledWith("dev-acc", false),
+    );
   });
 
   it("issues an invoice manually via useIssueInvoiceByDevice", async () => {

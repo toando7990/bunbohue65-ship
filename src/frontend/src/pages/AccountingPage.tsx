@@ -6,7 +6,8 @@
 //     đọc từ VPS (routes/enterprise-history.js, KHÔNG phải canister — canister
 //     chỉ giữ đơn trong ngày, không phù hợp cho khoảng ngày nhiều ngày).
 //     Danh sách tự cập nhật khi đổi bộ lọc, không cần bấm nút tìm kiếm.
-//  2. Dọn dẹp đơn thủ công (cleanupOrderByDevice) — không đổi.
+//  2. Xoá đơn đã huỷ, chưa từng thanh toán, từ hôm trước (VPS — thay cho
+//     "Dọn dẹp" = huỷ đơn thủ công trước đây, đã bỏ theo yêu cầu).
 //  3. Phát hành hoá đơn thủ công (issueInvoiceByDevice) — không đổi.
 // Tất cả gọi qua hook/API deviceId-scoped với deviceId của thiết bị kế toán
 // (lưu trong localStorage theo mẫu bbh_*_activation). Admin gọi với deviceId
@@ -17,6 +18,16 @@ import { InvoiceStatus, PaymentStatus } from "@/backend";
 import { DeviceRole } from "@/backend";
 import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { getDeviceId } from "@/components/EnterpriseActivationForm";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -59,7 +70,8 @@ import {
   paymentMethodLabel,
 } from "@/lib/payment-method";
 import {
-  enterpriseCleanupOrder,
+  enterpriseDeleteCancelledOrders,
+  enterpriseDeleteOrder,
   enterpriseRecordInvoice,
   getEnterpriseHistory,
   getInvoice,
@@ -131,6 +143,29 @@ const QUICK_RANGES: Array<{ value: QuickRange; label: string }> = [
   { value: "week", label: "Tuần này" },
   { value: "month", label: "Tháng này" },
 ];
+
+// Lý do KHÔNG được xoá đơn (giống quy tắc VPS routes/enterprise-actions.js
+// — VPS là nơi quyết định cuối cùng). null = được xoá.
+function deleteBlockedReason(o: {
+  bookingStatus: string;
+  paymentStatus: string;
+  paymentMethod?: string;
+  invoiceStatus: string;
+  createdAt: number;
+}): string | null {
+  if (o.bookingStatus !== "cancelled") return "Chỉ xoá được đơn đã huỷ.";
+  if (o.paymentStatus === "paid" || o.paymentMethod) {
+    return "Đơn đã thanh toán — không thể xoá.";
+  }
+  if (o.invoiceStatus === "invoiced")
+    return "Đơn đã có hoá đơn — không thể xoá.";
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  if (o.createdAt >= todayStart.getTime()) {
+    return "Chỉ xoá được đơn từ hôm trước trở về trước.";
+  }
+  return null;
+}
 
 function inputDateToApiFormat(v: string): string {
   const [y, m, d] = v.split("-");
@@ -227,7 +262,6 @@ export function AccountingPage() {
   );
 
   // ---- Hành động thủ công (không đổi) ----
-  const [cleanupCode, setCleanupCode] = useState("");
   const [invoiceManualCode, setInvoiceManualCode] = useState("");
   const [invoiceOrderId, setInvoiceOrderId] = useState<string | null>(null);
   const [invoiceId, setInvoiceId] = useState("");
@@ -278,9 +312,18 @@ export function AccountingPage() {
   // Ghi qua VPS (không gọi thẳng canister nữa) — xem routes/enterprise-
   // actions.js: canister chỉ giữ đơn trong ngày nên đơn cũ báo "Order not
   // found", và danh sách (đọc từ VPS) không phản ánh thay đổi.
-  const cleanupMutation = useMutation({
-    mutationFn: (orderId: string) => enterpriseCleanupOrder(deviceId, orderId),
+  const deleteMutation = useMutation({
+    mutationFn: (orderId: string) => enterpriseDeleteOrder(deviceId, orderId),
   });
+  const bulkDeleteMutation = useMutation({
+    mutationFn: () => enterpriseDeleteCancelledOrders(deviceId, false),
+  });
+  // Hộp thoại xác nhận xoá — xoá là KHÔNG hoàn tác được.
+  const [confirmDelete, setConfirmDelete] = useState<
+    | { kind: "one"; orderId: string; cusName: string }
+    | { kind: "bulk"; count: number }
+    | null
+  >(null);
   const invoiceMutation = useMutation({
     mutationFn: (args: {
       orderId: string;
@@ -295,25 +338,37 @@ export function AccountingPage() {
       ),
   });
 
-  async function handleCleanup(orderId: string) {
+  async function handleConfirmDelete() {
+    if (!confirmDelete) return;
     try {
-      await cleanupMutation.mutateAsync(orderId);
-      toast.success("Đã dọn dẹp đơn.");
+      if (confirmDelete.kind === "one") {
+        await deleteMutation.mutateAsync(confirmDelete.orderId);
+        toast.success("Đã xoá đơn.");
+      } else {
+        const r = await bulkDeleteMutation.mutateAsync();
+        toast.success(`Đã xoá ${r.deleted ?? 0} đơn đã huỷ.`);
+      }
       historyQuery.refetch();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Không thể dọn dẹp đơn.",
-      );
+      toast.error(err instanceof Error ? err.message : "Không thể xoá đơn.");
+    } finally {
+      setConfirmDelete(null);
     }
   }
 
-  async function handleCleanupByCode(e: React.FormEvent) {
-    e.preventDefault();
-    if (!cleanupCode.trim()) {
-      toast.error("Vui lòng nhập mã đơn.");
-      return;
+  async function handleOpenBulkDelete() {
+    try {
+      const r = await enterpriseDeleteCancelledOrders(deviceId, true);
+      if (!r.count) {
+        toast.info("Không có đơn đã huỷ nào đủ điều kiện để xoá.");
+        return;
+      }
+      setConfirmDelete({ kind: "bulk", count: r.count });
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Không đếm được đơn cần xoá.",
+      );
     }
-    await handleCleanup(cleanupCode.trim());
   }
 
   async function handleIssueInvoice() {
@@ -638,8 +693,20 @@ export function AccountingPage() {
             </div>
           )}
 
-          {results.length > 0 && (
-            <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            {/* Xoá hàng loạt KHÔNG phụ thuộc bộ lọc đang xem — luôn hiện. */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleOpenBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+              data-ocid="accounting.bulk_delete_button"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              Xoá tất cả đơn đã huỷ trước hôm nay
+            </Button>
+            {results.length > 0 && (
               <Button
                 type="button"
                 variant="outline"
@@ -650,8 +717,8 @@ export function AccountingPage() {
                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
                 Xuất CSV
               </Button>
-            </div>
-          )}
+            )}
+          </div>
 
           {statuses.length === 0 ? (
             <div
@@ -795,24 +862,39 @@ export function AccountingPage() {
                         </TableCell>
                         <TableCell className="ent-td">
                           <div className="flex items-center justify-end gap-2">
-                            {/* Ẩn nút "Dọn dẹp" cho đơn đã thanh toán (theo
-                                yêu cầu đã duyệt) — chỉ hiện cho đơn đã huỷ. */}
-                            {isCancelled && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={cleanupMutation.isPending}
-                                onClick={() => handleCleanup(order.orderId)}
-                                data-ocid={`accounting.cleanup_button.${idx + 1}`}
-                              >
-                                <Trash2
-                                  className="h-3.5 w-3.5"
-                                  aria-hidden="true"
-                                />
-                                Dọn dẹp
-                              </Button>
-                            )}
+                            {/* Nút "Xoá" (thay "Dọn dẹp") — chỉ hiện cho đơn đã
+                                huỷ; khoá kèm lý do nếu không đủ điều kiện (VPS
+                                vẫn kiểm tra lại toàn bộ). */}
+                            {isCancelled &&
+                              (() => {
+                                const reason = deleteBlockedReason(order);
+                                return (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={
+                                      !!reason || deleteMutation.isPending
+                                    }
+                                    title={reason ?? "Xoá vĩnh viễn đơn này"}
+                                    onClick={() =>
+                                      setConfirmDelete({
+                                        kind: "one",
+                                        orderId: order.orderId,
+                                        cusName:
+                                          order.cusName || "Khách vãng lai",
+                                      })
+                                    }
+                                    data-ocid={`accounting.delete_button.${idx + 1}`}
+                                  >
+                                    <Trash2
+                                      className="h-3.5 w-3.5"
+                                      aria-hidden="true"
+                                    />
+                                    Xoá
+                                  </Button>
+                                );
+                              })()}
                             {order.invoiceStatus === InvoiceStatus.invoiced ? (
                               <Button
                                 type="button"
@@ -878,7 +960,7 @@ export function AccountingPage() {
           className="flex w-full items-center justify-between px-6 py-4 text-left"
         >
           <span className="flex items-center gap-2 font-display text-base font-semibold">
-            Tuỳ chọn nâng cao — dọn dẹp / phát hành theo mã đơn
+            Tuỳ chọn nâng cao — phát hành hoá đơn theo mã đơn
           </span>
           <ChevronDown
             className={`h-4 w-4 text-muted-foreground transition-smooth ${advancedOpen ? "rotate-180" : ""}`}
@@ -890,51 +972,6 @@ export function AccountingPage() {
             className="grid grid-cols-1 gap-6 border-t border-border px-6 pb-6 pt-4 lg:grid-cols-2"
             data-ocid="accounting.advanced_content"
           >
-            <div data-ocid="accounting.cleanup_card">
-              <CardTitle className="mb-1 flex items-center gap-2 font-display text-base">
-                <Trash2 className="h-4 w-4 text-primary" aria-hidden="true" />
-                Dọn dẹp đơn thủ công
-              </CardTitle>
-              <CardDescription className="mb-3">
-                Huỷ/xoá một đơn hàng cũ hoặc hết hạn theo mã đơn.
-              </CardDescription>
-              <form
-                onSubmit={handleCleanupByCode}
-                className="flex flex-col gap-3"
-                data-ocid="accounting.cleanup_form"
-              >
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="cleanup-code" className="text-sm font-medium">
-                    Mã đơn
-                  </Label>
-                  <Input
-                    id="cleanup-code"
-                    value={cleanupCode}
-                    onChange={(e) => setCleanupCode(e.target.value)}
-                    placeholder="Nhập mã đơn cần dọn dẹp…"
-                    data-ocid="accounting.cleanup_input"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  variant="destructive"
-                  disabled={cleanupMutation.isPending || !cleanupCode.trim()}
-                  data-ocid="accounting.cleanup_submit_button"
-                  className="w-full sm:w-auto"
-                >
-                  {cleanupMutation.isPending ? (
-                    <Loader2
-                      className="h-4 w-4 animate-spin"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  Dọn dẹp đơn
-                </Button>
-              </form>
-            </div>
-
             <div data-ocid="accounting.invoice_card">
               <CardTitle className="mb-1 flex items-center gap-2 font-display text-base">
                 <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -1058,6 +1095,36 @@ export function AccountingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog
+        open={confirmDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDelete(null);
+        }}
+      >
+        <AlertDialogContent data-ocid="accounting.delete_confirm_dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xoá vĩnh viễn?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDelete?.kind === "one"
+                ? `Xoá đơn ${confirmDelete.orderId} (${confirmDelete.cusName}) khỏi máy chủ.`
+                : `Xoá ${confirmDelete?.kind === "bulk" ? confirmDelete.count : 0} đơn đã huỷ, chưa từng thanh toán, từ hôm trước trở về trước.`}{" "}
+              Thao tác này KHÔNG hoàn tác được. Hệ thống vẫn lưu nhật ký xoá (mã
+              đơn, số tiền, khách, thời điểm).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-ocid="accounting.delete_cancel_button">
+              Không xoá
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              data-ocid="accounting.delete_confirm_button"
+            >
+              Xoá vĩnh viễn
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
