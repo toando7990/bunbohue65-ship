@@ -326,6 +326,16 @@ function startInvoiceCron(db) {
               continue;
             }
             console.error(`[invoice/cron] CreateInvoice: no invoiceNo for ${row.order_id} — ${inv.error || 'unknown'} (code=${inv.errorCode || ''})`);
+            // LUÔN lưu nguyên văn phản hồi Bkav khi thất bại — trước đây mất
+            // hẳn, không cách nào chẩn đoán (xem: sqlite3 app.db "SELECT ...
+            // FROM bkav_logs WHERE command='CreateInvoice'").
+            try {
+              const rawText = typeof inv.raw === 'string' ? inv.raw : JSON.stringify(inv.raw);
+              db.prepare(`INSERT INTO bkav_logs (order_id, command, error, response_xml, created_at) VALUES (?, 'CreateInvoice', ?, ?, ?)`)
+                .run(row.order_id, String(inv.error || '').slice(0, 500), String(rawText || '').slice(0, 20000), Date.now());
+            } catch (logErr) {
+              console.warn('[invoice/cron] không ghi được bkav_logs:', logErr.message);
+            }
             await handleInvoiceFailure(
               db,
               row.order_id,

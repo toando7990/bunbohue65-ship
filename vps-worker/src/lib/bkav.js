@@ -160,6 +160,42 @@ async function callBkavViaProxy(jsonPayload, config) {
 // LUÔN trả field `raw` chứa toàn bộ nội dung gốc — không bao giờ mất dấu
 // vết, dù parse thành công hay thất bại (bài học từ lỗi invoiceId trước đây).
 // ------------------------------------------------------------
+function xmlUnescape(s) {
+  return String(s)
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+function tryParseJson(s) {
+  if (!s) return null;
+  try {
+    const v = JSON.parse(String(s).replace(/^\uFEFF/, '').trim());
+    return v && typeof v === 'object' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+// Giải mã phản hồi Bkav bằng PartnerToken: Base64 → AES-256-CBC → gunzip
+// (CHỈ khi có dấu hiệu gzip 1f 8b). Lỗi → null (không ném).
+function decryptWithToken(base64) {
+  try {
+    const { keyBase64, ivBase64 } = splitPartnerToken();
+    const key = Buffer.from(keyBase64, 'base64');
+    const iv = Buffer.from(ivBase64, 'base64');
+    if (key.length !== 32 || iv.length !== 16) return null;
+    const d = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    let buf = Buffer.concat([d.update(Buffer.from(base64, 'base64')), d.final()]);
+    if (buf[0] === 0x1f && buf[1] === 0x8b) buf = zlib.gunzipSync(buf);
+    return buf.toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
 function parseProxyResponse(bodyText) {
   const text = String(bodyText || '').trim();
 
@@ -179,16 +215,18 @@ function parseProxyResponse(bodyText) {
   const execMatch = text.match(/<(?:[^:>]+:)?ExecCommandResult[^>]*>([\s\S]*?)<\/(?:[^:>]+:)?ExecCommandResult>/i);
   let json = null;
   if (execMatch) {
-    const inner = execMatch[1].trim();
-    try {
-      json = JSON.parse(Buffer.from(inner, 'base64').toString('utf8'));
-    } catch {
-      try {
-        json = JSON.parse(inner); // Có thể đã là JSON thô, không Base64.
-      } catch {
-        json = null;
-      }
-    }
+    // Proxy trả NGUYÊN VĂN khi không giải mã được — thử lần lượt mọi dạng
+    // Bkav có thể trả (BUG THẬT đã gặp: 'Không parse được phản hồi Bkav'):
+    //  1. JSON thuần KHÔNG mã hoá (một số phản hồi lỗi của Bkav) — nằm trong
+    //     XML nên " thành &quot; → phải giải mã thực thể XML trước;
+    //  2. Đã mã hoá AES — VPS tự giải mã (proxy luôn gunzip nên thất bại với
+    //     phản hồi KHÔNG nén; ở đây chỉ gunzip khi có dấu hiệu gzip);
+    //  3. Base64 của JSON.
+    const inner = xmlUnescape(execMatch[1].trim());
+    json =
+      tryParseJson(inner) ||
+      tryParseJson(decryptWithToken(inner)) ||
+      tryParseJson(Buffer.from(inner, 'base64').toString('utf8'));
   }
 
   // Cách 2 (dự phòng): nội dung đã là JSON trực tiếp, không có wrapper
