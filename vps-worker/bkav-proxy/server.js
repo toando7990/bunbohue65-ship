@@ -67,11 +67,37 @@ function hasExecCommandResult(xml) {
 
 // SOAP Fault — chuẩn hoá về dạng cố định, dễ parse phía worker, không lộ
 // stack trace/nội dung động (đảm bảo phản hồi luôn nhất quán).
+// BUG THẬT đã sửa: trước chỉ giữ <faultcode> (SOAP 1.1) và BỎ lý do lỗi →
+// Bkav trả lỗi theo SOAP 1.2 (<Code><Value>, <Reason><Text>) thì chỉ còn
+// "SOAP fault: UNKNOWN", không cách nào biết nguyên nhân. Giờ đọc cả 2 chuẩn,
+// trả thêm lý do lỗi (lọc ký tự < > & " ', gộp khoảng trắng, tối đa 300 ký
+// tự — không lộ stack trace dài), và GHI TOÀN BỘ phản hồi lỗi gốc vào nhật ký
+// proxy (journalctl -u bkav-proxy) để chẩn đoán.
+function cleanFaultText(v, max) {
+  return String(v || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[<>&"']/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+}
+
 function normalizeSoapFault(xml) {
-  const faultcode = extractTag(xml, 'faultcode') || 'UNKNOWN';
-  const safe = faultcode.replace(/[<>&"']/g, '');
-  const canonical = `<R><E>FAULT:${safe}</E></R>`;
+  // SOAP 1.1: <faultcode>, <faultstring>. SOAP 1.2: <Code><Value>, <Reason><Text>.
+  const code =
+    extractTag(xml, 'faultcode') ||
+    extractTag(extractTag(xml, 'Code'), 'Value') ||
+    'UNKNOWN';
+  const reason =
+    extractTag(xml, 'faultstring') ||
+    extractTag(extractTag(xml, 'Reason'), 'Text') ||
+    extractTag(xml, 'Reason') ||
+    '';
+  const safeCode = cleanFaultText(code, 100) || 'UNKNOWN';
+  const safeReason = cleanFaultText(reason, 300);
+  const canonical = `<R><E>FAULT:${safeCode}${safeReason ? ` | ${safeReason}` : ''}</E></R>`;
   console.log('[bkav-proxy] SOAP Fault:', canonical);
+  console.log('[bkav-proxy] SOAP Fault RAW:', String(xml).slice(0, 4000));
   return canonical;
 }
 
