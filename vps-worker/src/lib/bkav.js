@@ -89,6 +89,22 @@ function splitPartnerToken() {
 // MẬT partnerToken bị gửi lên đường truyền. Chưa yêu cầu nào tới Bkav từng
 // hợp lệ.
 // ------------------------------------------------------------
+// Tên trường VIẾT HOA chữ cái đầu (CmdType, CommandObject, Invoice,
+// InvoiceTypeID, ListInvoiceDetailsWS, Qty...) — đúng như mẫu đã chạy thật
+// với Bkav. Trước gửi viết thường (cmdType, invoice, qty...) → nghi ngờ Bkav
+// (.NET) đọc ra giá trị rỗng → lỗi nội bộ. Chỉ đổi TÊN trường, không đổi giá trị.
+function toPascalKeys(v) {
+  if (Array.isArray(v)) return v.map(toPascalKeys);
+  if (v && typeof v === 'object') {
+    const out = {};
+    for (const [k, val] of Object.entries(v)) {
+      out[k.charAt(0).toUpperCase() + k.slice(1)] = toPascalKeys(val);
+    }
+    return out;
+  }
+  return v;
+}
+
 function encryptCommandData(jsonPayload) {
   const { keyBase64, ivBase64 } = splitPartnerToken();
   const key = Buffer.from(keyBase64, 'base64');
@@ -98,7 +114,7 @@ function encryptCommandData(jsonPayload) {
       `BKAV_PARTNER_TOKEN sai định dạng: khoá phải 32 byte, IV phải 16 byte (đang là ${key.length}/${iv.length}) — kiểm tra lại giá trị Bkav cấp.`,
     );
   }
-  const gz = zlib.gzipSync(Buffer.from(JSON.stringify(jsonPayload), 'utf8'));
+  const gz = zlib.gzipSync(Buffer.from(JSON.stringify(toPascalKeys(jsonPayload)), 'utf8'));
   const cipher = crypto.createCipheriv('aes-256-cbc', key, iv); // PKCS#7 mặc định
   return Buffer.concat([cipher.update(gz), cipher.final()]).toString('base64');
 }
@@ -379,8 +395,17 @@ function buildJsonPayload(invoice, config) {
   const taxRateMap = { 0: 1, 5: 2, 10: 3, 8: 4 };
   const taxRateID = taxRateMap[invoice.taxRate] ?? 3; // default 10% → 3
 
+  // Lệnh tạo hoá đơn (xem tài liệu Bkav): 100 = Bkav chọn mẫu số + ký hiệu,
+  // KHÔNG cấp số (nháp); 101 = Bkav chọn mẫu số + ký hiệu VÀ cấp số (chờ
+  // ký); 110/111/112 = DÙNG mẫu số + ký hiệu của mình. Cấu hình qua
+  // BKAV_CMD_TYPE (mặc định 100 như trước). Chỉ gửi mẫu số/ký hiệu với
+  // 110/111/112 — BUG THẬT đã sửa: trước gửi ký hiệu 'C26MAA' + mẫu số rỗng
+  // kèm lệnh 100 (lệnh không nhận ký hiệu) — mâu thuẫn dữ liệu.
+  const cmdType = Number(process.env.BKAV_CMD_TYPE || 100);
+  const ownSerial = [110, 111, 112].includes(cmdType);
+
   return {
-    cmdType: 100,
+    cmdType,
     commandObject: [{
       invoice: {
         invoiceTypeID: 1,
@@ -400,12 +425,12 @@ function buildJsonPayload(invoice, config) {
         billCode: '',
         currencyID: 'VND',
         exchangeRate: 1.0,
-        invoiceStatusID: 1,
-        invoiceForm: '',
-        invoiceSerial: config.prodInvoiceSerial || '', // prod: config, demo: '' (Bkav auto-assign)
-        invoiceNo: 0,
-        signedDate: '0001-01-01T00:00:00',
-        typeCreateInvoice: 0,
+        // BỎ invoiceStatusID / invoiceNo / signedDate / typeCreateInvoice —
+        // mẫu đã chạy thật với Bkav không gửi các trường này. Đặc biệt
+        // signedDate '0001-01-01' nằm NGOÀI giới hạn ngày của SQL Server (từ
+        // 1753) → nghi ngờ gây lỗi nội bộ Bkav 'Có lỗi xảy ra... #mã sự cố'.
+        invoiceForm: ownSerial ? process.env.BKAV_INVOICE_FORM || '1' : '',
+        invoiceSerial: ownSerial ? config.prodInvoiceSerial || '' : '',
       },
       listInvoiceDetailsWS: buildInvoiceLines(invoice, taxRateID),
       partnerInvoiceID: 0,
@@ -530,6 +555,8 @@ function buildInvoiceLines(invoice, taxRateID) {
       price: roundedUnitPrice,
       amount: preTaxAmount,
       taxRateID,
+      // Thuế suất dạng số (VD 8) — mẫu Bkav thật gửi CẢ TaxRateID và TaxRate.
+      taxRate: Number(invoice.taxRate),
       taxAmount: lineTax,
       // discountRate chỉ để tham khảo/hiển thị, KHÔNG dùng để tính toán.
       discountRate:
@@ -650,6 +677,7 @@ async function getInvoicePdf816(orderId, config) {
 }
 
 module.exports = {
+  toPascalKeys,
   encryptCommandData,
   buildSoapEnvelope,
   createInvoice,
