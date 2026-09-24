@@ -47,7 +47,7 @@ const PDF_BASE_URL = process.env.BKAV_PDF_BASE_URL || 'https://stg-ehoadon.vn';
 
 if (!PARTNER_GUID || !PARTNER_TOKEN) {
   console.warn('[bkav] BKAV_PARTNER_GUID/TOKEN missing — invoicing will fail');
-} else if (!PARTNER_TOKEN.includes(':')) {
+} else if (String(PARTNER_TOKEN).trim().split(':').filter(Boolean).length !== 2) {
   // PartnerToken PHẢI có cấu trúc "Base64(Key):Base64(IV)" theo tài liệu
   // Bkav — cảnh báo sớm nếu định dạng rõ ràng sai, tránh lỗi mã hoá khó hiểu
   // ở tận bước gọi API.
@@ -58,12 +58,16 @@ if (!PARTNER_GUID || !PARTNER_TOKEN) {
 // X-BKAV-KEY gửi cho bkav-proxy giải mã phản hồi. Theo tài liệu:
 // "Partner Token có cấu trúc: (Key đã được EncodeBase64):(IV đã được EncodeBase64)".
 function splitPartnerToken() {
-  const idx = PARTNER_TOKEN.indexOf(':');
-  if (idx <= 0) return { keyBase64: '', ivBase64: '' };
-  return {
-    keyBase64: PARTNER_TOKEN.slice(0, idx),
-    ivBase64: PARTNER_TOKEN.slice(idx + 1),
-  };
+  // Chịu được dấu ":" và khoảng trắng THỪA ở hai đầu (VD token dán vào .env
+  // thành ":khoá:IV" — BUG THẬT đã gặp: indexOf(':') = 0 → khoá/IV rỗng →
+  // không mã hoá được). Lấy đúng 2 phần không rỗng.
+  const parts = String(PARTNER_TOKEN || '')
+    .trim()
+    .split(':')
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length !== 2) return { keyBase64: '', ivBase64: '' };
+  return { keyBase64: parts[0], ivBase64: parts[1] };
 }
 
 // ------------------------------------------------------------
