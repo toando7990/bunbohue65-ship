@@ -249,26 +249,47 @@ function parseProxyResponse(bodyText) {
   }
 
   // Bkav response shape: { Status, Object (JSON string hoặc mảng), Code, isOk, isError }
-  const success = json.Status === 0 || json.isOk === true;
+  // Object thường là MẢNG kết quả từng hoá đơn, mỗi phần tử có Status riêng
+  // và MessLog (lý do lỗi / đường dẫn PDF) — lời nhắn lỗi nằm Ở ĐÂY, không
+  // phải tầng ngoài (BUG THẬT: log chỉ hiện 'bkav_failure (code=1)').
+  let inner = null;
+  try {
+    inner = typeof json.Object === 'string' ? JSON.parse(json.Object) : json.Object;
+  } catch {
+    inner = null; // Object là chuỗi thường (thường chính là lời nhắn lỗi).
+  }
+  const first = Array.isArray(inner) ? inner[0] : inner && typeof inner === 'object' ? inner : null;
+  const envelopeOk = json.Status === 0 || json.isOk === true;
+  // Một lô có thể Status 0 ở tầng ngoài nhưng TỪNG hoá đơn bên trong thất bại
+  // → phải xét cả Status của phần tử (trước đây bị hiểu nhầm là "hoá đơn
+  // nháp chưa có số").
+  const itemFailed =
+    first && first.Status !== undefined && first.Status !== null && Number(first.Status) !== 0;
+  const success = envelopeOk && !itemFailed;
+
   let invoiceNo = '';
   let invoiceDate = '';
   let maCQT = '';
   let maTraCuu = '';
-
-  if (success && json.Object) {
-    try {
-      const inner = typeof json.Object === 'string' ? JSON.parse(json.Object) : json.Object;
-      const first = Array.isArray(inner) ? inner[0] : inner;
-      invoiceNo = String(first?.InvoiceNo ?? first?.invoiceNo ?? '');
-      // Số 0 = Bkav chưa cấp số (hoá đơn NHÁP) — KHÔNG phải số hợp lệ.
-      if (invoiceNo === '0') invoiceNo = '';
-      invoiceDate = String(first?.InvoiceDate ?? first?.invoiceDate ?? '');
-      maCQT = String(first?.MaCQT ?? first?.maCQT ?? '');
-      maTraCuu = String(first?.MaTraCuu ?? first?.maTraCuu ?? first?.TransactionID ?? '');
-    } catch {
-      // Object parse fail — vẫn trả success nhưng fields trống, raw giữ nguyên để debug.
-    }
+  if (success && first) {
+    invoiceNo = String(first.InvoiceNo ?? first.invoiceNo ?? '');
+    // Số 0 = Bkav chưa cấp số (hoá đơn NHÁP) — KHÔNG phải số hợp lệ.
+    if (invoiceNo === '0') invoiceNo = '';
+    invoiceDate = String(first.InvoiceDate ?? first.invoiceDate ?? '');
+    maCQT = String(first.MaCQT ?? first.maCQT ?? '');
+    maTraCuu = String(first.MaTraCuu ?? first.maTraCuu ?? first.MTC ?? first.TransactionID ?? '');
   }
+
+  const errorText = success
+    ? ''
+    : String(
+        (first && (first.MessLog || first.Message)) ||
+          json.MessLog ||
+          json.Message ||
+          json.ErrorMessage ||
+          (typeof json.Object === 'string' && json.Object.trim() && !inner ? json.Object : '') ||
+          'bkav_failure',
+      ).slice(0, 500);
 
   return {
     success,
@@ -276,8 +297,8 @@ function parseProxyResponse(bodyText) {
     invoiceDate,
     maCQT,
     maTraCuu,
-    error: success ? '' : String(json.MessLog || json.Message || json.ErrorMessage || 'bkav_failure'),
-    errorCode: json.Code ?? json.Status ?? '',
+    error: errorText,
+    errorCode: (itemFailed ? first.Status : json.Code ?? json.Status) ?? '',
     raw: json,
   };
 }
