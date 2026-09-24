@@ -313,6 +313,18 @@ function startInvoiceCron(db) {
             // KHÔNG chịu thua ngay — dùng handleInvoiceFailure() để tự
             // động thử lại vài lần ở các lần cron sau (xem
             // INVOICE_MAX_RETRIES), trước khi đánh dấu 'failed' hẳn.
+            if (inv.success) {
+              // Bkav CHẤP NHẬN nhưng KHÔNG cấp số (hoá đơn nháp) — KHÔNG gửi
+              // tạo lại (sẽ sinh nhiều bản nháp); đánh dấu thất bại ngay để
+              // Kế toán xử lý (ký/cấp số trên cổng Bkav, ghi nhận thủ công).
+              console.error(`[invoice/cron] ${row.order_id}: Bkav tạo hoá đơn NHÁP chưa có số — cần ký/cấp số trên cổng Bkav`);
+              db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'CreateInvoice', ?, ?)`)
+                .run(row.order_id, 'Bkav tạo hoá đơn nháp chưa có số — cần ký/cấp số trên cổng Bkav', Date.now());
+              db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
+                .run(INVOICE_MAX_RETRIES, Date.now(), row.order_id);
+              await syncInvoiceStatusToCanister(row.order_id, 'failed', '', '');
+              continue;
+            }
             console.error(`[invoice/cron] CreateInvoice: no invoiceNo for ${row.order_id} — ${inv.error || 'unknown'} (code=${inv.errorCode || ''})`);
             await handleInvoiceFailure(
               db,

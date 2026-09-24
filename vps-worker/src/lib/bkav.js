@@ -25,6 +25,8 @@
 // ============================================================
 
 const axios = require('axios');
+const crypto = require('crypto');
+const zlib = require('zlib');
 
 const PARTNER_GUID = process.env.BKAV_PARTNER_GUID || '';
 const PARTNER_TOKEN = process.env.BKAV_PARTNER_TOKEN || '';
@@ -70,24 +72,63 @@ function splitPartnerToken() {
 // jsonPayload: object CmdType (100 cho tạo hoá đơn, 816 cho lấy PDF...).
 // config.useDemo (tuỳ chọn): override USE_DEMO cho riêng lần gọi này.
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// Định dạng yêu cầu Bkav (tài liệu WSPublicEHoaDon.asmx?op=ExecCommand):
+//   SOAP 1.1, SOAPAction "http://tempuri.org/ExecCommand", thân
+//   <ExecCommand><partnerGUID/><CommandData/></ExecCommand>
+//   CommandData = Base64( AES-256-CBC/PKCS#7( gzip( JSON ) ) ), khoá/IV lấy từ
+//   PartnerToken "base64(key 32 byte):base64(iv 16 byte)".
+// BUG THẬT NGHIÊM TRỌNG đã sửa: trước đây gửi JSON {partnerGUID,
+// partnerToken, CommandData=Base64(JSON thuần)} thẳng vào địa chỉ SOAP →
+// Bkav trả "Data at the root level is invalid. Line 1, position 1" cho MỌI
+// lệnh (đọc thấy '{' thay vì '<'); CommandData không nén/mã hoá; và KHOÁ BÍ
+// MẬT partnerToken bị gửi lên đường truyền. Chưa yêu cầu nào tới Bkav từng
+// hợp lệ.
+// ------------------------------------------------------------
+function encryptCommandData(jsonPayload) {
+  const { keyBase64, ivBase64 } = splitPartnerToken();
+  const key = Buffer.from(keyBase64, 'base64');
+  const iv = Buffer.from(ivBase64, 'base64');
+  if (key.length !== 32 || iv.length !== 16) {
+    throw new Error(
+      `BKAV_PARTNER_TOKEN sai định dạng: khoá phải 32 byte, IV phải 16 byte (đang là ${key.length}/${iv.length}) — kiểm tra lại giá trị Bkav cấp.`,
+    );
+  }
+  const gz = zlib.gzipSync(Buffer.from(JSON.stringify(jsonPayload), 'utf8'));
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv); // PKCS#7 mặc định
+  return Buffer.concat([cipher.update(gz), cipher.final()]).toString('base64');
+}
+
+function xmlEscape(v) {
+  return String(v).replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c]);
+}
+
+function buildSoapEnvelope(partnerGUID, commandData) {
+  return (
+    '<?xml version="1.0" encoding="utf-8"?>' +
+    '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+    '<soap:Body><ExecCommand xmlns="http://tempuri.org/">' +
+    `<partnerGUID>${xmlEscape(partnerGUID)}</partnerGUID>` +
+    `<CommandData>${xmlEscape(commandData)}</CommandData>` +
+    '</ExecCommand></soap:Body></soap:Envelope>'
+  );
+}
+
 async function callBkavViaProxy(jsonPayload, config) {
   config = config || {};
   const useDemo = config.useDemo ?? USE_DEMO;
   const proxyPath = useDemo ? '/bkav-demo' : '/bkav-prod';
   const proxyUrl = `${PROXY_BASE_URL.replace(/\/$/, '')}${proxyPath}`;
 
-  const commandData = Buffer.from(JSON.stringify(jsonPayload), 'utf8').toString('base64');
-  const httpBody = {
-    partnerGUID: PARTNER_GUID,
-    partnerToken: PARTNER_TOKEN,
-    CommandData: commandData,
-  };
+  const soapBody = buildSoapEnvelope(PARTNER_GUID, encryptCommandData(jsonPayload));
 
   const { keyBase64, ivBase64 } = splitPartnerToken();
 
-  const res = await axios.post(proxyUrl, httpBody, {
+  const res = await axios.post(proxyUrl, soapBody, {
     headers: {
-      'Content-Type': 'application/json',
+      // Proxy chuyển tiếp nguyên các header này lên Bkav.
+      'Content-Type': 'text/xml; charset=utf-8',
+      SOAPAction: '"http://tempuri.org/ExecCommand"',
       // Khoá giải mã cho bkav-proxy — proxy KHÔNG lưu lại, chỉ dùng đúng
       // request này rồi bỏ. Đây chính là header bản tham khảo THIẾU.
       'X-BKAV-KEY': `${keyBase64}:${ivBase64}`,
@@ -172,6 +213,8 @@ function parseProxyResponse(bodyText) {
       const inner = typeof json.Object === 'string' ? JSON.parse(json.Object) : json.Object;
       const first = Array.isArray(inner) ? inner[0] : inner;
       invoiceNo = String(first?.InvoiceNo ?? first?.invoiceNo ?? '');
+      // Số 0 = Bkav chưa cấp số (hoá đơn NHÁP) — KHÔNG phải số hợp lệ.
+      if (invoiceNo === '0') invoiceNo = '';
       invoiceDate = String(first?.InvoiceDate ?? first?.invoiceDate ?? '');
       maCQT = String(first?.MaCQT ?? first?.maCQT ?? '');
       maTraCuu = String(first?.MaTraCuu ?? first?.maTraCuu ?? first?.TransactionID ?? '');
@@ -440,6 +483,7 @@ async function createInvoice(invoice, config) {
   const payload = buildJsonPayload(invoice, config);
   const result = await callBkavViaProxy(payload, config);
   return {
+    success: result.success,
     invoiceNo: result.invoiceNo,
     invoiceDate: result.invoiceDate,
     maCQT: result.maCQT,
@@ -496,6 +540,8 @@ async function getInvoicePdf816(orderId, config) {
 }
 
 module.exports = {
+  encryptCommandData,
+  buildSoapEnvelope,
   createInvoice,
   getInvoicePdf816,
   lookupTaxCode,
