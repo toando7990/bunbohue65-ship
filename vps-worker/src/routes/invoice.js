@@ -117,21 +117,51 @@ async function handleInvoiceFailure(db, orderId, currentRetryCount, reason) {
     console.error(
       `[invoice/cron] Đã thử ${newRetryCount}/${INVOICE_MAX_RETRIES} lần, chịu thua hẳn cho ${orderId}: ${reason}`,
     );
-    db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, updated_at = ? WHERE order_id = ?`)
+    // Chỉ khi đơn VẪN chưa phát hành — không bao giờ ghi đè 'invoiced'.
+    const r = db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
       .run(newRetryCount, Date.now(), orderId);
+    if (r.changes === 0) return;
     await syncInvoiceStatusToCanister(orderId, 'failed', '', '');
     return;
   }
   console.warn(
     `[invoice/cron] Thử lần ${newRetryCount}/${INVOICE_MAX_RETRIES} thất bại cho ${orderId}, sẽ tự động thử lại: ${reason}`,
   );
-  db.prepare(`UPDATE orders SET invoice_retry_count = ?, updated_at = ? WHERE order_id = ?`)
+  db.prepare(`UPDATE orders SET invoice_retry_count = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
     .run(newRetryCount, Date.now(), orderId);
+}
+
+// Khoá chống CHẠY CHỒNG — BUG THẬT đã sửa: node-cron 3.x KHÔNG tự chặn chạy
+// chồng; mỗi lượt có thể kéo dài quá chu kỳ 15s (mỗi lệnh Bkav chờ tới 35s,
+// lấy PDF có chờ thêm 2s + 5s). Lượt sau chạy song song lấy lại ĐÚNG đơn đang
+// xử lý (trạng thái chỉ cập nhật khi xong) → gửi Bkav tạo hoá đơn 2 lần; lượt
+// thua bị Bkav từ chối vì trùng mã đơn và có thể ghi đè 'failed' lên đơn đã
+// phát hành.
+let invoiceCronRunning = false;
+
+// Thuế suất của đơn (%) — lấy từ vat_rate các món (mặc định 8%). BUG THẬT đã
+// sửa: trước đây cron KHÔNG truyền taxRate → buildInvoiceLines() chia cho
+// NaN → đơn giá/thành tiền/tiền thuế gửi Bkav đều là null, và thuế suất mặc
+// định sai thành 10%. Hoá đơn Bkav chỉ hỗ trợ 1 thuế suất/đơn ở đây — nếu các
+// món khác thuế suất, dùng thuế suất phổ biến nhất và ghi cảnh báo.
+function orderTaxRate(items, orderId) {
+  const counts = new Map();
+  for (const it of items) {
+    const r = Number.isFinite(Number(it.vat_rate)) ? Number(it.vat_rate) : 8;
+    counts.set(r, (counts.get(r) || 0) + 1);
+  }
+  if (counts.size === 0) return 8;
+  if (counts.size > 1) {
+    console.warn(`[invoice/cron] Đơn ${orderId} có nhiều thuế suất (${[...counts.keys()].join(', ')}%) — dùng thuế suất phổ biến nhất`);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
 
 function startInvoiceCron(db) {
   const task = cron.schedule('*/15 * * * * *', async () => {
     if (shutdown.shuttingDown) return;
+    if (invoiceCronRunning) return;
+    invoiceCronRunning = true;
     try {
       const windowStartMs = startOfPreviousWorkingDayUtc7(Date.now());
       const rows = db.prepare(
@@ -139,7 +169,37 @@ function startInvoiceCron(db) {
       ).all(windowStartMs);
       for (const row of rows) {
         try {
-          const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(row.order_id);
+          const itemRows = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(row.order_id);
+          // Bảng order_items dùng snake_case (unit_name) — bkav.js đọc unitName.
+          const items = itemRows.map((it) => ({
+            name: it.name,
+            price: it.price,
+            quantity: it.quantity,
+            unitName: it.unit_name || '',
+          }));
+          const taxRate = orderTaxRate(itemRows, row.order_id);
+
+          // Lần THỬ LẠI (lần trước lỗi mạng/timeout): Bkav có thể ĐÃ tạo hoá
+          // đơn nhưng phản hồi bị mất. Kiểm tra trước bằng CmdType 816 (lấy
+          // PDF theo mã đơn) — nếu đã có hoá đơn thì KHÔNG tạo lại (tránh
+          // phát hành trùng), đánh dấu cần Kế toán đối chiếu: Bkav không có
+          // lệnh trả lại số hoá đơn, Kế toán ghi nhận thủ công ở trang Kế toán.
+          if (row.invoice_retry_count > 0) {
+            let existingPdf = null;
+            try {
+              existingPdf = await bkav.getInvoicePdf816(row.order_id);
+            } catch {
+              existingPdf = null;
+            }
+            if (existingPdf && existingPdf.pdf_url) {
+              console.error(`[invoice/cron] ${row.order_id}: Bkav ĐÃ có hoá đơn (lần trước mất phản hồi) — KHÔNG tạo lại, cần Kế toán đối chiếu và ghi nhận số hoá đơn`);
+              db.prepare(`INSERT INTO bkav_logs (order_id, command, error, response_xml, created_at) VALUES (?, 'CreateInvoice', ?, ?, ?)`)
+                .run(row.order_id, 'Hoá đơn đã tồn tại trên Bkav — cần đối chiếu thủ công', JSON.stringify(existingPdf), Date.now());
+              db.prepare(`UPDATE orders SET invoice_status = 'failed', pdf_url = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
+                .run(existingPdf.pdf_url, Date.now(), row.order_id);
+              continue;
+            }
+          }
           // isRetailInvoice: khách có nhập mã số thuế lúc đặt món → phát
           // hành hoá đơn CÔNG TY (buyerName/buyerTaxCode/buyerAddress thật);
           // không nhập → hoá đơn bán lẻ "Bán cho người tiêu dùng" như cũ.
@@ -192,6 +252,7 @@ function startInvoiceCron(db) {
               // có KM/phiếu (mặc định cột, không cần kiểm tra thêm).
               kmDiscountAmount: row.km_discount_amount,
               voucherDiscountAmount: row.voucher_discount_amount,
+              taxRate,
             },
             { prodInvoiceSerial: PROD_INVOICE_SERIAL },
           );
@@ -273,6 +334,8 @@ function startInvoiceCron(db) {
       }
     } catch (e) {
       console.error('[invoice/cron] fatal:', e.message);
+    } finally {
+      invoiceCronRunning = false;
     }
   });
   return task;

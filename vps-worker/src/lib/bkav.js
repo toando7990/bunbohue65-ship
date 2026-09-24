@@ -214,7 +214,13 @@ function buildJsonPayload(invoice, config) {
   const buyerTaxCode = invoice.buyerTaxCode || invoice.cusTaxCode || '';
   const buyerAddress = invoice.buyerAddress || invoice.cusAddress || '';
 
-  const dateStr = new Date().toISOString().replace(/\.\d{3}Z$/, ''); // ISO datetime không ms/Z
+  // Ngày giờ hoá đơn theo GIỜ VIỆT NAM (UTC+7), không kèm múi giờ — Bkav
+  // hiểu chuỗi không múi giờ là giờ VN. BUG THẬT đã sửa: trước đây dùng
+  // toISOString() (giờ UTC) rồi cắt 'Z' → hoá đơn bị lùi 7 tiếng; từ 00:00
+  // đến 06:59 sáng hoá đơn mang NGÀY HÔM TRƯỚC (= ghi lùi ngày, quy định cấm).
+  const dateStr = new Date(Date.now() + 7 * 60 * 60 * 1000)
+    .toISOString()
+    .replace(/\.\d{3}Z$/, '');
   const isRetail = invoice.isRetailInvoice !== false; // default true
 
   const taxRateMap = { 0: 1, 5: 2, 10: 3, 8: 4 };
