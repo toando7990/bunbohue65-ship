@@ -6,21 +6,18 @@ import { BookingStatus, type Order, PaymentStatus } from "@/backend";
 import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { HighlightMatch, matchesQuery } from "@/components/HighlightMatch";
 import { ManualPaymentPhotoDialog } from "@/components/ManualPaymentPhotoDialog";
-import { printPaymentSlip } from "@/lib/payment-slip";
 import { getManualPhotoConfirmEligibility } from "@/lib/vps-client";
 import { useQuery } from "@tanstack/react-query";
 import {
   Camera,
   Clock,
   Loader2,
-  Printer,
   Search,
   ShoppingBag,
   Users,
   X,
 } from "lucide-react";
 import { Fragment, useState } from "react";
-import { toast } from "sonner";
 
 // Gom đơn theo khách — khoá = tên (không phân biệt hoa/thường, bỏ khoảng
 // trắng thừa) + SĐT (chỉ chữ số). Đơn không tên & không SĐT → nhóm riêng.
@@ -435,27 +432,6 @@ export function PaymentQueue({
                               aria-hidden="true"
                             />
                             Xác nhận bằng ảnh
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              printPaymentSlip(order).catch((err) =>
-                                toast.error(
-                                  err instanceof Error
-                                    ? err.message
-                                    : "Không in được phiếu.",
-                                ),
-                              );
-                            }}
-                            data-ocid={`queue.print_slip_button.${idx + 1}`}
-                            aria-label={`In phiếu thanh toán đơn ${order.cusName || order.orderId}`}
-                            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted"
-                          >
-                            <Printer
-                              className="h-3.5 w-3.5"
-                              aria-hidden="true"
-                            />
-                            In phiếu
                           </button>
                         </>
                       )}

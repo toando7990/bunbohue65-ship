@@ -239,6 +239,9 @@ export interface VpsHistoryOrder {
   // Hình thức thanh toán: "cash" | "transfer" | "" (chưa thanh toán, hoặc đơn
   // cũ trước khi hệ thống ghi nhận hình thức — không suy đoán được).
   paymentMethod: string;
+  // Trạng thái hoá đơn Bkav ("none" | "invoiced" | "failed") — cấp nhà hàng
+  // dùng để bật nút "In lại phiếu" chỉ khi đã phát hành hoá đơn.
+  invoiceStatus?: string;
   createdAt: number;
   kmDiscountAmount: number;
   voucherDiscountAmount: number;

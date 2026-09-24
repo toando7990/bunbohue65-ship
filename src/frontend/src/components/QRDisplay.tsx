@@ -19,9 +19,11 @@
 import { type Order, PaymentStatus } from "@/backend";
 import { useCanister } from "@/lib/canister";
 import { getOrderStatus } from "@/lib/canister";
+import { printInvoiceReceipt } from "@/lib/invoice-receipt";
 import {
   VpsHttpError,
   confirmCashPaymentDriver,
+  getInvoice,
   requestQr,
 } from "@/lib/vps-client";
 import type { RequestQrResponse } from "@/types";
@@ -31,6 +33,7 @@ import {
   KeyRound,
   Loader2,
   Phone,
+  Printer,
   QrCode,
   RefreshCw,
   X,
@@ -188,7 +191,13 @@ export function QRDisplay({
       try {
         const s = await getOrderStatus(actor, order.orderId);
         if (cancelled) return;
-        setStatus(s.paymentStatus);
+        // Đã thanh toán thì KHÔNG BAO GIỜ lùi về chưa thanh toán — BUG THẬT:
+        // xác nhận tiền mặt ghi VPS trước, canister cập nhật sau (best-effort);
+        // lần poll canister ngay sau đó có thể còn trả "unpaid" và đè ngược
+        // màn hình về "Đang chờ".
+        setStatus((prev) =>
+          prev === PaymentStatus.paid ? prev : s.paymentStatus,
+        );
         if (s.paymentStatus === PaymentStatus.paid) {
           setPolling(false);
         }
@@ -205,14 +214,51 @@ export function QRDisplay({
     };
   }, [actor, order, polling]);
 
-  // Tự đóng khi #paid: effect riêng theo dõi `status`, KHÔNG phụ thuộc `polling`
-  // nên cleanup của nó không bị chạy khi setPolling(false) ở trên. Cho driver thấy
-  // trạng thái thành công 1.5s rồi gọi onPaid(order) để đóng modal + refresh queue.
+  // Sau khi #paid: KHÔNG tự đóng nữa (trước đây đóng sau 1.5s) — giống quầy,
+  // hiện màn "Thanh toán thành công" với nút "In phiếu" (đúng mẫu phiếu quầy,
+  // lib/invoice-receipt.ts). Nút chỉ bật khi hoá đơn Bkav đã phát hành: poll
+  // VPS GET /invoice/:orderId (trả "chưa phát hành" cho tới khi cron xong,
+  // thường < 1 phút) mỗi 5s, tối đa 3 phút. Nhân viên bấm "Xong" để đóng +
+  // làm mới hàng đợi (onPaid).
+  const [invoiceReady, setInvoiceReady] = useState(false);
+  const [invoiceWaitTimedOut, setInvoiceWaitTimedOut] = useState(false);
+  const [printingReceipt, setPrintingReceipt] = useState(false);
   useEffect(() => {
-    if (status !== PaymentStatus.paid) return;
-    const id = setTimeout(() => onPaid(order), 1500);
-    return () => clearTimeout(id);
-  }, [status, order, onPaid]);
+    if (status !== PaymentStatus.paid || invoiceReady) return;
+    let cancelled = false;
+    const startedAt = Date.now();
+    async function check() {
+      try {
+        const inv = await getInvoice(order.orderId);
+        if (!cancelled && inv.ok) setInvoiceReady(true);
+      } catch {
+        // "chưa phát hành" (404) hoặc lỗi mạng — thử lại lần sau.
+      }
+      if (!cancelled && Date.now() - startedAt > 3 * 60 * 1000) {
+        setInvoiceWaitTimedOut(true);
+      }
+    }
+    void check();
+    const id = setInterval(check, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [status, order.orderId, invoiceReady]);
+
+  async function handlePrintReceipt() {
+    setPrintingReceipt(true);
+    try {
+      await printInvoiceReceipt(order.orderId);
+      toast.success("Đã gửi lệnh in phiếu.");
+    } catch (err) {
+      toast.error("In phiếu thất bại", {
+        description: err instanceof Error ? err.message : "Lỗi không xác định.",
+      });
+    } finally {
+      setPrintingReceipt(false);
+    }
+  }
 
   const isPaid = status === PaymentStatus.paid;
   const qrReady = qrState.kind === "ready";
@@ -243,7 +289,55 @@ export function QRDisplay({
 
       {/* QR center */}
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 pb-8">
-        {qrState.kind === "needCode" ? (
+        {isPaid ? (
+          <div
+            className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl bg-background p-6 shadow-2xl md:p-8"
+            data-ocid="qr.paid_card"
+          >
+            <span
+              className="inline-flex items-center gap-2 rounded-full border border-success/40 bg-success/15 px-4 py-1.5 text-sm font-semibold text-success"
+              data-ocid="qr.success_state"
+            >
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              Thanh toán thành công
+            </span>
+            <p className="text-center text-sm text-muted-foreground">
+              {order.cusName} · {formatVnd(order.amount)}
+            </p>
+            <button
+              type="button"
+              onClick={handlePrintReceipt}
+              disabled={!invoiceReady || printingReceipt}
+              data-ocid="qr.print_receipt_button"
+              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-semibold text-primary-foreground transition-smooth hover:bg-primary/90 disabled:opacity-50"
+            >
+              {printingReceipt || !invoiceReady ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+              ) : (
+                <Printer className="h-5 w-5" aria-hidden="true" />
+              )}
+              In phiếu
+            </button>
+            <p
+              className="text-center text-xs text-muted-foreground"
+              data-ocid="qr.invoice_wait_hint"
+            >
+              {invoiceReady
+                ? "Hoá đơn đã phát hành — có thể in phiếu."
+                : invoiceWaitTimedOut
+                  ? "Hoá đơn chưa phát hành xong — có thể in lại sau ở tab Lịch sử."
+                  : "Đang chờ phát hành hoá đơn (thường dưới 1 phút)…"}
+            </p>
+            <button
+              type="button"
+              onClick={() => onPaid(order)}
+              data-ocid="qr.done_button"
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-smooth hover:bg-secondary"
+            >
+              Xong
+            </button>
+          </div>
+        ) : qrState.kind === "needCode" ? (
           <form
             onSubmit={handleSubmitCode}
             className="flex w-full max-w-sm flex-col items-center gap-5 rounded-2xl bg-background p-6 shadow-2xl md:p-8"
@@ -480,7 +574,7 @@ export function QRDisplay({
         {/* Footer hint */}
         <p className="max-w-sm text-center text-xs text-background/70">
           {isPaid
-            ? "Thanh toán thành công. Đang đóng…"
+            ? "Thanh toán thành công."
             : qrReady
               ? "Đang kiểm tra trạng thái mỗi 5 giây. QR sẽ tự đóng khi nhận được xác nhận."
               : qrState.kind === "needCode"

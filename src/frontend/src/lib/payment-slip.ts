@@ -149,7 +149,7 @@ ${discount > 0n ? `<table><tr><td>Đã giảm</td><td class="r">-${vnd(discount)
 
 /** In qua hộp thoại in của hệ điều hành — iframe ẩn, không mở tab mới
  * (tránh bị chặn popup trên điện thoại). */
-function printViaSystem(html: string): void {
+export function printViaSystem(html: string): void {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
   iframe.style.cssText =

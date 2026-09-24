@@ -50,11 +50,19 @@ const { MockVpsHttpError } = vi.hoisted(() => {
 });
 
 const mockConfirmCashPaymentDriver = vi.fn();
+const mockGetInvoice = vi.fn();
+const mockPrintInvoiceReceipt = vi.fn();
+
 vi.mock("@/lib/vps-client", () => ({
   requestQr: (...args: unknown[]) => mockRequestQr(...args),
   confirmCashPaymentDriver: (...args: unknown[]) =>
     mockConfirmCashPaymentDriver(...args),
   VpsHttpError: MockVpsHttpError,
+  getInvoice: (...args: unknown[]) => mockGetInvoice(...args),
+}));
+
+vi.mock("@/lib/invoice-receipt", () => ({
+  printInvoiceReceipt: (...args: unknown[]) => mockPrintInvoiceReceipt(...args),
 }));
 
 vi.mock("@/lib/canister", () => ({
@@ -244,14 +252,13 @@ describe("QRDisplay driver Tingee QR payment flow", () => {
     expect(screen.getByTestId("qr.success_state")).toBeInTheDocument();
     expect(screen.queryByTestId("qr.pending_state")).not.toBeInTheDocument();
 
-    // The success screen auto-closes: onPaid fires after the 1.5s success
-    // timeout even though setPolling(false) stopped the poll loop. This is the
-    // regression the production fix addressed — the auto-close lives in its own
-    // effect keyed on [status, order, onPaid], so stopping polling no longer
-    // cancels the timeout.
+    // Màn thành công KHÔNG tự đóng nữa (để nhân viên in phiếu khi hoá đơn
+    // phát hành xong) — chỉ đóng khi bấm "Xong".
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1500);
+      await vi.advanceTimersByTimeAsync(3000);
     });
+    expect(onPaid).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("qr.done_button"));
     expect(onPaid).toHaveBeenCalledTimes(1);
     expect(onPaid).toHaveBeenCalledWith(order);
   });
@@ -374,4 +381,33 @@ describe("QRDisplay driver Tingee QR payment flow", () => {
     });
     expect(mockRequestQr).not.toHaveBeenCalled();
   });
+
+  it("after payment, 'In phiếu' stays disabled until the Bkav invoice is issued, then prints the counter receipt", async () => {
+    mockConfirmCashPaymentDriver.mockResolvedValue({ ok: true });
+    mockGetInvoice.mockRejectedValue(new Error("invoice not yet issued"));
+    mockPrintInvoiceReceipt.mockResolvedValue(undefined);
+    render(
+      <QRDisplay order={makeOrder()} onClose={vi.fn()} onPaid={vi.fn()} />,
+    );
+    submitPickupCode("AB23CD", false);
+    fireEvent.click(screen.getByTestId("qr.cash_payment_button"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("qr.print_receipt_button")).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("qr.print_receipt_button")).toBeDisabled();
+
+    mockGetInvoice.mockResolvedValue({ ok: true, invoiceId: "HD1" });
+    await waitFor(
+      () =>
+        expect(
+          screen.getByTestId("qr.print_receipt_button"),
+        ).not.toBeDisabled(),
+      { timeout: 7000 },
+    );
+    fireEvent.click(screen.getByTestId("qr.print_receipt_button"));
+    await waitFor(() =>
+      expect(mockPrintInvoiceReceipt).toHaveBeenCalledWith("ORD-1"),
+    );
+  }, 10000);
 });

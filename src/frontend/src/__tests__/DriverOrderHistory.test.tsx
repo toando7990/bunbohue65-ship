@@ -15,6 +15,10 @@ const mockGetRestaurantHistory = vi.fn();
 vi.mock("@/lib/vps-client", () => ({
   getRestaurantHistory: (...a: unknown[]) => mockGetRestaurantHistory(...a),
 }));
+const mockPrintInvoiceReceipt = vi.fn();
+vi.mock("@/lib/invoice-receipt", () => ({
+  printInvoiceReceipt: (...a: unknown[]) => mockPrintInvoiceReceipt(...a),
+}));
 vi.mock("@/components/OrderCard", () => ({
   OrderCard: ({ order }: { order: { orderId: string } }) => (
     <div data-ocid="mock-order-card">{order.orderId}</div>
@@ -26,8 +30,10 @@ const row = (
   amount: number,
   paymentStatus: string,
   paymentMethod: string,
+  invoiceStatus = "none",
 ) => ({
   orderId,
+  invoiceStatus,
   restaurantId: "R1",
   cusName: "Khách",
   cusPhone: "0900000000",
@@ -83,6 +89,33 @@ describe("DriverOrderHistory — lọc theo hình thức thanh toán", () => {
     expect(screen.getByText("O-TRANSFER")).toBeInTheDocument();
     expect(screen.getByTestId("driver_history.total_paid")).toHaveTextContent(
       "70.000",
+    );
+  });
+
+  it("'In lại phiếu' is enabled only for orders whose Bkav invoice was issued, and prints the counter receipt", async () => {
+    mockPrintInvoiceReceipt.mockResolvedValue(undefined);
+    mockGetRestaurantHistory.mockResolvedValue({
+      totalOrders: 2,
+      totalPaidAmount: 120000,
+      orders: [
+        row("O-INV", 50000, "paid", "cash", "invoiced"),
+        row("O-NOINV", 70000, "paid", "transfer", "none"),
+      ],
+    });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <DriverOrderHistory restaurantId="R1" period="today" />
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(screen.getByText("O-INV")).toBeInTheDocument());
+    const btns = screen
+      .getAllByText("In lại phiếu")
+      .map((el) => el.closest("button") as HTMLButtonElement);
+    expect(btns[0]).not.toBeDisabled();
+    expect(btns[1]).toBeDisabled();
+    fireEvent.click(btns[0]);
+    await waitFor(() =>
+      expect(mockPrintInvoiceReceipt).toHaveBeenCalledWith("O-INV"),
     );
   });
 });

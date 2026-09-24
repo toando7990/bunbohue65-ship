@@ -20,6 +20,7 @@
 
 import { matchesQuery } from "@/components/HighlightMatch";
 import { OrderCard } from "@/components/OrderCard";
+import { printInvoiceReceipt } from "@/lib/invoice-receipt";
 import { toOrder } from "@/lib/order-mapping";
 import {
   PAYMENT_METHOD_FILTERS,
@@ -29,8 +30,9 @@ import {
 import { getRestaurantHistory } from "@/lib/vps-client";
 import type { RestaurantHistoryPeriod } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { History, Loader2, Search, X } from "lucide-react";
+import { History, Loader2, Printer, Search, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const PERIOD_LABELS: Record<RestaurantHistoryPeriod, string> = {
   today: "Hôm nay",
@@ -76,6 +78,25 @@ export function DriverOrderHistory({
     methodFilter === "all"
       ? (data?.totalPaidAmount ?? 0)
       : methodFiltered.reduce((sum, o) => sum + Number(o.amount), 0);
+  const invoicedIds = new Set(
+    methodFiltered
+      .filter((o) => o.invoiceStatus === "invoiced")
+      .map((o) => o.orderId),
+  );
+  const [reprintingId, setReprintingId] = useState<string | null>(null);
+  async function handleReprint(orderId: string) {
+    setReprintingId(orderId);
+    try {
+      await printInvoiceReceipt(orderId);
+      toast.success("Đã gửi lệnh in phiếu.");
+    } catch (err) {
+      toast.error("In phiếu thất bại", {
+        description: err instanceof Error ? err.message : "Lỗi không xác định.",
+      });
+    } finally {
+      setReprintingId(null);
+    }
+  }
   const results = methodFiltered
     .map(toOrder)
     .filter(
@@ -179,16 +200,44 @@ export function DriverOrderHistory({
           className="grid grid-cols-1 gap-3 sm:grid-cols-2"
           data-ocid="driver_history.grid"
         >
-          {results.map((order, i) => (
-            <OrderCard
-              key={order.orderId}
-              order={order}
-              index={i + 1}
-              hidePickupCode
-              disableDetailLink
-              compactRestaurantInfo
-            />
-          ))}
+          {results.map((order, i) => {
+            const invoiced = invoicedIds.has(order.orderId);
+            return (
+              <div key={order.orderId} className="flex flex-col gap-1.5">
+                <OrderCard
+                  order={order}
+                  index={i + 1}
+                  hidePickupCode
+                  disableDetailLink
+                  compactRestaurantInfo
+                />
+                {/* "In lại phiếu" — đúng mẫu phiếu quầy, CHỈ bật khi hoá đơn
+                    Bkav đã phát hành. */}
+                <button
+                  type="button"
+                  disabled={!invoiced || reprintingId === order.orderId}
+                  title={
+                    invoiced
+                      ? "In lại phiếu hoá đơn"
+                      : "Chỉ in được khi hoá đơn đã phát hành"
+                  }
+                  onClick={() => handleReprint(order.orderId)}
+                  data-ocid={`driver_history.reprint_button.${i + 1}`}
+                  className="inline-flex items-center justify-center gap-1.5 self-end rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-smooth hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {reprintingId === order.orderId ? (
+                    <Loader2
+                      className="h-3.5 w-3.5 animate-spin"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+                  )}
+                  In lại phiếu
+                </button>
+              </div>
+            );
+          })}
         </div>
       ) : isError ? (
         <div
