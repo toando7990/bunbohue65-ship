@@ -105,7 +105,7 @@ router.get('/orders/enterprise-history', async (req, res, next) => {
 
     const rows = db.prepare(
       `SELECT order_id, restaurant_id, cus_name, cus_phone, amount,
-              booking_status, payment_status, payment_method, invoice_status, created_at
+              booking_status, payment_status, payment_method, invoice_status, invoice_error, created_at
        FROM orders
        WHERE created_at >= ? AND created_at < ? AND (${conditions.join(' OR ')})
        ORDER BY created_at DESC
@@ -123,6 +123,10 @@ router.get('/orders/enterprise-history', async (req, res, next) => {
       bookingStatus: r.booking_status,
       paymentStatus: r.payment_status,
       invoiceStatus: r.invoice_status,
+      // Lý do THẬT Bkav từ chối phát hành hoá đơn (faultcode + faultstring)
+      // — trang Kế toán hiển thị trực tiếp cho đơn 'failed', thay vì chỉ
+      // thấy nhãn "Thất bại" trống nghĩa.
+      invoiceError: r.invoice_error || '',
       paymentMethod: r.payment_method || '',
       createdAt: r.created_at,
     }));

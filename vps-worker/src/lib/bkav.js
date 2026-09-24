@@ -204,12 +204,54 @@ function decryptWithToken(base64) {
 function parseProxyResponse(bodyText) {
   const text = String(bodyText || '').trim();
 
+  // SOAP fault đã chuẩn hoá bởi proxy: '<R><E>FAULT:<code> | <reason></E></R>'.
+  // BUG THẬT đã sửa: trước đây chỉ lấy phần code và LUÔN gán errorCode
+  // 'SOAP_FAULT', bỏ hẳn lý do Bkav từ chối → Kế toán chỉ thấy "SOAP fault:
+  // UNKNOWN". Giờ giữ NGUYÊN VĂN cả code lẫn lý do thật, và dùng chính nội
+  // dung fault làm errorCode khi Bkav không cấp faultcode (không bịa
+  // 'UNKNOWN').
   const faultMatch = text.match(/^<R><E>FAULT:([\s\S]*?)<\/E><\/R>$/);
   if (faultMatch) {
-    return { success: false, error: `SOAP fault: ${faultMatch[1]}`, errorCode: 'SOAP_FAULT', raw: text };
+    const faultBody = String(faultMatch[1] || '').trim();
+    // Proxy phát ra 'code | reason' khi có code, hoặc chỉ 'reason' khi Bkav
+    // không cấp faultcode. Tách theo dấu ' | ' ĐẦU TIÊN (không phải indexOf
+    // toàn chuỗi — tránh nhầm khi reason chứa ' | ').
+    const sepIdx = faultBody.indexOf(' | ');
+    const faultCode = (sepIdx > 0 ? faultBody.slice(0, sepIdx) : '').trim();
+    const faultReason = (sepIdx > 0 ? faultBody.slice(sepIdx + 3) : faultBody).trim();
+    const detail = faultReason || faultCode || 'SOAP fault không có nội dung';
+    return {
+      success: false,
+      error: `SOAP fault: ${detail}`,
+      errorCode: faultCode || detail,
+      raw: text,
+    };
   }
   if (text === '<R><E>PROXY_ERROR</E></R>') {
     return { success: false, error: 'bkav-proxy không gọi được Bkav (lỗi mạng/timeout)', errorCode: 'PROXY_ERROR', raw: text };
+  }
+  // Proxy giải mã thất bại: '<R><E>DECRYPT_ERROR:<reason></E></R>' — proxy đã
+  // bỏ hẳn việc trả nguyên văn ciphertext, nên PHẢI đọc marker này để hiện
+  // ĐÚNG nguyên nhân giải mã (VD "wrong final block length") thay vì rơi vào
+  // 'Không parse được phản hồi Bkav' chung chung. Giữ NGUYÊN VĂN reason.
+  const decryptErrMatch = text.match(/^<R><E>DECRYPT_ERROR:([\s\S]*?)<\/E><\/R>$/);
+  if (decryptErrMatch) {
+    const reason = String(decryptErrMatch[1] || '').trim();
+    return {
+      success: false,
+      error: `bkav-proxy không giải mã được phản hồi Bkav: ${reason || 'không rõ nguyên nhân'}`,
+      errorCode: 'DECRYPT_ERROR',
+      raw: text,
+    };
+  }
+  // Proxy nhận được ExecCommandResult RỖNG (không có dữ liệu để giải mã).
+  if (text === '<R><E>EMPTY_PAYLOAD</E></R>') {
+    return {
+      success: false,
+      error: 'Bkav trả về ExecCommandResult rỗng (không có dữ liệu để giải mã)',
+      errorCode: 'EMPTY_PAYLOAD',
+      raw: text,
+    };
   }
   if (!text) {
     return { success: false, error: 'BKAV trả về phản hồi rỗng', errorCode: 'EMPTY_RESPONSE', raw: text };

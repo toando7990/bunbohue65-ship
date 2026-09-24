@@ -89,7 +89,7 @@ mixin (
           case (?voucher) {
             let subject = "Bạn đã nhận được phiếu giảm giá — Bunbohue65";
             let htmlBody = "<p>Cảm ơn bạn đã xác thực email!</p>" #
-              "<p>Bạn đã nhận được phiếu giảm giá <b>" # Nat.toText(voucher.value) #
+              "<p>Bạn đã nhận được phiếu giảm giá <b>" # voucher.value.toText() #
               "đ</b> (mã <b>" # voucher.code # "</b>), có hiệu lực đến " #
               voucher.endDate # ".</p><p>Bunbohue65</p>";
             ignore await EmailClient.sendServiceEmail("no-reply", [email], subject, htmlBody);

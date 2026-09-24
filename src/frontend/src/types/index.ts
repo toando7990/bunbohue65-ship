@@ -283,5 +283,10 @@ export interface VpsEnterpriseHistoryOrder {
   // cũ trước khi hệ thống ghi nhận hình thức — không suy đoán được).
   paymentMethod: string;
   invoiceStatus: string;
+  // Lý do THẬT Bkav từ chối phát hành hoá đơn (faultcode + faultstring/reason)
+  // — VPS worker điền vào cho đơn có invoiceStatus "failed". Vắng mặt/rỗng
+  // với đơn chưa thất bại. Kế toán cần thấy lý do thật để xử lý, thay vì
+  // thông báo chung chung.
+  invoiceError?: string;
   createdAt: number;
 }

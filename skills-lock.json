@@ -4,22 +4,52 @@
     "connector-googlecalendar": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "9b6401d1a40048616b39d3f12591f4418700688283968cb7898d5f790657d6fd"
+      "computedHash": "e46c2162d2807e19652fe2804b3fdee5097cb24320a75eb56808f32b6106a914"
+    },
+    "connector-googledrive": {
+      "source": "caffeinelabs/skills",
+      "sourceType": "github",
+      "computedHash": "66b32d6f169115ac286db4fb6f4f490d73db18471bf7672ef6a9f22b34d08da7"
     },
     "connector-googlemail": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "0f23c25819da87b30fa4cf8ea238c0cbb5990b797f28346f80ad73d2626b53ba"
+      "computedHash": "7cc135908bd64965b55cb93f6962f7e1dd1c0e42beb4bfa9823974c776c00502"
+    },
+    "connector-quickbooks": {
+      "source": "caffeinelabs/skills",
+      "sourceType": "github",
+      "computedHash": "b523b0d27d69776bb6c54f208b49a8c74e78f9d7694f08df96283708df1bacf2"
     },
     "connector-slack": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
       "computedHash": "91989197b28a6900e4c62a09fa7101b5089194d56fe680fabc70811c23a6b4cd"
     },
+    "connector-spotify": {
+      "source": "caffeinelabs/skills",
+      "sourceType": "github",
+      "computedHash": "ee2f5704b3ac2c2fa7110364d470718c963d2e55729aa1583e3ec9a99107a419"
+    },
+    "connector-tmdb": {
+      "source": "caffeinelabs/skills",
+      "sourceType": "github",
+      "computedHash": "9756473c4d7da25ef313e93f4508a11717863a8e1e615b6c853ccdf2e0a83eb3"
+    },
     "connector-twilio": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
       "computedHash": "f66ab619cc13f86cd8e66ac007df1257494abc75189f2ef18c5e1157e718c414"
+    },
+    "connector-weatherapi": {
+      "source": "caffeinelabs/skills",
+      "sourceType": "github",
+      "computedHash": "a4508dceae76b760810ba2117f8088b7b1077a1e0784bbbb891b8ed03ff5731b"
+    },
+    "connector-x": {
+      "source": "caffeinelabs/skills",
+      "sourceType": "github",
+      "computedHash": "c3d5b3423a61e52cf4d4ccba10e8af779577cd3ba51506adc7f8ed9ad26dccf6"
     },
     "extension-authorization": {
       "source": "caffeinelabs/skills",
@@ -34,7 +64,7 @@
     "extension-core-infrastructure": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "f39704fe36d8ce4414d41b23707c443e4ab851bea76998b0b5f45e381cba6954"
+      "computedHash": "8d3aeb496ecf7418e5c57a12e321e610a02510666249f720ce24ec987bf1f14b"
     },
     "extension-email": {
       "source": "caffeinelabs/skills",
@@ -84,17 +114,17 @@
     "extension-openai": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "dcfb75da657f682f77364f71a308bdad2086e28252b1da77feed5938dbf9c233"
+      "computedHash": "bd38d2cc4fa6f51d9f599ed48682a933b324a155d8e33f6948889afaeab95674"
     },
     "extension-oql": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "6590442e3543956c4c99a9bcb2beb77e704ccfc4105a0d78ff9354a3f8809134"
+      "computedHash": "c859e4fe1d8acc77c81a05d53ea89153a87fe5787eef113efada638eb57898bf"
     },
     "extension-posting-to-x": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "8bde769052c2a7b78b5c89293cf42609c6d1f4cbaa0cd0a3cf238b2c1465bc6c"
+      "computedHash": "f1955c31086d98e8d30f0216ee7a5f0f292cf0c2979656001d99f765e568f9f5"
     },
     "extension-qr-code": {
       "source": "caffeinelabs/skills",
@@ -104,7 +134,7 @@
     "extension-querying-oql": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "2b3288c531170daa85e088c40d40bed66175463a819898c3f39fd8d93a2c12f9"
+      "computedHash": "ac240ec64321c25505f55bbdbf6c4a07b6230655dd47f16a01f7dfd2f4c24a80"
     },
     "extension-stripe": {
       "source": "caffeinelabs/skills",

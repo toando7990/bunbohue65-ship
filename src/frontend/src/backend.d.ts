@@ -7,67 +7,29 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export type Result_2 = {
-    __kind__: "ok";
-    ok: Restaurant;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface Result__1 {
-    hasMore: boolean;
-    rows: Array<Array<Cell>>;
-}
-export interface DiscountTier {
-    discountAmount: bigint;
-    minOrderValue: bigint;
-}
-export type Result_5 = {
-    __kind__: "ok";
-    ok: MenuItem;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface RestaurantMenuOverrideEntry {
-    restaurantId: string;
-    overrides: Array<[string, bigint]>;
-}
-export interface RestaurantEntry {
-    restaurantId: string;
-    restaurant: Restaurant;
-}
-export type Result_4 = {
-    __kind__: "ok";
-    ok: Promotion;
-} | {
-    __kind__: "err";
-    err: string;
-};
 export interface Cell {
     value: Value;
     name: string;
 }
-export type Result_7 = {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type DeviceId = string;
-export interface TimeSlot {
-    durationMinutes: bigint;
-    startMinute: bigint;
-    startHour: bigint;
+export interface Device {
+    active: boolean;
+    activatedAt: bigint;
+    name: string;
+    role: DeviceRole;
+    restaurantId: string;
+    deviceId: string;
+    phone: string;
 }
-export type Result_6 = {
-    __kind__: "ok";
-    ok: bigint;
-} | {
-    __kind__: "err";
-    err: string;
-};
+export interface DeviceEntry {
+    device: Device;
+    deviceId: string;
+}
+export type DeviceId = string;
+export interface DiscountTier {
+    discountAmount: bigint;
+    minOrderValue: bigint;
+}
+export type Email = string;
 export type Error_ = {
     __kind__: "FrontendOriginsNotConfigured";
     FrontendOriginsNotConfigured: null;
@@ -112,41 +74,20 @@ export type Error_ = {
         expected: Array<string>;
     };
 };
-export type Result_12 = {
-    __kind__: "ok";
-    ok: Voucher | null;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Result_9 = {
-    __kind__: "ok";
-    ok: Array<SalesPromo>;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface Restaurant {
+export type Hmac = string;
+export interface MenuEntry {
+    itemId: string;
+    menu: MenuItem;
+}
+export interface MenuItem {
+    itemId: string;
     name: string;
-    restaurantId: string;
-    address: string;
     visible: boolean;
-    phone: string;
-    lat: number;
-    lng: number;
-}
-export interface Device {
-    active: boolean;
-    activatedAt: bigint;
-    name: string;
-    role: DeviceRole;
-    restaurantId: string;
-    deviceId: string;
-    phone: string;
-}
-export interface PendingActivationEntry {
-    code: string;
-    activation: PendingActivation;
+    category: string;
+    image: Uint8Array;
+    price: bigint;
+    vatRate: bigint;
+    unitName: string;
 }
 export interface Order {
     paymentStatus: PaymentStatus;
@@ -180,55 +121,29 @@ export interface Order {
     billId?: string;
     qrCode?: string;
 }
-export interface DeviceEntry {
-    device: Device;
-    deviceId: string;
+export interface OrderEntry {
+    order: Order;
+    orderId: OrderId;
 }
-export interface SalesTier {
-    minSales: bigint;
-    voucherValue: bigint;
-}
-export interface Voucher {
-    endDate: string;
-    value: bigint;
-    code: string;
-    used: boolean;
-    email: string;
-    programCode: string;
-    issuedAt: bigint;
-    startDate: string;
-}
-export type Result = {
-    __kind__: "ok";
-    ok: Order;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Result_10 = {
-    __kind__: "ok";
-    ok: Array<RegistrationPromo>;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface MenuItem {
+export type OrderId = string;
+export interface OrderItem {
     itemId: string;
     name: string;
-    visible: boolean;
-    category: string;
-    image: Uint8Array;
+    quantity: bigint;
     price: bigint;
     vatRate: bigint;
     unitName: string;
 }
-export type Result_8 = {
-    __kind__: "ok";
-    ok: Device;
-} | {
-    __kind__: "err";
-    err: string;
-};
+export interface OrderStatus {
+    paymentStatus: PaymentStatus;
+    tingeeQrCode: string;
+    invoiceId: string;
+    sharedLink: string;
+    bookingStatus: BookingStatus;
+    pdfUrl: string;
+    tingeeQrId: string;
+    invoiceStatus: InvoiceStatus;
+}
 export interface PendingActivation {
     expiresAt: bigint;
     code: string;
@@ -237,15 +152,22 @@ export interface PendingActivation {
     used: boolean;
     restaurantId: string;
 }
-export interface SalesPromo {
+export interface PendingActivationEntry {
+    code: string;
+    activation: PendingActivation;
+}
+export interface Promotion {
+    tiers: Array<DiscountTier>;
     active: boolean;
-    enabledCounter: boolean;
     endDate: string;
+    timeSlots: Array<TimeSlot>;
+    enabledOnline: boolean;
     code: string;
     name: string;
-    voucherValidDays: bigint;
-    weeklyTiers: Array<SalesTier>;
-    monthlyTiers: Array<SalesTier>;
+    daysOfWeek: Array<boolean>;
+    enabledCounter: boolean;
+    dailyOrderLimit: bigint;
+    perCustomerDailyLimit: bigint;
     termsUrl: string;
     startDate: string;
 }
@@ -259,41 +181,27 @@ export interface RegistrationPromo {
     termsUrl: string;
     startDate: string;
 }
-export type SendCodeResult = {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Result_17 = {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "err";
-    err: Error_;
-};
-export type Result_13 = {
-    __kind__: "ok";
-    ok: boolean;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface OrderItem {
-    itemId: string;
+export interface Restaurant {
+    lat: number;
+    lng: number;
     name: string;
-    quantity: bigint;
-    price: bigint;
-    vatRate: bigint;
-    unitName: string;
+    restaurantId: string;
+    address: string;
+    visible: boolean;
+    phone: string;
 }
-export type Result_16 = {
+export interface RestaurantEntry {
+    restaurantId: string;
+    restaurant: Restaurant;
+}
+export type RestaurantId = string;
+export interface RestaurantMenuOverrideEntry {
+    restaurantId: string;
+    overrides: Array<[string, bigint]>;
+}
+export type Result = {
     __kind__: "ok";
-    ok: {
-        discountAmount: bigint;
-        promotionCode: string;
-    };
+    ok: Order;
 } | {
     __kind__: "err";
     err: string;
@@ -305,11 +213,13 @@ export type Result_1 = {
     __kind__: "err";
     err: string;
 };
-export type RestaurantId = string;
-export interface MenuEntry {
-    itemId: string;
-    menu: MenuItem;
-}
+export type Result_10 = {
+    __kind__: "ok";
+    ok: Array<RegistrationPromo>;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export type Result_11 = {
     __kind__: "ok";
     ok: Array<Promotion>;
@@ -317,16 +227,20 @@ export type Result_11 = {
     __kind__: "err";
     err: string;
 };
-export interface OrderStatus {
-    paymentStatus: PaymentStatus;
-    tingeeQrCode: string;
-    invoiceId: string;
-    sharedLink: string;
-    bookingStatus: BookingStatus;
-    pdfUrl: string;
-    tingeeQrId: string;
-    invoiceStatus: InvoiceStatus;
-}
+export type Result_12 = {
+    __kind__: "ok";
+    ok: Voucher | null;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_13 = {
+    __kind__: "ok";
+    ok: boolean;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export type Result_14 = {
     __kind__: "ok";
     ok: OrderStatus;
@@ -334,6 +248,132 @@ export type Result_14 = {
     __kind__: "err";
     err: string;
 };
+export type Result_15 = {
+    __kind__: "ok";
+    ok: PendingActivation;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_16 = {
+    __kind__: "ok";
+    ok: {
+        discountAmount: bigint;
+        promotionCode: string;
+    };
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_18 = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: Error_;
+};
+export type Result_2 = {
+    __kind__: "ok";
+    ok: Restaurant;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_3 = {
+    __kind__: "ok";
+    ok: RegistrationPromo;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_4 = {
+    __kind__: "ok";
+    ok: Promotion;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_5 = {
+    __kind__: "ok";
+    ok: MenuItem;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_6 = {
+    __kind__: "ok";
+    ok: bigint;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_7 = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_8 = {
+    __kind__: "ok";
+    ok: Device;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_9 = {
+    __kind__: "ok";
+    ok: Array<SalesPromo>;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export interface Result__1 {
+    hasMore: boolean;
+    rows: Array<Array<Cell>>;
+}
+export interface SalesPromo {
+    active: boolean;
+    endDate: string;
+    code: string;
+    name: string;
+    voucherValidDays: bigint;
+    weeklyTiers: Array<SalesTier>;
+    enabledCounter: boolean;
+    monthlyTiers: Array<SalesTier>;
+    termsUrl: string;
+    startDate: string;
+}
+export interface SalesTier {
+    minSales: bigint;
+    voucherValue: bigint;
+}
+export type SendCodeResult = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export interface StoreHours {
+    closeMinute: bigint;
+    closeHour: bigint;
+    openMinute: bigint;
+    openHour: bigint;
+}
+export interface TimeSlot {
+    durationMinutes: bigint;
+    startMinute: bigint;
+    startHour: bigint;
+}
+export interface UpgradeState {
+    menus: Array<MenuEntry>;
+    orders: Array<OrderEntry>;
+    restaurants: Array<RestaurantEntry>;
+    restaurantMenuOverrides: Array<RestaurantMenuOverrideEntry>;
+    devices: Array<DeviceEntry>;
+    pendingActivations: Array<PendingActivationEntry>;
+}
 export type Value = {
     __kind__: "int";
     int: bigint;
@@ -353,7 +393,6 @@ export type Value = {
     __kind__: "text";
     text: string;
 };
-export type Email = string;
 export type VerifyResult = {
     __kind__: "ok";
     ok: null;
@@ -361,54 +400,15 @@ export type VerifyResult = {
     __kind__: "err";
     err: string;
 };
-export interface Promotion {
-    tiers: Array<DiscountTier>;
-    active: boolean;
-    enabledOnline: boolean;
-    enabledCounter: boolean;
+export interface Voucher {
     endDate: string;
-    timeSlots: Array<TimeSlot>;
+    value: bigint;
     code: string;
-    name: string;
-    daysOfWeek: Array<boolean>;
-    dailyOrderLimit: bigint;
-    perCustomerDailyLimit: bigint;
-    termsUrl: string;
+    used: boolean;
+    email: string;
+    programCode: string;
+    issuedAt: bigint;
     startDate: string;
-}
-export interface StoreHours {
-    closeMinute: bigint;
-    closeHour: bigint;
-    openMinute: bigint;
-    openHour: bigint;
-}
-export type Result_3 = {
-    __kind__: "ok";
-    ok: RegistrationPromo;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export type Hmac = string;
-export type Result_15 = {
-    __kind__: "ok";
-    ok: PendingActivation;
-} | {
-    __kind__: "err";
-    err: string;
-};
-export interface OrderEntry {
-    order: Order;
-    orderId: OrderId;
-}
-export type OrderId = string;
-export interface UpgradeState {
-    menus: Array<MenuEntry>;
-    orders: Array<OrderEntry>;
-    restaurants: Array<RestaurantEntry>;
-    restaurantMenuOverrides: Array<RestaurantMenuOverrideEntry>;
-    devices: Array<DeviceEntry>;
-    pendingActivations: Array<PendingActivationEntry>;
 }
 export enum BookingStatus {
     cancelled = "cancelled",
@@ -457,8 +457,8 @@ export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     callerHasEnterpriseRole(deviceId: DeviceId, role: EnterpriseRole): Promise<boolean>;
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
-    claimOrderEmail(orderId: string, email: string): Promise<Result>;
     changeOrderRestaurant(orderId: string, newRestaurantId: string, hmac: string): Promise<Result>;
+    claimOrderEmail(orderId: string, email: string): Promise<Result>;
     cleanupExpiredActivations(): Promise<bigint>;
     cleanupOrderByDevice(deviceId: string, orderId: string): Promise<Result>;
     countVouchersByProgram(programCode: string): Promise<bigint>;
@@ -494,8 +494,17 @@ export interface backendInterface {
     getOrder(orderId: string, deviceId: string): Promise<Result>;
     getOrderStatus(orderId: string): Promise<Result_14>;
     getOrdersByEmail(email: string, deviceId: string): Promise<Array<Order>>;
+    /**
+     * / Query: return the current paymentMode as its canonical Text ("driver" or
+     * / "customer"). Public — no caller gating; the value is not sensitive.
+     */
     getPaymentMode(): Promise<string>;
     getRestaurants(): Promise<Array<Restaurant>>;
+    /**
+     * / Query: return the current storeHours config. Public — no caller gating;
+     * / the value is not sensitive and the frontend needs it to render the
+     * / open/close state on both the driver and customer flows.
+     */
     getStoreHours(): Promise<StoreHours>;
     getUpgradeState(): Promise<UpgradeState>;
     isCallerAdmin(): Promise<boolean>;
@@ -503,6 +512,12 @@ export interface backendInterface {
     isPromotionUsed(deviceId: string, code: string): Promise<Result_13>;
     isRegistrationPromoUsed(deviceId: string, code: string): Promise<Result_13>;
     isSalesPromoUsed(deviceId: string, code: string): Promise<Result_13>;
+    /**
+     * / Query: return whether the store is currently open based on the current
+     * / time. Public — the frontend calls this on both the driver and customer
+     * / flows to decide whether to block order placement and show a waiting
+     * / screen instead of allowing item selection.
+     */
     isStoreOpen(): Promise<boolean>;
     issueInvoiceByDevice(deviceId: string, orderId: string, invoiceId: string, pdfUrl: string): Promise<Result>;
     issueSalesBonus(email: string, periodType: string, periodKey: string, totalSales: bigint, hmac: Hmac): Promise<Result_12>;
@@ -511,6 +526,14 @@ export interface backendInterface {
     listMenus(): Promise<Array<MenuItem>>;
     listMyVouchers(email: string): Promise<Array<Voucher>>;
     listOrders(deviceId: string): Promise<Array<Order>>;
+    /**
+     * / Query: return today's paid orders for the driver pickup queue — orders with
+     * / paymentStatus=#paid AND bookingStatus=#confirmed (not yet picked up),
+     * / created today (UTC+7 day boundary, same day-retention logic as
+     * / listPendingPaymentOrders). Admin sees the full records WITH PII;
+     * / non-admin/anonymous callers (the driver pickup-queue flow) get the records
+     * / with PII fields blanked, mirroring listPendingPaymentOrders gating.
+     */
     listPaidOrdersForPickup(): Promise<Array<Order>>;
     listPendingPaymentOrders(restaurantId: string): Promise<Array<Order>>;
     listPromotions(deviceId: string): Promise<Result_11>;
@@ -518,6 +541,13 @@ export interface backendInterface {
     listRestaurants(): Promise<Array<Restaurant>>;
     listSalesPromos(deviceId: string): Promise<Result_9>;
     markPaymentExpired(orderId: string, hmac: string): Promise<Result>;
+    /**
+     * / Admin/driver update: mark an order as #pickedUp (Tài xế đã nhận hàng).
+     * / Only succeeds when the order is currently #confirmed AND #paid; this ends
+     * / the order lifecycle in customer mode. Returns the updated order on
+     * / success, or #err if the caller is not an admin/driver, the order does not
+     * / exist, or the order is not in the required state.
+     */
     markPickedUp(orderId: string): Promise<Result>;
     pruneOldOrdersNow(hmac: string): Promise<Result_6>;
     restoreUpgradeState(blob: Uint8Array): Promise<boolean>;
@@ -527,9 +557,26 @@ export interface backendInterface {
     sendKmNotifyEmails(emails: Array<string>, subject: string, htmlBody: string, hmac: Hmac): Promise<Result_7>;
     sendVerificationCode(email: Email): Promise<SendCodeResult>;
     setItemVisible(itemId: string, visible: boolean): Promise<Result_5>;
+    /**
+     * / Admin-only update: set paymentMode to "driver" or "customer". Rejects any
+     * / other value with #err. Returns #ok on success, #err if the caller is not
+     * / an admin or the value is invalid. Mirrors setVpsSecret in
+     * / mixins/secret-api.mo.
+     */
     setPaymentMode(mode: string): Promise<Result_7>;
     setRestaurantPriceOverride(restaurantId: string, itemId: string, price: bigint): Promise<Result_7>;
+    /**
+     * / Admin-only update: set the global store open/close hours. Rejects any
+     * / caller that is not an admin with #err. Returns #ok on success, #err if the
+     * / caller is not an admin. Mirrors setPaymentMode in
+     * / mixins/payment-mode-config-api.mo.
+     */
     setStoreHours(hours: StoreHours): Promise<Result_7>;
+    /**
+     * / Admin-only. Rotates the VPS secret: current `vpsSecret` is moved into
+     * / `vpsSecretPrevious` before `newSecret` is written to `vpsSecret`.
+     * / Returns `#ok` on success, `#err` if the caller is not an admin.
+     */
     setVpsSecret(newSecret: string): Promise<{
         __kind__: "ok";
         ok: null;

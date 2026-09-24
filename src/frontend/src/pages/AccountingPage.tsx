@@ -889,6 +889,19 @@ export function AccountingPage() {
                               order.invoiceStatus as InvoiceStatus
                             ] ?? order.invoiceStatus}
                           </span>
+                          {/* Lý do THẬT Bkav từ chối (invoiceError từ VPS) —
+                              chỉ hiện cho đơn thất bại, để kế toán biết vì
+                              sao hoá đơn không phát hành được. */}
+                          {order.invoiceStatus === InvoiceStatus.failed &&
+                            order.invoiceError && (
+                              <span
+                                className="mt-1 block max-w-[240px] break-words text-xs text-destructive"
+                                title={order.invoiceError}
+                                data-ocid={`accounting.invoice_error.${idx + 1}`}
+                              >
+                                {order.invoiceError}
+                              </span>
+                            )}
                         </TableCell>
                         <TableCell className="ent-td">
                           <div className="flex items-center justify-end gap-2">

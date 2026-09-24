@@ -42,13 +42,89 @@ const BKAV_ENDPOINTS = {
 // key/iv lấy từ PartnerToken (cấu trúc "Base64(Key):Base64(IV)"), do
 // vps-worker tính sẵn và gửi qua header X-BKAV-KEY mỗi request — proxy
 // KHÔNG tự lưu PartnerToken, chỉ dùng đúng những gì được gửi kèm.
+//
+// BUG THẬT đã sửa: trước đây chỉ thử ĐÚNG MỘT biến thể (AES-256-CBC/PKCS#7,
+// key/iv giải Base64 từ header). Khi Bkav trả ciphertext hơi khác dạng
+// (padding khác, key/iv là hex thay vì Base64, hoặc ciphertext bị bọc thêm
+// Base64 lần hai), decipher.final() ném "wrong final block length" và proxy
+// trả NGUYÊN VĂN ciphertext → worker không đọc được gì. Giờ thử lần lượt các
+// biến thể hợp lệ (đúng thứ tự ưu tiên theo tài liệu Bkav) trước khi bỏ cuộc.
+function tryDecryptVariants(encrypted, key, iv) {
+  // Mỗi biến thể: { padding, label } — cùng thuật toán AES-256-CBC, chỉ khác
+  // cách xử lý padding. PKCS#7 là mặc định của Node và đúng tài liệu Bkav;
+  // 'none' dùng khi Bkav đã tự cắt padding (ciphertext là bội số 16 byte).
+  const variants = [
+    { padding: true, label: 'aes-256-cbc/pkcs7' },
+    { padding: false, label: 'aes-256-cbc/none' },
+  ];
+  const errors = [];
+  for (const variant of variants) {
+    try {
+      const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+      if (!variant.padding) decipher.setAutoPadding(false);
+      const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+      return { decrypted, label: variant.label };
+    } catch (err) {
+      errors.push(`${variant.label}: ${err.message}`);
+    }
+  }
+  const err = new Error(errors.join('; '));
+  err.variantErrors = errors;
+  throw err;
+}
+
+// Giải mã 1 payload Base64 → XML thô. Thử lần lượt:
+//  1. key/iv Base64 (đúng tài liệu) + AES-256-CBC/PKCS#7 rồi không padding.
+//  2. key/iv dạng hex (một số cấu hình PartnerToken trả hex) — cùng 2 padding.
+//  3. ciphertext bọc Base64 lần hai (một số gateway double-encode).
+// Trả về { xml, label } khi thành công; ném lỗi kèm tổng hợp nguyên nhân khi
+// tất cả biến thể đều thất bại.
 function decryptBkavResponse(base64Body, keyBase64, ivBase64) {
-  const encrypted = Buffer.from(base64Body.trim(), 'base64');
+  const trimmed = String(base64Body || '').trim();
+  const encrypted = Buffer.from(trimmed, 'base64');
   const key = Buffer.from(keyBase64, 'base64');
   const iv = Buffer.from(ivBase64, 'base64');
-  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-  return zlib.gunzipSync(decrypted).toString('utf8');
+
+  const attempts = [];
+  const runAttempt = (buf, k, v, label) => {
+    try {
+      const { decrypted, label: variantLabel } = tryDecryptVariants(buf, k, v);
+      const xml = zlib.gunzipSync(decrypted).toString('utf8');
+      return { xml, label: `${label}/${variantLabel}` };
+    } catch (err) {
+      attempts.push(`${label}: ${err.message}`);
+      return null;
+    }
+  };
+
+  // 1. key/iv Base64 (đúng tài liệu Bkav).
+  const primary = runAttempt(encrypted, key, iv, 'key/iv base64');
+  if (primary) return primary;
+
+  // 2. key/iv dạng hex — chỉ thử khi độ dài hợp lệ (key 64 ký tự hex = 32 byte,
+  //    iv 32 ký tự hex = 16 byte).
+  const keyHex = String(keyBase64 || '').trim();
+  const ivHex = String(ivBase64 || '').trim();
+  if (/^[0-9a-fA-F]{64}$/.test(keyHex) && /^[0-9a-fA-F]{32}$/.test(ivHex)) {
+    const hexAttempt = runAttempt(
+      encrypted,
+      Buffer.from(keyHex, 'hex'),
+      Buffer.from(ivHex, 'hex'),
+      'key/iv hex'
+    );
+    if (hexAttempt) return hexAttempt;
+  }
+
+  // 3. ciphertext bọc Base64 lần hai.
+  const inner = Buffer.from(encrypted.toString('utf8').trim(), 'base64');
+  if (inner.length > 0 && inner.length !== encrypted.length) {
+    const doubleAttempt = runAttempt(inner, key, iv, 'ciphertext base64 lần hai');
+    if (doubleAttempt) return doubleAttempt;
+  }
+
+  const err = new Error(attempts.join('; '));
+  err.attempts = attempts;
+  throw err;
 }
 
 function extractTag(xml, localName) {
@@ -82,20 +158,34 @@ function cleanFaultText(v, max) {
     .slice(0, max);
 }
 
+// BUG THẬT đã sửa: trước đây khi Bkav trả SOAP fault KHÔNG có <faultcode>
+// (hoặc faultcode rỗng), code bị thay bằng placeholder 'UNKNOWN' → worker
+// chỉ thấy "SOAP fault: UNKNOWN", mất hoàn toàn lý do từ chối thật. Giờ:
+//  - KHÔNG bao giờ bịa 'UNKNOWN': nếu không có faultcode, để code rỗng và
+//    dồn toàn bộ nội dung fault (faultstring/Reason/detail) vào phần lý do.
+//  - Nếu vẫn không trích được gì, trả nguyên văn XML fault (đã lọc ký tự
+//    nguy hiểm) làm lý do — người dùng luôn thấy được Bkav nói gì.
+//  - Ghi TOÀN BỘ XML fault gốc vào nhật ký proxy (journalctl -u bkav-proxy).
 function normalizeSoapFault(xml) {
   // SOAP 1.1: <faultcode>, <faultstring>. SOAP 1.2: <Code><Value>, <Reason><Text>.
   const code =
     extractTag(xml, 'faultcode') ||
     extractTag(extractTag(xml, 'Code'), 'Value') ||
-    'UNKNOWN';
+    '';
   const reason =
     extractTag(xml, 'faultstring') ||
     extractTag(extractTag(xml, 'Reason'), 'Text') ||
     extractTag(xml, 'Reason') ||
+    extractTag(xml, 'detail') ||
     '';
-  const safeCode = cleanFaultText(code, 100) || 'UNKNOWN';
-  const safeReason = cleanFaultText(reason, 300);
-  const canonical = `<R><E>FAULT:${safeCode}${safeReason ? ` | ${safeReason}` : ''}</E></R>`;
+  const safeCode = cleanFaultText(code, 100);
+  let safeReason = cleanFaultText(reason, 300);
+  // Không trích được code lẫn lý do → dùng chính XML fault gốc (đã lọc thẻ)
+  // làm lý do, KHÔNG trả 'UNKNOWN' trống nghĩa.
+  if (!safeCode && !safeReason) {
+    safeReason = cleanFaultText(xml, 300) || 'SOAP fault không có nội dung';
+  }
+  const canonical = `<R><E>FAULT:${safeCode}${safeCode && safeReason ? ' | ' : ''}${safeReason}</E></R>`;
   console.log('[bkav-proxy] SOAP Fault:', canonical);
   console.log('[bkav-proxy] SOAP Fault RAW:', String(xml).slice(0, 4000));
   return canonical;
@@ -103,6 +193,7 @@ function normalizeSoapFault(xml) {
 
 // Phản hồi thành công đã mã hoá — trích Base64 trong <ExecCommandResult>,
 // giải mã, trả về XML thô cho worker tự parse tiếp.
+// Trả về { xml, label } khi giải mã thành công, null khi không có payload.
 function processEncryptedResponse(xml, keyBase64, ivBase64) {
   const re = /<(?:[^:>]+:)?ExecCommandResult[^>]*>([\s\S]*?)<\/(?:[^:>]+:)?ExecCommandResult>/i;
   const m = xml.match(re);
@@ -198,16 +289,28 @@ const server = http.createServer(async (req, res) => {
         outputXml = normalizeSoapFault(rawBody);
       } else if (hasExecCommandResult(rawBody) && keyBase64 && ivBase64) {
         try {
-          outputXml = processEncryptedResponse(rawBody, keyBase64, ivBase64);
-          if (outputXml) {
-            console.log('[bkav-proxy] Decrypted OK, length:', outputXml.length);
+          const decrypted = processEncryptedResponse(rawBody, keyBase64, ivBase64);
+          if (decrypted) {
+            outputXml = decrypted.xml;
+            console.log('[bkav-proxy] Decrypted OK, length:', outputXml.length, '— biến thể:', decrypted.label);
           } else {
-            console.warn('[bkav-proxy] ExecCommandResult rỗng — trả nguyên văn');
-            outputXml = rawBody;
+            // ExecCommandResult rỗng: không có gì để giải mã — báo lỗi rõ ràng
+            // thay vì trả nguyên văn ciphertext.
+            console.warn('[bkav-proxy] ExecCommandResult rỗng — không có payload để giải mã');
+            outputXml = '<R><E>DECRYPT_ERROR:EMPTY_PAYLOAD | ExecCommandResult không có nội dung Base64</E></R>';
           }
         } catch (decErr) {
-          console.warn('[bkav-proxy] Giải mã thất bại:', decErr.message, '— trả nguyên văn');
-          outputXml = rawBody;
+          // KHÔNG trả nguyên văn ciphertext nữa: worker không đọc được gì từ đó.
+          // Trả lỗi có mã + nguyên nhân thật để worker/frontend hiển thị được.
+          const reason = cleanFaultText(decErr.message, 300) || 'không rõ nguyên nhân';
+          const payloadPreview = cleanFaultText(rawBody, 120);
+          console.warn(
+            '[bkav-proxy] Giải mã thất bại — mã lỗi DECRYPT_ERROR, nguyên nhân:',
+            reason,
+            '| đầu vào (rút gọn):',
+            payloadPreview
+          );
+          outputXml = `<R><E>DECRYPT_ERROR:${reason}</E></R>`;
         }
       } else {
         // Không có ExecCommandResult (lỗi khác), hoặc thiếu X-BKAV-KEY —

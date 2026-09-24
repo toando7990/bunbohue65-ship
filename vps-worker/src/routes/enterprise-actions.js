@@ -210,7 +210,7 @@ router.post('/orders/enterprise/:id/reissue', async (req, res, next) => {
     const reason = notReissuableReason(o, startOfPreviousWorkingDayUtc7(Date.now()));
     if (reason) return res.status(409).json({ ok: false, error: reason });
     const r = g.db.prepare(
-      `UPDATE orders SET invoice_status = 'none', invoice_retry_count = 1, updated_at = ? WHERE order_id = ? AND invoice_status = 'failed'`,
+      `UPDATE orders SET invoice_status = 'none', invoice_retry_count = 1, invoice_error = '', updated_at = ? WHERE order_id = ? AND invoice_status = 'failed'`,
     ).run(Date.now(), o.order_id);
     g.db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'Reissue', ?, ?)`)
       .run(o.order_id, `Kế toán yêu cầu phát hành lại (thiết bị ${String(req.body.deviceId).trim()})`, Date.now());

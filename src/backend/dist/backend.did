@@ -65,6 +65,7 @@ type SalesPromo =
  record {
    active: bool;
    code: text;
+   enabledCounter: bool;
    endDate: text;
    monthlyTiers: vec SalesTier;
    name: text;
@@ -118,7 +119,7 @@ type Result_2 =
    err: text;
    ok: Restaurant;
  };
-type Result_17 = 
+type Result_18 = 
  variant {
    err: Error;
    ok;
@@ -188,6 +189,8 @@ type RestaurantEntry =
 type Restaurant = 
  record {
    address: text;
+   lat: float64;
+   lng: float64;
    name: text;
    phone: text;
    restaurantId: text;
@@ -210,6 +213,8 @@ type Promotion =
    code: text;
    dailyOrderLimit: nat;
    daysOfWeek: vec bool;
+   enabledCounter: bool;
+   enabledOnline: bool;
    endDate: text;
    name: text;
    perCustomerDailyLimit: nat;
@@ -396,15 +401,16 @@ type BookingStatus =
  };
 service : {
   _initialize_access_control: () -> ();
-  _internet_identity_sign_in_finish: () -> (Result_17);
+  _internet_identity_sign_in_finish: () -> (Result_18);
   _internet_identity_sign_in_start: () -> (blob);
   activateDevice: (code: text, deviceId: DeviceId, name: text, phone:
    text) -> (Result_8);
   addItem: (itemId: text, name: text, price: nat, unitName: text, vatRate:
    nat, category: text, image: blob) -> (Result_5);
-  addRestaurant: (restaurantId: text, name: text, address: text, phone:
-   text) -> (Result_2);
+  addRestaurant: (restaurantId: text, name: text, address: text, phone: 
+   text, lat: float64, lng: float64) -> (Result_2);
   applyPromotion: (email: text, orderAmount: nat, hmac: Hmac) -> (Result_16);
+  applyPromotionCounter: (orderAmount: nat, hmac: Hmac) -> (Result_16);
   applyVoucher: (email: text, code: text, orderAmount: nat, hmac: Hmac) ->
    (Result_6);
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
@@ -413,9 +419,9 @@ service : {
   cancelOrder: (orderId: text, hmac: text) -> (Result);
   changeOrderRestaurant: (orderId: text, newRestaurantId: text, hmac:
    text) -> (Result);
+  claimOrderEmail: (orderId: text, email: text) -> (Result);
   cleanupExpiredActivations: () -> (nat);
   cleanupOrderByDevice: (deviceId: text, orderId: text) -> (Result);
-  confirmPaymentByDevice: (deviceId: text, orderId: text) -> (Result);
   countVouchersByProgram: (programCode: text) -> (nat) query;
   createOrder: (orderId: text, restaurantId: text, cusName: text, cusPhone:
    text, cusAddress: text, cusTaxCode: text, receiverEmail: text, items:
@@ -460,8 +466,13 @@ service : {
   getOrder: (orderId: text, deviceId: text) -> (Result);
   getOrderStatus: (orderId: text) -> (Result_14) query;
   getOrdersByEmail: (email: text, deviceId: text) -> (vec Order);
+  /// Query: return the current paymentMode as its canonical Text ("driver" or
+  /// "customer"). Public — no caller gating; the value is not sensitive.
   getPaymentMode: () -> (text) query;
   getRestaurants: () -> (vec Restaurant) query;
+  /// Query: return the current storeHours config. Public — no caller gating;
+  /// the value is not sensitive and the frontend needs it to render the
+  /// open/close state on both the driver and customer flows.
   getStoreHours: () -> (StoreHours) query;
   getUpgradeState: () -> (UpgradeState);
   isCallerAdmin: () -> (bool) query;
@@ -469,6 +480,10 @@ service : {
   isPromotionUsed: (deviceId: text, code: text) -> (Result_13) query;
   isRegistrationPromoUsed: (deviceId: text, code: text) -> (Result_13) query;
   isSalesPromoUsed: (deviceId: text, code: text) -> (Result_13) query;
+  /// Query: return whether the store is currently open based on the current
+  /// time. Public — the frontend calls this on both the driver and customer
+  /// flows to decide whether to block order placement and show a waiting
+  /// screen instead of allowing item selection.
   isStoreOpen: () -> (bool) query;
   issueInvoiceByDevice: (deviceId: text, orderId: text, invoiceId: text,
    pdfUrl: text) -> (Result);
@@ -479,26 +494,49 @@ service : {
   listMenus: () -> (vec MenuItem) query;
   listMyVouchers: (email: text) -> (vec Voucher) query;
   listOrders: (deviceId: text) -> (vec Order);
+  /// Query: return today's paid orders for the driver pickup queue — orders with
+  /// paymentStatus=#paid AND bookingStatus=#confirmed (not yet picked up),
+  /// created today (UTC+7 day boundary, same day-retention logic as
+  /// listPendingPaymentOrders). Admin sees the full records WITH PII;
+  /// non-admin/anonymous callers (the driver pickup-queue flow) get the records
+  /// with PII fields blanked, mirroring listPendingPaymentOrders gating.
   listPaidOrdersForPickup: () -> (vec Order);
-  listPendingPaymentOrders: (restaurantId: text, deviceId: text) ->
-   (vec Order);
+  listPendingPaymentOrders: (restaurantId: text) -> (vec Order);
   listPromotions: (deviceId: text) -> (Result_11) query;
   listRegistrationPromos: (deviceId: text) -> (Result_10) query;
   listRestaurants: () -> (vec Restaurant) query;
   listSalesPromos: (deviceId: text) -> (Result_9) query;
   markPaymentExpired: (orderId: text, hmac: text) -> (Result);
+  /// Admin/driver update: mark an order as #pickedUp (Tài xế đã nhận hàng).
+  /// Only succeeds when the order is currently #confirmed AND #paid; this ends
+  /// the order lifecycle in customer mode. Returns the updated order on
+  /// success, or #err if the caller is not an admin/driver, the order does not
+  /// exist, or the order is not in the required state.
   markPickedUp: (orderId: text) -> (Result);
   pruneOldOrdersNow: (hmac: text) -> (Result_6);
   restoreUpgradeState: ("blob": blob) -> (bool);
   revokeDevice: (deviceId: DeviceId) -> (Result_8);
   schema: () -> (text) query;
   seedMenuItems: () -> (bool);
+  sendKmNotifyEmails: (emails: vec text, subject: text, htmlBody: text, hmac:
+   Hmac) -> (Result_7);
   sendVerificationCode: (email: Email) -> (SendCodeResult);
   setItemVisible: (itemId: text, visible: bool) -> (Result_5);
+  /// Admin-only update: set paymentMode to "driver" or "customer". Rejects any
+  /// other value with #err. Returns #ok on success, #err if the caller is not
+  /// an admin or the value is invalid. Mirrors setVpsSecret in
+  /// mixins/secret-api.mo.
   setPaymentMode: (mode: text) -> (Result_7);
   setRestaurantPriceOverride: (restaurantId: text, itemId: text, price:
    nat) -> (Result_7);
+  /// Admin-only update: set the global store open/close hours. Rejects any
+  /// caller that is not an admin with #err. Returns #ok on success, #err if the
+  /// caller is not an admin. Mirrors setPaymentMode in
+  /// mixins/payment-mode-config-api.mo.
   setStoreHours: (hours: StoreHours) -> (Result_7);
+  /// Admin-only. Rotates the VPS secret: current `vpsSecret` is moved into
+  /// `vpsSecretPrevious` before `newSecret` is written to `vpsSecret`.
+  /// Returns `#ok` on success, `#err` if the caller is not an admin.
   setVpsSecret: (newSecret: text) -> (variant {
                                         err: text;
                                         ok;
@@ -520,16 +558,17 @@ service : {
   updatePromotion: (deviceId: text, code: text, name: text, startDate: 
    text, endDate: text, daysOfWeek: vec bool, timeSlots: vec TimeSlot,
    dailyOrderLimit: nat, perCustomerDailyLimit: nat, tiers: vec DiscountTier,
-   active: bool, termsUrl: text) -> (Result_4);
+   active: bool, enabledOnline: bool, enabledCounter: bool, termsUrl:
+   text) -> (Result_4);
   updateRegistrationPromo: (deviceId: text, code: text, name: text,
    startDate: text, endDate: text, voucherValue: nat, voucherValidDays: 
    nat, active: bool, termsUrl: text) -> (Result_3);
   updateRestaurant: (restaurantId: text, name: text, address: text, phone:
-   text, visible: bool) -> (Result_2);
+   text, visible: bool, lat: float64, lng: float64) -> (Result_2);
   updateSalesPromo: (deviceId: text, code: text, name: text, startDate: 
    text, endDate: text, weeklyTiers: vec SalesTier, monthlyTiers:
-   vec SalesTier, voucherValidDays: nat, active: bool, termsUrl: text) ->
-   (Result_1);
+   vec SalesTier, voucherValidDays: nat, active: bool, enabledCounter: 
+   bool, termsUrl: text) -> (Result_1);
   updateStatus: (orderId: OrderId, bookingStatus: BookingStatus, hmac:
    Hmac) -> (Result);
   verifyEmailCode: (email: Email, code: text) -> (VerifyResult);

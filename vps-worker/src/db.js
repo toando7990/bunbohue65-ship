@@ -318,6 +318,15 @@ function initSchema(db) {
     db.exec('ALTER TABLE orders ADD COLUMN invoice_retry_count INTEGER NOT NULL DEFAULT 0');
   }
 
+  // invoice_error — LÝ DO THẬT Bkav từ chối phát hành hoá đơn (faultcode +
+  // faultstring/faultreason, hoặc thông điệp lỗi từ Bkav/proxy). Trước đây
+  // lý do thật chỉ nằm trong bkav_logs (khó tra), trang Kế toán không có gì
+  // để hiển thị nên chỉ thấy trạng thái 'failed' trống nghĩa. Ghi lại ngay
+  // khi đánh dấu 'failed' để hiển thị trực tiếp cho Kế toán.
+  if (!colNames.has('invoice_error')) {
+    db.exec("ALTER TABLE orders ADD COLUMN invoice_error TEXT NOT NULL DEFAULT ''");
+  }
+
   // Phần 6/6 tái cấu trúc đặt món từ xa — kết quả gọi Lalamove Place
   // Order thật, nếu DB cũ chưa có.
   if (!colNames.has('lalamove_order_id')) {

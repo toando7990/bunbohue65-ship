@@ -19,7 +19,7 @@ chain = "src/backend/migrations"
 check-limit = 1
 
 [toolchain]
-moc = "1.15.1"
+moc = "1.16.0"
 lintoko = "0.11.0"
 
 [lint]
@@ -29,7 +29,7 @@ extends = true
 args = [ "-E=M0254", "-W=M0235,M0223,M0236,M0237", "-A=M0241", "--default-persistent-actors", "--implicit-package=core", "-no-check-ir" ]
 
 [dependencies]
-core = "2.6.1"
+core = "2.6.2"
 caffeineai-authorization = "1.0.1"
 caffeineai-lints = "0.1.1"
 caffeineai-oql = "0.4.0"

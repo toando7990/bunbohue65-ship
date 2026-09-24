@@ -498,7 +498,7 @@ export async function getEnterpriseHistory(
     to,
     status: statuses.join(","),
   });
-  return vpsFetch<{
+  const res = await vpsFetch<{
     ok: boolean;
     orders: VpsEnterpriseHistoryOrder[];
     count: number;
@@ -507,6 +507,22 @@ export async function getEnterpriseHistory(
     method: "GET",
     path: `/orders/enterprise-history?${params.toString()}`,
   });
+  // Ghi lại phản hồi THÔ của VPS (kèm invoiceError thật của Bkav trên đơn
+  // failed) để chẩn đoán được lý do từ chối ngay trên trình duyệt — yêu cầu
+  // "hiển thị lý do thật và ghi log phản hồi thô". Chỉ log khi có đơn thất
+  // bại để không làm nhiễu console ở luồng bình thường.
+  const failed = (res.orders ?? []).filter((o) => o.invoiceStatus === "failed");
+  if (failed.length > 0) {
+    console.warn(
+      "[vps] enterprise-history raw response — failed invoices:",
+      failed.map((o) => ({
+        orderId: o.orderId,
+        invoiceStatus: o.invoiceStatus,
+        invoiceError: o.invoiceError,
+      })),
+    );
+  }
+  return res;
 }
 
 // Email invoice to customer — VPS triggers Bkav email send.

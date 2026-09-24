@@ -1,18 +1,17 @@
 {
-  "overview": "Bunbohue65 Ship is a Bún Bò Huế 65 ordering app with QR payment and delivery, now adding enterprise-level role-based device management with three business roles: payment queue, accounting, and sales & promo reporting.",
+  "overview": "Ứng dụng quản lý đơn hàng và phát hành hoá đơn điện tử Bkav cho doanh nghiệp.",
   "features": [
-    "Manage devices by enterprise roles attached via activation codes",
-    "Payment queue role to view and process pending payment orders",
-    "Accounting role for manual order cleanup, manual invoice issuance, and order lookup with payment verification images",
-    "Sales and promo reporting role combining promotion management, promo tracking, and sales analytics"
+    "Phát hành hoá đơn điện tử Bkav tự động cho đơn hàng đã thanh toán",
+    "Xem và lọc danh sách hoá đơn, tải PDF hoá đơn",
+    "Hiển thị lý do từ chối thật từ Bkav khi phát hành thất bại",
+    "Phát hành lại hoá đơn thủ công cho đơn hàng trong ngày làm việc trước"
   ],
-  "category": "productivity",
+  "category": "business-management",
   "tags": [
-    "enterprise",
-    "device-management",
-    "roles",
-    "restaurant",
-    "reporting"
+    "invoicing",
+    "e-invoice",
+    "order-management",
+    "vietnam"
   ],
-  "last_updated": "2026-09-09T04:12:09.357Z"
+  "last_updated": "2026-09-24T08:37:38.083Z"
 }

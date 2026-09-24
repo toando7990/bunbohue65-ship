@@ -7,19 +7,24 @@
 //   - callerHasEnterpriseRole returns true only for the role the device is
 //     bound to (and always true for admin), so each enterprise device is
 //     scoped to its own module;
-//   - listPendingPaymentOrders is gated to a #paymentQueue device (or admin):
-//     a non-paymentQueue caller receives an empty list;
-//   - confirmPaymentByDevice is gated to #paymentQueue (or admin) and marks the
-//     order paid;
+//   - listPendingPaymentOrders is a public read (no device gating): a non-admin
+//     caller receives the records with PII + pickupCode blanked, while admin
+//     sees the full record WITH pickupCode;
 //   - cleanupOrderByDevice and issueInvoiceByDevice are gated to #accounting
 //     (or admin);
 //   - menu/restaurant edit rights stay with admin (menu-api is admin-only).
+//
+// NOTE (intentional API change): confirmPaymentByDevice and the #paymentQueue
+// device gating on listPendingPaymentOrders were removed from the canister
+// (the manual "mark any order paid" path was a real financial hole). The
+// #paymentQueue role still exists as a DeviceRole/EnterpriseRole variant and
+// is still assignable, so role-binding coverage below keeps exercising it.
 //
 // Orders are created through the real createOrder endpoint with an HMAC signed
 // by a VPS secret the test sets as admin, so the enterprise mutations run
 // against real order records.
 
-import { createHash, createHmac } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { createIdentity, PocketIc } from "@dfinity/pic";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -122,7 +127,7 @@ describe("enterprise device roles", () => {
   it("answers an empty-state read instead of trapping", async () => {
     actor.setPrincipal(PUBLIC);
     await expect(actor.callerHasEnterpriseRole("no-such-device", { paymentQueue: null })).resolves.toBe(false);
-    await expect(actor.listPendingPaymentOrders("R1", "no-such-device")).resolves.toEqual([]);
+    await expect(actor.listPendingPaymentOrders("R1")).resolves.toEqual([]);
   });
 
   it("binds a device to each enterprise role at activation and reports it via callerHasEnterpriseRole", async () => {
@@ -144,37 +149,24 @@ describe("enterprise device roles", () => {
     await expect(actor.callerHasEnterpriseRole("", { paymentQueue: null })).resolves.toBe(true);
   });
 
-  it("gates listPendingPaymentOrders to a paymentQueue device (or admin)", async () => {
+  it("serves listPendingPaymentOrders to any caller, blanking PII + pickupCode for non-admin", async () => {
     await createOrder("ORD-PQ-1", "R1");
 
-    // A paymentQueue device sees the pending order.
+    // A non-admin caller sees the pending order, but with PII + pickupCode
+    // blanked (the pickup code must be learned in person, not read off screen).
     actor.setPrincipal(PUBLIC);
-    const pqOrders = await actor.listPendingPaymentOrders("R1", "dev-pq");
-    expect(pqOrders.map((o) => o.orderId)).toContain("ORD-PQ-1");
-    // The payment-queue device is a non-admin caller, so pickupCode is hidden.
-    expect(pqOrders.find((o) => o.orderId === "ORD-PQ-1")?.pickupCode).toBe("");
-
-    // A non-paymentQueue device (accounting) receives an empty list.
-    const accOrders = await actor.listPendingPaymentOrders("R1", "dev-acc");
-    expect(accOrders).toEqual([]);
+    const publicOrders = await actor.listPendingPaymentOrders("R1");
+    expect(publicOrders.map((o) => o.orderId)).toContain("ORD-PQ-1");
+    const publicOrder = publicOrders.find((o) => o.orderId === "ORD-PQ-1");
+    expect(publicOrder?.pickupCode).toBe("");
+    expect(publicOrder?.cusAddress).toBe("");
+    expect(publicOrder?.cusTaxCode).toBe("");
+    expect(publicOrder?.receiverEmail).toBe("");
 
     // Admin sees the full record WITH pickupCode.
     actor.setPrincipal(ADMIN);
-    const adminOrders = await actor.listPendingPaymentOrders("R1", "");
+    const adminOrders = await actor.listPendingPaymentOrders("R1");
     expect(adminOrders.find((o) => o.orderId === "ORD-PQ-1")?.pickupCode).toBe("AB23CD");
-  });
-
-  it("lets a paymentQueue device confirm payment and rejects a non-paymentQueue caller", async () => {
-    await createOrder("ORD-PQ-2", "R1");
-
-    // A non-paymentQueue caller is rejected.
-    actor.setPrincipal(PUBLIC);
-    const denied = await actor.confirmPaymentByDevice("dev-acc", "ORD-PQ-2");
-    expect("err" in denied && denied.err).toBe("Payment queue role required");
-
-    // A paymentQueue device confirms the payment.
-    const ok = await actor.confirmPaymentByDevice("dev-pq", "ORD-PQ-2");
-    expect("ok" in ok && ok.ok.paymentStatus).toEqual({ paid: null });
   });
 
   it("lets an accounting device clean up an order and rejects a non-accounting caller", async () => {
@@ -212,7 +204,7 @@ describe("enterprise device roles", () => {
     expect("err" in menuRes && menuRes.err).toBe("Admin only");
 
     // An enterprise device cannot update a restaurant (admin-only).
-    const restRes = await actor.updateRestaurant("R1", "Nhà hàng A", "123 Le Loi", "0901234567", true);
+    const restRes = await actor.updateRestaurant("R1", "Nhà hàng A", "123 Le Loi", "0901234567", true, 0, 0);
     expect("err" in restRes && restRes.err).toBe("Admin only");
   });
 });

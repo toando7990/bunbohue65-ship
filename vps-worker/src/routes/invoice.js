@@ -37,13 +37,15 @@ function startOfTodayUtc7(nowMs) {
 // 123/2020): hoá đơn phải lập TẠI THỜI ĐIỂM bán hàng/hoàn thành dịch vụ
 // (không phân biệt đã thu tiền) và KHÔNG được ghi lùi ngày; nếu thời điểm
 // lập và ký số khác nhau, việc ký số/gửi dữ liệu tới cơ quan thuế chậm
-// nhất là NGÀY LÀM VIỆC TIẾP THEO sau ngày lập. Trước đây cron chỉ xử lý
-// đơn trong ngày → đơn đã thanh toán lỡ ngày (VD máy chủ gián đoạn) không
-// bao giờ được phát hành. Giờ quét từ đầu NGÀY LÀM VIỆC TRƯỚC hôm nay (Thứ
-// 2–Thứ 6): hôm nay Thứ 2 → quét từ Thứ 6 (gồm cả cuối tuần); Thứ 3 → từ
-// Thứ 2... Hoá đơn luôn mang ngày phát hành thực tế (lib/bkav.js dùng
-// new Date()), KHÔNG ghi lùi ngày. CHƯA tính ngày lễ (chỉ bỏ Thứ 7/CN) —
-// đơn cũ hơn khung này cần Kế toán xử lý thủ công.
+// nhất là NGÀY LÀM VIỆC TIẾP THEO sau ngày lập.
+//
+// LƯU Ý PHẠM VI (theo yêu cầu đã duyệt): hàm này CHỈ còn dùng cho luồng
+// PHÁT HÀNH LẠI THỦ CÔNG của Kế toán (routes/enterprise-actions.js) — cho
+// phép Kế toán tự tay phát hành lại đơn "Thất bại" trong khung 1 ngày làm
+// việc. Cron tự động KHÔNG dùng hàm này nữa (xem startInvoiceCron): cron
+// chỉ phát hành đơn MỚI TRONG NGÀY HIỆN TẠI, không quét lại đơn cũ.
+// Hoá đơn luôn mang ngày phát hành thực tế (lib/bkav.js dùng new Date()),
+// KHÔNG ghi lùi ngày. CHƯA tính ngày lễ (chỉ bỏ Thứ 7/CN).
 function startOfPreviousWorkingDayUtc7(nowMs) {
   let dayStart = startOfTodayUtc7(nowMs) - DAY_MS;
   for (;;) {
@@ -71,13 +73,20 @@ const INVOICE_MAX_RETRIES = 5;
 // Cron 15 GIÂY (trước đây 1 phút — đổi theo yêu cầu, kết hợp với cơ chế
 // tự động thử lại INVOICE_MAX_RETRIES lần bên dưới, để vượt qua sự cố
 // tạm thời phía Bkav/proxy nhanh hơn): tạo invoice cho các order ĐÃ
-// THANH TOÁN + chưa invoiced, trong NGÀY HIỆN TẠI. SỬA (theo yêu cầu đã
-// duyệt): bỏ điều kiện
+// THANH TOÁN + chưa invoiced, TRONG NGÀY LÀM VIỆC HIỆN TẠI (giờ UTC+7).
+// SỬA (theo yêu cầu đã duyệt): bỏ điều kiện
 // booking_status='completed' — trước đây hoá đơn CHỈ phát hành sau khi
 // tài xế bấm "Đã nhận hàng", nay phát hành NGAY KHI đã thanh toán, không
-// phụ thuộc đơn đã giao xong hay chưa. Thêm giới hạn "trong ngày hiện
-// tại" để tránh quét lại/phát hành muộn cho đơn cũ từ ngày trước (nếu vì
-// lý do nào đó invoice_status vẫn còn 'none' qua nhiều ngày).
+// phụ thuộc đơn đã giao xong hay chưa.
+//
+// PHẠM VI NGÀY (theo yêu cầu đã duyệt — CHỈ sửa luồng phát hành hoá đơn
+// MỚI trong ngày, KHÔNG xử lý đơn cũ bị kẹt): cron chỉ quét đơn tạo từ
+// đầu NGÀY HIỆN TẠI (UTC+7) trở đi — dùng startOfTodayUtc7(), KHÔNG dùng
+// startOfPreviousWorkingDayUtc7() nữa. Đơn cũ hơn (kể cả đơn đã kẹt ở
+// invoice_status='failed' từ ngày trước) KHÔNG bị cron quét lại hay tự
+// động phát hành; Kế toán xử lý thủ công qua luồng phát hành lại.
+// Điều kiện invoice_status='none' cũng đảm bảo đơn đã 'failed' không bao
+// giờ bị cron chạm tới.
 // Sau khi createInvoice thành công, gọi getInvoicePdf816(orderId) ngay để
 // lấy PDF URL (CmdType 816 theo PartnerInvoiceStringID = orderId).
 // Retry 3 lần cho getInvoicePdf816 — nếu retry thất bại, dùng pdfUrl="".
@@ -113,13 +122,17 @@ async function syncInvoiceStatusToCanister(orderId, status, invoiceId, pdfUrl) {
 
 async function handleInvoiceFailure(db, orderId, currentRetryCount, reason) {
   const newRetryCount = currentRetryCount + 1;
+  // Lý do THẬT Bkav từ chối (faultcode + faultstring, hoặc thông điệp lỗi)
+  // — lưu vào orders.invoice_error để trang Kế toán hiển thị trực tiếp,
+  // không phải mở bkav_logs tra cứu thủ công.
+  const errorText = String(reason || '').slice(0, 500);
   if (newRetryCount >= INVOICE_MAX_RETRIES) {
     console.error(
       `[invoice/cron] Đã thử ${newRetryCount}/${INVOICE_MAX_RETRIES} lần, chịu thua hẳn cho ${orderId}: ${reason}`,
     );
     // Chỉ khi đơn VẪN chưa phát hành — không bao giờ ghi đè 'invoiced'.
-    const r = db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
-      .run(newRetryCount, Date.now(), orderId);
+    const r = db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, invoice_error = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
+      .run(newRetryCount, errorText, Date.now(), orderId);
     if (r.changes === 0) return;
     await syncInvoiceStatusToCanister(orderId, 'failed', '', '');
     return;
@@ -127,8 +140,8 @@ async function handleInvoiceFailure(db, orderId, currentRetryCount, reason) {
   console.warn(
     `[invoice/cron] Thử lần ${newRetryCount}/${INVOICE_MAX_RETRIES} thất bại cho ${orderId}, sẽ tự động thử lại: ${reason}`,
   );
-  db.prepare(`UPDATE orders SET invoice_retry_count = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
-    .run(newRetryCount, Date.now(), orderId);
+  db.prepare(`UPDATE orders SET invoice_retry_count = ?, invoice_error = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
+    .run(newRetryCount, errorText, Date.now(), orderId);
 }
 
 // Khoá chống CHẠY CHỒNG — BUG THẬT đã sửa: node-cron 3.x KHÔNG tự chặn chạy
@@ -163,7 +176,7 @@ function startInvoiceCron(db) {
     if (invoiceCronRunning) return;
     invoiceCronRunning = true;
     try {
-      const windowStartMs = startOfPreviousWorkingDayUtc7(Date.now());
+      const windowStartMs = startOfTodayUtc7(Date.now());
       const rows = db.prepare(
         `SELECT * FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none' AND booking_status <> 'cancelled' AND created_at >= ? ORDER BY created_at ASC`,
       ).all(windowStartMs);
@@ -195,8 +208,8 @@ function startInvoiceCron(db) {
               console.error(`[invoice/cron] ${row.order_id}: Bkav ĐÃ có hoá đơn (lần trước mất phản hồi) — KHÔNG tạo lại, cần Kế toán đối chiếu và ghi nhận số hoá đơn`);
               db.prepare(`INSERT INTO bkav_logs (order_id, command, error, response_xml, created_at) VALUES (?, 'CreateInvoice', ?, ?, ?)`)
                 .run(row.order_id, 'Hoá đơn đã tồn tại trên Bkav — cần đối chiếu thủ công', JSON.stringify(existingPdf), Date.now());
-              db.prepare(`UPDATE orders SET invoice_status = 'failed', pdf_url = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
-                .run(existingPdf.pdf_url, Date.now(), row.order_id);
+              db.prepare(`UPDATE orders SET invoice_status = 'failed', pdf_url = ?, invoice_error = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
+                .run(existingPdf.pdf_url, 'Hoá đơn đã tồn tại trên Bkav — cần đối chiếu thủ công', Date.now(), row.order_id);
               continue;
             }
           }
@@ -320,15 +333,17 @@ function startInvoiceCron(db) {
               console.error(`[invoice/cron] ${row.order_id}: Bkav tạo hoá đơn NHÁP chưa có số — cần ký/cấp số trên cổng Bkav`);
               db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'CreateInvoice', ?, ?)`)
                 .run(row.order_id, 'Bkav tạo hoá đơn nháp chưa có số — cần ký/cấp số trên cổng Bkav', Date.now());
-              db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
-                .run(INVOICE_MAX_RETRIES, Date.now(), row.order_id);
+              db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, invoice_error = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
+                .run(INVOICE_MAX_RETRIES, 'Bkav tạo hoá đơn nháp chưa có số — cần ký/cấp số trên cổng Bkav', Date.now(), row.order_id);
               await syncInvoiceStatusToCanister(row.order_id, 'failed', '', '');
               continue;
             }
             console.error(`[invoice/cron] CreateInvoice: no invoiceNo for ${row.order_id} — ${inv.error || 'unknown'} (code=${inv.errorCode || ''})`);
             // LUÔN lưu nguyên văn phản hồi Bkav khi thất bại — trước đây mất
             // hẳn, không cách nào chẩn đoán (xem: sqlite3 app.db "SELECT ...
-            // FROM bkav_logs WHERE command='CreateInvoice'").
+            // FROM bkav_logs WHERE command='CreateInvoice'"). inv.raw giữ
+            // NGUYÊN VĂN XML fault Bkav (hoặc JSON đã giải mã) — không cắt
+            // bỏ lý do từ chối thật.
             try {
               const rawText = typeof inv.raw === 'string' ? inv.raw : JSON.stringify(inv.raw);
               db.prepare(`INSERT INTO bkav_logs (order_id, command, error, response_xml, created_at) VALUES (?, 'CreateInvoice', ?, ?, ?)`)
