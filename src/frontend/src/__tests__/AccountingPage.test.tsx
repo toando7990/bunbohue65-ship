@@ -24,6 +24,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockDeleteOrder = vi.fn();
+const mockReissue = vi.fn();
 const mockDeleteCancelled = vi.fn();
 const mockIssueInvoice = vi.fn();
 const mockGetEnterpriseHistory = vi.fn();
@@ -46,6 +47,8 @@ vi.mock("@/lib/vps-client", () => ({
   getEnterpriseHistory: (...args: unknown[]) =>
     mockGetEnterpriseHistory(...args),
   getInvoice: (...args: unknown[]) => mockGetInvoice(...args),
+  enterpriseReissueInvoice: (deviceId: string, orderId: string) =>
+    mockReissue(deviceId, orderId),
   enterpriseDeleteOrder: (deviceId: string, orderId: string) =>
     mockDeleteOrder(deviceId, orderId),
   enterpriseDeleteCancelledOrders: (deviceId: string, dryRun: boolean) =>
@@ -557,5 +560,61 @@ describe("AccountingPage enterprise accounting", () => {
     );
     expect(screen.getByText("ORD-CASH")).toBeInTheDocument();
     expect(screen.queryByText("ORD-TRANSFER")).not.toBeInTheDocument();
+  });
+
+  it("'Phát hành lại' shows only for paid orders with a failed invoice, is locked after 1 working day, and queues the reissue via VPS", async () => {
+    setActivation();
+    const base = {
+      restaurantId: "R1",
+      cusName: "A",
+      cusPhone: "0900",
+      amount: 70000,
+      bookingStatus: "confirmed",
+      paymentStatus: "paid",
+      paymentMethod: "cash",
+    };
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [
+        {
+          ...base,
+          orderId: "ORD-FAIL-NEW",
+          invoiceStatus: "failed",
+          createdAt: Date.now(),
+        },
+        {
+          ...base,
+          orderId: "ORD-FAIL-OLD",
+          invoiceStatus: "failed",
+          createdAt: Date.now() - 10 * 86400000,
+        },
+        {
+          ...base,
+          orderId: "ORD-OK",
+          invoiceStatus: "invoiced",
+          createdAt: Date.now(),
+        },
+      ],
+      count: 3,
+      total: 210000,
+    });
+    mockReissue.mockResolvedValue({ ok: true, queued: true });
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("ORD-FAIL-NEW")).toBeInTheDocument(),
+    );
+    const btn = (id: string) =>
+      screen
+        .getByText(id)
+        .closest("tr")
+        ?.querySelector(
+          '[data-ocid^="accounting.reissue_button"]',
+        ) as HTMLButtonElement | null;
+    expect(btn("ORD-OK")).toBeNull();
+    expect(btn("ORD-FAIL-OLD")).toBeDisabled();
+    expect(btn("ORD-FAIL-NEW")).not.toBeDisabled();
+    fireEvent.click(btn("ORD-FAIL-NEW") as HTMLButtonElement);
+    await waitFor(() =>
+      expect(mockReissue).toHaveBeenCalledWith("dev-acc", "ORD-FAIL-NEW"),
+    );
   });
 });

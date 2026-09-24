@@ -73,6 +73,7 @@ import {
   enterpriseDeleteCancelledOrders,
   enterpriseDeleteOrder,
   enterpriseRecordInvoice,
+  enterpriseReissueInvoice,
   getEnterpriseHistory,
   getInvoice,
 } from "@/lib/vps-client";
@@ -84,6 +85,7 @@ import {
   ExternalLink,
   Loader2,
   Receipt,
+  RefreshCw,
   Search,
   Trash2,
 } from "lucide-react";
@@ -165,6 +167,17 @@ function deleteBlockedReason(o: {
     return "Chỉ xoá được đơn từ hôm trước trở về trước.";
   }
   return null;
+}
+
+// Đầu ngày làm việc (T2–T6) TRƯỚC hôm nay — cùng khung 1 ngày làm việc với
+// cron phát hành bù ở VPS (startOfPreviousWorkingDayUtc7). Chưa tính ngày lễ.
+function startOfPreviousWorkingDay(now = new Date()): Date {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  do {
+    d.setDate(d.getDate() - 1);
+  } while (d.getDay() === 0 || d.getDay() === 6);
+  return d;
 }
 
 function inputDateToApiFormat(v: string): string {
@@ -315,6 +328,23 @@ export function AccountingPage() {
   const deleteMutation = useMutation({
     mutationFn: (orderId: string) => enterpriseDeleteOrder(deviceId, orderId),
   });
+  const reissueMutation = useMutation({
+    mutationFn: (orderId: string) =>
+      enterpriseReissueInvoice(deviceId, orderId),
+  });
+  async function handleReissue(orderId: string) {
+    try {
+      await reissueMutation.mutateAsync(orderId);
+      toast.success(
+        "Đã đưa đơn về hàng chờ — hoá đơn sẽ được phát hành trong khoảng 1 phút.",
+      );
+      historyQuery.refetch();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Không phát hành lại được.",
+      );
+    }
+  }
   const bulkDeleteMutation = useMutation({
     mutationFn: () => enterpriseDeleteCancelledOrders(deviceId, false),
   });
@@ -892,6 +922,40 @@ export function AccountingPage() {
                                       aria-hidden="true"
                                     />
                                     Xoá
+                                  </Button>
+                                );
+                              })()}
+                            {/* "Phát hành lại" — chỉ đơn hoá đơn Thất bại, đã
+                                thanh toán, chưa huỷ; khoá kèm lý do nếu quá 1
+                                ngày làm việc (VPS kiểm tra lại toàn bộ). */}
+                            {order.invoiceStatus === InvoiceStatus.failed &&
+                              !isCancelled &&
+                              order.paymentStatus === "paid" &&
+                              (() => {
+                                const expired =
+                                  order.createdAt <
+                                  startOfPreviousWorkingDay().getTime();
+                                return (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={
+                                      expired || reissueMutation.isPending
+                                    }
+                                    title={
+                                      expired
+                                        ? "Quá 1 ngày làm việc kể từ khi tạo đơn — không phát hành lại tự động."
+                                        : "Đưa đơn về hàng chờ để phát hành lại hoá đơn Bkav"
+                                    }
+                                    onClick={() => handleReissue(order.orderId)}
+                                    data-ocid={`accounting.reissue_button.${idx + 1}`}
+                                  >
+                                    <RefreshCw
+                                      className="h-3.5 w-3.5"
+                                      aria-hidden="true"
+                                    />
+                                    Phát hành lại
                                   </Button>
                                 );
                               })()}

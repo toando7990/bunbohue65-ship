@@ -179,6 +179,47 @@ router.post('/orders/enterprise/delete-cancelled', async (req, res, next) => {
   }
 });
 
+// ---------------------------------------------------------------------
+// "Phát hành lại" hoá đơn Bkav cho đơn đã bị đánh dấu 'failed'. Chỉ trong
+// khung 1 ngày làm việc kể từ khi đơn được tạo (CÙNG khung cron phát hành
+// bù — xem routes/invoice.js). Không phát hành trực tiếp ở đây: đặt lại về
+// hàng chờ (invoice_status='none') để cron xử lý với ĐỦ cơ chế an toàn
+// (khoá chống chạy chồng, thử lại). invoice_retry_count=1 → cron KIỂM TRA
+// Bkav đã có hoá đơn cho đơn này chưa TRƯỚC khi tạo (tránh phát hành trùng).
+// ---------------------------------------------------------------------
+const { startOfPreviousWorkingDayUtc7 } = require('./invoice');
+
+function notReissuableReason(o, windowStart) {
+  if (o.invoice_status !== 'failed') return 'Chỉ phát hành lại được đơn có hoá đơn "Thất bại".';
+  if (o.payment_status !== 'paid') return 'Đơn chưa thanh toán — không phát hành hoá đơn.';
+  if (o.booking_status === 'cancelled') return 'Đơn đã huỷ — không phát hành hoá đơn.';
+  if (o.pdf_url) {
+    return 'Bkav đã có hoá đơn cho đơn này — đối chiếu và ghi nhận số hoá đơn thủ công, không phát hành lại.';
+  }
+  if (o.created_at < windowStart) {
+    return 'Quá 1 ngày làm việc kể từ khi tạo đơn — không phát hành lại tự động.';
+  }
+  return null;
+}
+
+router.post('/orders/enterprise/:id/reissue', async (req, res, next) => {
+  try {
+    const g = await guard(req, res);
+    if (!g) return;
+    const o = g.db.prepare('SELECT * FROM orders WHERE order_id = ?').get(req.params.id);
+    const reason = notReissuableReason(o, startOfPreviousWorkingDayUtc7(Date.now()));
+    if (reason) return res.status(409).json({ ok: false, error: reason });
+    const r = g.db.prepare(
+      `UPDATE orders SET invoice_status = 'none', invoice_retry_count = 1, updated_at = ? WHERE order_id = ? AND invoice_status = 'failed'`,
+    ).run(Date.now(), o.order_id);
+    g.db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'Reissue', ?, ?)`)
+      .run(o.order_id, `Kế toán yêu cầu phát hành lại (thiết bị ${String(req.body.deviceId).trim()})`, Date.now());
+    res.json({ ok: true, queued: r.changes === 1 });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.post('/orders/enterprise/:id/invoice', async (req, res, next) => {
   try {
     const invoiceId = String((req.body || {}).invoiceId || '').trim();

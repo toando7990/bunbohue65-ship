@@ -587,3 +587,18 @@ export async function enterpriseRecordInvoice(
     body: { deviceId, invoiceId, pdfUrl },
   });
 }
+
+// "Phát hành lại" hoá đơn Bkav cho đơn 'Thất bại' (chỉ Kế toán, trong 1 ngày
+// làm việc kể từ khi tạo đơn). VPS đặt đơn về hàng chờ để cron phát hành,
+// kiểm tra Bkav đã có hoá đơn chưa trước khi tạo; trả 409 kèm lý do nếu
+// không được phát hành lại.
+export async function enterpriseReissueInvoice(
+  deviceId: string,
+  orderId: string,
+): Promise<{ ok: boolean; queued: boolean }> {
+  return vpsFetch({
+    method: "POST",
+    path: `/orders/enterprise/${encodeURIComponent(orderId)}/reissue`,
+    body: { deviceId },
+  });
+}

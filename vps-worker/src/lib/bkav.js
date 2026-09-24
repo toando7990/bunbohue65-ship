@@ -307,52 +307,68 @@ function buildJsonPayload(invoice, config) {
 // lượng = thành tiền, khớp đúng số hiển thị).
 function buildInvoiceLines(invoice, taxRateID) {
   const items = invoice.items || [];
-  const vatDivisor = 1 + invoice.taxRate / 100;
-  // Tổng CẢ 2 loại chiết khấu (KM Hệ 1 + phiếu giảm giá, Giai đoạn 3e) —
-  // cả 2 đều ĐÃ GỒM VAT, cộng dồn trước khi quy đổi + phân bổ theo món
-  // (công thức không đổi, chỉ gộp số tiền đầu vào).
-  const totalDiscountInclusiveVat =
-    Number(invoice.kmDiscountAmount || 0) + Number(invoice.voucherDiscountAmount || 0);
-  const discountPreTax =
-    totalDiscountInclusiveVat > 0 ? totalDiscountInclusiveVat / vatDivisor : 0;
+  const rate = Number(invoice.taxRate) / 100;
+  const vatDivisor = 1 + rate;
 
-  // Làm tròn ĐƠN GIÁ trước (khớp Bkav), rồi nhân số lượng để ra thành
-  // tiền từng dòng — thay vì làm tròn SAU KHI nhân (bản cũ, sai).
+  // Đơn giá TRƯỚC THUẾ làm tròn từng đơn giá (khớp Bkav), thành tiền = đơn
+  // giá × số lượng.
   const roundedLines = items.map((it) => {
     const roundedUnitPrice = Math.round(it.price / vatDivisor);
     return { it, roundedUnitPrice, preTaxAmount: roundedUnitPrice * it.quantity };
   });
-
-  // Tổng tiền TRƯỚC THUẾ toàn đơn (CỘNG DỒN từ thành tiền từng dòng ĐÃ
-  // LÀM TRÒN ở trên, không phải tính lại từ số thô) — mẫu số để phân bổ
-  // chiết khấu theo tỷ lệ, khớp đúng "Cộng tiền hàng" Bkav hiển thị.
   const goodsAmountPreTax = roundedLines.reduce((s, l) => s + l.preTaxAmount, 0);
 
-  // SỬA LỖI (đối chiếu LẦN 2 với ảnh hoá đơn thật — lệch 1 đồng ở TỔNG
-  // tiền thuế): cộng dồn taxAmount ĐÃ LÀM TRÒN của TỪNG dòng riêng lẻ có
-  // thể lệch 1 đồng so với thuế tính trên TỔNG "Cộng tiền hàng" (làm
-  // tròn nhiều lần cộng dồn sai số) — ảnh hoá đơn thật xác nhận Bkav
-  // dùng đúng "thuế trên tổng", không phải "tổng của thuế từng dòng đã
-  // làm tròn riêng". Áp dụng kỹ thuật kế toán chuẩn "làm tròn TỔNG
-  // trước, dòng CUỐI CÙNG nhận phần dư" — đảm bảo tổng các taxAmount gửi
-  // lên LUÔN khớp CHÍNH XÁC với thuế tính trên tổng "Cộng tiền hàng",
-  // không phụ thuộc Bkav tự tính lại hay dùng đúng breakdown đã gửi.
-  const totalDiscountAllocated = Math.min(discountPreTax, goodsAmountPreTax);
-  const totalTaxableAmount = goodsAmountPreTax - totalDiscountAllocated;
-  const totalTaxExpected = Math.round(totalTaxableAmount * (invoice.taxRate / 100));
-  let taxAllocatedSoFar = 0;
+  // Tổng chiết khấu (KM Hệ 1 + phiếu giảm giá) — ĐÃ GỒM VAT.
+  const totalDiscountInclusiveVat =
+    Number(invoice.kmDiscountAmount || 0) + Number(invoice.voucherDiscountAmount || 0);
 
-  return roundedLines.map(({ it, roundedUnitPrice, preTaxAmount }, index) => {
-    const isLastLine = index === roundedLines.length - 1;
-    const itemDiscount =
-      discountPreTax > 0 && goodsAmountPreTax > 0
-        ? Math.round((discountPreTax / goodsAmountPreTax) * preTaxAmount)
+  // TỔNG HOÁ ĐƠN = ĐÚNG SỐ TIỀN KHÁCH ĐÃ TRẢ (theo yêu cầu). Trước đây tính
+  // ngược giá chưa thuế rồi làm tròn từng bước → tổng lệch 1–3đ so với tiền
+  // khách trả (đo trên 1.194 tổ hợp: 57% bị lệch). Cách mới:
+  //  - Tiền hàng chịu thuế T chọn gần nhất với (tiền khách trả ÷ 1,08) — làm
+  //    tiền thuế lệch khỏi đúng thuế suất ÍT NHẤT có thể (khi đơn có chiết
+  //    khấu, điều chỉnh qua chiết khấu trước thuế; không tạo chiết khấu giả
+  //    cho đơn không có khuyến mãi).
+  //  - Tiền thuế = tiền khách trả − T (phần còn lại) → T + thuế khớp tuyệt đối.
+  // Không có số tiền khách trả (gọi cũ) → giữ công thức cũ.
+  const paid = Number(invoice.amount);
+  let totalDiscountPreTax;
+  let totalTax;
+  if (Number.isFinite(paid) && paid > 0) {
+    const targetTaxable = Math.round(paid / vatDivisor);
+    totalDiscountPreTax =
+      totalDiscountInclusiveVat > 0
+        ? Math.min(Math.max(goodsAmountPreTax - targetTaxable, 0), goodsAmountPreTax)
         : 0;
+    totalTax = Math.max(paid - (goodsAmountPreTax - totalDiscountPreTax), 0);
+  } else {
+    totalDiscountPreTax = Math.min(
+      Math.round(totalDiscountInclusiveVat / vatDivisor),
+      goodsAmountPreTax,
+    );
+    totalTax = Math.round((goodsAmountPreTax - totalDiscountPreTax) * rate);
+  }
+  const totalTaxable = goodsAmountPreTax - totalDiscountPreTax;
+
+  // Phân bổ chiết khấu và thuế theo tỷ lệ thành tiền; DÒNG CUỐI nhận phần dư
+  // để tổng các dòng luôn khớp CHÍNH XÁC tổng đã tính ở trên.
+  let discountSoFar = 0;
+  let taxSoFar = 0;
+  return roundedLines.map(({ it, roundedUnitPrice, preTaxAmount }, index) => {
+    const isLast = index === roundedLines.length - 1;
+    const itemDiscount = isLast
+      ? totalDiscountPreTax - discountSoFar
+      : goodsAmountPreTax > 0
+        ? Math.round((totalDiscountPreTax * preTaxAmount) / goodsAmountPreTax)
+        : 0;
+    discountSoFar += itemDiscount;
     const taxableAmount = preTaxAmount - itemDiscount;
-    const lineTax = isLastLine
-      ? totalTaxExpected - taxAllocatedSoFar
-      : Math.round(taxableAmount * (invoice.taxRate / 100));
-    taxAllocatedSoFar += lineTax;
+    const lineTax = isLast
+      ? totalTax - taxSoFar
+      : totalTaxable > 0
+        ? Math.round((totalTax * taxableAmount) / totalTaxable)
+        : 0;
+    taxSoFar += lineTax;
     return {
       itemTypeID: 0,
       itemName: it.name,
@@ -362,12 +378,9 @@ function buildInvoiceLines(invoice, taxRateID) {
       amount: preTaxAmount,
       taxRateID,
       taxAmount: lineTax,
-      // discountRate chỉ để tham khảo/hiển thị (đúng quyết định đã chốt
-      // cho tiers — "tỷ lệ chỉ để tham khảo"), KHÔNG dùng để tính toán.
+      // discountRate chỉ để tham khảo/hiển thị, KHÔNG dùng để tính toán.
       discountRate:
-        preTaxAmount > 0
-          ? Math.round((itemDiscount / preTaxAmount) * 10000) / 100
-          : 0,
+        preTaxAmount > 0 ? Math.round((itemDiscount / preTaxAmount) * 10000) / 100 : 0,
       discountAmount: itemDiscount,
       isDiscount: false,
     };
