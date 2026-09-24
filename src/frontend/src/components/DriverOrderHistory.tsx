@@ -210,6 +210,7 @@ export function DriverOrderHistory({
                   hidePickupCode
                   disableDetailLink
                   compactRestaurantInfo
+                  staffView
                 />
                 {/* "In lại phiếu" — đúng mẫu phiếu quầy, CHỈ bật khi hoá đơn
                     Bkav đã phát hành. */}

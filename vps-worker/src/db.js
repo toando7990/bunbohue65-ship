@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS orders (
   pdf_url             TEXT NOT NULL DEFAULT '',        -- link PDF hóa đơn từ Bkav (CmdType 816)
   pickup_code         TEXT NOT NULL DEFAULT '',        -- mã 6 ký tự khách báo tài xế đọc cho quán khi thanh toán
   km_program_code     TEXT NOT NULL DEFAULT '',        -- mã chương trình KM đã áp dụng, rỗng nếu không có
+  km_program_name     TEXT NOT NULL DEFAULT '',        -- TÊN chương trình KM (VD 'Giờ Vàng') — hiện trên thẻ đơn khách
   km_discount_amount  INTEGER NOT NULL DEFAULT 0,      -- tiền chiết khấu KM (đã gồm VAT, cùng đơn vị với amount)
   voucher_code        TEXT NOT NULL DEFAULT '',        -- mã phiếu giảm giá đã dùng, rỗng nếu không có
   voucher_discount_amount INTEGER NOT NULL DEFAULT 0,  -- tiền chiết khấu phiếu (đã gồm VAT, áp SAU km_discount_amount)
@@ -278,6 +279,9 @@ function initSchema(db) {
   // có KM).
   if (!colNames.has('km_program_code')) {
     db.exec("ALTER TABLE orders ADD COLUMN km_program_code TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has('km_program_name')) {
+    db.exec("ALTER TABLE orders ADD COLUMN km_program_name TEXT NOT NULL DEFAULT ''");
   }
   if (!colNames.has('km_discount_amount')) {
     db.exec('ALTER TABLE orders ADD COLUMN km_discount_amount INTEGER NOT NULL DEFAULT 0');

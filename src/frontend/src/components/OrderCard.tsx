@@ -9,12 +9,14 @@
 import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useDevicesByRestaurant, useRestaurants } from "@/hooks/useQueries";
+import { getOrderPromoInfo } from "@/lib/vps-client";
 import { PaymentStatus } from "@/types";
 import type {
   BookingStatus,
   Order,
   PaymentStatus as PaymentStatusType,
 } from "@/types";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -125,6 +127,13 @@ export interface OrderCardProps {
    * chỉ/SĐT của quán mình nên không cần lặp lại trên từng thẻ đơn.
    */
   compactRestaurantInfo?: boolean;
+  /**
+   * Khi true: cách hiển thị cho NHÂN VIÊN (tab Lịch sử /driver) — giữ như cũ:
+   * 1 dòng "Đã giảm" gộp, "Tổng cộng" = tiền món (số tài xế trả quán). Mặc
+   * định (false) = phía KHÁCH: tách từng khoản khuyến mại / phiếu kèm tên,
+   * phí ship luôn hiện, số lớn = TỔNG KHÁCH TRẢ (tiền món sau giảm + ship).
+   */
+  staffView?: boolean;
 }
 
 export function OrderCard({
@@ -133,7 +142,26 @@ export function OrderCard({
   hidePickupCode,
   disableDetailLink,
   compactRestaurantInfo,
+  staffView,
 }: OrderCardProps) {
+  const kmDiscount = order.kmDiscountAmount;
+  const voucherDiscount = order.voucherDiscountAmount;
+  const hasDiscount = kmDiscount + voucherDiscount > 0n;
+  // Đơn giao tận nơi có địa chỉ nhận; đơn tại quầy để trống → không nói
+  // tới phí ship.
+  const isDelivery = !!order.cusAddress;
+  const customerTotal = order.amount + order.shippingFee;
+  // Tên chương trình / mã phiếu — chỉ tải khi đơn THỰC SỰ có giảm giá.
+  const promoQuery = useQuery({
+    queryKey: ["orderPromoInfo", order.orderId],
+    queryFn: () => getOrderPromoInfo(order.orderId),
+    enabled: !staffView && hasDiscount,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+  });
+  const kmLabel =
+    promoQuery.data?.kmProgramName || promoQuery.data?.kmProgramCode || "";
+  const voucherLabel = promoQuery.data?.voucherCode || "";
   // Tra cứu địa chỉ nhà hàng theo restaurantId để hiển thị + copy.
   const { data: restaurants } = useRestaurants();
   const restaurant = restaurants?.find(
@@ -253,6 +281,14 @@ export function OrderCard({
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <StatusBadge status={order.bookingStatus as BookingStatus} />
         <StatusBadge status={order.paymentStatus as PaymentStatusType} />
+        {!staffView && hasDiscount && (
+          <span
+            className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary"
+            data-ocid={`order.card.${index}.promo_chip`}
+          >
+            🎁 Có khuyến mại
+          </span>
+        )}
       </div>
 
       <ul className="mt-3 divide-y divide-border border-t border-border">
@@ -275,34 +311,114 @@ export function OrderCard({
         ))}
       </ul>
 
-      {/* Chiết khấu (Hệ 1 + phiếu giảm giá, Giai đoạn 4c) — chỉ hiện khi
+      {staffView && (
+        <>
+          {/* Chiết khấu (Hệ 1 + phiếu giảm giá, Giai đoạn 4c) — chỉ hiện khi
           đơn thực sự có áp dụng ít nhất 1 loại. Cộng gộp thành 1 dòng duy
           nhất (khớp cách hoá đơn Bkav cũng cộng gộp 2 loại — Giai đoạn 3e). */}
-      {order.kmDiscountAmount + order.voucherDiscountAmount > 0n && (
-        <div
-          className="mt-2 flex items-center justify-between text-xs"
-          data-ocid={`order.card.${index}.discount_line`}
-        >
-          <span className="text-muted-foreground">Đã giảm</span>
-          <span className="font-mono font-medium text-destructive">
-            -{formatVnd(order.kmDiscountAmount + order.voucherDiscountAmount)}
-          </span>
-        </div>
-      )}
+          {order.kmDiscountAmount + order.voucherDiscountAmount > 0n && (
+            <div
+              className="mt-2 flex items-center justify-between text-xs"
+              data-ocid={`order.card.${index}.discount_line`}
+            >
+              <span className="text-muted-foreground">Đã giảm</span>
+              <span className="font-mono font-medium text-destructive">
+                -
+                {formatVnd(
+                  order.kmDiscountAmount + order.voucherDiscountAmount,
+                )}
+              </span>
+            </div>
+          )}
 
-      {/* Phí ship (Lalamove) — TÁCH RIÊNG khỏi order.amount (tiền hàng
+          {/* Phí ship (Lalamove) — TÁCH RIÊNG khỏi order.amount (tiền hàng
           thuần), tài xế trả riêng cho Lalamove, không phải khoản quán
           nhận. BUG THẬT đã sửa: trước đây không hiện ở đâu cả trong
           thẻ đơn, khách không biết đã tính phí ship chưa/bao nhiêu. */}
-      {order.shippingFee > 0n && (
+          {order.shippingFee > 0n && (
+            <div
+              className="mt-2 flex items-center justify-between text-xs"
+              data-ocid={`order.card.${index}.shipping_fee_line`}
+            >
+              <span className="text-muted-foreground">Phí ship</span>
+              <span className="font-mono font-medium">
+                {formatVnd(order.shippingFee)}
+              </span>
+            </div>
+          )}
+        </>
+      )}
+
+      {!staffView && (
         <div
-          className="mt-2 flex items-center justify-between text-xs"
-          data-ocid={`order.card.${index}.shipping_fee_line`}
+          className="mt-2 space-y-1 text-xs"
+          data-ocid={`order.card.${index}.breakdown`}
         >
-          <span className="text-muted-foreground">Phí ship</span>
-          <span className="font-mono font-medium">
-            {formatVnd(order.shippingFee)}
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Tiền món</span>
+            <span className="font-mono">
+              {formatVnd(order.amount + kmDiscount + voucherDiscount)}
+            </span>
+          </div>
+          {kmDiscount > 0n && (
+            <div
+              className="flex items-center justify-between"
+              data-ocid={`order.card.${index}.km_line`}
+            >
+              <span className="text-muted-foreground">
+                Khuyến mại
+                {kmLabel && (
+                  <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">
+                    {kmLabel}
+                  </span>
+                )}
+              </span>
+              <span className="font-mono font-medium text-destructive">
+                -{formatVnd(kmDiscount)}
+              </span>
+            </div>
+          )}
+          {voucherDiscount > 0n && (
+            <div
+              className="flex items-center justify-between"
+              data-ocid={`order.card.${index}.voucher_line`}
+            >
+              <span className="text-muted-foreground">
+                Phiếu giảm giá
+                {voucherLabel && (
+                  <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">
+                    {voucherLabel}
+                  </span>
+                )}
+              </span>
+              <span className="font-mono font-medium text-destructive">
+                -{formatVnd(voucherDiscount)}
+              </span>
+            </div>
+          )}
+          {hasDiscount && (
+            <div className="flex items-center justify-between border-t border-dashed border-border pt-1 font-semibold">
+              <span>Tiền món sau giảm</span>
+              <span className="font-mono">{formatVnd(order.amount)}</span>
+            </div>
+          )}
+          {isDelivery && (
+            <div
+              className="flex items-center justify-between"
+              data-ocid={`order.card.${index}.shipping_fee_line`}
+            >
+              <span className="text-muted-foreground">
+                🛵 Phí ship (Lalamove)
+              </span>
+              {order.shippingFee > 0n ? (
+                <span className="font-mono">
+                  {formatVnd(order.shippingFee)}
+                </span>
+              ) : (
+                <span className="italic text-warning">Tài xế báo khi giao</span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -314,19 +430,40 @@ export function OrderCard({
         </span>
         <div className="flex items-center gap-1.5">
           <div className="text-right">
-            <p className="font-display text-base font-semibold text-foreground">
-              {formatVnd(order.amount)}
+            <p
+              className="font-display text-base font-semibold text-foreground"
+              data-ocid={`order.card.${index}.total`}
+            >
+              {formatVnd(staffView ? order.amount : customerTotal)}
             </p>
-            <p className="text-[11px] text-muted-foreground">Tổng cộng</p>
+            <p className="text-[11px] text-muted-foreground">
+              {staffView
+                ? "Tổng cộng"
+                : isDelivery
+                  ? order.shippingFee > 0n
+                    ? `Tổng khách trả (món ${formatVnd(order.amount)} + ship ${formatVnd(order.shippingFee)})`
+                    : "Tiền món + phí ship tài xế báo"
+                  : "Tổng cộng"}
+            </p>
           </div>
           <CopyButton
             small
-            value={formatVnd(order.amount)}
+            value={formatVnd(staffView ? order.amount : customerTotal)}
             label="tổng tiền"
             ocid={`order.card.${index}.copy_amount_button`}
           />
         </div>
       </div>
+
+      {!staffView && hasDiscount && (
+        <p
+          className="mt-2 rounded-lg bg-success/10 px-3 py-1.5 text-center text-xs font-semibold text-success"
+          data-ocid={`order.card.${index}.savings`}
+        >
+          🎉 Bạn đã tiết kiệm {formatVnd(kmDiscount + voucherDiscount)} cho đơn
+          này
+        </p>
+      )}
 
       {!disableDetailLink && (
         <Link

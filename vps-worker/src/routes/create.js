@@ -146,23 +146,38 @@ router.post('/order/create', async (req, res, next) => {
     const sharedLink = sharedLinkFromAhamove;
 
     // 3. Lưu SQLite
+    // TÊN chương trình KM vừa áp dụng (để hiện trên thẻ đơn khách, VD "Giờ
+    // Vàng") — applyPromotion chỉ trả MÃ; lấy tên qua query công khai
+    // getCurrentPromotion() và chỉ nhận khi đúng mã vừa áp dụng. Lỗi → để
+    // trống (thẻ đơn hiện mã thay tên), không chặn tạo đơn.
+    let kmProgramName = '';
+    if (kmProgramCode) {
+      try {
+        const cur = await canister.getCurrentPromotion();
+        const promo = Array.isArray(cur) ? cur[0] : cur;
+        if (promo && promo.code === kmProgramCode) kmProgramName = String(promo.name || '');
+      } catch (e) {
+        console.warn('[create] getCurrentPromotion lỗi (bỏ qua tên KM):', e.message);
+      }
+    }
+
     const insertOrder = db.prepare(`
       INSERT INTO orders (order_id, restaurant_id, cus_name, cus_phone, cus_address, cus_tax_code,
         receiver_email, amount, goods_amount, shipping_fee, tax_total,
         ahamove_order_id, tingee_qr_id, tingee_qr_account, tingee_bill_id, tingee_qr_code, shared_link,
-        pickup_code, km_program_code, km_discount_amount, voucher_code, voucher_discount_amount,
+        pickup_code, km_program_code, km_program_name, km_discount_amount, voucher_code, voucher_discount_amount,
         booking_status, payment_status, invoice_status, canister_synced, created_at, updated_at)
       VALUES (@orderId, @restaurantId, @cusName, @cusPhone, @cusAddress, @cusTaxCode,
         @receiverEmail, @amount, @goodsAmount, @shippingFee, @taxTotal,
         @ahamoveOrderId, @tingeeQrId, @tingeeQrAccount, @tingeeBillId, @tingeeQrCode, @sharedLink,
-        @pickupCode, @kmProgramCode, @kmDiscountAmount, @voucherCodeApplied, @voucherDiscountAmount,
+        @pickupCode, @kmProgramCode, @kmProgramName, @kmDiscountAmount, @voucherCodeApplied, @voucherDiscountAmount,
         @bookingStatus, 'unpaid', 'none', 0, @now, @now)
     `);
     insertOrder.run({
       orderId, restaurantId, cusName, cusPhone, cusAddress, cusTaxCode: cusTaxCode || '',
       receiverEmail: receiverEmail || '', amount, goodsAmount, shippingFee, taxTotal,
       ahamoveOrderId, tingeeQrId, tingeeQrAccount, tingeeBillId, tingeeQrCode, sharedLink,
-      pickupCode, kmProgramCode, kmDiscountAmount, voucherCodeApplied, voucherDiscountAmount, bookingStatus, now,
+      pickupCode, kmProgramCode, kmProgramName, kmDiscountAmount, voucherCodeApplied, voucherDiscountAmount, bookingStatus, now,
     });
     const insertItem = db.prepare(`
       INSERT INTO order_items (order_id, item_id, name, price, quantity, unit_name, vat_rate)

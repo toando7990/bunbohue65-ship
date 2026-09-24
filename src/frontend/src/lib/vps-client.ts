@@ -618,3 +618,19 @@ export async function enterpriseReissueInvoice(
     body: { deviceId },
   });
 }
+
+// Tên chương trình khuyến mại + mã phiếu giảm giá của 1 đơn (VPS lưu khi tạo
+// đơn; canister chỉ có số tiền giảm) — cho thẻ đơn phía khách.
+export interface OrderPromoInfo {
+  kmProgramCode: string;
+  kmProgramName: string;
+  voucherCode: string;
+}
+export async function getOrderPromoInfo(
+  orderId: string,
+): Promise<OrderPromoInfo> {
+  return vpsFetch<{ ok: boolean } & OrderPromoInfo>({
+    method: "GET",
+    path: `/order/${encodeURIComponent(orderId)}/promo-info`,
+  });
+}
