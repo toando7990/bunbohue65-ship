@@ -133,6 +133,11 @@ async function callBkavViaProxy(jsonPayload, config) {
       // Proxy chuyển tiếp nguyên các header này lên Bkav.
       'Content-Type': 'text/xml; charset=utf-8',
       SOAPAction: '"http://tempuri.org/ExecCommand"',
+      // KHÔNG cho Bkav nén phản hồi HTTP — BUG THẬT đã gặp: axios tự thêm
+      // 'Accept-Encoding: gzip, compress, deflate, br', proxy chuyển tiếp
+      // lên Bkav, IIS của Bkav nén phản hồi, proxy (không giải nén lớp HTTP)
+      // đọc dữ liệu nhị phân như chữ → 'Không parse được phản hồi Bkav'.
+      'Accept-Encoding': 'identity',
       // Khoá giải mã cho bkav-proxy — proxy KHÔNG lưu lại, chỉ dùng đúng
       // request này rồi bỏ. Đây chính là header bản tham khảo THIẾU.
       'X-BKAV-KEY': `${keyBase64}:${ivBase64}`,

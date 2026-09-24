@@ -172,14 +172,26 @@ const server = http.createServer(async (req, res) => {
     const forwardHeaders = {};
     for (const [name, value] of Object.entries(req.headers)) {
       const lower = name.toLowerCase();
-      if (lower === 'x-bkav-key' || lower === 'host' || lower === 'connection') continue;
+      // accept-encoding: KHÔNG chuyển tiếp — tránh Bkav nén phản hồi HTTP.
+      if (lower === 'x-bkav-key' || lower === 'host' || lower === 'connection' || lower === 'accept-encoding') continue;
       forwardHeaders[name] = value;
     }
     forwardHeaders['content-length'] = requestBody.length.toString();
 
     try {
       const bkavResp = await forwardToBkav(targetUrl, req.method, forwardHeaders, requestBody);
-      const rawBody = bkavResp.body.toString('utf8').replace(/^\uFEFF/, '').trim();
+      // Lớp bảo vệ thứ hai: Bkav vẫn nén phản hồi HTTP → tự giải nén theo
+      // Content-Encoding trước khi đọc (trước đây đọc thẳng nhị phân như chữ).
+      let respBuf = bkavResp.body;
+      const ce = String((bkavResp.headers && bkavResp.headers['content-encoding']) || '').toLowerCase();
+      try {
+        if (ce.includes('gzip')) respBuf = zlib.gunzipSync(respBuf);
+        else if (ce.includes('deflate')) respBuf = zlib.inflateSync(respBuf);
+        else if (ce.includes('br')) respBuf = zlib.brotliDecompressSync(respBuf);
+      } catch (ceErr) {
+        console.warn('[bkav-proxy] Giải nén Content-Encoding thất bại:', ceErr.message);
+      }
+      const rawBody = respBuf.toString('utf8').replace(/^\uFEFF/, '').trim();
 
       let outputXml;
       if (isSoapFault(rawBody)) {
