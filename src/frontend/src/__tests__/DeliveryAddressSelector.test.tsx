@@ -1,6 +1,8 @@
-// Coverage cho DeliveryAddressSelector — 3 trạng thái: chưa xác thực
-// email, đã xác thực nhưng chưa có địa chỉ, có địa chỉ (tự chọn cái
-// đầu tiên nếu khách chưa chọn gì).
+// Coverage cho DeliveryAddressSelector — không còn yêu cầu xác thực email
+// (khách mới dùng địa chỉ lưu cục bộ qua lib/guest-identity.ts). Trạng
+// thái: khách mới chưa có địa chỉ (form thêm ngay), đã xác thực nhưng
+// chưa có địa chỉ (hướng dẫn sang /profile), có địa chỉ (tự chọn cái đầu
+// tiên nếu khách chưa chọn gì) — cho cả 2 luồng.
 
 import { DeliveryAddressSelector } from "@/components/DeliveryAddressSelector";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,8 +15,15 @@ vi.mock("@/lib/vps-client", () => ({
   listCustomerAddresses: (...args: unknown[]) => mockList(...args),
 }));
 
-vi.mock("@/components/EmailVerificationDialog", () => ({
-  EmailVerificationDialog: () => null,
+const mockListGuest = vi.fn();
+const mockAddGuest = vi.fn();
+vi.mock("@/lib/guest-identity", () => ({
+  listGuestAddresses: (...args: unknown[]) => mockListGuest(...args),
+  addGuestAddress: (...args: unknown[]) => mockAddGuest(...args),
+}));
+
+vi.mock("@/components/MapPicker", () => ({
+  MapPicker: () => <div data-ocid="mock-map-picker" />,
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -59,7 +68,7 @@ function renderSelector(
     <QueryClientProvider client={qc}>
       <DeliveryAddressSelector
         verifiedEmail={null}
-        onVerified={vi.fn()}
+        guestEmail="khach-abc@khach.bunbohue65.vn"
         selectedAddressId={null}
         onSelectAddress={vi.fn()}
         {...props}
@@ -72,12 +81,14 @@ describe("DeliveryAddressSelector", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    mockListGuest.mockReturnValue([]);
   });
 
-  it("shows the verify-email prompt when no email is verified yet", () => {
+  it("shows the guest add-address form when there's no verified email and no local address yet", () => {
+    mockListGuest.mockReturnValue([]);
     renderSelector({ verifiedEmail: null });
     expect(
-      screen.getByTestId("delivery_address_selector.unverified_state"),
+      screen.getByTestId("delivery_address_selector.guest_add_form"),
     ).toBeInTheDocument();
     expect(mockList).not.toHaveBeenCalled();
   });
@@ -107,7 +118,7 @@ describe("DeliveryAddressSelector", () => {
     });
   });
 
-  it("shows the currently-selected address and an edit link", async () => {
+  it("shows the currently-selected address and an edit link (verified)", async () => {
     mockList.mockResolvedValue(SAMPLE_ADDRESSES);
     renderSelector({ verifiedEmail: "a@test.com", selectedAddressId: 2 });
 
@@ -133,5 +144,17 @@ describe("DeliveryAddressSelector", () => {
     expect(
       screen.queryByTestId("delivery_address_selector.select"),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the selected local address and an 'add another' button for a guest with saved addresses", () => {
+    mockListGuest.mockReturnValue(SAMPLE_ADDRESSES);
+    renderSelector({ verifiedEmail: null, selectedAddressId: 1 });
+
+    expect(
+      screen.getByTestId("delivery_address_selector.selected_address_text"),
+    ).toHaveTextContent("123 Le Loi");
+    expect(
+      screen.getByTestId("delivery_address_selector.add_another_button"),
+    ).toBeInTheDocument();
   });
 });

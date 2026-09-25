@@ -239,6 +239,19 @@ mixin (
     promotions.get(code);
   };
 
+  // QUYẾT ĐỊNH NGHIỆP VỤ đã chốt với người dùng: khách CHƯA xác thực email
+  // (kể cả khách dùng email tạm ở "đặt món từ xa" — VPS tự sinh, xem
+  // src/frontend/src/lib/guest-identity.ts) VẪN được áp dụng khuyến mại Hệ
+  // 1 — KHÔNG áp dụng cho "khuyến mại đăng ký" (chỉ phát khi xác thực OTP
+  // lần đầu, xem mixins/email-verification-api.mo, tự động không liên
+  // quan ở đây). Trước đây hàm này bắt buộc isEmailVerified(otpRecords,
+  // email) — đã bỏ điều kiện đó theo đúng yêu cầu.
+  //
+  // ĐÁNH ĐỔI đã xác nhận: perCustomerDailyLimit (giới hạn mỗi khách/ngày)
+  // vẫn đếm theo email như cũ, nhưng khách dùng email tạm (không cần xác
+  // thực) có thể cố ý tạo email tạm mới (xoá cache/ẩn danh) để lách giới
+  // hạn này — dailyOrderLimit (giới hạn TỔNG/ngày, không phân biệt khách)
+  // vẫn có tác dụng đầy đủ, giới hạn rủi ro ở mức trần đã cấu hình.
   public shared func applyPromotion(
     email : Text,
     orderAmount : Nat,
@@ -247,9 +260,6 @@ mixin (
     let payload = email # "|" # orderAmount.toText();
     if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
       return #err("Invalid HMAC");
-    };
-    if (not EmailVerificationLib.isEmailVerified(otpRecords, email)) {
-      return #err("Email chưa được xác thực");
     };
     let now = Time.now();
     var found : ?PromotionTypes.Promotion = null;

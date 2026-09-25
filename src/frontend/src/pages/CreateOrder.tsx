@@ -27,6 +27,7 @@ import { NearestRestaurantDisplay } from "@/components/NearestRestaurantDisplay"
 import { PromoMarquee } from "@/components/PromoMarquee";
 import { PromotionBanner } from "@/components/PromotionBanner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -45,6 +46,7 @@ import {
   useRestaurants,
 } from "@/hooks/useQueries";
 import { findNearest } from "@/lib/geo";
+import { getOrCreateGuestEmail } from "@/lib/guest-identity";
 import { imageBytesToDataUrl } from "@/lib/utils";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import {
@@ -159,10 +161,18 @@ export default function CreateOrder() {
   // Địa chỉ nhận hàng khách đã chọn (BẮT BUỘC — Phần 3/6 tái cấu trúc đặt
   // món từ xa) — quyết định nhà hàng gần nhất VÀ được dùng làm cusAddress
   // khi submit thay vì khách gõ tay như trước.
-  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(() => {
+  const [verifiedEmail] = useState<string | null>(() => {
     const v = getVerifiedEmail();
     return v ? v.email : null;
   });
+  // Email "ngầm định" riêng cho trình duyệt này — dùng khi khách CHƯA xác
+  // thực email thật, để vẫn có 1 định danh ổn định cho hồ sơ + khuyến mại
+  // (xem lib/guest-identity.ts). Khách KHÔNG bao giờ thấy/nhập email này.
+  const [guestEmail] = useState<string>(() => getOrCreateGuestEmail());
+  // Email dùng để gửi lên VPS (receiverEmail, KM, hồ sơ) — ưu tiên email
+  // thật đã xác thực, không thì dùng email ngầm định. LUÔN có giá trị,
+  // khách không còn bị chặn đặt đơn vì "chưa có email" nữa.
+  const identityEmail = verifiedEmail ?? guestEmail;
   const [selectedAddress, setSelectedAddress] =
     useState<CustomerAddress | null>(null);
   // Nhà hàng yêu thích của khách (Profile.tsx) — "" nếu chưa chọn. Ưu
@@ -244,15 +254,12 @@ export default function CreateOrder() {
     [displayCartLines],
   );
 
-  // Hồ sơ khách hàng (tên + SĐT + email đã xác thực) giờ quản lý ở
-  // "Thông tin của bạn" (/profile), KHÔNG còn nhập trực tiếp trong giỏ
-  // hàng — customer state vẫn tự điền qua useEffect bên dưới (không đổi),
-  // chỉ đổi cách HIỂN THỊ: đầy đủ thì hiện tóm tắt (chỉ đọc) + link "Sửa",
-  // thiếu thì chặn đặt đơn + link sang /profile để hoàn thành.
+  // Hồ sơ khách hàng (Họ tên + SĐT) — email KHÔNG còn là điều kiện ở đây
+  // nữa (identityEmail luôn có sẵn, xác thực hay chưa), khách mới chỉ cần
+  // điền Họ tên + SĐT ngay trong giỏ hàng (không cần rời trang), khách đã
+  // xác thực vẫn dùng hồ sơ đã lưu ở "Thông tin của bạn" (/profile) như cũ.
   const profileComplete = Boolean(
-    customer.receiverEmail.trim() &&
-      customer.cusName.trim() &&
-      customer.cusPhone.trim(),
+    customer.cusName.trim() && customer.cusPhone.trim(),
   );
   // useCallback: giữ tham chiếu hàm ổn định giữa các lần render để MenuPicker/
   // MenuCard (React.memo) không phải re-render toàn bộ danh sách món mỗi khi
@@ -300,21 +307,20 @@ export default function CreateOrder() {
     [restaurantId, cart, menu],
   );
 
-  // Tự động điền thông tin khách từ email đã xác thực.
-  // Khi mở app: đọc email đã xác thực (localStorage) → điền sẵn ô email nhận
-  // hoá đơn → gọi VPS GET /customers/:email để lấy tên + số điện thoại đã lưu
-  // và điền vào form, giúp khách đặt đơn tiếp theo nhanh hơn.
+  // Tự động điền thông tin khách từ identityEmail (email đã xác thực HOẶC
+  // email ngầm định của khách mới — luôn có giá trị). Gọi VPS GET
+  // /customers/:email để lấy tên + số điện thoại đã lưu từ lần đặt trước
+  // (nếu có) và điền vào form — áp dụng cho CẢ khách mới lẫn khách đã xác
+  // thực, giúp lần đặt tiếp theo nhanh hơn dù chưa từng xác thực email.
   useEffect(() => {
     let cancelled = false;
-    const verified = getVerifiedEmail();
-    if (!verified) return;
 
     setCustomer((prev) => ({
       ...prev,
-      receiverEmail: verified.email,
+      receiverEmail: identityEmail,
     }));
 
-    vpsGetCustomer(verified.email)
+    vpsGetCustomer(identityEmail)
       .then((customer) => {
         if (cancelled || !customer) return;
         setCustomer((prev) => ({
@@ -331,7 +337,7 @@ export default function CreateOrder() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [identityEmail]);
 
   // App tự chọn nhà hàng gần nhất theo địa chỉ nhận hàng khách đã chọn —
   // khách KHÔNG còn tự chọn nhà hàng (bỏ handleRestaurantChange cũ, vốn
@@ -527,7 +533,7 @@ export default function CreateOrder() {
         // đã kiểm tra ở trên), KHÔNG còn gõ tay trong form như trước.
         cusAddress: selectedAddress.address,
         cusTaxCode: customer.cusTaxCode.trim(),
-        receiverEmail: customer.receiverEmail.trim(),
+        receiverEmail: identityEmail,
         items: displayCartLines.map((l) => ({
           itemId: l.item.itemId,
           name: l.item.name,
@@ -591,10 +597,10 @@ export default function CreateOrder() {
   }
 
   const totalAmount = itemsTotal;
-  const cartDiscounts = useCartDiscounts(
-    itemsTotal,
-    profileComplete ? customer.receiverEmail.trim() : null,
-  );
+  // identityEmail luôn có giá trị (xác thực hay ngầm định) — khuyến mại Hệ
+  // 1 áp dụng cho CẢ khách mới, không còn phụ thuộc profileComplete/email
+  // xác thực (xem ghi chú trong applyPromotion, backend/mixins/promotion-api.mo).
+  const cartDiscounts = useCartDiscounts(itemsTotal, identityEmail);
 
   return (
     <div className="bbh-order-theme bg-background text-foreground">
@@ -623,7 +629,7 @@ export default function CreateOrder() {
             >
               <DeliveryAddressSelector
                 verifiedEmail={verifiedEmail}
-                onVerified={setVerifiedEmail}
+                guestEmail={guestEmail}
                 selectedAddressId={selectedAddress?.id ?? null}
                 onSelectAddress={setSelectedAddress}
               />
@@ -808,44 +814,98 @@ export default function CreateOrder() {
                 <h3 className="mb-2 text-sm font-semibold">
                   Thông tin khách hàng
                 </h3>
-                {profileComplete ? (
-                  <div
-                    className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5"
-                    data-ocid="create_order.profile_summary"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {customer.cusName} · {customer.cusPhone}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {customer.receiverEmail}
-                      </p>
+                {verifiedEmail ? (
+                  profileComplete ? (
+                    <div
+                      className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5"
+                      data-ocid="create_order.profile_summary"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {customer.cusName} · {customer.cusPhone}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {customer.receiverEmail}
+                        </p>
+                      </div>
+                      <Link
+                        to="/profile"
+                        className="shrink-0 text-xs font-semibold text-primary underline underline-offset-2"
+                        data-ocid="create_order.profile_edit_link"
+                      >
+                        Sửa
+                      </Link>
                     </div>
-                    <Link
-                      to="/profile"
-                      className="shrink-0 text-xs font-semibold text-primary underline underline-offset-2"
-                      data-ocid="create_order.profile_edit_link"
+                  ) : (
+                    <div
+                      className="flex flex-col gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5"
+                      data-ocid="create_order.profile_incomplete_notice"
                     >
-                      Sửa
-                    </Link>
-                  </div>
+                      <p className="text-sm text-warning">
+                        Vui lòng hoàn thành "Thông tin của bạn" (họ tên, SĐT)
+                        trước khi đặt đơn.
+                      </p>
+                      <Link
+                        to="/profile"
+                        className="inline-flex min-h-[36px] w-fit items-center gap-1.5 rounded-md bg-warning px-3 text-xs font-semibold text-warning-foreground transition-smooth hover:opacity-90"
+                        data-ocid="create_order.profile_link"
+                      >
+                        <User className="h-3.5 w-3.5" aria-hidden="true" />
+                        Đi tới Thông tin của bạn
+                      </Link>
+                    </div>
+                  )
                 ) : (
+                  // Khách mới (chưa xác thực email) — điền ngay tại đây,
+                  // KHÔNG điều hướng sang trang khác, không nhắc gì về xác
+                  // thực email (chỉ có đúng 1 chỗ cho việc đó: mục "Tôi").
                   <div
-                    className="flex flex-col gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5"
-                    data-ocid="create_order.profile_incomplete_notice"
+                    className="flex flex-col gap-2 rounded-md border border-border bg-card p-3"
+                    data-ocid="create_order.guest_profile_form"
                   >
-                    <p className="text-sm text-warning">
-                      Vui lòng hoàn thành "Thông tin của bạn" (họ tên, SĐT,
-                      email đã xác thực) trước khi đặt đơn.
-                    </p>
-                    <Link
-                      to="/profile"
-                      className="inline-flex min-h-[36px] w-fit items-center gap-1.5 rounded-md bg-warning px-3 text-xs font-semibold text-warning-foreground transition-smooth hover:opacity-90"
-                      data-ocid="create_order.profile_link"
-                    >
-                      <User className="h-3.5 w-3.5" aria-hidden="true" />
-                      Đi tới Thông tin của bạn
-                    </Link>
+                    <div className="flex flex-col gap-1.5">
+                      <Label
+                        htmlFor="create-order-guest-name"
+                        className="text-xs"
+                      >
+                        Họ tên
+                      </Label>
+                      <Input
+                        id="create-order-guest-name"
+                        value={customer.cusName}
+                        onChange={(e) =>
+                          setCustomer((prev) => ({
+                            ...prev,
+                            cusName: e.target.value,
+                          }))
+                        }
+                        placeholder="VD: Nguyễn Văn A"
+                        className="min-h-[40px]"
+                        data-ocid="create_order.guest_name_input"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label
+                        htmlFor="create-order-guest-phone"
+                        className="text-xs"
+                      >
+                        Số điện thoại
+                      </Label>
+                      <Input
+                        id="create-order-guest-phone"
+                        value={customer.cusPhone}
+                        onChange={(e) =>
+                          setCustomer((prev) => ({
+                            ...prev,
+                            cusPhone: e.target.value,
+                          }))
+                        }
+                        placeholder="VD: 0912345678"
+                        inputMode="tel"
+                        className="min-h-[40px]"
+                        data-ocid="create_order.guest_phone_input"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

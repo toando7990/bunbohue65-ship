@@ -1,20 +1,35 @@
-// Profile — "Thông tin của bạn". Yêu cầu xác thực email (giống
-// OrderHistory.tsx) — sau đó hiện form email (chỉ đọc) + tên + SĐT (bắt
-// buộc), tự điền nếu đã có (GET /customers/:email), lưu qua PUT
-// /customers/:email. Đây là hồ sơ dùng chung cho CreateOrder.tsx (giỏ
-// hàng không còn hỏi lại tên/SĐT/email, tự lấy từ đây).
+// Profile — "Thông tin của bạn". KHÔNG còn yêu cầu xác thực email để
+// dùng trang này — khách mới ("khách vãng lai") vẫn xem/sửa họ tên + SĐT
+// + địa chỉ nhận hàng ngay, dùng email ngầm định riêng cho trình duyệt
+// (xem lib/guest-identity.ts). Xác thực email (OTP) giờ CHỈ còn xuất hiện
+// ở đúng 1 chỗ trong trang này: bật "Nhận thông báo khuyến mại qua
+// email" — khi bật, dữ liệu khách (tên/SĐT/nhà hàng yêu thích/địa chỉ đã
+// lưu cục bộ) được "di chuyển" sang email thật vừa xác thực.
+//
+// Đây là hồ sơ dùng chung cho CreateOrder.tsx (giỏ hàng không còn hỏi lại
+// tên/SĐT/email, tự lấy từ đây).
 
 import { DeliveryAddressPanel } from "@/components/DeliveryAddressPanel";
 import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
+import { GuestAddressPanel } from "@/components/GuestAddressPanel";
 import { VoucherListPanel } from "@/components/VoucherListPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRestaurants } from "@/hooks/useQueries";
+import {
+  clearGuestIdentity,
+  getOrCreateGuestEmail,
+  listGuestAddresses,
+} from "@/lib/guest-identity";
 import { getVerifiedEmail } from "@/lib/verification-storage";
-import { getCustomer, updateCustomer } from "@/lib/vps-client";
+import {
+  addCustomerAddress,
+  getCustomer,
+  updateCustomer,
+} from "@/lib/vps-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ShieldCheck, User } from "lucide-react";
+import { Loader2, Mail, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -29,14 +44,24 @@ export default function Profile() {
     const v = getVerifiedEmail();
     return v ? normalizeEmail(v.email) : null;
   });
+  // Email ngầm định riêng cho trình duyệt này — dùng khi khách chưa xác
+  // thực email thật (xem lib/guest-identity.ts). Cùng cơ chế/khoá
+  // localStorage được CreateOrder.tsx dùng, nên hồ sơ khách mới điền ở
+  // đây tự động xuất hiện lại khi đặt món (và ngược lại).
+  const [guestEmail] = useState<string>(() => getOrCreateGuestEmail());
+  const identityEmail = verifiedEmail ?? guestEmail;
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
+  // Khách bấm bật "Nhận thông báo khuyến mại qua email" trong khi CHƯA
+  // xác thực → mở hộp thoại OTP trước, chỉ thật sự bật cờ notifyKm SAU
+  // khi xác thực thành công (xem EmailVerificationDialog.onVerified bên
+  // dưới). true = hộp thoại đang mở vì lý do này (khác khách tự bấm nút
+  // xác thực trực tiếp — hiện không còn nút đó nữa, chỉ còn đường này).
+  const [verifyingForNotify, setVerifyingForNotify] = useState(false);
   const queryClient = useQueryClient();
 
   const customerQuery = useQuery({
-    queryKey: ["customer", verifiedEmail],
-    queryFn: () =>
-      verifiedEmail ? getCustomer(verifiedEmail) : Promise.resolve(null),
-    enabled: !!verifiedEmail,
+    queryKey: ["customer", identityEmail],
+    queryFn: () => getCustomer(identityEmail),
   });
 
   const [name, setName] = useState("");
@@ -77,7 +102,6 @@ export default function Profile() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!verifiedEmail) return;
     const nextErrors: { name?: string; phone?: string } = {};
     if (!name.trim() || name.trim().length < 2) {
       nextErrors.name = "Vui lòng nhập họ tên (ít nhất 2 ký tự).";
@@ -92,13 +116,13 @@ export default function Profile() {
     setSaving(true);
     try {
       await updateCustomer(
-        verifiedEmail,
+        identityEmail,
         name.trim(),
         phone.trim(),
         notifyKm,
         favoriteRestaurantId,
       );
-      queryClient.invalidateQueries({ queryKey: ["customer", verifiedEmail] });
+      queryClient.invalidateQueries({ queryKey: ["customer", identityEmail] });
       toast.success("Đã lưu thông tin của bạn.");
     } catch (err) {
       toast.error(
@@ -106,6 +130,66 @@ export default function Profile() {
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  // Khách bấm bật ô "Nhận thông báo khuyến mại qua email" — nếu đã xác
+  // thực thì bật thẳng, chưa thì mở OTP trước (đây là NƠI DUY NHẤT trong
+  // toàn bộ luồng đặt món/hồ sơ còn nhắc tới xác thực email).
+  function handleNotifyKmToggle(checked: boolean) {
+    if (!checked || verifiedEmail) {
+      setNotifyKm(checked);
+      return;
+    }
+    setVerifyingForNotify(true);
+    setVerifyDialogOpen(true);
+  }
+
+  // Xác thực xong (dù bấm từ ô "nhận thông báo" hay cách khác trong tương
+  // lai) — "di chuyển" toàn bộ hồ sơ khách vãng lai (tên/SĐT/nhà hàng yêu
+  // thích + từng địa chỉ đã lưu cục bộ) sang email thật vừa xác thực, rồi
+  // xoá dữ liệu khách vãng lai trên trình duyệt này. Đơn hàng CŨ vẫn nằm
+  // dưới email ngầm định trước đây (không di chuyển được, chấp nhận đánh
+  // đổi này).
+  async function handleVerified(rawEmail: string) {
+    const newEmail = normalizeEmail(rawEmail);
+    setVerifyDialogOpen(false);
+    const wantsNotify = verifyingForNotify;
+    setVerifyingForNotify(false);
+
+    try {
+      await updateCustomer(
+        newEmail,
+        name.trim(),
+        phone.trim(),
+        wantsNotify ? true : notifyKm,
+        favoriteRestaurantId,
+      );
+      const guestAddresses = listGuestAddresses();
+      for (const addr of guestAddresses) {
+        try {
+          await addCustomerAddress(newEmail, {
+            label: addr.label,
+            address: addr.address,
+            lat: addr.lat,
+            lng: addr.lng,
+          });
+        } catch {
+          // 1 địa chỉ lỗi không nên chặn cả quá trình — bỏ qua, khách có
+          // thể tự thêm lại địa chỉ đó nếu thiếu.
+        }
+      }
+      clearGuestIdentity();
+      if (wantsNotify) setNotifyKm(true);
+      setVerifiedEmail(newEmail);
+      toast.success("Đã xác thực email — thông tin của bạn được giữ nguyên.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Xác thực thành công nhưng không lưu được thông tin, vui lòng thử lưu lại.",
+      );
+      setVerifiedEmail(newEmail);
     }
   }
 
@@ -123,44 +207,16 @@ export default function Profile() {
           Thông tin của bạn
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {verifiedEmail
-            ? "Thông tin này dùng để tự điền khi đặt món, không cần nhập lại mỗi lần."
-            : "Xác thực email để xem và sửa thông tin của bạn."}
+          Thông tin này dùng để tự điền khi đặt món, không cần nhập lại mỗi lần.
         </p>
       </header>
 
-      {!verifiedEmail ? (
-        <div
-          className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center"
-          data-ocid="profile.no_verified_email_state"
-        >
-          <ShieldCheck
-            className="h-12 w-12 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <h2 className="mt-4 font-display text-lg font-semibold">
-            Xác thực email để tiếp tục
-          </h2>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Nhập và xác thực email (mã OTP gửi qua email) để xem và sửa thông
-            tin của bạn.
-          </p>
-          <button
-            type="button"
-            onClick={() => setVerifyDialogOpen(true)}
-            data-ocid="profile.verify_button"
-            className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90"
-          >
-            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-            Xác thực email
-          </button>
-        </div>
-      ) : (
-        <form
-          onSubmit={handleSave}
-          className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5"
-          data-ocid="profile.form"
-        >
+      <form
+        onSubmit={handleSave}
+        className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5"
+        data-ocid="profile.form"
+      >
+        {verifiedEmail && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="profile-email">Email (đã xác thực)</Label>
             <Input
@@ -171,107 +227,110 @@ export default function Profile() {
               data-ocid="profile.email_input"
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-name">Họ tên</Label>
-            <Input
-              id="profile-name"
-              type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nguyễn Văn A"
-              aria-invalid={!!errors.name}
-              data-ocid="profile.name_input"
-            />
-            {errors.name && (
-              <p className="text-xs font-medium text-destructive" role="alert">
-                {errors.name}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-phone">Số điện thoại</Label>
-            <Input
-              id="profile-phone"
-              type="tel"
-              autoComplete="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="0912345678"
-              aria-invalid={!!errors.phone}
-              data-ocid="profile.phone_input"
-            />
-            {errors.phone && (
-              <p className="text-xs font-medium text-destructive" role="alert">
-                {errors.phone}
-              </p>
-            )}
-          </div>
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-muted/30 p-3 text-sm">
-            <input
-              type="checkbox"
-              checked={notifyKm}
-              onChange={(e) => setNotifyKm(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-primary"
-              data-ocid="profile.notify_km_checkbox"
-            />
-            <span>
-              <span className="font-medium">
-                Nhận thông báo khi có khuyến mãi giờ vàng
-              </span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                Gửi email nhắc trước 15 phút mỗi khi khung giờ khuyến mãi sắp
-                bắt đầu.
-              </span>
-            </span>
-          </label>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-favorite-restaurant">
-              Nhà hàng yêu thích
-            </Label>
-            <select
-              id="profile-favorite-restaurant"
-              value={favoriteRestaurantId}
-              onChange={(e) => setFavoriteRestaurantId(e.target.value)}
-              className="h-10 rounded-md border border-border bg-card px-3 text-sm"
-              data-ocid="profile.favorite_restaurant_select"
-            >
-              <option value="">Không chọn — tự động chọn gần nhất</option>
-              {(restaurantsQuery.data ?? [])
-                .filter((r) => r.visible)
-                .map((r) => (
-                  <option key={r.restaurantId} value={r.restaurantId}>
-                    {r.name}
-                  </option>
-                ))}
-            </select>
-            <p className="text-xs text-muted-foreground">
-              Khi đặt món từ xa, hệ thống sẽ ưu tiên chọn nhà hàng này thay vì
-              tự động chọn nhà hàng gần nhất.
+        )}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="profile-name">Họ tên</Label>
+          <Input
+            id="profile-name"
+            type="text"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nguyễn Văn A"
+            aria-invalid={!!errors.name}
+            data-ocid="profile.name_input"
+          />
+          {errors.name && (
+            <p className="text-xs font-medium text-destructive" role="alert">
+              {errors.name}
             </p>
-          </div>
-          <Button
-            type="submit"
-            disabled={saving || customerQuery.isLoading}
-            data-ocid="profile.save_button"
-          >
-            {saving && (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            )}
-            Lưu thông tin
-          </Button>
-        </form>
-      )}
-
-      {verifiedEmail && (
-        <div className="mt-6" data-ocid="profile.delivery_address_section">
-          <h2 className="mb-3 font-display text-lg font-semibold tracking-tight">
-            Địa chỉ nhận hàng
-          </h2>
-          <DeliveryAddressPanel email={verifiedEmail} />
+          )}
         </div>
-      )}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="profile-phone">Số điện thoại</Label>
+          <Input
+            id="profile-phone"
+            type="tel"
+            autoComplete="tel"
+            inputMode="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="0912345678"
+            aria-invalid={!!errors.phone}
+            data-ocid="profile.phone_input"
+          />
+          {errors.phone && (
+            <p className="text-xs font-medium text-destructive" role="alert">
+              {errors.phone}
+            </p>
+          )}
+        </div>
+        <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-muted/30 p-3 text-sm">
+          <input
+            type="checkbox"
+            checked={notifyKm}
+            onChange={(e) => handleNotifyKmToggle(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-primary"
+            data-ocid="profile.notify_km_checkbox"
+          />
+          <span>
+            <span className="flex items-center gap-1.5 font-medium">
+              <Mail className="h-3.5 w-3.5" aria-hidden="true" />
+              Nhận thông báo khuyến mại qua email
+            </span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Tuỳ chọn — cần xác thực email để gửi thông báo trước 15 phút mỗi
+              khi khung giờ khuyến mãi sắp bắt đầu.
+            </span>
+          </span>
+        </label>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="profile-favorite-restaurant">
+            Nhà hàng yêu thích
+          </Label>
+          <select
+            id="profile-favorite-restaurant"
+            value={favoriteRestaurantId}
+            onChange={(e) => setFavoriteRestaurantId(e.target.value)}
+            className="h-10 rounded-md border border-border bg-card px-3 text-sm"
+            data-ocid="profile.favorite_restaurant_select"
+          >
+            <option value="">Không chọn — tự động chọn gần nhất</option>
+            {(restaurantsQuery.data ?? [])
+              .filter((r) => r.visible)
+              .map((r) => (
+                <option key={r.restaurantId} value={r.restaurantId}>
+                  {r.name}
+                </option>
+              ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Khi đặt món từ xa, hệ thống sẽ ưu tiên chọn nhà hàng này thay vì tự
+            động chọn nhà hàng gần nhất.
+          </p>
+        </div>
+        <Button
+          type="submit"
+          disabled={saving || customerQuery.isLoading}
+          data-ocid="profile.save_button"
+        >
+          {saving && (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          )}
+          Lưu thông tin
+        </Button>
+      </form>
+
+      <div className="mt-6" data-ocid="profile.delivery_address_section">
+        <h2 className="mb-3 font-display text-lg font-semibold tracking-tight">
+          Địa chỉ nhận hàng
+        </h2>
+        {verifiedEmail ? (
+          <DeliveryAddressPanel email={verifiedEmail} />
+        ) : (
+          <GuestAddressPanel guestEmail={guestEmail} />
+        )}
+      </div>
 
       {verifiedEmail && (
         <div className="mt-6" data-ocid="profile.vouchers_section">
@@ -284,11 +343,11 @@ export default function Profile() {
 
       <EmailVerificationDialog
         open={verifyDialogOpen}
-        onOpenChange={setVerifyDialogOpen}
-        onVerified={(email) => {
-          setVerifyDialogOpen(false);
-          setVerifiedEmail(normalizeEmail(email));
+        onOpenChange={(open) => {
+          setVerifyDialogOpen(open);
+          if (!open) setVerifyingForNotify(false);
         }}
+        onVerified={handleVerified}
       />
     </section>
   );
