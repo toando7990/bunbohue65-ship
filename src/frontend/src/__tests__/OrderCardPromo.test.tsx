@@ -101,25 +101,63 @@ describe("OrderCard — khuyến mại & phí ship", () => {
     );
   });
 
-  it("delivery order without a shipping quote shows 'Tài xế báo khi giao' instead of hiding the line", () => {
+  it("REAL canister data (address stripped for privacy): shipping line still shows when the order has a shipping fee", async () => {
+    mockPromo.mockResolvedValue({
+      kmProgramCode: "",
+      kmProgramName: "",
+      voucherCode: "",
+      isDelivery: true,
+    });
     renderCard(
       makeOrder({
+        cusAddress: "",
+        kmDiscountAmount: 0n,
+        voucherDiscountAmount: 0n,
+        amount: 100000n,
+      }),
+    );
+    expect(
+      screen.getByTestId("order.card.1.shipping_fee_line"),
+    ).toHaveTextContent("28.000");
+    expect(screen.getByTestId("order.card.1.total")).toHaveTextContent(
+      "128.000",
+    );
+  });
+
+  it("delivery order (VPS says isDelivery) without a shipping quote shows 'Tài xế báo khi giao'", async () => {
+    mockPromo.mockResolvedValue({
+      kmProgramCode: "",
+      kmProgramName: "",
+      voucherCode: "",
+      isDelivery: true,
+    });
+    renderCard(
+      makeOrder({
+        cusAddress: "",
         shippingFee: 0n,
         kmDiscountAmount: 0n,
         voucherDiscountAmount: 0n,
       }),
     );
-    expect(
-      screen.getByTestId("order.card.1.shipping_fee_line"),
-    ).toHaveTextContent("Tài xế báo khi giao");
-    expect(mockPromo).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("order.card.1.shipping_fee_line"),
+      ).toHaveTextContent("Tài xế báo khi giao"),
+    );
     expect(
       screen.queryByTestId("order.card.1.promo_chip"),
     ).not.toBeInTheDocument();
   });
 
-  it("counter order (no delivery address) does not mention shipping", () => {
+  it("counter order (VPS says not delivery) does not mention shipping", async () => {
+    mockPromo.mockResolvedValue({
+      kmProgramCode: "",
+      kmProgramName: "",
+      voucherCode: "",
+      isDelivery: false,
+    });
     renderCard(makeOrder({ cusAddress: "", shippingFee: 0n }));
+    await waitFor(() => expect(mockPromo).toHaveBeenCalled());
     expect(
       screen.queryByTestId("order.card.1.shipping_fee_line"),
     ).not.toBeInTheDocument();

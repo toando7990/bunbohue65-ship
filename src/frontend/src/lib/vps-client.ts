@@ -625,6 +625,9 @@ export interface OrderPromoInfo {
   kmProgramCode: string;
   kmProgramName: string;
   voucherCode: string;
+  // Đơn giao tận nơi? (canister xoá địa chỉ khỏi đơn trả cho khách nên thẻ
+  // đơn không tự biết). Không có ở VPS cũ → undefined.
+  isDelivery?: boolean;
 }
 export async function getOrderPromoInfo(
   orderId: string,

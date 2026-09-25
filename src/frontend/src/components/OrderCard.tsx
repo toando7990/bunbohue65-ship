@@ -147,18 +147,25 @@ export function OrderCard({
   const kmDiscount = order.kmDiscountAmount;
   const voucherDiscount = order.voucherDiscountAmount;
   const hasDiscount = kmDiscount + voucherDiscount > 0n;
-  // Đơn giao tận nơi có địa chỉ nhận; đơn tại quầy để trống → không nói
-  // tới phí ship.
-  const isDelivery = !!order.cusAddress;
-  const customerTotal = order.amount + order.shippingFee;
-  // Tên chương trình / mã phiếu — chỉ tải khi đơn THỰC SỰ có giảm giá.
+  // Thông tin khuyến mại + loại đơn (giao tận nơi / tại quầy) từ VPS — tải
+  // cho MỌI thẻ phía khách. BUG THẬT đã sửa: trước đây xác định "giao tận
+  // nơi" bằng order.cusAddress, nhưng canister XOÁ địa chỉ khỏi đơn trả cho
+  // khách (bảo vệ thông tin cá nhân) → phía khách luôn bị coi là đơn tại quầy
+  // và ẩn dòng phí ship; và chỉ tải khi có giảm giá.
   const promoQuery = useQuery({
     queryKey: ["orderPromoInfo", order.orderId],
     queryFn: () => getOrderPromoInfo(order.orderId),
-    enabled: !staffView && hasDiscount,
+    enabled: !staffView,
     staleTime: Number.POSITIVE_INFINITY,
     retry: 1,
   });
+  // Trong lúc chờ VPS (hoặc VPS cũ chưa trả isDelivery): suy từ dữ liệu có
+  // sẵn — đơn giao tận nơi có phí ship hoặc mã báo giá Lalamove; đơn tại quầy
+  // không có cả hai.
+  const isDelivery =
+    promoQuery.data?.isDelivery ??
+    (!!order.cusAddress || order.shippingFee > 0n || !!order.ahamoveOrderId);
+  const customerTotal = order.amount + order.shippingFee;
   const kmLabel =
     promoQuery.data?.kmProgramName || promoQuery.data?.kmProgramCode || "";
   const voucherLabel = promoQuery.data?.voucherCode || "";
