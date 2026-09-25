@@ -37,13 +37,19 @@ export function toOrder(h: VpsHistoryOrder): Order {
       vatRate: 0n,
     })),
     amount: BigInt(h.amount),
-    goodsAmount: BigInt(h.amount),
-    shippingFee: 0n,
+    // BUG THẬT đã sửa: trước đây gán CỨNG goodsAmount=amount, shippingFee=0,
+    // ahamoveOrderId="" cho MỌI đơn — khiến thẻ đơn ở "Lịch sử đặt đơn"/"Lịch
+    // sử đơn hàng" (driver) luôn hiện "Tài xế báo khi giao" dù phí ship đã
+    // được lưu đúng lúc tạo đơn (VPS routes/order-history.js,
+    // routes/restaurant-history.js nay đã trả 3 field này). Fallback ?? 0/""
+    // giữ tương thích ngược nếu VPS chưa kịp deploy bản mới.
+    goodsAmount: BigInt(h.goodsAmount ?? h.amount),
+    shippingFee: BigInt(h.shippingFee ?? 0),
     taxTotal: 0n,
     bookingStatus: h.bookingStatus as BookingStatus,
     paymentStatus: h.paymentStatus as PaymentStatus,
     invoiceStatus: InvoiceStatus.none,
-    ahamoveOrderId: "",
+    ahamoveOrderId: h.ahamoveOrderId || "",
     tingeeQrId: "",
     sharedLink: "",
     tingeeQrCode: "",

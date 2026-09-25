@@ -24,18 +24,22 @@ router.get('/order/:id/promo-info', async (req, res) => {
   if (!row) return res.status(404).json({ ok: false, message: 'Không tìm thấy đơn hàng.' });
   let name = row.km_program_name || '';
   // Đơn tạo TRƯỚC khi lưu tên chương trình: tra bổ sung qua query công khai
-  // getCurrentPromotion() — chỉ nhận khi ĐÚNG mã, rồi lưu lại để lần sau khỏi
-  // tra. Chương trình đã hết hiệu lực thì không tra được → thẻ hiện mã.
+  // getPromotionByCode() — tra ĐÚNG theo mã, rồi lưu lại để lần sau khỏi
+  // tra. BUG THẬT đã sửa: trước đây dùng getCurrentPromotion() (chỉ trả
+  // chương trình ĐANG chạy hôm nay) nên chương trình đã hết hạn/bị dừng
+  // (khách xem lại đơn cũ) không tra được tên, thẻ chỉ hiện mã KM.
+  // getPromotionByCode() tra theo mã, KHÔNG lọc theo đang chạy/còn hạn, nên
+  // luôn tra được tên kể cả chương trình đã hết hiệu lực.
   if (!name && row.km_program_code) {
     try {
-      const cur = await canister.getCurrentPromotion();
-      const promo = Array.isArray(cur) ? cur[0] : cur;
-      if (promo && promo.code === row.km_program_code && promo.name) {
+      const found = await canister.getPromotionByCode(row.km_program_code);
+      const promo = Array.isArray(found) ? found[0] : found;
+      if (promo && promo.name) {
         name = String(promo.name);
         db.prepare('UPDATE orders SET km_program_name = ? WHERE order_id = ?').run(name, req.params.id);
       }
     } catch (e) {
-      console.warn('[promo-info] getCurrentPromotion lỗi (bỏ qua):', e.message);
+      console.warn('[promo-info] getPromotionByCode lỗi (bỏ qua):', e.message);
     }
   }
   res.json({

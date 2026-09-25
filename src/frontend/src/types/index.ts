@@ -234,6 +234,14 @@ export interface VpsHistoryOrder {
   cusName: string;
   cusPhone: string;
   amount: number;
+  // Tiền hàng trước chiết khấu + phí ship Lalamove (VND) + mã báo giá/đặt xe
+  // Lalamove — BUG THẬT đã sửa: thiếu 3 field này khiến order-mapping.ts luôn
+  // gán shippingFee=0 cho MỌI đơn ở "Lịch sử", thẻ đơn hiện "Tài xế báo khi
+  // giao" dù phí ship đã lưu đúng lúc tạo đơn. Optional để tương thích VPS cũ
+  // chưa deploy field này (order-mapping.ts tự fallback về 0/"").
+  goodsAmount?: number;
+  shippingFee?: number;
+  ahamoveOrderId?: string;
   bookingStatus: string;
   paymentStatus: string;
   // Hình thức thanh toán: "cash" | "transfer" | "" (chưa thanh toán, hoặc đơn

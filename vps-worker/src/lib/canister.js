@@ -198,6 +198,7 @@ const IDL_FACTORY = ({ IDL }) => {
     getMenuForRestaurant: IDL.Func([IDL.Text], [IDL.Vec(MenuItemRecord)], ['query']),
     getPaymentMode: IDL.Func([], [IDL.Text], ['query']),
     getCurrentPromotion: IDL.Func([], [IDL.Opt(Promotion)], ['query']),
+    getPromotionByCode: IDL.Func([IDL.Text], [IDL.Opt(Promotion)], ['query']),
     applyPromotion: IDL.Func(
       [IDL.Text, IDL.Nat, IDL.Text],
       [IDL.Variant({ ok: IDL.Record({ promotionCode: IDL.Text, discountAmount: IDL.Nat }), err: IDL.Text })],
@@ -474,6 +475,17 @@ async function getCurrentPromotion() {
   return await actor.getCurrentPromotion();
 }
 
+// getPromotionByCode — query, không cần HMAC. Trả ĐÚNG chương trình theo mã,
+// KHÔNG lọc theo đang chạy/còn hạn (khác getCurrentPromotion) — dùng để tra
+// TÊN chương trình cho đơn cũ (routes/order-promo-info.js, routes/create.js)
+// kể cả khi chương trình đã hết hạn/bị dừng. BUG THẬT đã sửa: trước đây chỉ
+// có getCurrentPromotion() nên khách xem lại đơn sau khi KM hết hạn không
+// tra được tên, thẻ đơn chỉ hiện mã.
+async function getPromotionByCode(code) {
+  const actor = getActor();
+  return await actor.getPromotionByCode(code);
+}
+
 // applyPromotion — kiểm tra + áp dụng KM (Hệ 1, theo khung giờ) lúc tạo
 // đơn. HMAC payload: email|orderAmount (Nat.toText, khớp
 // promotion-api.mo). orderAmount PHẢI là integer khi gọi (giống lý do ở
@@ -562,6 +574,7 @@ module.exports = {
   deactivateExpiredPromotions,
   pruneOldOrdersNow,
   getCurrentPromotion,
+  getPromotionByCode,
   isStoreOpen,
   callerHasEnterpriseRole,
   deviceHasAccountingRole,

@@ -83,7 +83,8 @@ router.get('/orders/restaurant-history', (req, res) => {
   const fromMs = boundaryForPeriod(period, now);
 
   const orderRows = db.prepare(
-    `SELECT order_id, restaurant_id, cus_name, cus_phone, amount,
+    `SELECT order_id, restaurant_id, cus_name, cus_phone, amount, goods_amount,
+            shipping_fee, ahamove_order_id,
             booking_status, payment_status, payment_method, invoice_status, created_at,
             km_discount_amount, voucher_discount_amount
      FROM orders
@@ -134,6 +135,12 @@ router.get('/orders/restaurant-history', (req, res) => {
     cusName: r.cus_name,
     cusPhone: r.cus_phone,
     amount: r.amount,
+    // BUG THẬT đã sửa: thiếu shipping_fee/goods_amount/ahamove_order_id →
+    // OrderCard (staffView) luôn hiện đơn KHÔNG có phí ship dù đã lưu đúng
+    // lúc tạo đơn — xem cùng lỗi + giải thích đầy đủ ở routes/order-history.js.
+    goodsAmount: r.goods_amount,
+    shippingFee: r.shipping_fee,
+    ahamoveOrderId: r.ahamove_order_id || '',
     bookingStatus: r.booking_status,
     paymentStatus: r.payment_status,
     paymentMethod: r.payment_method || '',

@@ -226,6 +226,19 @@ mixin (
     null;
   };
 
+  // Tra CHƯƠNG TRÌNH THEO MÃ, KHÔNG lọc theo đang chạy/còn hạn — công khai,
+  // không cần auth, giống getCurrentPromotion (Promotion không chứa PII, chỉ
+  // là nội dung chương trình KM). BUG THẬT đã sửa: VPS (routes/order-promo-info.js,
+  // routes/create.js) trước đây chỉ có getCurrentPromotion() để tra TÊN
+  // chương trình cho đơn cũ chưa lưu tên — hàm đó CHỈ trả chương trình đang
+  // active + còn trong khung ngày hôm nay, nên khách xem lại đơn SAU KHI
+  // chương trình đã hết hạn/bị dừng sẽ không tra được tên, thẻ đơn chỉ hiện
+  // mã KM (VD "I2NZM493") thay vì tên đầy đủ. Hàm này trả ĐÚNG chương trình
+  // theo mã dù đã hết hạn/dừng, để tra tên luôn hoạt động cho mọi đơn cũ.
+  public query func getPromotionByCode(code : Text) : async ?PromotionTypes.Promotion {
+    promotions.get(code);
+  };
+
   public shared func applyPromotion(
     email : Text,
     orderAmount : Nat,

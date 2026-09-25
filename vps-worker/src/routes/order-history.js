@@ -48,7 +48,8 @@ router.get('/orders/history', (req, res) => {
   const boundary = startOfTodayUtc7(Date.now());
 
   const orderRows = db.prepare(
-    `SELECT order_id, restaurant_id, cus_name, cus_phone, amount,
+    `SELECT order_id, restaurant_id, cus_name, cus_phone, amount, goods_amount,
+            shipping_fee, ahamove_order_id,
             booking_status, payment_status, created_at,
             km_discount_amount, voucher_discount_amount
      FROM orders
@@ -87,6 +88,15 @@ router.get('/orders/history', (req, res) => {
     cusName: r.cus_name,
     cusPhone: r.cus_phone,
     amount: r.amount,
+    // BUG THẬT đã sửa: trước đây thiếu shipping_fee/goods_amount/ahamove_order_id
+    // → frontend (order-mapping.ts) luôn gán shippingFee=0 cho MỌI đơn ở "Lịch
+    // sử đặt đơn", khiến thẻ đơn hiện "Tài xế báo khi giao" dù phí ship đã
+    // được lưu đúng lúc tạo đơn (routes/create.js). isDelivery vẫn đúng (tra
+    // riêng qua GET /order/:id/promo-info, đọc cus_address trực tiếp từ DB)
+    // nên chỉ riêng SỐ TIỀN ship bị mất — dễ gây hiểu lầm là chưa lưu phí ship.
+    goodsAmount: r.goods_amount,
+    shippingFee: r.shipping_fee,
+    ahamoveOrderId: r.ahamove_order_id || '',
     bookingStatus: r.booking_status,
     paymentStatus: r.payment_status,
     createdAt: r.created_at,
@@ -160,7 +170,8 @@ router.get('/orders/period-summary', (req, res) => {
   const range = period === 'week' ? computeThisWeekRange(now) : computeThisMonthRange(now);
 
   const orderRows = db.prepare(
-    `SELECT order_id, restaurant_id, cus_name, cus_phone, amount,
+    `SELECT order_id, restaurant_id, cus_name, cus_phone, amount, goods_amount,
+            shipping_fee, ahamove_order_id,
             booking_status, payment_status, created_at,
             km_discount_amount, voucher_discount_amount
      FROM orders
@@ -202,6 +213,9 @@ router.get('/orders/period-summary', (req, res) => {
     cusName: r.cus_name,
     cusPhone: r.cus_phone,
     amount: r.amount,
+    goodsAmount: r.goods_amount,
+    shippingFee: r.shipping_fee,
+    ahamoveOrderId: r.ahamove_order_id || '',
     bookingStatus: r.booking_status,
     paymentStatus: r.payment_status,
     createdAt: r.created_at,

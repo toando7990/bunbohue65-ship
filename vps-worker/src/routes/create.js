@@ -147,17 +147,18 @@ router.post('/order/create', async (req, res, next) => {
 
     // 3. Lưu SQLite
     // TÊN chương trình KM vừa áp dụng (để hiện trên thẻ đơn khách, VD "Giờ
-    // Vàng") — applyPromotion chỉ trả MÃ; lấy tên qua query công khai
-    // getCurrentPromotion() và chỉ nhận khi đúng mã vừa áp dụng. Lỗi → để
-    // trống (thẻ đơn hiện mã thay tên), không chặn tạo đơn.
+    // Vàng") — applyPromotion chỉ trả MÃ; lấy tên qua getPromotionByCode()
+    // (tra ĐÚNG theo mã vừa áp dụng, không lọc theo đang chạy/còn hạn — dùng
+    // chung hàm với routes/order-promo-info.js để nhất quán). Lỗi → để trống
+    // (thẻ đơn hiện mã thay tên), không chặn tạo đơn.
     let kmProgramName = '';
     if (kmProgramCode) {
       try {
-        const cur = await canister.getCurrentPromotion();
-        const promo = Array.isArray(cur) ? cur[0] : cur;
-        if (promo && promo.code === kmProgramCode) kmProgramName = String(promo.name || '');
+        const found = await canister.getPromotionByCode(kmProgramCode);
+        const promo = Array.isArray(found) ? found[0] : found;
+        if (promo) kmProgramName = String(promo.name || '');
       } catch (e) {
-        console.warn('[create] getCurrentPromotion lỗi (bỏ qua tên KM):', e.message);
+        console.warn('[create] getPromotionByCode lỗi (bỏ qua tên KM):', e.message);
       }
     }
 
