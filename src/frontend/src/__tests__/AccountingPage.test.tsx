@@ -106,20 +106,36 @@ describe("AccountingPage enterprise accounting", () => {
     expect(statusesArg).toEqual(["paid"]);
   });
 
-  it("re-fetches with both statuses when the 'Đã huỷ' chip is toggled on", async () => {
+  it("'Trạng thái đơn hàng' is single-select: 'Tất cả' fetches both statuses, 'Đã huỷ' fetches only cancelled", async () => {
     setActivation();
 
     renderPage();
     await waitFor(() => expect(mockGetEnterpriseHistory).toHaveBeenCalled());
+    expect(screen.getByText("Trạng thái đơn hàng")).toBeInTheDocument();
     mockGetEnterpriseHistory.mockClear();
 
-    fireEvent.click(screen.getByTestId("accounting.status_chip.cancelled"));
-
+    fireEvent.click(screen.getByTestId("accounting.status_chip.all"));
     await waitFor(() => {
       expect(mockGetEnterpriseHistory).toHaveBeenCalled();
     });
-    const [, , , statusesArg] = mockGetEnterpriseHistory.mock.calls[0];
-    expect(statusesArg.sort()).toEqual(["cancelled", "paid"]);
+    let [, , , statusesArg] = mockGetEnterpriseHistory.mock.calls[0];
+    expect([...statusesArg].sort()).toEqual(["cancelled", "paid"]);
+    expect(screen.getByTestId("accounting.status_chip.all")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    mockGetEnterpriseHistory.mockClear();
+
+    fireEvent.click(screen.getByTestId("accounting.status_chip.cancelled"));
+    await waitFor(() => {
+      expect(mockGetEnterpriseHistory).toHaveBeenCalled();
+    });
+    [, , , statusesArg] = mockGetEnterpriseHistory.mock.calls[0];
+    expect(statusesArg).toEqual(["cancelled"]);
+    expect(screen.getByTestId("accounting.status_chip.paid")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 
   it("'Xoá' is enabled only for cancelled, never-paid orders from before today, asks for confirmation, then deletes via VPS", async () => {
