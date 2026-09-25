@@ -5,7 +5,7 @@
 //   - date-range + status filter calls getEnterpriseHistory with the
 //     device's id, the selected date range, and the selected statuses;
 //   - manual cleanup by code calls useCleanupOrderByDevice with the order id;
-//   - manual invoice issuance calls useIssueInvoiceByDevice with
+//   - (đã bỏ) ghi nhận hoá đơn thủ công;
 //     (orderId, invoiceId, pdfUrl).
 //
 // The actor and React Query hooks are mocked; this is component-level
@@ -26,7 +26,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockDeleteOrder = vi.fn();
 const mockReissue = vi.fn();
 const mockDeleteCancelled = vi.fn();
-const mockIssueInvoice = vi.fn();
 const mockGetEnterpriseHistory = vi.fn();
 const mockGenerateCode = vi.fn();
 const mockActivateDevice = vi.fn();
@@ -53,12 +52,6 @@ vi.mock("@/lib/vps-client", () => ({
     mockDeleteOrder(deviceId, orderId),
   enterpriseDeleteCancelledOrders: (deviceId: string, dryRun: boolean) =>
     mockDeleteCancelled(deviceId, dryRun),
-  enterpriseRecordInvoice: (
-    deviceId: string,
-    orderId: string,
-    invoiceId: string,
-    pdfUrl: string,
-  ) => mockIssueInvoice({ deviceId, orderId, invoiceId, pdfUrl }),
 }));
 
 function setActivation() {
@@ -221,42 +214,38 @@ describe("AccountingPage enterprise accounting", () => {
     );
   });
 
-  it("issues an invoice manually via useIssueInvoiceByDevice", async () => {
+  it("no longer offers the manual 'Hoá đơn' button or the 'Tuỳ chọn nâng cao' section; a paid order without an invoice shows 'Đang chờ phát hành…'", async () => {
     setActivation();
-    mockIssueInvoice.mockResolvedValue({});
-
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [
+        {
+          orderId: "ORD-WAIT",
+          restaurantId: "R1",
+          cusName: "A",
+          cusPhone: "0900",
+          amount: 70000,
+          bookingStatus: "confirmed",
+          paymentStatus: "paid",
+          paymentMethod: "cash",
+          invoiceStatus: "none",
+          createdAt: Date.now(),
+        },
+      ],
+      count: 1,
+      total: 70000,
+    });
     renderPage();
-
-    fireEvent.click(screen.getByTestId("accounting.advanced_toggle"));
-
-    // Open the invoice dialog by entering an order code.
-    fireEvent.change(screen.getByTestId("accounting.invoice_code_input"), {
-      target: { value: "ORD-1" },
-    });
-    fireEvent.click(screen.getByTestId("accounting.invoice_open_button"));
-
-    await waitFor(() => {
+    await waitFor(() =>
       expect(
-        screen.getByTestId("accounting.invoice_dialog"),
-      ).toBeInTheDocument();
-    });
-
-    fireEvent.change(screen.getByTestId("accounting.invoice_id_input"), {
-      target: { value: "INV-2026-0001" },
-    });
-    fireEvent.change(screen.getByTestId("accounting.invoice_pdf_input"), {
-      target: { value: "https://pdf/hoa-don.pdf" },
-    });
-    fireEvent.click(screen.getByTestId("accounting.invoice_submit_button"));
-
-    await waitFor(() => {
-      expect(mockIssueInvoice).toHaveBeenCalledWith({
-        deviceId: "dev-acc",
-        orderId: "ORD-1",
-        invoiceId: "INV-2026-0001",
-        pdfUrl: "https://pdf/hoa-don.pdf",
-      });
-    });
+        screen.getByTestId("accounting.invoice_pending.1"),
+      ).toHaveTextContent("Đang chờ phát hành"),
+    );
+    expect(
+      screen.queryByTestId("accounting.invoice_button.1"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("accounting.advanced_toggle"),
+    ).not.toBeInTheDocument();
   });
 
   const sampleOrders = [
@@ -356,10 +345,10 @@ describe("AccountingPage enterprise accounting", () => {
         screen.getByTestId("accounting.view_pdf_button.1"),
       ).toBeInTheDocument();
     });
-    // Đơn CHƯA phát hành vẫn giữ nút "Hoá đơn" cũ.
+    // Nút "Hoá đơn" (ghi nhận thủ công) đã bỏ.
     expect(
-      screen.getByTestId("accounting.invoice_button.2"),
-    ).toBeInTheDocument();
+      screen.queryByTestId("accounting.invoice_button.2"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("accounting.view_pdf_button.1"));
 
@@ -484,9 +473,7 @@ describe("AccountingPage enterprise accounting", () => {
     const todayApi = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
     const monthStartApi = `01/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
 
-    mockGetEnterpriseHistory.mockClear();
-    fireEvent.click(screen.getByTestId("accounting.quick_range.today"));
-    await waitFor(() => expect(mockGetEnterpriseHistory).toHaveBeenCalled());
+    // Mặc định mở trang ở "Hôm nay".
     let [, from, to] = mockGetEnterpriseHistory.mock.calls[0];
     expect([from, to]).toEqual([todayApi, todayApi]);
     expect(screen.getByTestId("accounting.quick_range.today")).toHaveAttribute(
@@ -494,10 +481,12 @@ describe("AccountingPage enterprise accounting", () => {
       "true",
     );
 
-    mockGetEnterpriseHistory.mockClear();
     fireEvent.click(screen.getByTestId("accounting.quick_range.month"));
-    await waitFor(() => expect(mockGetEnterpriseHistory).toHaveBeenCalled());
-    [, from, to] = mockGetEnterpriseHistory.mock.calls[0];
+    await waitFor(() => {
+      const last = mockGetEnterpriseHistory.mock.calls.at(-1) ?? [];
+      expect([last[1], last[2]]).toEqual([monthStartApi, todayApi]);
+    });
+    [, from, to] = mockGetEnterpriseHistory.mock.calls.at(-1) ?? [];
     expect([from, to]).toEqual([monthStartApi, todayApi]);
   });
 
@@ -617,4 +606,56 @@ describe("AccountingPage enterprise accounting", () => {
       expect(mockReissue).toHaveBeenCalledWith("dev-acc", "ORD-FAIL-NEW"),
     );
   });
+
+  it("auto-refreshes every 5s with the CURRENT filters, highlights newly arrived orders, and stops when paused", async () => {
+    setActivation();
+    const row = (orderId: string) => ({
+      orderId,
+      restaurantId: "R1",
+      cusName: "A",
+      cusPhone: "0900",
+      amount: 50000,
+      bookingStatus: "confirmed",
+      paymentStatus: "paid",
+      paymentMethod: "cash",
+      invoiceStatus: "invoiced",
+      createdAt: Date.now(),
+    });
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [row("ORD-A")],
+      count: 1,
+      total: 50000,
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("ORD-A")).toBeInTheDocument());
+    const callsBefore = mockGetEnterpriseHistory.mock.calls.length;
+
+    // Đơn mới đến → lần làm mới kế tiếp (5s) hiện ra + được tô sáng.
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [row("ORD-B"), row("ORD-A")],
+      count: 2,
+      total: 100000,
+    });
+    await waitFor(() => expect(screen.getByText("ORD-B")).toBeInTheDocument(), {
+      timeout: 7000,
+    });
+    const newRow = screen.getByText("ORD-B").closest("tr");
+    expect(newRow).toHaveAttribute("data-new", "true");
+    expect(screen.getByText("ORD-A").closest("tr")).not.toHaveAttribute(
+      "data-new",
+    );
+    // Cùng bộ lọc (Hôm nay) như lần gọi đầu.
+    const first = mockGetEnterpriseHistory.mock.calls[0];
+    const last = mockGetEnterpriseHistory.mock.calls.at(-1) ?? [];
+    expect(last.slice(0, 4)).toEqual(first.slice(0, 4));
+    expect(mockGetEnterpriseHistory.mock.calls.length).toBeGreaterThan(
+      callsBefore,
+    );
+
+    // Tạm dừng → không gọi thêm nữa.
+    fireEvent.click(screen.getByTestId("accounting.live_toggle"));
+    const pausedAt = mockGetEnterpriseHistory.mock.calls.length;
+    await new Promise((r) => setTimeout(r, 6000));
+    expect(mockGetEnterpriseHistory.mock.calls.length).toBe(pausedAt);
+  }, 20000);
 });

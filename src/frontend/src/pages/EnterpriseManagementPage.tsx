@@ -13,10 +13,12 @@
 // rủi ro khi gộp 2 trang lớn đã có sẵn.
 
 import type { EnterpriseRole } from "@/backend";
+import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
+import { loadEnterpriseActivation } from "@/lib/enterprise-activation";
 import { AccountingPage } from "@/pages/AccountingPage";
 import { SalesPromoReportingPage } from "@/pages/SalesPromoReportingPage";
 import { Banknote, ChartLine } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type ManagementTab = "accounting" | "salesReporting";
 
@@ -31,21 +33,23 @@ export function EnterpriseManagementPage({
     role === "salesPromoReporting" ? "salesReporting" : "accounting";
   const [tab, setTab] = useState<ManagementTab>(defaultTab);
 
+  // Đầu trang GIỐNG /counter: tên + mã thiết bị bên trái, tiêu đề trang bên
+  // phải, bỏ logo/menu khách. Admin hiện "Quản trị viên" và GIỮ menu điều
+  // hướng (cần sang các trang quản trị khác). Dọn lại khi rời trang.
+  const { setDeviceHeader } = useDeviceHeader();
+  useEffect(() => {
+    const act = loadEnterpriseActivation();
+    setDeviceHeader({
+      name: isAdmin ? "Quản trị viên" : act?.name || "Thiết bị doanh nghiệp",
+      id: act?.deviceId ?? "",
+      pageTitle: tab === "accounting" ? "Kế toán" : "Báo cáo bán hàng & KM",
+      keepNav: isAdmin,
+    });
+    return () => setDeviceHeader(null);
+  }, [isAdmin, tab, setDeviceHeader]);
+
   return (
     <div className="flex flex-col gap-6" data-ocid="enterprise_management.page">
-      <div className="flex flex-col gap-1">
-        <h1
-          className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl"
-          data-ocid="enterprise_management.title"
-        >
-          Quản lý thiết bị doanh nghiệp
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Kế toán và báo cáo bán hàng & khuyến mại — số liệu tổng hợp trên toàn
-          bộ nhà hàng.
-        </p>
-      </div>
-
       {/* Chỉ admin mới thấy tab switcher (tự do chuyển đổi cả 2 mô-đun) —
           thiết bị doanh nghiệp thường (non-admin) chỉ có ĐÚNG 1 role, luôn
           thấy đúng 1 mô-đun tương ứng, không cần/không được chuyển tab. */}

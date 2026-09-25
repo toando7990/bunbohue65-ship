@@ -72,7 +72,6 @@ import {
 import {
   enterpriseDeleteCancelledOrders,
   enterpriseDeleteOrder,
-  enterpriseRecordInvoice,
   enterpriseReissueInvoice,
   getEnterpriseHistory,
   getInvoice,
@@ -84,12 +83,13 @@ import {
   Download,
   ExternalLink,
   Loader2,
-  Receipt,
+  Pause,
+  Play,
   RefreshCw,
   Search,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // Đọc deviceId của thiết bị kế toán đã kích hoạt từ khoá localStorage thống
@@ -251,8 +251,8 @@ export function AccountingPage() {
 
   // ---- Bộ lọc: khoảng ngày + trạng thái ----
   const today = new Date();
-  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const [fromDate, setFromDate] = useState(toInputDateValue(sevenDaysAgo));
+  // Mặc định "Hôm nay" (theo yêu cầu) — trang dùng để theo dõi trực tiếp.
+  const [fromDate, setFromDate] = useState(toInputDateValue(today));
   const [toDate, setToDate] = useState(toInputDateValue(today));
   const [wantPaid, setWantPaid] = useState(true);
   const [wantCancelled, setWantCancelled] = useState(false);
@@ -266,19 +266,17 @@ export function AccountingPage() {
   const [invoiceFilter, setInvoiceFilter] = useState<
     "all" | InvoiceStatus.none | InvoiceStatus.invoiced | InvoiceStatus.failed
   >("all");
-  // "Tuỳ chọn nâng cao" — thu gọn 2 thao tác thủ công theo mã đơn (dùng cho
-  // đơn KHÔNG còn trong danh sách lọc hiện tại, ít dùng) — mặc định đóng.
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   // Đang lấy đường dẫn PDF cho đơn nào (bấm "Xem PDF") — disable đúng 1 nút.
+  const [livePaused, setLivePaused] = useState(false);
+  // Hộp thoại xác nhận xoá — xoá là KHÔNG hoàn tác được.
+  const [confirmDelete, setConfirmDelete] = useState<
+    | { kind: "one"; orderId: string; cusName: string }
+    | { kind: "bulk"; count: number }
+    | null
+  >(null);
   const [openingPdfOrderId, setOpeningPdfOrderId] = useState<string | null>(
     null,
   );
-
-  // ---- Hành động thủ công (không đổi) ----
-  const [invoiceManualCode, setInvoiceManualCode] = useState("");
-  const [invoiceOrderId, setInvoiceOrderId] = useState<string | null>(null);
-  const [invoiceId, setInvoiceId] = useState("");
-  const [pdfUrl, setPdfUrl] = useState("");
 
   const statuses: Array<"paid" | "cancelled"> = [
     ...(wantPaid ? (["paid"] as const) : []),
@@ -301,7 +299,31 @@ export function AccountingPage() {
         statuses,
       ),
     enabled: statuses.length > 0 && !!deviceId,
+    // Tự làm mới mỗi 5 giây THEO ĐÚNG BỘ LỌC ĐANG CHỌN (queryKey chứa bộ lọc
+    // ngày/trạng thái; các bộ lọc còn lại lọc phía client trên dữ liệu mới).
+    // Dừng khi: nhân viên bấm Tạm dừng, đang mở hộp thoại xác nhận xoá, hoặc
+    // tab bị ẩn (React Query mặc định không làm mới khi tab ẩn).
+    refetchInterval: () => (livePaused || confirmDelete ? false : 5000),
   });
+
+  // Dòng MỚI xuất hiện sau lần làm mới → tô sáng 2 giây. Lần tải đầu (hoặc
+  // đổi bộ lọc) không tính là "mới".
+  const seenIdsRef = useRef<{ key: string; ids: Set<string> } | null>(null);
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const filterKey = `${fromDate}|${toDate}|${statuses.join(",")}`;
+  useEffect(() => {
+    const orders = historyQuery.data?.orders;
+    if (!orders) return;
+    const ids = new Set(orders.map((o) => o.orderId));
+    const prev = seenIdsRef.current;
+    seenIdsRef.current = { key: filterKey, ids };
+    if (!prev || prev.key !== filterKey) return;
+    const fresh = new Set([...ids].filter((id) => !prev.ids.has(id)));
+    if (fresh.size === 0) return;
+    setNewIds(fresh);
+    const t = setTimeout(() => setNewIds(new Set()), 2500);
+    return () => clearTimeout(t);
+  }, [historyQuery.data, filterKey]);
 
   const results = historyQuery.data?.orders ?? [];
   const filteredResults = results.filter((o) => {
@@ -312,6 +334,10 @@ export function AccountingPage() {
     if (!matchesPaymentMethod(o, paymentMethodFilter)) return false;
     return true;
   });
+  const paidByMethod = (method: "cash" | "transfer") =>
+    filteredResults
+      .filter((o) => o.paymentStatus === "paid" && o.paymentMethod === method)
+      .reduce((sum, o) => sum + o.amount, 0);
   const notInvoicedCount = filteredResults.filter(
     (o) => o.invoiceStatus === InvoiceStatus.none,
   ).length;
@@ -348,25 +374,6 @@ export function AccountingPage() {
   const bulkDeleteMutation = useMutation({
     mutationFn: () => enterpriseDeleteCancelledOrders(deviceId, false),
   });
-  // Hộp thoại xác nhận xoá — xoá là KHÔNG hoàn tác được.
-  const [confirmDelete, setConfirmDelete] = useState<
-    | { kind: "one"; orderId: string; cusName: string }
-    | { kind: "bulk"; count: number }
-    | null
-  >(null);
-  const invoiceMutation = useMutation({
-    mutationFn: (args: {
-      orderId: string;
-      invoiceId: string;
-      pdfUrl: string;
-    }) =>
-      enterpriseRecordInvoice(
-        deviceId,
-        args.orderId,
-        args.invoiceId,
-        args.pdfUrl,
-      ),
-  });
 
   async function handleConfirmDelete() {
     if (!confirmDelete) return;
@@ -397,30 +404,6 @@ export function AccountingPage() {
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Không đếm được đơn cần xoá.",
-      );
-    }
-  }
-
-  async function handleIssueInvoice() {
-    if (!invoiceOrderId) return;
-    if (!invoiceId.trim() || !pdfUrl.trim()) {
-      toast.error("Vui lòng nhập mã hoá đơn và đường dẫn PDF.");
-      return;
-    }
-    try {
-      await invoiceMutation.mutateAsync({
-        orderId: invoiceOrderId,
-        invoiceId: invoiceId.trim(),
-        pdfUrl: pdfUrl.trim(),
-      });
-      toast.success("Đã phát hành hoá đơn.");
-      setInvoiceOrderId(null);
-      setInvoiceId("");
-      setPdfUrl("");
-      historyQuery.refetch();
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Không thể phát hành hoá đơn.",
       );
     }
   }
@@ -512,21 +495,50 @@ export function AccountingPage() {
           </CardContent>
         </Card>
       )}
+      <div
+        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground"
+        data-ocid="accounting.live_bar"
+      >
+        <span className="flex items-center gap-2">
+          <span
+            className={`inline-block h-2 w-2 rounded-full ${livePaused ? "bg-muted-foreground" : "bg-success"}`}
+            aria-hidden="true"
+          />
+          {livePaused
+            ? "Đã tạm dừng tự làm mới"
+            : "Tự động làm mới mỗi 5 giây theo bộ lọc hiện tại"}
+          {historyQuery.dataUpdatedAt > 0 && (
+            <span data-ocid="accounting.last_updated">
+              · cập nhật lúc{" "}
+              <b className="text-foreground">
+                {new Date(historyQuery.dataUpdatedAt).toLocaleTimeString(
+                  "vi-VN",
+                )}
+              </b>
+            </span>
+          )}
+          {historyQuery.isFetching && (
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+          )}
+        </span>
+        <button
+          type="button"
+          onClick={() => setLivePaused((v) => !v)}
+          data-ocid="accounting.live_toggle"
+          aria-pressed={livePaused}
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 font-medium text-foreground hover:bg-secondary"
+        >
+          {livePaused ? (
+            <Play className="h-3 w-3" aria-hidden="true" />
+          ) : (
+            <Pause className="h-3 w-3" aria-hidden="true" />
+          )}
+          {livePaused ? "Tiếp tục" : "Tạm dừng"}
+        </button>
+      </div>
+
       <Card data-ocid="accounting.lookup_card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <CalendarRange
-              className="h-4 w-4 text-primary"
-              aria-hidden="true"
-            />
-            Danh sách đơn
-          </CardTitle>
-          <CardDescription>
-            Lọc theo khoảng thời gian và trạng thái — danh sách tự cập nhật ngay
-            khi đổi bộ lọc, không cần bấm nút tìm kiếm.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 pt-6">
           <div
             className="flex flex-wrap gap-2"
             data-ocid="accounting.quick_ranges"
@@ -712,6 +724,13 @@ export function AccountingPage() {
                   filteredResults.reduce((sum, o) => sum + o.amount, 0),
                 )}
               </span>
+              <span
+                className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground"
+                data-ocid="accounting.method_split"
+              >
+                Tiền mặt {formatVnd(paidByMethod("cash"))} · Chuyển khoản{" "}
+                {formatVnd(paidByMethod("transfer"))}
+              </span>
               {notInvoicedCount > 0 && (
                 <span
                   className="rounded-full bg-destructive/12 px-3 py-1 text-xs font-semibold text-destructive"
@@ -821,8 +840,11 @@ export function AccountingPage() {
                     return (
                       <TableRow
                         key={order.orderId}
-                        className="ent-table-row"
+                        className={`ent-table-row transition-colors duration-1000 ${newIds.has(order.orderId) ? "bg-warning/15" : ""}`}
                         data-ocid={`accounting.row.${idx + 1}`}
+                        data-new={
+                          newIds.has(order.orderId) ? "true" : undefined
+                        }
                       >
                         <TableCell className="ent-td">
                           <div className="flex flex-col">
@@ -995,26 +1017,16 @@ export function AccountingPage() {
                                 )}
                                 Xem PDF
                               </Button>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={invoiceMutation.isPending}
-                                onClick={() => {
-                                  setInvoiceOrderId(order.orderId);
-                                  setInvoiceId("");
-                                  setPdfUrl("");
-                                }}
-                                data-ocid={`accounting.invoice_button.${idx + 1}`}
+                            ) : order.invoiceStatus === InvoiceStatus.none &&
+                              !isCancelled &&
+                              order.paymentStatus === "paid" ? (
+                              <span
+                                className="text-xs text-muted-foreground"
+                                data-ocid={`accounting.invoice_pending.${idx + 1}`}
                               >
-                                <Receipt
-                                  className="h-3.5 w-3.5"
-                                  aria-hidden="true"
-                                />
-                                Hoá đơn
-                              </Button>
-                            )}
+                                Đang chờ phát hành…
+                              </span>
+                            ) : null}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1029,149 +1041,6 @@ export function AccountingPage() {
 
       {/* Tuỳ chọn nâng cao — thu gọn (dùng cho đơn KHÔNG còn trong danh
           sách lọc hiện tại, ít dùng hơn thao tác trực tiếp từ bảng). */}
-      <Card data-ocid="accounting.advanced_card">
-        <button
-          type="button"
-          onClick={() => setAdvancedOpen((v) => !v)}
-          data-ocid="accounting.advanced_toggle"
-          className="flex w-full items-center justify-between px-6 py-4 text-left"
-        >
-          <span className="flex items-center gap-2 font-display text-base font-semibold">
-            Tuỳ chọn nâng cao — phát hành hoá đơn theo mã đơn
-          </span>
-          <ChevronDown
-            className={`h-4 w-4 text-muted-foreground transition-smooth ${advancedOpen ? "rotate-180" : ""}`}
-            aria-hidden="true"
-          />
-        </button>
-        {advancedOpen && (
-          <div
-            className="grid grid-cols-1 gap-6 border-t border-border px-6 pb-6 pt-4 lg:grid-cols-2"
-            data-ocid="accounting.advanced_content"
-          >
-            <div data-ocid="accounting.invoice_card">
-              <CardTitle className="mb-1 flex items-center gap-2 font-display text-base">
-                <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
-                Phát hành hoá đơn thủ công
-              </CardTitle>
-              <CardDescription className="mb-3">
-                Phát hành hoá đơn điện tử cho một đơn hàng theo mã đơn.
-              </CardDescription>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!invoiceManualCode.trim()) {
-                    toast.error("Vui lòng nhập mã đơn.");
-                    return;
-                  }
-                  setInvoiceOrderId(invoiceManualCode.trim());
-                  setInvoiceId("");
-                  setPdfUrl("");
-                }}
-                className="flex flex-col gap-3"
-                data-ocid="accounting.invoice_form"
-              >
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="invoice-code" className="text-sm font-medium">
-                    Mã đơn
-                  </Label>
-                  <Input
-                    id="invoice-code"
-                    value={invoiceManualCode}
-                    onChange={(e) => setInvoiceManualCode(e.target.value)}
-                    placeholder="Nhập mã đơn cần phát hành hoá đơn…"
-                    data-ocid="accounting.invoice_code_input"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={!invoiceManualCode.trim()}
-                  data-ocid="accounting.invoice_open_button"
-                  className="w-full sm:w-auto"
-                >
-                  <Receipt className="h-4 w-4" aria-hidden="true" />
-                  Phát hành hoá đơn
-                </Button>
-              </form>
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Dialog phát hành hoá đơn */}
-      <Dialog
-        open={!!invoiceOrderId}
-        onOpenChange={(open) => {
-          if (!open) setInvoiceOrderId(null);
-        }}
-      >
-        <DialogContent data-ocid="accounting.invoice_dialog">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-display">
-              <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
-              Phát hành hoá đơn
-            </DialogTitle>
-            <DialogDescription>
-              Nhập thông tin hoá đơn điện tử cho đơn{" "}
-              <span className="font-mono font-semibold text-foreground">
-                {invoiceOrderId}
-              </span>
-              .
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invoice-id" className="text-sm font-medium">
-                Mã hoá đơn
-              </Label>
-              <Input
-                id="invoice-id"
-                value={invoiceId}
-                onChange={(e) => setInvoiceId(e.target.value)}
-                placeholder="VD: INV-2026-0001"
-                data-ocid="accounting.invoice_id_input"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invoice-pdf" className="text-sm font-medium">
-                Đường dẫn PDF hoá đơn
-              </Label>
-              <Input
-                id="invoice-pdf"
-                value={pdfUrl}
-                onChange={(e) => setPdfUrl(e.target.value)}
-                placeholder="https://…/hoa-don.pdf"
-                data-ocid="accounting.invoice_pdf_input"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setInvoiceOrderId(null)}
-              data-ocid="accounting.invoice_cancel_button"
-            >
-              Huỷ
-            </Button>
-            <Button
-              type="button"
-              disabled={
-                invoiceMutation.isPending || !invoiceId.trim() || !pdfUrl.trim()
-              }
-              onClick={handleIssueInvoice}
-              data-ocid="accounting.invoice_submit_button"
-            >
-              {invoiceMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Receipt className="h-4 w-4" aria-hidden="true" />
-              )}
-              Phát hành
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <AlertDialog
         open={confirmDelete !== null}
         onOpenChange={(open) => {

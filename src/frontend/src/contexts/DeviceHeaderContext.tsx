@@ -19,6 +19,10 @@ export interface DeviceHeaderInfo {
    * đối diện với tên/mã thiết bị bên trái. Tuỳ chọn — trang nào không
    * cần thì bỏ trống. */
   pageTitle?: string;
+  /** Giữ menu điều hướng khi đang dùng header thiết bị — cho Admin (VD
+   * trang Kế toán): Admin cần đi tiếp sang các trang quản trị khác, còn
+   * thiết bị thường chỉ dùng đúng 1 trang nên ẩn menu. */
+  keepNav?: boolean;
 }
 
 interface DeviceHeaderContextValue {

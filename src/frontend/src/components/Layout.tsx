@@ -342,7 +342,7 @@ function LayoutInner({ children }: { children: ReactNode }) {
             </Link>
           )}
 
-          {!deviceHeader && (
+          {(!deviceHeader || deviceHeader.keepNav) && (
             <nav
               className="hidden items-center gap-1 md:flex"
               data-ocid="nav.desktop"
@@ -379,7 +379,7 @@ function LayoutInner({ children }: { children: ReactNode }) {
               {deviceHeader.pageTitle}
             </h1>
           )}
-          {!deviceHeader && (
+          {(!deviceHeader || deviceHeader.keepNav) && (
             <button
               type="button"
               onClick={() => setMobileOpen((v) => !v)}
