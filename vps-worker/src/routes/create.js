@@ -268,7 +268,10 @@ router.post('/order/create', async (req, res, next) => {
           senderPhone: restaurant?.phone || '',
           recipientName: cusName,
           recipientPhone: cusPhone,
-          recipientRemarks: `Đơn ${orderId} — mã nhận hàng ${pickupCode}${qrLine}`,
+          // Mã nhận hàng ĐẦU TIÊN, in hoa, 1 dòng riêng — tài xế đọc cho
+          // nhân viên nhanh hơn, và nút "Chụp màn hình tài xế" ở /driver
+          // đọc chữ trúng hơn (routes/driver-pickup-lookup.js).
+          recipientRemarks: `MÃ NHẬN HÀNG: ${pickupCode}\nĐơn ${orderId}${qrLine}`,
         });
         db.prepare(
           `UPDATE orders SET lalamove_order_id = ?, lalamove_driver_id = ?,

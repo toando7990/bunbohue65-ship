@@ -7,6 +7,7 @@ import type { Order } from "@/backend";
 import { ActivationForm } from "@/components/ActivationForm";
 import { DriverOrderHistory } from "@/components/DriverOrderHistory";
 import { DriverPrinterSettingsDialog } from "@/components/DriverPrinterSettingsDialog";
+import { DriverScreenScan } from "@/components/DriverScreenScan";
 import { PaymentQueue } from "@/components/PaymentQueue";
 import { QRDisplay } from "@/components/QRDisplay";
 import { useDeviceHeader } from "@/contexts/DeviceHeaderContext";
@@ -164,7 +165,12 @@ export function DriverPaymentScreen() {
   // orderId (kể cả đơn CHƯA xuất hiện trong hàng đợi ordersQuery.data,
   // VD tài xế đến sớm) rồi mở thẳng QRDisplay với mã nhận hàng đã biết
   // sẵn.
-  async function openOrderByPickupQr(orderId: string, pickupCode: string) {
+  // pickupCode null (nút "Chụp màn hình tài xế" đọc được mã đơn nhưng chưa
+  // xác nhận được mã nhận hàng) → màn thanh toán hỏi mã như bình thường.
+  async function openOrderByPickupQr(
+    orderId: string,
+    pickupCode: string | null,
+  ) {
     if (!actor) return;
     try {
       const order = await getOrder(actor, orderId);
@@ -221,7 +227,18 @@ export function DriverPaymentScreen() {
             effect tự mở đơn ở trên). Chỗ này giờ là nút cấu hình máy in
             (dùng được trên cả điện thoại lẫn máy tính). */}
         {activeTab === "queue" && (
-          <div className="flex justify-end px-4 pt-4">
+          <div className="px-4 pt-4">
+            <DriverScreenScan
+              restaurantId={restaurantId}
+              deviceId={deviceId}
+              onOpenOrder={(orderId, code) =>
+                void openOrderByPickupQr(orderId, code)
+              }
+            />
+          </div>
+        )}
+        {activeTab === "queue" && (
+          <div className="flex justify-end px-4 pt-3">
             <button
               type="button"
               onClick={() => setPrinterDialogOpen(true)}

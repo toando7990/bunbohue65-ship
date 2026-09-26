@@ -276,6 +276,48 @@ export async function confirmManualPaymentByPhoto(
   });
 }
 
+// "Chụp màn hình tài xế" ở /driver — VPS đọc chữ trên ảnh (OCR), tìm đơn
+// chưa thanh toán của nhà hàng theo mã đơn / mã nhận hàng. pickupCode
+// chỉ có giá trị khi đã khớp (rỗng = mở đơn nhưng nhân viên tự hỏi mã).
+export interface PickupLookupMatch {
+  orderId: string;
+  cusName: string;
+  amount: number;
+  pickupCode: string;
+}
+
+export async function lookupPickupByPhoto(
+  restaurantId: string,
+  deviceId: string,
+  image: Blob,
+): Promise<PickupLookupMatch[]> {
+  const formData = new FormData();
+  formData.append("restaurantId", restaurantId);
+  formData.append("deviceId", deviceId);
+  formData.append("image", image, "driver-screen.jpg");
+  const res = await vpsFetch<{ ok: boolean; matches?: PickupLookupMatch[] }>({
+    method: "POST",
+    path: "/driver/pickup-lookup/photo",
+    body: formData,
+    isFormData: true,
+    timeoutMs: 30000, // đọc chữ trên ảnh mất vài giây
+  });
+  return res.matches ?? [];
+}
+
+export async function lookupPickupByCode(
+  restaurantId: string,
+  deviceId: string,
+  pickupCode: string,
+): Promise<PickupLookupMatch[]> {
+  const res = await vpsFetch<{ ok: boolean; matches?: PickupLookupMatch[] }>({
+    method: "POST",
+    path: "/driver/pickup-lookup/code",
+    body: { restaurantId, deviceId, pickupCode },
+  });
+  return res.matches ?? [];
+}
+
 // Đơn nào đã TỪNG có QR (qr_first_created_at khác NULL ở VPS) — dùng để
 // bật/tắt nút "Xác nhận bằng ảnh" ở /driver (mặc định tắt, chỉ
 // bật sau khi đơn đã từng có QR). Order từ canister không lưu field
