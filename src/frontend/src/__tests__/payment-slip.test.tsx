@@ -6,6 +6,7 @@ import {
   buildPaymentSlipHtml,
   getPrintMode,
   printPaymentSlip,
+  printViaSystem,
   setPrintMode,
 } from "@/lib/payment-slip";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -68,5 +69,31 @@ describe("payment slip", () => {
     await expect(printPaymentSlip(order)).rejects.toThrow(
       "Chưa kết nối máy in USB",
     );
+  });
+
+  it("system print shows ONLY the slip (not the whole page) and cleans up after printing", () => {
+    // Trước in qua iframe 0×0 — Safari iPhone in cả trang /driver.
+    document.body.innerHTML = '<div id="app">Trang /driver</div>';
+    const printSpy = vi.spyOn(window, "print").mockImplementation(() => {});
+    printViaSystem(
+      '<!doctype html><html><head><title>Phiếu thanh toán ORD-1</title><style>@page { size: 80mm auto; } .c { text-align: center; }</style></head><body><h2 class="c">PHIẾU THANH TOÁN</h2></body></html>',
+    );
+    expect(printSpy).toHaveBeenCalledTimes(1);
+    const slip = document.getElementById("bbh-print-slip");
+    expect(slip?.parentElement).toBe(document.body);
+    expect(slip?.textContent).toContain("PHIẾU THANH TOÁN");
+    const css = document.getElementById("bbh-print-slip-style")?.textContent;
+    expect(css).toContain("@media print");
+    expect(css).toContain(
+      "body > *:not(#bbh-print-slip){display:none !important}",
+    );
+    expect(css).toContain("size: 80mm auto");
+    expect(document.title).toBe("Phiếu thanh toán ORD-1");
+
+    window.dispatchEvent(new Event("afterprint"));
+    expect(document.getElementById("bbh-print-slip")).toBeNull();
+    expect(document.getElementById("bbh-print-slip-style")).toBeNull();
+    expect(document.getElementById("app")).not.toBeNull();
+    printSpy.mockRestore();
   });
 });

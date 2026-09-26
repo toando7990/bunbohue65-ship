@@ -147,26 +147,70 @@ ${discount > 0n ? `<table><tr><td>Đã giảm</td><td class="r">-${vnd(discount)
 </body></html>`;
 }
 
-/** In qua hộp thoại in của hệ điều hành — iframe ẩn, không mở tab mới
- * (tránh bị chặn popup trên điện thoại). */
+const PRINT_SLIP_ID = "bbh-print-slip";
+
+/** In qua hộp thoại in của hệ điều hành, không mở tab mới (tránh bị chặn
+ * popup trên điện thoại).
+ *
+ * BUG THẬT đã sửa: trước in qua iframe ẩn 0×0 — Safari iPhone (và một số
+ * trình duyệt di động) BỎ QUA iframe, in CẢ TRANG đang mở (bản in "In lại
+ * phiếu" ở /driver ra nguyên trang A4 thay vì phiếu). Giờ chèn phiếu vào
+ * chính trang + CSS chỉ áp dụng khi in: ẩn mọi thứ khác, chỉ hiện phiếu
+ * (khổ 80mm theo CSS của phiếu). Dọn sạch sau khi in (sự kiện afterprint,
+ * dự phòng 60 giây). */
 export function printViaSystem(html: string): void {
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("aria-hidden", "true");
-  iframe.style.cssText =
-    "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
-  document.body.appendChild(iframe);
-  const doc = iframe.contentDocument;
-  const win = iframe.contentWindow;
-  if (!doc || !win) {
-    iframe.remove();
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  const slipCss = Array.from(parsed.querySelectorAll("style"))
+    .map((s) => s.textContent ?? "")
+    .join("\n");
+  // @page (khổ giấy 80mm) phải nằm NGOÀI @media print — lồng bên trong thì
+  // Chrome bỏ qua (thử thực tế: ra khổ Letter). @page chỉ có tác dụng khi in.
+  const pageRules = (slipCss.match(/@page\s*\{[^}]*\}/g) ?? []).join("\n");
+  const bodyCss = slipCss.replace(/@page\s*\{[^}]*\}/g, "");
+
+  document.getElementById(PRINT_SLIP_ID)?.remove();
+  document.getElementById(`${PRINT_SLIP_ID}-style`)?.remove();
+
+  const holder = document.createElement("div");
+  holder.id = PRINT_SLIP_ID;
+  holder.setAttribute("aria-hidden", "true");
+  holder.innerHTML = parsed.body.innerHTML;
+
+  const style = document.createElement("style");
+  style.id = `${PRINT_SLIP_ID}-style`;
+  style.textContent = `#${PRINT_SLIP_ID}{display:none}
+${pageRules}
+@media print{
+body > *:not(#${PRINT_SLIP_ID}){display:none !important}
+#${PRINT_SLIP_ID}{display:block !important}
+${bodyCss}
+}`;
+
+  document.head.appendChild(style);
+  document.body.appendChild(holder);
+
+  // Tên file PDF / tiêu đề bản in = tên phiếu thay vì tên trang web.
+  const previousTitle = document.title;
+  const slipTitle = parsed.title.trim();
+  if (slipTitle) document.title = slipTitle;
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    holder.remove();
+    style.remove();
+    document.title = previousTitle;
+    window.removeEventListener("afterprint", cleanup);
+  };
+  window.addEventListener("afterprint", cleanup);
+  setTimeout(cleanup, 60_000);
+  try {
+    window.print();
+  } catch {
+    cleanup();
     throw new Error("Trình duyệt không hỗ trợ in.");
   }
-  doc.open();
-  doc.write(html);
-  doc.close();
-  win.focus();
-  win.print();
-  setTimeout(() => iframe.remove(), 60_000);
 }
 
 /** In phiếu thanh toán theo chế độ đã cấu hình. Chế độ USB mà chưa kết
