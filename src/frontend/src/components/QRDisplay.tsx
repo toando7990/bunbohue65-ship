@@ -23,7 +23,6 @@ import { printInvoiceReceipt } from "@/lib/invoice-receipt";
 import {
   VpsHttpError,
   confirmCashPaymentDriver,
-  getInvoice,
   requestQr,
 } from "@/lib/vps-client";
 import type { RequestQrResponse } from "@/types";
@@ -214,38 +213,12 @@ export function QRDisplay({
     };
   }, [actor, order, polling]);
 
-  // Sau khi #paid: KHÔNG tự đóng nữa (trước đây đóng sau 1.5s) — giống quầy,
-  // hiện màn "Thanh toán thành công" với nút "In phiếu" (đúng mẫu phiếu quầy,
-  // lib/invoice-receipt.ts). Nút chỉ bật khi hoá đơn Bkav đã phát hành: poll
-  // VPS GET /invoice/:orderId (trả "chưa phát hành" cho tới khi cron xong,
-  // thường < 1 phút) mỗi 5s, tối đa 3 phút. Nhân viên bấm "Xong" để đóng +
-  // làm mới hàng đợi (onPaid).
-  const [invoiceReady, setInvoiceReady] = useState(false);
-  const [invoiceWaitTimedOut, setInvoiceWaitTimedOut] = useState(false);
+  // Sau khi #paid: KHÔNG tự đóng — hiện màn "Thanh toán thành công" với nút
+  // "In phiếu" (đúng mẫu phiếu quầy, lib/invoice-receipt.ts). In được NGAY
+  // (không chờ hoá đơn — hoá đơn Bkav do Kế toán phát hành sau); cần phiếu
+  // kèm thông tin hoá đơn thì in lại ở tab Lịch sử sau khi Kế toán phát
+  // hành. Nhân viên bấm "Xong" để đóng + làm mới hàng đợi (onPaid).
   const [printingReceipt, setPrintingReceipt] = useState(false);
-  useEffect(() => {
-    if (status !== PaymentStatus.paid || invoiceReady) return;
-    let cancelled = false;
-    const startedAt = Date.now();
-    async function check() {
-      try {
-        const inv = await getInvoice(order.orderId);
-        if (!cancelled && inv.ok) setInvoiceReady(true);
-      } catch {
-        // "chưa phát hành" (404) hoặc lỗi mạng — thử lại lần sau.
-      }
-      if (!cancelled && Date.now() - startedAt > 3 * 60 * 1000) {
-        setInvoiceWaitTimedOut(true);
-      }
-    }
-    void check();
-    const id = setInterval(check, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [status, order.orderId, invoiceReady]);
-
   async function handlePrintReceipt() {
     setPrintingReceipt(true);
     try {
@@ -307,11 +280,11 @@ export function QRDisplay({
             <button
               type="button"
               onClick={handlePrintReceipt}
-              disabled={!invoiceReady || printingReceipt}
+              disabled={printingReceipt}
               data-ocid="qr.print_receipt_button"
               className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-semibold text-primary-foreground transition-smooth hover:bg-primary/90 disabled:opacity-50"
             >
-              {printingReceipt || !invoiceReady ? (
+              {printingReceipt ? (
                 <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
               ) : (
                 <Printer className="h-5 w-5" aria-hidden="true" />
@@ -322,11 +295,8 @@ export function QRDisplay({
               className="text-center text-xs text-muted-foreground"
               data-ocid="qr.invoice_wait_hint"
             >
-              {invoiceReady
-                ? "Hoá đơn đã phát hành — có thể in phiếu."
-                : invoiceWaitTimedOut
-                  ? "Hoá đơn chưa phát hành xong — có thể in lại sau ở tab Lịch sử."
-                  : "Đang chờ phát hành hoá đơn (thường dưới 1 phút)…"}
+              Hoá đơn điện tử do Kế toán phát hành sau — cần phiếu kèm hoá đơn
+              thì in lại ở tab Lịch sử.
             </p>
             <button
               type="button"

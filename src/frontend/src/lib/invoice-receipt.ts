@@ -7,8 +7,8 @@
 //   - "system": bản HTML CÙNG nội dung phiếu quầy, in qua hộp thoại in của
 //     hệ điều hành — để dùng được trên điện thoại (iPhone không có WebUSB).
 //     Bản HTML in link tra cứu hoá đơn dạng chữ thay cho mã QR.
-// Chỉ in được khi hoá đơn đã phát hành (getInvoice trả ok) — nếu chưa có
-// hoá đơn, throw để giao diện báo rõ.
+// In được ngay sau khi thanh toán (GET /receipt/:orderId) — phần "Thông
+// tin hoá đơn điện tử" chỉ in khi đơn đã có hoá đơn (Kế toán phát hành).
 // ============================================================
 
 import { COMPANY_INFO } from "@/lib/company-info";
@@ -18,7 +18,7 @@ import {
   printReceipt,
   reconnectPrinter,
 } from "@/lib/printer";
-import { getInvoice } from "@/lib/vps-client";
+import { getReceipt } from "@/lib/vps-client";
 import type { InvoiceResponse } from "@/types";
 
 function vnd(n: number): string {
@@ -72,20 +72,26 @@ th { text-align: left; } hr { border: 0; border-top: 1px dashed #000; margin: 6p
 <table><tr><td>Tổng SL món</td><td class="r">${totalQty}</td></tr>
 <tr><td>Tổng tiền thuế</td><td class="r">${vnd(invoice.taxTotal ?? 0)}</td></tr>
 <tr class="total"><td>TỔNG THANH TOÁN</td><td class="r">${vnd(invoice.amount ?? 0)}</td></tr></table>
-<p class="c">** Thông tin hoá đơn điện tử **</p>
+${
+  invoice.invoiceId
+    ? `<p class="c">** Thông tin hoá đơn điện tử **</p>
 <div>Số hoá đơn: ${esc(invoice.invoiceId)}</div>
 <div>Mã tra cứu: ${esc(invoice.maTraCuu || "—")}</div>
 <div>Mã CQT: ${esc(invoice.maCQT || "—")}</div>
-${invoice.sharedLink ? `<div class="link">Tra cứu: ${esc(invoice.sharedLink)}</div>` : ""}
+${invoice.sharedLink ? `<div class="link">Tra cứu: ${esc(invoice.sharedLink)}</div>` : ""}`
+    : `<p class="c">Hoá đơn điện tử sẽ được phát hành sau.</p>`
+}
 <p class="c">Cảm ơn quý khách!</p>
 </body></html>`;
 }
 
-/** In phiếu hoá đơn của đơn đã phát hành hoá đơn Bkav. */
+/** In phiếu thanh toán — in được NGAY sau khi thanh toán (hoá đơn Bkav do
+ * Kế toán phát hành sau). Đơn đã có hoá đơn thì phiếu kèm số hoá đơn/mã
+ * tra cứu (in lại ở tab Lịch sử). */
 export async function printInvoiceReceipt(orderId: string): Promise<void> {
-  const invoice = await getInvoice(orderId);
+  const invoice = await getReceipt(orderId);
   if (!invoice.ok) {
-    throw new Error(invoice.error || "Không lấy được dữ liệu hoá đơn.");
+    throw new Error(invoice.error || "Không lấy được dữ liệu phiếu.");
   }
   if (getPrintMode() === "usb") {
     if (!isPrinterConnected()) {

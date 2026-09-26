@@ -212,15 +212,16 @@ export function DriverOrderHistory({
                   compactRestaurantInfo
                   staffView
                 />
-                {/* "In lại phiếu" — đúng mẫu phiếu quầy, CHỈ bật khi hoá đơn
-                    Bkav đã phát hành. */}
+                {/* "In lại phiếu" — đúng mẫu phiếu quầy. In được bất cứ lúc
+                    nào; đơn đã có hoá đơn (Kế toán phát hành) thì phiếu kèm
+                    số hoá đơn + mã tra cứu. */}
                 <button
                   type="button"
-                  disabled={!invoiced || reprintingId === order.orderId}
+                  disabled={reprintingId === order.orderId}
                   title={
                     invoiced
-                      ? "In lại phiếu hoá đơn"
-                      : "Chỉ in được khi hoá đơn đã phát hành"
+                      ? "In lại phiếu (kèm thông tin hoá đơn điện tử)"
+                      : "In lại phiếu — hoá đơn điện tử chưa phát hành"
                   }
                   onClick={() => handleReprint(order.orderId)}
                   data-ocid={`driver_history.reprint_button.${i + 1}`}

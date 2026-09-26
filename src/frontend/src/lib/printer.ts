@@ -278,17 +278,27 @@ export function buildReceiptBytes(input: PrintReceiptInput): Uint8Array {
       [["TỔNG THANH TOÁN", formatVnd(invoice.amount ?? 0)]],
     )
     .bold(false)
-    .newline()
-    .align("center")
-    .line("** Thông tin hoá đơn điện tử **")
-    .align("left")
-    .line(`Số hoá đơn: ${invoice.invoiceId}`)
-    .line(`Mã tra cứu: ${invoice.maTraCuu || "—"}`)
-    .line(`Mã CQT: ${invoice.maCQT || "—"}`)
     .newline();
 
-  if (invoice.sharedLink) {
-    encoder.align("center").qrcode(invoice.sharedLink).newline();
+  // Chưa có hoá đơn (Kế toán phát hành sau) → in phiếu không kèm thông tin
+  // hoá đơn điện tử; in lại ở tab Lịch sử sau khi có hoá đơn.
+  if (invoice.invoiceId) {
+    encoder
+      .align("center")
+      .line("** Thông tin hoá đơn điện tử **")
+      .align("left")
+      .line(`Số hoá đơn: ${invoice.invoiceId}`)
+      .line(`Mã tra cứu: ${invoice.maTraCuu || "—"}`)
+      .line(`Mã CQT: ${invoice.maCQT || "—"}`)
+      .newline();
+    if (invoice.sharedLink) {
+      encoder.align("center").qrcode(invoice.sharedLink).newline();
+    }
+  } else {
+    encoder
+      .align("center")
+      .line("Hoá đơn điện tử sẽ được phát hành sau.")
+      .newline();
   }
 
   encoder.align("center").line("Cảm ơn quý khách!").newline().newline().cut();

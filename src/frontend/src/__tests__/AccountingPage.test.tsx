@@ -25,6 +25,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockDeleteOrder = vi.fn();
 const mockReissue = vi.fn();
+const mockIssue = vi.fn();
+const mockLookupTax = vi.fn();
+const mockSetTax = vi.fn();
 const mockDeleteCancelled = vi.fn();
 const mockGetEnterpriseHistory = vi.fn();
 const mockGenerateCode = vi.fn();
@@ -48,6 +51,9 @@ vi.mock("@/lib/vps-client", () => ({
   getInvoice: (...args: unknown[]) => mockGetInvoice(...args),
   enterpriseReissueInvoice: (deviceId: string, orderId: string) =>
     mockReissue(deviceId, orderId),
+  enterpriseIssueInvoices: (...args: unknown[]) => mockIssue(...args),
+  enterpriseLookupTaxCode: (...args: unknown[]) => mockLookupTax(...args),
+  enterpriseSetOrderTaxCode: (...args: unknown[]) => mockSetTax(...args),
   enterpriseDeleteOrder: (deviceId: string, orderId: string) =>
     mockDeleteOrder(deviceId, orderId),
   enterpriseDeleteCancelledOrders: (deviceId: string, dryRun: boolean) =>
@@ -230,31 +236,38 @@ describe("AccountingPage enterprise accounting", () => {
     );
   });
 
-  it("no longer offers the manual 'Hoá đơn' button or the 'Tuỳ chọn nâng cao' section; a paid order without an invoice shows 'Đang chờ phát hành…'", async () => {
+  it("no longer issues invoices automatically: a paid order waits for the accountant ('Phát hành' + warning banner), then shows 'Đang phát hành…' once requested", async () => {
     setActivation();
+    const order = {
+      orderId: "ORD-WAIT",
+      restaurantId: "R1",
+      cusName: "A",
+      cusPhone: "0900",
+      amount: 70000,
+      bookingStatus: "confirmed",
+      paymentStatus: "paid",
+      paymentMethod: "cash",
+      invoiceStatus: "none",
+      createdAt: Date.now(),
+    };
     mockGetEnterpriseHistory.mockResolvedValue({
-      orders: [
-        {
-          orderId: "ORD-WAIT",
-          restaurantId: "R1",
-          cusName: "A",
-          cusPhone: "0900",
-          amount: 70000,
-          bookingStatus: "confirmed",
-          paymentStatus: "paid",
-          paymentMethod: "cash",
-          invoiceStatus: "none",
-          createdAt: Date.now(),
-        },
-      ],
+      orders: [order],
       count: 1,
       total: 70000,
+    });
+    mockIssue.mockResolvedValue({
+      ok: true,
+      queued: ["ORD-WAIT"],
+      rejected: [],
     });
     renderPage();
     await waitFor(() =>
       expect(
-        screen.getByTestId("accounting.invoice_pending.1"),
-      ).toHaveTextContent("Đang chờ phát hành"),
+        screen.getByTestId("accounting.issue_button.1"),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("accounting.issue_banner")).toHaveTextContent(
+      "1 đơn đã thanh toán chưa phát hành hoá đơn",
     );
     expect(
       screen.queryByTestId("accounting.invoice_button.1"),
@@ -262,6 +275,164 @@ describe("AccountingPage enterprise accounting", () => {
     expect(
       screen.queryByTestId("accounting.advanced_toggle"),
     ).not.toBeInTheDocument();
+
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [{ ...order, invoiceRequested: true }],
+      count: 1,
+      total: 70000,
+    });
+    fireEvent.click(screen.getByTestId("accounting.issue_button.1"));
+    await waitFor(() =>
+      expect(mockIssue).toHaveBeenCalledWith("dev-acc", ["ORD-WAIT"]),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("accounting.invoice_badge.1"),
+      ).toHaveTextContent("Đang phát hành"),
+    );
+    expect(
+      screen.queryByTestId("accounting.issue_button.1"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("accounting.issue_banner"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("bulk-issues the selected orders (select all issuable) and skips orders that cannot be issued", async () => {
+    setActivation();
+    const base = {
+      restaurantId: "R1",
+      cusName: "A",
+      cusPhone: "0900",
+      amount: 50000,
+      bookingStatus: "confirmed",
+      paymentStatus: "paid",
+      paymentMethod: "cash",
+      createdAt: Date.now(),
+    };
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [
+        { ...base, orderId: "ORD-A", invoiceStatus: "none" },
+        { ...base, orderId: "ORD-B", invoiceStatus: "failed" },
+        { ...base, orderId: "ORD-C", invoiceStatus: "invoiced" },
+        {
+          ...base,
+          orderId: "ORD-D",
+          invoiceStatus: "none",
+          createdAt: Date.now() - 10 * 86400000,
+        },
+      ],
+      count: 4,
+      total: 200000,
+    });
+    mockIssue.mockResolvedValue({
+      ok: true,
+      queued: ["ORD-A", "ORD-B"],
+      rejected: [],
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("ORD-A")).toBeInTheDocument());
+    // Chỉ đơn phát hành được mới có ô chọn (đã có hoá đơn / quá hạn thì không).
+    const cb = (id: string) =>
+      screen
+        .getByText(id)
+        .closest("tr")
+        ?.querySelector('input[type="checkbox"]');
+    expect(cb("ORD-A")).toBeTruthy();
+    expect(cb("ORD-B")).toBeTruthy();
+    expect(cb("ORD-C")).toBeNull();
+    expect(cb("ORD-D")).toBeNull();
+
+    fireEvent.click(
+      screen.getByTestId("accounting.select_all_issuable_button"),
+    );
+    expect(screen.getByTestId("accounting.bulk_issue_bar")).toHaveTextContent(
+      "Đã chọn 2 đơn",
+    );
+    fireEvent.click(screen.getByTestId("accounting.bulk_issue_button"));
+    await waitFor(() =>
+      expect(mockIssue).toHaveBeenCalledWith("dev-acc", ["ORD-A", "ORD-B"]),
+    );
+  });
+
+  it("adds a customer tax code: lookup shows the registered company, save is only allowed after a successful lookup", async () => {
+    setActivation();
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [
+        {
+          orderId: "ORD-TAX",
+          restaurantId: "R1",
+          cusName: "Anh Minh",
+          cusPhone: "0900",
+          amount: 190000,
+          bookingStatus: "confirmed",
+          paymentStatus: "paid",
+          paymentMethod: "transfer",
+          invoiceStatus: "none",
+          createdAt: Date.now(),
+        },
+        {
+          orderId: "ORD-DONE",
+          restaurantId: "R1",
+          cusName: "B",
+          cusPhone: "0901",
+          amount: 60000,
+          bookingStatus: "confirmed",
+          paymentStatus: "paid",
+          paymentMethod: "cash",
+          invoiceStatus: "invoiced",
+          cusTaxCode: "0107654321",
+          cusTaxName: "CÔNG TY CP XYZ",
+          createdAt: Date.now(),
+        },
+      ],
+      count: 2,
+      total: 250000,
+    });
+    mockLookupTax.mockResolvedValue({
+      ok: true,
+      found: true,
+      name: "CÔNG TY TNHH ABC",
+      address: "12 Láng Hạ, Hà Nội",
+    });
+    mockSetTax.mockResolvedValue({ ok: true });
+    renderPage();
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("accounting.tax_code.1.add_button"),
+      ).toBeInTheDocument(),
+    );
+    // Đơn đã có hoá đơn: chỉ hiển thị MST, không sửa được.
+    expect(screen.getByTestId("accounting.tax_code.2")).toHaveTextContent(
+      "0107654321",
+    );
+    expect(
+      screen.queryByTestId("accounting.tax_code.2.edit_button"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("accounting.tax_code.1.add_button"));
+    fireEvent.change(screen.getByTestId("accounting.tax_code.1.input"), {
+      target: { value: "0101 234 567" },
+    });
+    expect(
+      screen.getByTestId("accounting.tax_code.1.save_button"),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByTestId("accounting.tax_code.1.lookup_button"));
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("accounting.tax_code.1.lookup_result"),
+      ).toHaveTextContent("CÔNG TY TNHH ABC"),
+    );
+    expect(mockLookupTax).toHaveBeenCalledWith("dev-acc", "0101234567");
+    fireEvent.click(screen.getByTestId("accounting.tax_code.1.save_button"));
+    await waitFor(() =>
+      expect(mockSetTax).toHaveBeenCalledWith(
+        "dev-acc",
+        "ORD-TAX",
+        "0101234567",
+        "CÔNG TY TNHH ABC",
+      ),
+    );
   });
 
   const sampleOrders = [
@@ -567,7 +738,7 @@ describe("AccountingPage enterprise accounting", () => {
     expect(screen.queryByText("ORD-TRANSFER")).not.toBeInTheDocument();
   });
 
-  it("'Phát hành lại' shows only for paid orders with a failed invoice, is locked after 1 working day, and queues the reissue via VPS", async () => {
+  it("'Phát hành lại' shows only for paid orders with a failed invoice, is locked after 1 working day, and re-issues via VPS", async () => {
     setActivation();
     const base = {
       restaurantId: "R1",
@@ -602,7 +773,11 @@ describe("AccountingPage enterprise accounting", () => {
       count: 3,
       total: 210000,
     });
-    mockReissue.mockResolvedValue({ ok: true, queued: true });
+    mockIssue.mockResolvedValue({
+      ok: true,
+      queued: ["ORD-FAIL-NEW"],
+      rejected: [],
+    });
     renderPage();
     await waitFor(() =>
       expect(screen.getByText("ORD-FAIL-NEW")).toBeInTheDocument(),
@@ -619,7 +794,7 @@ describe("AccountingPage enterprise accounting", () => {
     expect(btn("ORD-FAIL-NEW")).not.toBeDisabled();
     fireEvent.click(btn("ORD-FAIL-NEW") as HTMLButtonElement);
     await waitFor(() =>
-      expect(mockReissue).toHaveBeenCalledWith("dev-acc", "ORD-FAIL-NEW"),
+      expect(mockIssue).toHaveBeenCalledWith("dev-acc", ["ORD-FAIL-NEW"]),
     );
   });
 

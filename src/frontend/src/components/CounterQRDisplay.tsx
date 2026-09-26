@@ -38,22 +38,18 @@
 // được (tránh nhân viên bị kẹt hẳn nếu có sự cố kỹ thuật).
 //
 // IN PHIẾU TẠI QUẦY (tuỳ chọn, nhân viên chủ động bấm): ngay sau khi
-// thanh toán thành công, thay vì tự đóng ngay sau 1.5s, nhân viên có
-// thể bấm "Chờ in hoá đơn" — huỷ tự động đóng, tiếp tục poll thêm
-// invoiceStatus (hoá đơn Bkav phát hành qua cron, có thể mất tới ~1
-// phút, KHÔNG có ngay lúc vừa thanh toán) cho tới khi invoiced, rồi
-// mới cho bấm "In phiếu" thật (gọi getInvoice() lấy đủ dữ liệu + mã tra
-// cứu/mã CQT, dựng bytes ESC/POS qua lib/printer.ts, gửi tới máy in đã
-// kết nối qua WebUSB). Nếu không bấm "Chờ in hoá đơn", hành vi giữ
-// nguyên như cũ (tự đóng sau 1.5s, không chờ gì cả).
+// thanh toán thành công, nhân viên có thể bấm "In phiếu" — huỷ tự đóng
+// 1.5s và in NGAY (GET /receipt/:orderId, không chờ hoá đơn: hoá đơn Bkav
+// do Kế toán phát hành sau ở trang Kế toán). Không bấm thì tự đóng sau
+// 1.5s như cũ.
 
-import { InvoiceStatus, type Order, PaymentStatus } from "@/backend";
+import { type Order, PaymentStatus } from "@/backend";
 import { useCurrentSalesPromo } from "@/hooks/useQueries";
 import { getOrder, useCanister } from "@/lib/canister";
 import { isPrinterConnected, printReceipt } from "@/lib/printer";
 import {
   confirmCashPaymentCounter,
-  getInvoice,
+  getReceipt,
   requestQr,
 } from "@/lib/vps-client";
 import type { RequestQrResponse } from "@/types";
@@ -94,19 +90,14 @@ export function CounterQRDisplay({
   const { actor } = useCanister();
   const { data: salesPromo } = useCurrentSalesPromo();
   const [status, setStatus] = useState<PaymentStatus>(order.paymentStatus);
-  const [invoiceStatus, setInvoiceStatus] = useState<InvoiceStatus>(
-    order.invoiceStatus,
-  );
   const [receiverEmail, setReceiverEmail] = useState<string>(
     order.receiverEmail,
   );
   const [polling, setPolling] = useState(true);
   const [retryTick, setRetryTick] = useState(0);
   const [qrState, setQrState] = useState<QrState>({ kind: "loading" });
-  // waitingToPrint — nhân viên bấm "Chờ in hoá đơn" trong 1.5s sau khi
-  // thanh toán thành công: huỷ tự động đóng, tiếp tục poll thêm
-  // invoiceStatus (cron phát hành hoá đơn có thể mất tới ~1 phút) cho
-  // tới khi invoiced, rồi mới cho bấm in thật.
+  // waitingToPrint — nhân viên bấm "In phiếu" trong 1.5s sau khi thanh
+  // toán thành công: huỷ tự động đóng (bấm "Xong" để đóng).
   const [waitingToPrint, setWaitingToPrint] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [confirmingCash, setConfirmingCash] = useState(false);
@@ -158,21 +149,9 @@ export function CounterQRDisplay({
         if (cancelled) return;
         setStatus(o.paymentStatus);
         setReceiverEmail(o.receiverEmail);
-        setInvoiceStatus(o.invoiceStatus);
-        // Dừng poll khi đã thanh toán XONG hoá đơn (invoiced/failed) hoặc
-        // khi chưa thanh toán xong không cần chờ in — còn lại (đã paid,
-        // đang chờ in, invoice chưa xong) vẫn tiếp tục poll để cập nhật
-        // invoiceStatus mới nhất.
-        const invoiceDone =
-          o.invoiceStatus === InvoiceStatus.invoiced ||
-          o.invoiceStatus === InvoiceStatus.failed;
-        if (o.paymentStatus === PaymentStatus.paid && !waitingToPrint) {
-          setPolling(false);
-        } else if (
-          o.paymentStatus === PaymentStatus.paid &&
-          waitingToPrint &&
-          invoiceDone
-        ) {
+        // Đã thanh toán → dừng poll (không còn chờ hoá đơn: hoá đơn Bkav do
+        // Kế toán phát hành sau, phiếu in được ngay).
+        if (o.paymentStatus === PaymentStatus.paid) {
           setPolling(false);
         }
       } catch {
@@ -186,7 +165,7 @@ export function CounterQRDisplay({
       cancelled = true;
       clearInterval(id);
     };
-  }, [actor, order, polling, waitingToPrint]);
+  }, [actor, order, polling]);
 
   useEffect(() => {
     if (status !== PaymentStatus.paid || waitingToPrint) return;
@@ -343,71 +322,55 @@ export function CounterQRDisplay({
                   Đã thanh toán
                 </span>
 
-                {!waitingToPrint ? (
-                  <button
-                    type="button"
-                    onClick={() => setWaitingToPrint(true)}
-                    data-ocid="counter_qr.wait_to_print_button"
-                    className="flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-2 hover:underline"
-                  >
-                    <Printer className="h-3.5 w-3.5" aria-hidden="true" />
-                    Chờ in hoá đơn (tuỳ chọn)
-                  </button>
-                ) : invoiceStatus === InvoiceStatus.invoiced ? (
-                  <button
-                    type="button"
-                    disabled={printing || !isPrinterConnected()}
-                    onClick={async () => {
-                      setPrinting(true);
-                      try {
-                        const invoice = await getInvoice(order.orderId);
-                        if (!invoice.ok) {
-                          throw new Error(
-                            invoice.error || "Không lấy được dữ liệu hoá đơn.",
-                          );
-                        }
-                        await printReceipt({
-                          orderId: order.orderId,
-                          invoice,
-                        });
-                        toast.success("Đã gửi lệnh in phiếu.");
-                      } catch (err) {
-                        toast.error("In phiếu thất bại", {
-                          description:
-                            err instanceof Error
-                              ? err.message
-                              : "Lỗi không xác định.",
-                        });
-                      } finally {
-                        setPrinting(false);
+                <button
+                  type="button"
+                  disabled={
+                    printing || (waitingToPrint && !isPrinterConnected())
+                  }
+                  onClick={async () => {
+                    // Huỷ tự đóng 1.5s để nhân viên kịp in / bấm "Xong".
+                    setWaitingToPrint(true);
+                    if (!isPrinterConnected()) return;
+                    setPrinting(true);
+                    try {
+                      const receipt = await getReceipt(order.orderId);
+                      if (!receipt.ok) {
+                        throw new Error(
+                          receipt.error || "Không lấy được dữ liệu phiếu.",
+                        );
                       }
-                    }}
-                    data-ocid="counter_qr.print_button"
-                    className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90 disabled:opacity-50"
-                  >
-                    {printing ? (
-                      <Loader2
-                        className="h-4 w-4 animate-spin"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <Printer className="h-4 w-4" aria-hidden="true" />
-                    )}
-                    In phiếu
-                  </button>
-                ) : invoiceStatus === InvoiceStatus.failed ? (
-                  <p className="text-xs font-medium text-destructive">
-                    Phát hành hoá đơn thất bại — không thể in.
-                  </p>
-                ) : (
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      await printReceipt({
+                        orderId: order.orderId,
+                        invoice: receipt,
+                      });
+                      toast.success("Đã gửi lệnh in phiếu.");
+                    } catch (err) {
+                      toast.error("In phiếu thất bại", {
+                        description:
+                          err instanceof Error
+                            ? err.message
+                            : "Lỗi không xác định.",
+                      });
+                    } finally {
+                      setPrinting(false);
+                    }
+                  }}
+                  data-ocid="counter_qr.print_button"
+                  className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90 disabled:opacity-50"
+                >
+                  {printing ? (
                     <Loader2
-                      className="h-3.5 w-3.5 animate-spin"
+                      className="h-4 w-4 animate-spin"
                       aria-hidden="true"
                     />
-                    Đang chờ phát hành hoá đơn…
-                  </p>
-                )}
+                  ) : (
+                    <Printer className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  In phiếu (tuỳ chọn)
+                </button>
+                <p className="max-w-[240px] text-center text-[10.5px] text-muted-foreground">
+                  Hoá đơn điện tử do Kế toán phát hành sau.
+                </p>
 
                 {waitingToPrint && !isPrinterConnected() && (
                   <p className="max-w-[240px] text-center text-[10.5px] text-muted-foreground">

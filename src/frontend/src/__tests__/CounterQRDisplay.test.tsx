@@ -33,7 +33,7 @@ vi.mock("@/lib/canister", () => ({
 const mockConfirmCashPaymentCounter = vi.fn();
 vi.mock("@/lib/vps-client", () => ({
   requestQr: (...args: unknown[]) => mockRequestQr(...args),
-  getInvoice: (...args: unknown[]) => mockGetInvoice(...args),
+  getReceipt: (...args: unknown[]) => mockGetInvoice(...args),
   confirmCashPaymentCounter: (...args: unknown[]) =>
     mockConfirmCashPaymentCounter(...args),
 }));
@@ -250,7 +250,7 @@ describe("CounterQRDisplay", () => {
     expect(screen.getByTestId("counter_qr.close_button")).toBeInTheDocument();
   });
 
-  it("shows a 'waiting for invoice' state when staff clicks 'Chờ in hoá đơn' before the invoice is issued", async () => {
+  it("after payment, 'In phiếu' prints the counter receipt immediately — no waiting for the Bkav invoice (the accountant issues it later)", async () => {
     mockRequestQr.mockResolvedValue({ ok: true, qrCode: "qr-data" });
     mockGetOrder.mockResolvedValue(
       makeOrder({
@@ -260,46 +260,12 @@ describe("CounterQRDisplay", () => {
     );
     mockUseCurrentSalesPromo.mockReturnValue({ data: null });
     mockIsPrinterConnected.mockReturnValue(true);
-
-    render(
-      <CounterQRDisplay
-        order={makeOrder()}
-        deviceId="dev-1"
-        onClose={vi.fn()}
-        onPaid={vi.fn()}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(
-        screen.getByTestId("counter_qr.wait_to_print_button"),
-      ).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByTestId("counter_qr.wait_to_print_button"));
-
-    expect(screen.getByText(/Đang chờ phát hành hoá đơn/)).toBeInTheDocument();
-    expect(
-      screen.queryByTestId("counter_qr.print_button"),
-    ).not.toBeInTheDocument();
-  });
-
-  it("enables the real print button once invoiceStatus becomes invoiced, and calls printReceipt with fetched invoice data", async () => {
-    mockRequestQr.mockResolvedValue({ ok: true, qrCode: "qr-data" });
-    mockGetOrder.mockResolvedValue(
-      makeOrder({
-        paymentStatus: PaymentStatus.paid,
-        invoiceStatus: InvoiceStatus.invoiced,
-      }),
-    );
-    mockUseCurrentSalesPromo.mockReturnValue({ data: null });
-    mockIsPrinterConnected.mockReturnValue(true);
     mockGetInvoice.mockResolvedValue({
       ok: true,
-      invoiceId: "INV-1",
+      invoiced: false,
+      invoiceId: "",
       invoiceUrl: "",
-      sharedLink: "https://tra-cuu.vn/TC1",
-      maCQT: "CQT1",
-      maTraCuu: "TC1",
+      sharedLink: "",
       items: [],
     });
     mockPrintReceipt.mockResolvedValue(undefined);
@@ -314,25 +280,23 @@ describe("CounterQRDisplay", () => {
     );
 
     await waitFor(() => {
-      expect(
-        screen.getByTestId("counter_qr.wait_to_print_button"),
-      ).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByTestId("counter_qr.wait_to_print_button"));
-
-    await waitFor(() => {
       expect(screen.getByTestId("counter_qr.print_button")).toBeInTheDocument();
     });
+    expect(screen.getByTestId("counter_qr.print_button")).not.toBeDisabled();
     fireEvent.click(screen.getByTestId("counter_qr.print_button"));
 
     await waitFor(() => {
       expect(mockPrintReceipt).toHaveBeenCalledWith(
-        expect.objectContaining({ orderId: "ORD-1" }),
+        expect.objectContaining({
+          orderId: "ORD-1",
+          invoice: expect.objectContaining({ invoiceId: "" }),
+        }),
       );
     });
+    expect(mockGetInvoice).toHaveBeenCalledWith("ORD-1");
   });
 
-  it("does not auto-close via onPaid while staff is waiting to print", async () => {
+  it("does not auto-close via onPaid after staff clicks 'In phiếu' (so they can finish printing)", async () => {
     const onPaid = vi.fn();
     mockRequestQr.mockResolvedValue({ ok: true, qrCode: "qr-data" });
     mockGetOrder.mockResolvedValue(
@@ -343,6 +307,8 @@ describe("CounterQRDisplay", () => {
     );
     mockUseCurrentSalesPromo.mockReturnValue({ data: null });
     mockIsPrinterConnected.mockReturnValue(true);
+    mockGetInvoice.mockResolvedValue({ ok: true, invoiceId: "", items: [] });
+    mockPrintReceipt.mockResolvedValue(undefined);
 
     render(
       <CounterQRDisplay
@@ -354,14 +320,13 @@ describe("CounterQRDisplay", () => {
     );
 
     await waitFor(() => {
-      expect(
-        screen.getByTestId("counter_qr.wait_to_print_button"),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("counter_qr.print_button")).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByTestId("counter_qr.wait_to_print_button"));
+    fireEvent.click(screen.getByTestId("counter_qr.print_button"));
 
     await new Promise((r) => setTimeout(r, 1700));
     expect(onPaid).not.toHaveBeenCalled();
+    expect(screen.getByTestId("counter_qr.done_button")).toBeInTheDocument();
   });
 
   it("shows a 'Tiền mặt' button while pending, and calls confirmCashPaymentCounter with the deviceId prop", async () => {

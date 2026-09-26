@@ -682,6 +682,59 @@ export async function enterpriseReissueInvoice(
   });
 }
 
+// Kế toán PHÁT HÀNH hoá đơn (không còn tự phát hành khi thanh toán) —
+// VPS đánh dấu các đơn, cron phát hành trong ~15 giây. Trả về đơn đã nhận
+// + đơn bị từ chối kèm lý do (chưa thanh toán, quá hạn, đã có hoá đơn…).
+export async function enterpriseIssueInvoices(
+  deviceId: string,
+  orderIds: string[],
+): Promise<{
+  ok: boolean;
+  queued: string[];
+  rejected: Array<{ orderId: string; reason: string }>;
+}> {
+  return vpsFetch({
+    method: "POST",
+    path: "/orders/enterprise/invoice/issue",
+    body: { deviceId, orderIds },
+  });
+}
+
+// Tra cứu MST (Bkav) — tên + địa chỉ đã đăng ký với cơ quan thuế.
+export async function enterpriseLookupTaxCode(
+  deviceId: string,
+  taxCode: string,
+): Promise<{ ok: boolean; found: boolean; name: string; address: string }> {
+  return vpsFetch({
+    method: "POST",
+    path: "/orders/enterprise/tax-code-lookup",
+    body: { deviceId, taxCode },
+  });
+}
+
+// Lưu (taxCode rỗng = xoá) MST khách cho đơn chưa có hoá đơn.
+export async function enterpriseSetOrderTaxCode(
+  deviceId: string,
+  orderId: string,
+  taxCode: string,
+  taxName: string,
+): Promise<{ ok: boolean; taxCode: string; taxName: string }> {
+  return vpsFetch({
+    method: "POST",
+    path: `/orders/enterprise/${encodeURIComponent(orderId)}/tax-code`,
+    body: { deviceId, taxCode, taxName },
+  });
+}
+
+// Dữ liệu in phiếu thanh toán — có ngay sau khi thanh toán, không cần
+// chờ hoá đơn; invoiced=true thì kèm số hoá đơn/mã tra cứu.
+export async function getReceipt(orderId: string): Promise<InvoiceResponse> {
+  return vpsFetch<InvoiceResponse>({
+    method: "GET",
+    path: `/receipt/${encodeURIComponent(orderId)}`,
+  });
+}
+
 // Tên chương trình khuyến mại + mã phiếu giảm giá của 1 đơn (VPS lưu khi tạo
 // đơn; canister chỉ có số tiền giảm) — cho thẻ đơn phía khách.
 export interface OrderPromoInfo {

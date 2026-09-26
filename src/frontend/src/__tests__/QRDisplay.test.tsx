@@ -382,9 +382,8 @@ describe("QRDisplay driver Tingee QR payment flow", () => {
     expect(mockRequestQr).not.toHaveBeenCalled();
   });
 
-  it("after payment, 'In phiếu' stays disabled until the Bkav invoice is issued, then prints the counter receipt", async () => {
+  it("after payment, 'In phiếu' is available immediately (no waiting for the Bkav invoice — the accountant issues it later) and prints the counter receipt", async () => {
     mockConfirmCashPaymentDriver.mockResolvedValue({ ok: true });
-    mockGetInvoice.mockRejectedValue(new Error("invoice not yet issued"));
     mockPrintInvoiceReceipt.mockResolvedValue(undefined);
     render(
       <QRDisplay order={makeOrder()} onClose={vi.fn()} onPaid={vi.fn()} />,
@@ -395,19 +394,14 @@ describe("QRDisplay driver Tingee QR payment flow", () => {
     await waitFor(() =>
       expect(screen.getByTestId("qr.print_receipt_button")).toBeInTheDocument(),
     );
-    expect(screen.getByTestId("qr.print_receipt_button")).toBeDisabled();
-
-    mockGetInvoice.mockResolvedValue({ ok: true, invoiceId: "HD1" });
-    await waitFor(
-      () =>
-        expect(
-          screen.getByTestId("qr.print_receipt_button"),
-        ).not.toBeDisabled(),
-      { timeout: 7000 },
+    expect(screen.getByTestId("qr.print_receipt_button")).not.toBeDisabled();
+    expect(screen.getByTestId("qr.invoice_wait_hint")).toHaveTextContent(
+      "Kế toán phát hành sau",
     );
     fireEvent.click(screen.getByTestId("qr.print_receipt_button"));
     await waitFor(() =>
       expect(mockPrintInvoiceReceipt).toHaveBeenCalledWith("ORD-1"),
     );
-  }, 10000);
+    expect(mockGetInvoice).not.toHaveBeenCalled();
+  });
 });

@@ -123,6 +123,9 @@ export type RequestQrResponse =
 
 // VPS invoice response — Bkav e-invoice PDF/HTML link.
 export interface InvoiceResponse {
+  // GET /receipt/:orderId: false = đơn chưa có hoá đơn (phiếu in không kèm
+  // thông tin hoá đơn điện tử). Vắng mặt ở GET /invoice/:orderId (luôn có).
+  invoiced?: boolean;
   invoiceId: string;
   invoiceUrl: string;
   sharedLink: string;
@@ -299,4 +302,12 @@ export interface VpsEnterpriseHistoryOrder {
   // thông báo chung chung.
   invoiceError?: string;
   createdAt: number;
+  // MST khách (Kế toán thêm ở trang Kế toán) + tên công ty đã tra cứu.
+  cusTaxCode?: string;
+  cusTaxName?: string;
+  // Kế toán đã bấm "Phát hành" (hoặc lưới an toàn 22:00) — đang chờ phát
+  // hành (invoiceStatus vẫn "none" tới khi xong).
+  invoiceRequested?: boolean;
+  // Bkav đã có hoá đơn (đơn "failed" do mất phản hồi) — không phát hành lại.
+  hasBkavPdf?: boolean;
 }

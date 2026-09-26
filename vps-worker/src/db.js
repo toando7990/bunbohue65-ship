@@ -354,6 +354,17 @@ function initSchema(db) {
       "UPDATE orders SET payment_method = 'transfer' WHERE payment_status = 'paid' AND manual_payment_reference IS NOT NULL AND manual_payment_reference <> ''",
     );
   }
+  // invoice_requested: Kế toán đã bấm "Phát hành" (hoặc lưới an toàn 22:00
+  // đã đánh dấu) — cron hoá đơn CHỈ phát hành đơn có cờ này (không còn tự
+  // phát hành mọi đơn đã thanh toán, xem routes/invoice.js).
+  if (!colNames.has('invoice_requested')) {
+    db.exec('ALTER TABLE orders ADD COLUMN invoice_requested INTEGER NOT NULL DEFAULT 0');
+  }
+  // cus_tax_name: tên công ty tra cứu từ MST (Kế toán thêm MST ở trang Kế
+  // toán) — chỉ để hiển thị; lúc phát hành cron tự tra cứu lại.
+  if (!colNames.has('cus_tax_name')) {
+    db.exec("ALTER TABLE orders ADD COLUMN cus_tax_name TEXT NOT NULL DEFAULT ''");
+  }
 
   // customers: thêm km_notify_opt_in (Giai đoạn 4b) nếu DB cũ chưa có.
   const customerCols = db.prepare('PRAGMA table_info(customers)').all();

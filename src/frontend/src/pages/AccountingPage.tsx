@@ -8,7 +8,10 @@
 //     Danh sách tự cập nhật khi đổi bộ lọc, không cần bấm nút tìm kiếm.
 //  2. Xoá đơn đã huỷ, chưa từng thanh toán, từ hôm trước (VPS — thay cho
 //     "Dọn dẹp" = huỷ đơn thủ công trước đây, đã bỏ theo yêu cầu).
-//  3. Phát hành hoá đơn thủ công (issueInvoiceByDevice) — không đổi.
+//  3. PHÁT HÀNH hoá đơn Bkav — Kế toán tự bấm "Phát hành" (từng đơn hoặc
+//     chọn nhiều đơn), KHÔNG còn tự động phát hành khi đơn thanh toán. Lưới
+//     an toàn 22:00 T2–T6 tự phát hành đơn tới hạn chót (VPS routes/
+//     invoice.js). Thêm MST khách (tuỳ chọn) → hoá đơn công ty.
 // Tất cả gọi qua hook/API deviceId-scoped với deviceId của thiết bị kế toán
 // (lưu trong localStorage theo mẫu bbh_*_activation). Admin gọi với deviceId
 // rỗng vẫn hợp lệ (isAdmin short-circuits ở canister VÀ ở VPS route mới,
@@ -18,6 +21,7 @@ import { InvoiceStatus, PaymentStatus } from "@/backend";
 import { DeviceRole } from "@/backend";
 import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { getDeviceId } from "@/components/EnterpriseActivationForm";
+import { TaxCodeCell } from "@/components/TaxCodeCell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,7 +76,7 @@ import {
 import {
   enterpriseDeleteCancelledOrders,
   enterpriseDeleteOrder,
-  enterpriseReissueInvoice,
+  enterpriseIssueInvoices,
   getEnterpriseHistory,
   getInvoice,
 } from "@/lib/vps-client";
@@ -85,6 +89,7 @@ import {
   Loader2,
   Pause,
   Play,
+  Receipt,
   RefreshCw,
   Search,
   Trash2,
@@ -178,6 +183,33 @@ function startOfPreviousWorkingDay(now = new Date()): Date {
     d.setDate(d.getDate() - 1);
   } while (d.getDay() === 0 || d.getDay() === 6);
   return d;
+}
+
+// Lý do KHÔNG phát hành được hoá đơn (giống quy tắc VPS routes/enterprise-
+// actions.js — VPS quyết định cuối cùng). null = phát hành được.
+function issueBlockedReason(o: {
+  bookingStatus: string;
+  paymentStatus: string;
+  invoiceStatus: string;
+  invoiceRequested?: boolean;
+  hasBkavPdf?: boolean;
+  createdAt: number;
+}): string | null {
+  if (o.bookingStatus === "cancelled") return "Đơn đã huỷ.";
+  if (o.paymentStatus !== "paid") return "Đơn chưa thanh toán.";
+  if (o.invoiceStatus === InvoiceStatus.invoiced) return "Đơn đã có hoá đơn.";
+  if (o.invoiceStatus === InvoiceStatus.none && o.invoiceRequested) {
+    return "Đơn đang được phát hành.";
+  }
+  if (o.invoiceStatus === InvoiceStatus.failed && o.hasBkavPdf) {
+    return "Bkav đã có hoá đơn cho đơn này — đối chiếu và ghi nhận số hoá đơn thủ công.";
+  }
+  if (o.createdAt < startOfPreviousWorkingDay().getTime()) {
+    return o.invoiceStatus === InvoiceStatus.failed
+      ? "Quá 1 ngày làm việc kể từ khi tạo đơn — không phát hành lại tự động."
+      : "Quá hạn phát hành (hết ngày làm việc tiếp theo sau ngày bán).";
+  }
+  return null;
 }
 
 function inputDateToApiFormat(v: string): string {
@@ -355,20 +387,50 @@ export function AccountingPage() {
   const deleteMutation = useMutation({
     mutationFn: (orderId: string) => enterpriseDeleteOrder(deviceId, orderId),
   });
-  const reissueMutation = useMutation({
-    mutationFn: (orderId: string) =>
-      enterpriseReissueInvoice(deviceId, orderId),
+  // ---- Phát hành hoá đơn (Kế toán) ----
+  // Đơn phát hành được trong danh sách đang lọc + đơn đang chọn (chỉ giữ
+  // đơn còn phát hành được — danh sách tự làm mới mỗi 5 giây).
+  const issuable = filteredResults.filter((o) => !issueBlockedReason(o));
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const selectedIssuable = issuable.filter((o) => selected.has(o.orderId));
+  const selectedTotal = selectedIssuable.reduce((s, o) => s + o.amount, 0);
+  const allIssuableSelected =
+    issuable.length > 0 && selectedIssuable.length === issuable.length;
+  // Đơn đã thanh toán, "Chưa phát hành", chưa yêu cầu — cho dải cảnh báo.
+  const awaitingIssue = issuable.filter(
+    (o) => o.invoiceStatus === InvoiceStatus.none,
+  );
+  function toggleSelected(orderId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  }
+  const issueMutation = useMutation({
+    mutationFn: (orderIds: string[]) =>
+      enterpriseIssueInvoices(deviceId, orderIds),
   });
-  async function handleReissue(orderId: string) {
+  async function handleIssue(orderIds: string[]) {
+    if (orderIds.length === 0) return;
     try {
-      await reissueMutation.mutateAsync(orderId);
-      toast.success(
-        "Đã đưa đơn về hàng chờ — hoá đơn sẽ được phát hành trong khoảng 1 phút.",
-      );
+      const r = await issueMutation.mutateAsync(orderIds);
+      if (r.queued.length > 0) {
+        toast.success(
+          `Đang phát hành ${r.queued.length} hoá đơn — thường xong trong khoảng 15 giây.`,
+        );
+      }
+      for (const x of r.rejected) {
+        toast.error(`Không phát hành được …${x.orderId.slice(-8)}`, {
+          description: x.reason,
+        });
+      }
+      setSelected(new Set());
       historyQuery.refetch();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Không phát hành lại được.",
+        err instanceof Error ? err.message : "Không phát hành được hoá đơn.",
       );
     }
   }
@@ -440,6 +502,8 @@ export function AccountingPage() {
       "Trạng thái đơn",
       "Trạng thái hoá đơn",
       "Hình thức thanh toán",
+      "MST khách",
+      "Tên công ty (MST)",
       "Thời gian",
     ];
     const escapeCsv = (v: string) => `"${v.replace(/"/g, '""')}"`;
@@ -453,6 +517,8 @@ export function AccountingPage() {
         o.bookingStatus === "cancelled" ? "Đã huỷ" : "Đã thanh toán",
         INVOICE_LABELS[o.invoiceStatus as InvoiceStatus] ?? o.invoiceStatus,
         paymentMethodLabel(o.paymentMethod),
+        o.cusTaxCode ?? "",
+        o.cusTaxName ?? "",
         formatDateTime(o.createdAt),
       ]
         .map(escapeCsv)
@@ -773,6 +839,34 @@ export function AccountingPage() {
           </div>
         </div>
 
+        {awaitingIssue.length > 0 && (
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm text-warning"
+            data-ocid="accounting.issue_banner"
+          >
+            <span>
+              ⏰{" "}
+              <b>
+                {awaitingIssue.length} đơn đã thanh toán chưa phát hành hoá đơn.
+              </b>{" "}
+              Hoá đơn phải phát hành chậm nhất{" "}
+              <b>hết ngày làm việc tiếp theo</b> sau ngày bán — đơn còn sót sẽ
+              tự phát hành lúc 22:00 ngày hạn chót.
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setSelected(new Set(issuable.map((o) => o.orderId)))
+              }
+              data-ocid="accounting.select_all_issuable_button"
+            >
+              Chọn tất cả đơn chưa phát hành
+            </Button>
+          </div>
+        )}
+
         <div className="flex flex-wrap justify-end gap-2">
           {/* Xoá hàng loạt KHÔNG phụ thuộc bộ lọc đang xem — luôn hiện. */}
           <Button
@@ -845,9 +939,27 @@ export function AccountingPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="ent-th w-8">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-primary"
+                      aria-label="Chọn tất cả đơn phát hành được"
+                      checked={allIssuableSelected}
+                      disabled={issuable.length === 0}
+                      onChange={(e) =>
+                        setSelected(
+                          e.target.checked
+                            ? new Set(issuable.map((o) => o.orderId))
+                            : new Set(),
+                        )
+                      }
+                      data-ocid="accounting.select_all_checkbox"
+                    />
+                  </TableHead>
                   <TableHead className="ent-th">Mã đơn</TableHead>
                   <TableHead className="ent-th">Nhà hàng</TableHead>
                   <TableHead className="ent-th">Khách hàng</TableHead>
+                  <TableHead className="ent-th">MST khách</TableHead>
                   <TableHead className="ent-th">Tổng tiền</TableHead>
                   <TableHead className="ent-th">Trạng thái</TableHead>
                   <TableHead className="ent-th">Hoá đơn</TableHead>
@@ -857,13 +969,30 @@ export function AccountingPage() {
               <TableBody>
                 {filteredResults.map((order, idx) => {
                   const isCancelled = order.bookingStatus === "cancelled";
+                  const blocked = issueBlockedReason(order);
+                  const issuing =
+                    order.invoiceStatus === InvoiceStatus.none &&
+                    !!order.invoiceRequested;
+                  const isSelected = !blocked && selected.has(order.orderId);
                   return (
                     <TableRow
                       key={order.orderId}
-                      className={`ent-table-row transition-colors duration-1000 ${newIds.has(order.orderId) ? "bg-warning/15" : ""}`}
+                      className={`ent-table-row transition-colors duration-1000 ${newIds.has(order.orderId) ? "bg-warning/15" : isSelected ? "bg-warning/5" : ""}`}
                       data-ocid={`accounting.row.${idx + 1}`}
                       data-new={newIds.has(order.orderId) ? "true" : undefined}
                     >
+                      <TableCell className="ent-td w-8">
+                        {!blocked && (
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-primary"
+                            aria-label={`Chọn đơn ${order.orderId}`}
+                            checked={isSelected}
+                            onChange={() => toggleSelected(order.orderId)}
+                            data-ocid={`accounting.select_checkbox.${idx + 1}`}
+                          />
+                        )}
+                      </TableCell>
                       <TableCell className="ent-td">
                         <div className="flex flex-col">
                           <span className="flex items-center gap-1.5">
@@ -899,6 +1028,22 @@ export function AccountingPage() {
                         </div>
                       </TableCell>
                       <TableCell className="ent-td">
+                        <TaxCodeCell
+                          key={`${order.orderId}:${order.cusTaxCode ?? ""}`}
+                          deviceId={deviceId}
+                          orderId={order.orderId}
+                          taxCode={order.cusTaxCode ?? ""}
+                          taxName={order.cusTaxName ?? ""}
+                          editable={
+                            !isCancelled &&
+                            order.invoiceStatus !== InvoiceStatus.invoiced &&
+                            !issuing
+                          }
+                          onSaved={() => historyQuery.refetch()}
+                          ocid={`accounting.tax_code.${idx + 1}`}
+                        />
+                      </TableCell>
+                      <TableCell className="ent-td">
                         <span className="font-mono text-sm font-semibold text-foreground">
                           {formatVnd(order.amount)}
                         </span>
@@ -921,14 +1066,27 @@ export function AccountingPage() {
                           )}
                       </TableCell>
                       <TableCell className="ent-td">
-                        <span
-                          className={`ent-pill ${invoiceBadgeClass(order.invoiceStatus)}`}
-                          data-ocid={`accounting.invoice_badge.${idx + 1}`}
-                        >
-                          {INVOICE_LABELS[
-                            order.invoiceStatus as InvoiceStatus
-                          ] ?? order.invoiceStatus}
-                        </span>
+                        {issuing ? (
+                          <span
+                            className="ent-pill badge-warning inline-flex items-center gap-1"
+                            data-ocid={`accounting.invoice_badge.${idx + 1}`}
+                          >
+                            <Loader2
+                              className="h-3 w-3 animate-spin"
+                              aria-hidden="true"
+                            />
+                            Đang phát hành…
+                          </span>
+                        ) : (
+                          <span
+                            className={`ent-pill ${invoiceBadgeClass(order.invoiceStatus)}`}
+                            data-ocid={`accounting.invoice_badge.${idx + 1}`}
+                          >
+                            {INVOICE_LABELS[
+                              order.invoiceStatus as InvoiceStatus
+                            ] ?? order.invoiceStatus}
+                          </span>
+                        )}
                         {/* Lý do THẬT Bkav từ chối (invoiceError từ VPS) —
                               chỉ hiện cho đơn thất bại, để kế toán biết vì
                               sao hoá đơn không phát hành được. */}
@@ -978,40 +1136,46 @@ export function AccountingPage() {
                                 </Button>
                               );
                             })()}
-                          {/* "Phát hành lại" — chỉ đơn hoá đơn Thất bại, đã
-                                thanh toán, chưa huỷ; khoá kèm lý do nếu quá 1
-                                ngày làm việc (VPS kiểm tra lại toàn bộ). */}
-                          {order.invoiceStatus === InvoiceStatus.failed &&
-                            !isCancelled &&
+                          {/* "Phát hành" / "Phát hành lại" — Kế toán tự phát
+                                hành (không còn tự động khi thanh toán). Đơn
+                                quá hạn: khoá nút kèm lý do (VPS kiểm tra lại). */}
+                          {!isCancelled &&
                             order.paymentStatus === "paid" &&
-                            (() => {
-                              const expired =
-                                order.createdAt <
-                                startOfPreviousWorkingDay().getTime();
-                              return (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={
-                                    expired || reissueMutation.isPending
-                                  }
-                                  title={
-                                    expired
-                                      ? "Quá 1 ngày làm việc kể từ khi tạo đơn — không phát hành lại tự động."
-                                      : "Đưa đơn về hàng chờ để phát hành lại hoá đơn Bkav"
-                                  }
-                                  onClick={() => handleReissue(order.orderId)}
-                                  data-ocid={`accounting.reissue_button.${idx + 1}`}
-                                >
+                            (order.invoiceStatus === InvoiceStatus.failed ||
+                              (order.invoiceStatus === InvoiceStatus.none &&
+                                !issuing)) && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={!!blocked || issueMutation.isPending}
+                                title={
+                                  blocked ??
+                                  "Phát hành hoá đơn Bkav cho đơn này"
+                                }
+                                onClick={() => handleIssue([order.orderId])}
+                                data-ocid={
+                                  order.invoiceStatus === InvoiceStatus.failed
+                                    ? `accounting.reissue_button.${idx + 1}`
+                                    : `accounting.issue_button.${idx + 1}`
+                                }
+                              >
+                                {order.invoiceStatus ===
+                                InvoiceStatus.failed ? (
                                   <RefreshCw
                                     className="h-3.5 w-3.5"
                                     aria-hidden="true"
                                   />
-                                  Phát hành lại
-                                </Button>
-                              );
-                            })()}
+                                ) : (
+                                  <Receipt
+                                    className="h-3.5 w-3.5"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                {order.invoiceStatus === InvoiceStatus.failed
+                                  ? "Phát hành lại"
+                                  : "Phát hành"}
+                              </Button>
+                            )}
                           {order.invoiceStatus === InvoiceStatus.invoiced ? (
                             <Button
                               type="button"
@@ -1035,15 +1199,6 @@ export function AccountingPage() {
                               )}
                               Xem PDF
                             </Button>
-                          ) : order.invoiceStatus === InvoiceStatus.none &&
-                            !isCancelled &&
-                            order.paymentStatus === "paid" ? (
-                            <span
-                              className="text-xs text-muted-foreground"
-                              data-ocid={`accounting.invoice_pending.${idx + 1}`}
-                            >
-                              Đang chờ phát hành…
-                            </span>
                           ) : null}
                         </div>
                       </TableCell>
@@ -1055,6 +1210,45 @@ export function AccountingPage() {
           </div>
         )}
       </div>
+
+      {selectedIssuable.length > 0 && (
+        <div
+          className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit max-w-[calc(100%-2rem)] flex-wrap items-center gap-3 rounded-xl bg-foreground px-4 py-2.5 text-sm text-background shadow-elevated"
+          data-ocid="accounting.bulk_issue_bar"
+        >
+          <span>
+            Đã chọn <b>{selectedIssuable.length}</b> đơn ·{" "}
+            {formatVnd(selectedTotal)}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="text-foreground"
+            onClick={() => setSelected(new Set())}
+            data-ocid="accounting.bulk_clear_button"
+          >
+            Bỏ chọn
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={issueMutation.isPending}
+            onClick={() => handleIssue(selectedIssuable.map((o) => o.orderId))}
+            data-ocid="accounting.bulk_issue_button"
+          >
+            {issueMutation.isPending ? (
+              <Loader2
+                className="h-3.5 w-3.5 animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+            Phát hành hoá đơn ({selectedIssuable.length})
+          </Button>
+        </div>
+      )}
 
       {/* Tuỳ chọn nâng cao — thu gọn (dùng cho đơn KHÔNG còn trong danh
           sách lọc hiện tại, ít dùng hơn thao tác trực tiếp từ bảng). */}

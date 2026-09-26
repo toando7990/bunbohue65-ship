@@ -20,6 +20,7 @@
 
 const express = require('express');
 const canister = require('../lib/canister');
+const bkav = require('../lib/bkav');
 const { rateLimit } = require('../middleware/rate-limit');
 
 const router = express.Router();
@@ -188,6 +189,8 @@ router.post('/orders/enterprise/delete-cancelled', async (req, res, next) => {
 // Bkav đã có hoá đơn cho đơn này chưa TRƯỚC khi tạo (tránh phát hành trùng).
 // ---------------------------------------------------------------------
 const { startOfPreviousWorkingDayUtc7 } = require('./invoice');
+// Seri hoá đơn production — cùng giá trị routes/invoice.js dùng.
+const PROD_INVOICE_SERIAL = process.env.BKAV_PROD_INVOICE_SERIAL || 'C26MAA';
 
 function notReissuableReason(o, windowStart) {
   if (o.invoice_status !== 'failed') return 'Chỉ phát hành lại được đơn có hoá đơn "Thất bại".';
@@ -210,7 +213,7 @@ router.post('/orders/enterprise/:id/reissue', async (req, res, next) => {
     const reason = notReissuableReason(o, startOfPreviousWorkingDayUtc7(Date.now()));
     if (reason) return res.status(409).json({ ok: false, error: reason });
     const r = g.db.prepare(
-      `UPDATE orders SET invoice_status = 'none', invoice_retry_count = 1, invoice_error = '', updated_at = ? WHERE order_id = ? AND invoice_status = 'failed'`,
+      `UPDATE orders SET invoice_status = 'none', invoice_retry_count = 1, invoice_error = '', invoice_requested = 1, updated_at = ? WHERE order_id = ? AND invoice_status = 'failed'`,
     ).run(Date.now(), o.order_id);
     g.db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'Reissue', ?, ?)`)
       .run(o.order_id, `Kế toán yêu cầu phát hành lại (thiết bị ${String(req.body.deviceId).trim()})`, Date.now());
@@ -242,6 +245,142 @@ router.post('/orders/enterprise/:id/invoice', async (req, res, next) => {
       console.warn('[enterprise-actions] canister updateInvoiceStatus error:', g.order.order_id, e.message);
     }
     res.json({ ok: true, canisterSynced });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ============================================================
+// Kế toán PHÁT HÀNH hoá đơn (thay cho tự động phát hành khi thanh toán) +
+// thêm MST khách để phát hành hoá đơn công ty.
+// ============================================================
+
+// Chỉ kiểm tra thiết bị Kế toán (không gắn với 1 đơn cụ thể như guard()).
+async function guardDevice(req, res) {
+  const deviceId = String((req.body || {}).deviceId || '').trim();
+  if (!deviceId) {
+    res.status(400).json({ ok: false, error: 'Missing deviceId' });
+    return null;
+  }
+  if (!(await isAccountingDevice(deviceId))) {
+    res.status(403).json({ ok: false, error: 'Chỉ thiết bị Kế toán được thực hiện thao tác này.' });
+    return null;
+  }
+  return { db: req.app.locals.db, deviceId };
+}
+
+// Lý do KHÔNG phát hành được (tiếng Việt) — null nếu phát hành được.
+function notIssuableReason(o, windowStart) {
+  if (!o) return 'Không tìm thấy đơn hàng trên máy chủ.';
+  if (o.booking_status === 'cancelled') return 'Đơn đã huỷ — không phát hành hoá đơn.';
+  if (o.payment_status !== 'paid') return 'Đơn chưa thanh toán.';
+  if (o.invoice_status === 'invoiced') return 'Đơn đã có hoá đơn.';
+  if (o.invoice_status === 'failed' && o.pdf_url) {
+    return 'Bkav đã có hoá đơn cho đơn này — đối chiếu và ghi nhận số hoá đơn thủ công, không phát hành lại.';
+  }
+  if (o.created_at < windowStart) return 'Quá hạn phát hành (hết ngày làm việc tiếp theo sau ngày bán).';
+  return null;
+}
+
+// POST /orders/enterprise/invoice/issue { deviceId, orderIds: [] }
+// Đánh dấu các đơn cần phát hành — cron hoá đơn (routes/invoice.js) phát
+// hành trong vòng ~15 giây. Đơn "Thất bại" được đưa về hàng chờ để thử lại.
+router.post('/orders/enterprise/invoice/issue', async (req, res, next) => {
+  try {
+    const g = await guardDevice(req, res);
+    if (!g) return;
+    const ids = Array.isArray((req.body || {}).orderIds) ? req.body.orderIds.map(String) : [];
+    if (ids.length === 0 || ids.length > 200) {
+      return res.status(400).json({ ok: false, error: 'Chọn từ 1 đến 200 đơn.' });
+    }
+    const windowStart = startOfPreviousWorkingDayUtc7(Date.now());
+    const queued = [];
+    const rejected = [];
+    const now = Date.now();
+    for (const id of [...new Set(ids)]) {
+      const o = g.db.prepare('SELECT * FROM orders WHERE order_id = ?').get(id);
+      const reason = notIssuableReason(o, windowStart);
+      if (reason) {
+        rejected.push({ orderId: id, reason });
+        continue;
+      }
+      if (o.invoice_status === 'failed') {
+        g.db.prepare(
+          `UPDATE orders SET invoice_status = 'none', invoice_retry_count = 1, invoice_error = '', invoice_requested = 1, updated_at = ? WHERE order_id = ?`,
+        ).run(now, id);
+      } else {
+        g.db.prepare('UPDATE orders SET invoice_requested = 1, updated_at = ? WHERE order_id = ?').run(now, id);
+      }
+      g.db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'IssueRequest', ?, ?)`)
+        .run(id, `Kế toán yêu cầu phát hành (thiết bị ${g.deviceId})`, now);
+      queued.push(id);
+    }
+    res.json({ ok: true, queued, rejected });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Mã số thuế: 10 số, 10 số + "-" + 3 số (chi nhánh), 12 số (CCCD dùng làm
+// MST cá nhân), 14 số.
+const TAX_CODE_RE = /^(\d{10}(-\d{3})?|\d{12}|\d{14})$/;
+function normalizeTaxCode(v) {
+  return String(v || '').replace(/\s+/g, '').trim();
+}
+
+// POST /orders/enterprise/tax-code-lookup { deviceId, taxCode } — tra cứu
+// tên + địa chỉ đã đăng ký với cơ quan thuế (Bkav CmdType 904) để Kế toán
+// kiểm tra trước khi lưu MST cho đơn.
+router.post('/orders/enterprise/tax-code-lookup', async (req, res, next) => {
+  try {
+    const g = await guardDevice(req, res);
+    if (!g) return;
+    const taxCode = normalizeTaxCode(req.body.taxCode);
+    if (!TAX_CODE_RE.test(taxCode)) {
+      return res.status(400).json({ ok: false, error: 'Mã số thuế không hợp lệ (10, 12, 14 số hoặc dạng 0123456789-001).' });
+    }
+    let lookup;
+    try {
+      lookup = await bkav.lookupTaxCode(taxCode, { prodInvoiceSerial: PROD_INVOICE_SERIAL });
+    } catch (e) {
+      console.error('[enterprise-actions] tax-code-lookup lỗi:', taxCode, e.message);
+      return res.status(502).json({ ok: false, error: 'Không tra cứu được mã số thuế lúc này, vui lòng thử lại.' });
+    }
+    res.json({
+      ok: true,
+      found: !!(lookup.found && lookup.name),
+      name: lookup.name || '',
+      address: lookup.address || '',
+      status: lookup.status || '',
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /orders/enterprise/:id/tax-code { deviceId, taxCode, taxName? } —
+// lưu (hoặc xoá, taxCode rỗng) MST khách cho đơn CHƯA có hoá đơn. Cron
+// hoá đơn đọc cus_tax_code: có MST → hoá đơn công ty (tự tra cứu lại tên/
+// địa chỉ chính thức lúc phát hành), không có → hoá đơn bán lẻ.
+router.post('/orders/enterprise/:id/tax-code', async (req, res, next) => {
+  try {
+    const g = await guard(req, res);
+    if (!g) return;
+    const o = g.db.prepare('SELECT * FROM orders WHERE order_id = ?').get(req.params.id);
+    if (o.invoice_status === 'invoiced') {
+      return res.status(409).json({ ok: false, error: 'Đơn đã có hoá đơn — không sửa được mã số thuế.' });
+    }
+    if (o.invoice_requested && o.invoice_status === 'none') {
+      return res.status(409).json({ ok: false, error: 'Đơn đang được phát hành hoá đơn — không sửa được mã số thuế lúc này.' });
+    }
+    const taxCode = normalizeTaxCode(req.body.taxCode);
+    if (taxCode && !TAX_CODE_RE.test(taxCode)) {
+      return res.status(400).json({ ok: false, error: 'Mã số thuế không hợp lệ (10, 12, 14 số hoặc dạng 0123456789-001).' });
+    }
+    const taxName = taxCode ? String(req.body.taxName || '').trim().slice(0, 300) : '';
+    g.db.prepare('UPDATE orders SET cus_tax_code = ?, cus_tax_name = ?, updated_at = ? WHERE order_id = ?')
+      .run(taxCode, taxName, Date.now(), o.order_id);
+    res.json({ ok: true, taxCode, taxName });
   } catch (e) {
     next(e);
   }

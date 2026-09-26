@@ -137,6 +137,7 @@ cronJobs.push(webhooksRoutes.startTingeePoll(db));
 
 // Invoice cron 1 phút (tạo invoice cho completed + paid)
 cronJobs.push(invoiceRoutes.startInvoiceCron(db));
+cronJobs.push(invoiceRoutes.startInvoiceSafetyNetCron(db));
 cronJobs.push(salesBonusCron.startSalesBonusCron(db));
 cronJobs.push(kmNotifyCron.startKmNotifyCron(db));
 cronJobs.push(promoExpiryCron.startPromoExpiryCron());

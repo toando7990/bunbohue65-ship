@@ -10,7 +10,9 @@
 //   GET  /order/:id/invoice
 //   POST /order/:id/invoice/email
 //
-// Cron 1 phút: tạo invoice cho completed + paid + chưa invoiced.
+// Cron 15 giây: phát hành hoá đơn cho đơn Kế toán đã yêu cầu (invoice_requested=1).
+// Cron 22:00 T2–T6: lưới an toàn đánh dấu đơn tới hạn chót (requestDueInvoices).
+// GET /receipt/:orderId: dữ liệu in phiếu thanh toán (không cần hoá đơn).
 // ============================================================
 
 const express = require('express');
@@ -176,9 +178,14 @@ function startInvoiceCron(db) {
     if (invoiceCronRunning) return;
     invoiceCronRunning = true;
     try {
-      const windowStartMs = startOfTodayUtc7(Date.now());
+      // KHÔNG còn tự phát hành cho mọi đơn đã thanh toán — CHỈ phát hành
+      // đơn Kế toán đã bấm "Phát hành" (invoice_requested = 1, routes/
+      // enterprise-actions.js) hoặc lưới an toàn cuối ngày đã đánh dấu
+      // (requestDueInvoices bên dưới). Khung thời gian: từ đầu ngày làm
+      // việc trước — hạn chót phát hành theo NĐ 70/2025.
+      const windowStartMs = startOfPreviousWorkingDayUtc7(Date.now());
       const rows = db.prepare(
-        `SELECT * FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none' AND booking_status <> 'cancelled' AND created_at >= ? ORDER BY created_at ASC`,
+        `SELECT * FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none' AND booking_status <> 'cancelled' AND invoice_requested = 1 AND created_at >= ? ORDER BY created_at ASC`,
       ).all(windowStartMs);
       for (const row of rows) {
         try {
@@ -537,6 +544,77 @@ router.post('/order/:id/invoice/email', async (req, res, next) => {
   }
 });
 
+// Lưới an toàn (đã duyệt): Kế toán quên phát hành → đơn quá hạn không
+// phát hành được nữa. 22:00 mỗi NGÀY LÀM VIỆC (T2–T6, giờ VN), tự đánh
+// dấu phát hành các đơn đã thanh toán còn "Chưa phát hành" có hạn chót là
+// hôm nay — tức đơn tạo từ đầu ngày làm việc trước tới trước hôm nay (VD
+// thứ Hai: đơn thứ Sáu/Bảy/Chủ nhật). Đơn "Thất bại" KHÔNG tự thử lại
+// (cần Kế toán xem lý do Bkav từ chối). Chưa tính ngày lễ.
+function requestDueInvoices(db, nowMs) {
+  const from = startOfPreviousWorkingDayUtc7(nowMs);
+  const to = startOfTodayUtc7(nowMs);
+  const rows = db.prepare(
+    `SELECT order_id FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none'
+     AND booking_status <> 'cancelled' AND invoice_requested = 0 AND created_at >= ? AND created_at < ?`,
+  ).all(from, to);
+  const now = Date.now();
+  for (const r of rows) {
+    db.prepare('UPDATE orders SET invoice_requested = 1, updated_at = ? WHERE order_id = ?').run(now, r.order_id);
+    db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'AutoRequest', ?, ?)`)
+      .run(r.order_id, 'Tự phát hành (lưới an toàn 22:00 — hạn chót hôm nay)', now);
+  }
+  if (rows.length > 0) console.log(`[invoice/safety-net] đánh dấu ${rows.length} đơn cần phát hành (hạn chót hôm nay)`);
+  return rows.length;
+}
+
+function startInvoiceSafetyNetCron(db) {
+  return cron.schedule(
+    '0 22 * * 1-5',
+    () => {
+      if (shutdown.shuttingDown) return;
+      try {
+        requestDueInvoices(db, Date.now());
+      } catch (e) {
+        console.error('[invoice/safety-net] lỗi:', e.message);
+      }
+    },
+    { timezone: 'Asia/Ho_Chi_Minh' },
+  );
+}
+
+// GET /receipt/:orderId — dữ liệu in PHIẾU THANH TOÁN (lib/invoice-
+// receipt.ts, printer.ts) ngay sau khi thanh toán, KHÔNG cần chờ hoá đơn
+// (Kế toán phát hành sau). Nếu đơn đã có hoá đơn thì kèm số hoá đơn/mã
+// tra cứu để in lại ở tab Lịch sử. Không gọi Bkav (nhanh, không lỗi mạng).
+router.get('/receipt/:orderId', (req, res, next) => {
+  try {
+    const db = req.app.locals.db;
+    const row = db.prepare('SELECT * FROM orders WHERE order_id = ?').get(req.params.orderId);
+    if (!row) return res.status(404).json({ ok: false, error: 'order not found' });
+    const items = db.prepare('SELECT name, price, quantity, unit_name FROM order_items WHERE order_id = ?').all(row.order_id);
+    const invoiced = row.invoice_status === 'invoiced' && !!row.invoice_id;
+    res.json({
+      ok: true,
+      invoiced,
+      invoiceId: invoiced ? row.invoice_id : '',
+      invoiceUrl: '',
+      sharedLink: invoiced ? row.shared_link || '' : '',
+      maCQT: invoiced ? row.bkav_ma_cqt || '' : '',
+      maTraCuu: invoiced ? row.bkav_ma_tra_cuu || '' : '',
+      cusName: row.cus_name,
+      amount: row.amount,
+      goodsAmount: row.goods_amount,
+      taxTotal: row.tax_total,
+      createdAt: row.created_at,
+      items: items.map((it) => ({ name: it.name, price: it.price, quantity: it.quantity, unitName: it.unit_name })),
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;
 module.exports.startInvoiceCron = startInvoiceCron;
+module.exports.startInvoiceSafetyNetCron = startInvoiceSafetyNetCron;
+module.exports.requestDueInvoices = requestDueInvoices;
 module.exports.startOfPreviousWorkingDayUtc7 = startOfPreviousWorkingDayUtc7;

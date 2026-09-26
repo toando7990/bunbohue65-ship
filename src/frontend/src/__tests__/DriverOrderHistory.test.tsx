@@ -92,7 +92,7 @@ describe("DriverOrderHistory — lọc theo hình thức thanh toán", () => {
     );
   });
 
-  it("'In lại phiếu' is enabled only for orders whose Bkav invoice was issued, and prints the counter receipt", async () => {
+  it("'In lại phiếu' works for every paid order (invoice info included once the accountant has issued it), and prints the counter receipt", async () => {
     mockPrintInvoiceReceipt.mockResolvedValue(undefined);
     mockGetRestaurantHistory.mockResolvedValue({
       totalOrders: 2,
@@ -112,10 +112,22 @@ describe("DriverOrderHistory — lọc theo hình thức thanh toán", () => {
       .getAllByText("In lại phiếu")
       .map((el) => el.closest("button") as HTMLButtonElement);
     expect(btns[0]).not.toBeDisabled();
-    expect(btns[1]).toBeDisabled();
+    expect(btns[1]).not.toBeDisabled();
+    expect(btns[0]).toHaveAttribute(
+      "title",
+      "In lại phiếu (kèm thông tin hoá đơn điện tử)",
+    );
+    expect(btns[1]).toHaveAttribute(
+      "title",
+      "In lại phiếu — hoá đơn điện tử chưa phát hành",
+    );
     fireEvent.click(btns[0]);
     await waitFor(() =>
       expect(mockPrintInvoiceReceipt).toHaveBeenCalledWith("O-INV"),
+    );
+    fireEvent.click(btns[1]);
+    await waitFor(() =>
+      expect(mockPrintInvoiceReceipt).toHaveBeenCalledWith("O-NOINV"),
     );
   });
 });
