@@ -551,16 +551,23 @@ export function OrderStatusView({
               )}
             </div>
 
-            {order && payment === PaymentStatus.unpaid && (
-              <button
-                type="button"
-                onClick={() => setChangeRestaurantOpen(true)}
-                data-ocid="order_tracker.change_restaurant_button"
-                className="self-start text-xs font-semibold text-primary underline underline-offset-2"
-              >
-                Đặt nhầm nhà hàng? Chuyển sang nhà hàng khác
-              </button>
-            )}
+            {/* Ẩn khi đã gọi tài xế Lalamove (hoặc chưa biết chắc — đang
+                tải/lỗi mạng): tài xế đã được điều tới nhà hàng hiện tại,
+                đổi nhà hàng lúc này sẽ làm tài xế tới sai chỗ. VPS cũng
+                chặn thêm 1 lớp (routes/order-restaurant.js). */}
+            {order &&
+              payment === PaymentStatus.unpaid &&
+              lalamoveInfo !== undefined &&
+              !lalamoveInfo?.lalamoveOrderId && (
+                <button
+                  type="button"
+                  onClick={() => setChangeRestaurantOpen(true)}
+                  data-ocid="order_tracker.change_restaurant_button"
+                  className="self-start text-xs font-semibold text-primary underline underline-offset-2"
+                >
+                  Đặt nhầm nhà hàng? Chuyển sang nhà hàng khác
+                </button>
+              )}
 
             {/* Tổng tiền hàng */}
             <div className="flex items-start justify-between gap-3">

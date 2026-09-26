@@ -237,3 +237,49 @@ describe("OrderStatusView — QR nhận hàng", () => {
     ).toHaveTextContent("Hết thời gian tìm tài xế");
   });
 });
+
+describe("OrderStatusView — nút 'Đặt nhầm nhà hàng? Chuyển sang nhà hàng khác'", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows the change-restaurant link for an unpaid order with no Lalamove driver booked", () => {
+    renderView(makeOrder({ paymentStatus: PaymentStatus.unpaid }), null);
+    expect(
+      screen.getByTestId("order_tracker.change_restaurant_button"),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the change-restaurant link once a Lalamove driver has been booked", () => {
+    renderView(makeOrder({ paymentStatus: PaymentStatus.unpaid }), {
+      lalamoveOrderId: "LALA-1",
+      lalamoveDriverId: "DRV-1",
+      lalamoveShareLink: "https://share.lalamove.com/xyz",
+      lalamoveStatus: "PICKED_UP",
+    });
+    expect(
+      screen.queryByTestId("order_tracker.change_restaurant_button"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the change-restaurant link while the Lalamove status is still unknown (loading / network error)", () => {
+    const order = makeOrder({ paymentStatus: PaymentStatus.unpaid });
+    render(
+      <OrderStatusView
+        status={makeStatus(order)}
+        order={order}
+        restaurants={[]}
+        restaurantAddress="69 đường Láng, Hà Nội"
+        lastUpdated="10:00"
+        isFetching={false}
+        invoiceState={{ kind: "idle" }}
+        onDownloadInvoice={vi.fn()}
+        onRestaurantChanged={vi.fn()}
+        lalamoveInfo={undefined}
+      />,
+    );
+    expect(
+      screen.queryByTestId("order_tracker.change_restaurant_button"),
+    ).not.toBeInTheDocument();
+  });
+});
