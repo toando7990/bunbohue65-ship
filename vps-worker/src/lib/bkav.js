@@ -290,6 +290,11 @@ function parseProxyResponse(bodyText) {
       tryParseJson(inner) ||
       tryParseJson(decryptWithToken(inner)) ||
       tryParseJson(Buffer.from(inner, 'base64').toString('utf8'));
+    // Lời nhắn lỗi dạng CHỮ THƯỜNG (không JSON, không mã hoá) — VD 'Base64Key_IV
+    // is not in correct format'. Trước rơi xuống PARSE_FAILED, mất lời nhắn.
+    if (!json && inner && !/^[A-Za-z0-9+/=\s]+$/.test(inner)) {
+      return { success: false, error: inner.slice(0, 500), errorCode: 'BKAV_TEXT', raw: text };
+    }
   }
 
   // Cách 2 (dự phòng): nội dung đã là JSON trực tiếp, không có wrapper
@@ -329,7 +334,12 @@ function parseProxyResponse(bodyText) {
   let invoiceDate = '';
   let maCQT = '';
   let maTraCuu = '';
+  let invoiceGUID = '';
   if (success && first) {
+    // GUID hoá đơn trên Bkav — cần để tra lại số hoá đơn (lệnh 800) khi
+    // Bkav tạo NHÁP (lệnh 100/110 luôn trả InvoiceNo 0).
+    invoiceGUID = String(first.InvoiceGUID ?? '');
+    if (/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(invoiceGUID)) invoiceGUID = '';
     invoiceNo = String(first.InvoiceNo ?? first.invoiceNo ?? '');
     // Số 0 = Bkav chưa cấp số (hoá đơn NHÁP) — KHÔNG phải số hợp lệ.
     if (invoiceNo === '0') invoiceNo = '';
@@ -355,6 +365,7 @@ function parseProxyResponse(bodyText) {
     invoiceDate,
     maCQT,
     maTraCuu,
+    invoiceGUID,
     error: errorText,
     errorCode: (itemFailed ? first.Status : json.Code ?? json.Status) ?? '',
     raw: json,
@@ -658,6 +669,8 @@ async function createInvoice(invoice, config) {
     invoiceDate: result.invoiceDate,
     maCQT: result.maCQT,
     maTraCuu: result.maTraCuu,
+    invoiceGUID: result.invoiceGUID,
+    cmdType: payload.cmdType,
     error: result.error,
     errorCode: result.errorCode,
     raw: result.raw,

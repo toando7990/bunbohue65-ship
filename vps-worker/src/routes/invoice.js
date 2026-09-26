@@ -344,11 +344,14 @@ function startInvoiceCron(db) {
               // Bkav CHẤP NHẬN nhưng KHÔNG cấp số (hoá đơn nháp) — KHÔNG gửi
               // tạo lại (sẽ sinh nhiều bản nháp); đánh dấu thất bại ngay để
               // Kế toán xử lý (ký/cấp số trên cổng Bkav, ghi nhận thủ công).
-              console.error(`[invoice/cron] ${row.order_id}: Bkav tạo hoá đơn NHÁP chưa có số — cần ký/cấp số trên cổng Bkav`);
+              // Lệnh 100/110 LUÔN tạo nháp (Số HĐ = 0, tài liệu Bkav) — ghi rõ
+              // nguyên nhân + GUID để Kế toán tìm đúng hoá đơn trên cổng Bkav.
+              const draftMsg = `Bkav tạo hoá đơn nháp chưa có số (lệnh ${inv.cmdType}${[100, 110].includes(Number(inv.cmdType)) ? ' luôn tạo nháp — đặt BKAV_CMD_TYPE=101 để Bkav cấp số' : ''})${inv.invoiceGUID ? ` — GUID ${inv.invoiceGUID}` : ''} — cần ký/cấp số trên cổng Bkav`;
+              console.error(`[invoice/cron] ${row.order_id}: ${draftMsg}`);
               db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES (?, 'CreateInvoice', ?, ?)`)
-                .run(row.order_id, 'Bkav tạo hoá đơn nháp chưa có số — cần ký/cấp số trên cổng Bkav', Date.now());
+                .run(row.order_id, draftMsg, Date.now());
               db.prepare(`UPDATE orders SET invoice_status = 'failed', invoice_retry_count = ?, invoice_error = ?, updated_at = ? WHERE order_id = ? AND invoice_status = 'none'`)
-                .run(INVOICE_MAX_RETRIES, 'Bkav tạo hoá đơn nháp chưa có số — cần ký/cấp số trên cổng Bkav', Date.now(), row.order_id);
+                .run(INVOICE_MAX_RETRIES, draftMsg, Date.now(), row.order_id);
               await syncInvoiceStatusToCanister(row.order_id, 'failed', '', '');
               continue;
             }

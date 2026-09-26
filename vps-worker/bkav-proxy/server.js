@@ -89,7 +89,19 @@ function decryptBkavResponse(base64Body, keyBase64, ivBase64) {
   const runAttempt = (buf, k, v, label) => {
     try {
       const { decrypted, label: variantLabel } = tryDecryptVariants(buf, k, v);
-      const xml = zlib.gunzipSync(decrypted).toString('utf8');
+      // BUG THẬT đã sửa (kiểm thử đầu-cuối với Bkav giả lập): trước LUÔN
+      // gunzip → phản hồi đã mã hoá nhưng KHÔNG nén (Bkav cấu hình bỏ nén —
+      // FAQ "bỏ qua việc nén, mã hoá") thất bại 'incorrect header check'.
+      // Giờ chỉ gunzip khi có dấu hiệu gzip (1f 8b); không nén thì chấp
+      // nhận khi bản giải mã là JSON/XML (tránh nhận nhầm rác từ biến thể
+      // không padding).
+      let xml;
+      if (decrypted[0] === 0x1f && decrypted[1] === 0x8b) {
+        xml = zlib.gunzipSync(decrypted).toString('utf8');
+      } else {
+        xml = decrypted.toString('utf8').replace(/^\uFEFF/, '').trim();
+        if (!/^[{[<]/.test(xml)) throw new Error('bản giải mã không phải gzip/JSON/XML');
+      }
       return { xml, label: `${label}/${variantLabel}` };
     } catch (err) {
       attempts.push(`${label}: ${err.message}`);
@@ -152,6 +164,13 @@ function hasExecCommandResult(xml) {
 function cleanFaultText(v, max) {
   return String(v || '')
     .replace(/<[^>]*>/g, ' ')
+    // Giải thực thể XML TRƯỚC khi lọc ký tự — trước đây '---&gt;' thành
+    // '---gt;' (kiểm thử đầu-cuối).
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
     .replace(/[<>&"']/g, '')
     .replace(/\s+/g, ' ')
     .trim()
@@ -194,6 +213,21 @@ function normalizeSoapFault(xml) {
 // Phản hồi thành công đã mã hoá — trích Base64 trong <ExecCommandResult>,
 // giải mã, trả về XML thô cho worker tự parse tiếp.
 // Trả về { xml, label } khi giải mã thành công, null khi không có payload.
+// Nội dung <ExecCommandResult> KHÔNG phải bản mã (Bkav trả lỗi dạng chữ
+// thường, VD '{"Status":1,"Object":"Padding is invalid and cannot be
+// removed."...}' khi GUID/TOKEN sai, hay 'Base64Key_IV is not in correct
+// format') — nhận biết bằng ký tự ngoài bảng Base64 hoặc độ dài không phải
+// bội số 16 byte.
+function isPlainExecResult(xml) {
+  const re = /<(?:[^:>]+:)?ExecCommandResult[^>]*>([\s\S]*?)<\/(?:[^:>]+:)?ExecCommandResult>/i;
+  const m = xml.match(re);
+  if (!m) return false;
+  const payload = m[1].trim();
+  if (!payload) return false;
+  if (!/^[A-Za-z0-9+/=\s]+$/.test(payload)) return true;
+  return Buffer.from(payload, 'base64').length % 16 !== 0;
+}
+
 function processEncryptedResponse(xml, keyBase64, ivBase64) {
   const re = /<(?:[^:>]+:)?ExecCommandResult[^>]*>([\s\S]*?)<\/(?:[^:>]+:)?ExecCommandResult>/i;
   const m = xml.match(re);
@@ -213,12 +247,16 @@ function forwardToBkav(targetUrl, method, headers, body) {
       method,
       headers,
       rejectUnauthorized: false, // Bkav có thể dùng cert trung gian không chuẩn.
+      // BUG THẬT đã sửa: trước KHÔNG có timeout (chú thích nói 30s nhưng
+      // không đặt) — Bkav treo thì kết nối proxy treo mãi.
+      timeout: 30000,
     };
     const req = https.request(opts, (res) => {
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => resolve({ statusCode: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
     });
+    req.on('timeout', () => req.destroy(new Error('Bkav không phản hồi sau 30 giây')));
     req.on('error', reject);
     if (body && body.length > 0) req.write(body);
     req.end();
@@ -264,7 +302,9 @@ const server = http.createServer(async (req, res) => {
     for (const [name, value] of Object.entries(req.headers)) {
       const lower = name.toLowerCase();
       // accept-encoding: KHÔNG chuyển tiếp — tránh Bkav nén phản hồi HTTP.
-      if (lower === 'x-bkav-key' || lower === 'host' || lower === 'connection' || lower === 'accept-encoding') continue;
+      // transfer-encoding: bỏ — proxy luôn gửi content-length (gửi cả hai là
+      // yêu cầu HTTP không hợp lệ).
+      if (lower === 'x-bkav-key' || lower === 'host' || lower === 'connection' || lower === 'accept-encoding' || lower === 'transfer-encoding') continue;
       forwardHeaders[name] = value;
     }
     forwardHeaders['content-length'] = requestBody.length.toString();
@@ -287,6 +327,19 @@ const server = http.createServer(async (req, res) => {
       let outputXml;
       if (isSoapFault(rawBody)) {
         outputXml = normalizeSoapFault(rawBody);
+      } else if (bkavResp.statusCode >= 400) {
+        // BUG THẬT đã sửa: lỗi HTTP (503 trang HTML IIS, 404 sai địa chỉ...)
+        // bị trả nguyên văn → worker chỉ thấy 'Không parse được phản hồi
+        // Bkav'. Giờ báo rõ mã HTTP + nội dung.
+        console.warn('[bkav-proxy] Bkav HTTP', bkavResp.statusCode, rawBody.slice(0, 2000));
+        const detail = cleanFaultText(rawBody, 300) || 'không có nội dung';
+        outputXml = `<R><E>FAULT:HTTP ${bkavResp.statusCode} | ${detail}</E></R>`;
+      } else if (isPlainExecResult(rawBody)) {
+        // BUG THẬT đã sửa: lỗi dạng chữ thường của Bkav bị cố giải mã →
+        // DECRYPT_ERROR, MẤT lời nhắn thật ('Padding is invalid...' = sai
+        // GUID/TOKEN). Trả nguyên văn — worker tự đọc JSON/chữ bên trong.
+        console.warn('[bkav-proxy] ExecCommandResult KHÔNG mã hoá (lỗi dạng chữ của Bkav):', rawBody.slice(0, 2000));
+        outputXml = rawBody;
       } else if (hasExecCommandResult(rawBody) && keyBase64 && ivBase64) {
         try {
           const decrypted = processEncryptedResponse(rawBody, keyBase64, ivBase64);
