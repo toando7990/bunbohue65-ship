@@ -387,9 +387,11 @@ function buildJsonPayload(invoice, config) {
   // hiểu chuỗi không múi giờ là giờ VN. BUG THẬT đã sửa: trước đây dùng
   // toISOString() (giờ UTC) rồi cắt 'Z' → hoá đơn bị lùi 7 tiếng; từ 00:00
   // đến 06:59 sáng hoá đơn mang NGÀY HÔM TRƯỚC (= ghi lùi ngày, quy định cấm).
-  const dateStr = new Date(Date.now() + 7 * 60 * 60 * 1000)
+  // Kèm "+07:00" đúng định dạng mẫu Bkav ("2020-01-31T14:03:45+07:00") —
+  // không để Bkav tự đoán múi giờ.
+  const dateStr = `${new Date(Date.now() + 7 * 60 * 60 * 1000)
     .toISOString()
-    .replace(/\.\d{3}Z$/, '');
+    .replace(/\.\d{3}Z$/, '')}+07:00`;
   const isRetail = invoice.isRetailInvoice !== false; // default true
 
   const taxRateMap = { 0: 1, 5: 2, 10: 3, 8: 4 };
@@ -438,8 +440,23 @@ function buildJsonPayload(invoice, config) {
         // 1753) → nghi ngờ gây lỗi nội bộ Bkav 'Có lỗi xảy ra... #mã sự cố'.
         invoiceForm: ownSerial ? process.env.BKAV_INVOICE_FORM || '1' : '',
         invoiceSerial: ownSerial ? config.prodInvoiceSerial || '' : '',
+        // ĐỦ mọi trường của mẫu chuẩn Bkav (FAQ_WebServices_Bkav — "Cấu trúc
+        // các trường thông tin chuẩn cho thao tác tạo hoá đơn"), để trống
+        // đúng giá trị mặc định. Lỗi "Có lỗi xảy ra... (lỗi đã được thông báo
+        // cho quản trị) [#mã]" là lỗi NỘI BỘ của Bkav (không phải lỗi kiểm
+        // tra dữ liệu) — nghi do trường vắng mặt bị đọc thành null phía
+        // Bkav (.NET). Tài khoản dùng hoá đơn khởi tạo từ MÁY TÍNH TIỀN:
+        // MaCuaCQT để trống = Bkav tự cấp mã CQT.
+        invoiceNo: 0,
+        maCuaCQT: '',
+        userDefine: '',
+        isBTH: 'false',
+        cCCD: '',
+        passportNumber: '',
+        fiscalCodes: '',
       },
       listInvoiceDetailsWS: buildInvoiceLines(invoice, taxRateID),
+      listInvoiceAttachFileWS: [],
       partnerInvoiceID: 0,
       partnerInvoiceStringID: String(invoice.orderId),
     }],
@@ -570,6 +587,11 @@ function buildInvoiceLines(invoice, taxRateID) {
         preTaxAmount > 0 ? Math.round((itemDiscount / preTaxAmount) * 10000) / 100 : 0,
       discountAmount: itemDiscount,
       isDiscount: false,
+      // Các trường còn lại của mẫu chuẩn Bkav — để trống/0.
+      itemCode: '',
+      otherAmount: 0,
+      userDefineDetails: '',
+      specialtyItems: '',
     };
   });
 }
