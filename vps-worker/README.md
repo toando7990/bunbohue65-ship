@@ -523,3 +523,27 @@ Cả 2 webhook đều verify signature trước khi xử lý. Production (`NODE_
 - `.env` trong `.gitignore`.
 - `VPS_SECRET` rotate qua canister (admin), VPS accept cả `VPS_SECRET` và `VPS_SECRET_PREVIOUS`.
 - Analytics endpoints yêu cầu `X-API-Key` + HMAC signature.
+
+## Google Maps — chọn địa chỉ nhận hàng
+
+Frontend (`AddressPicker.tsx`) dùng Google Maps để khách gõ địa chỉ → chọn
+gợi ý → tự ghim toạ độ (toạ độ này gửi thẳng cho Lalamove khi báo giá/gọi
+tài xế). Key lấy qua `GET /maps-config` (routes/maps-config.js).
+
+### Env vars
+
+| Biến | Bắt buộc | Mô tả |
+|---|---|---|
+| `GOOGLE_MAPS_BROWSER_KEY` | Không | Browser key của Google Maps Platform. Bỏ trống → frontend quay về bản đồ OpenStreetMap cũ (ghim tay). |
+
+Key cần bật: **Maps JavaScript API**, **Places API (New)**, **Geocoding API**.
+Giới hạn key: *Application restrictions → Websites* (chỉ tên miền của app),
+*API restrictions* → đúng 3 API trên. Nên đặt quota/ngày + cảnh báo ngân sách.
+
+Đổi key: sửa `.env` → `pm2 restart bunbohue65-vps` (không cần deploy lại frontend).
+
+### Bảng customer_addresses
+
+Thêm cột `detail` (số tầng/phòng/ghi chú cho tài xế, tuỳ chọn) — tự migrate
+khi khởi động (`initSchema`). Khi đặt đơn, frontend gửi `address — detail`
+làm địa chỉ giao hàng.

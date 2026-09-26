@@ -366,6 +366,13 @@ function initSchema(db) {
   if (!customerColNames.has('favorite_restaurant_id')) {
     db.exec("ALTER TABLE customers ADD COLUMN favorite_restaurant_id TEXT NOT NULL DEFAULT ''");
   }
+
+  // customer_addresses: thêm detail (số tầng/phòng/ghi chú cho tài xế —
+  // nhập riêng khi chọn địa chỉ bằng Google Maps) nếu DB cũ chưa có.
+  const addressCols = db.prepare('PRAGMA table_info(customer_addresses)').all();
+  if (!addressCols.some((c) => c.name === 'detail')) {
+    db.exec("ALTER TABLE customer_addresses ADD COLUMN detail TEXT NOT NULL DEFAULT ''");
+  }
 }
 
 // Backup daily: copy DB file (WAL checkpoint) → gzip vào BACKUP_DIR.

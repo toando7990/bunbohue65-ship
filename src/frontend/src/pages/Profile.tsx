@@ -171,6 +171,7 @@ export default function Profile() {
           await addCustomerAddress(newEmail, {
             label: addr.label,
             address: addr.address,
+            detail: addr.detail ?? "",
             lat: addr.lat,
             lng: addr.lng,
           });

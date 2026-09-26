@@ -45,6 +45,7 @@ import {
   useMenus,
   useRestaurants,
 } from "@/hooks/useQueries";
+import { fullAddress } from "@/lib/address-format";
 import { findNearest } from "@/lib/geo";
 import { getOrCreateGuestEmail } from "@/lib/guest-identity";
 import { imageBytesToDataUrl } from "@/lib/utils";
@@ -413,7 +414,7 @@ export default function CreateOrder() {
       vpsQuote({
         restaurantId: orderRestaurant.restaurantId,
         pickupAddress: orderRestaurant.address,
-        dropAddress: selectedAddress.address,
+        dropAddress: fullAddress(selectedAddress),
         dropLat: selectedAddress.lat,
         dropLng: selectedAddress.lng,
         items: displayCartLinesRef.current.map((l) => ({
@@ -500,7 +501,7 @@ export default function CreateOrder() {
           const res = await vpsQuote({
             restaurantId: orderRestaurant.restaurantId,
             pickupAddress: orderRestaurant.address,
-            dropAddress: selectedAddress.address,
+            dropAddress: fullAddress(selectedAddress),
             dropLat: selectedAddress.lat,
             dropLng: selectedAddress.lng,
             items: displayCartLines.map((l) => ({
@@ -531,7 +532,7 @@ export default function CreateOrder() {
         cusPhone: customer.cusPhone.trim(),
         // Địa chỉ nhận hàng — từ danh sách địa chỉ đã lưu (bắt buộc chọn,
         // đã kiểm tra ở trên), KHÔNG còn gõ tay trong form như trước.
-        cusAddress: selectedAddress.address,
+        cusAddress: fullAddress(selectedAddress),
         cusTaxCode: customer.cusTaxCode.trim(),
         receiverEmail: identityEmail,
         items: displayCartLines.map((l) => ({

@@ -1,12 +1,16 @@
 // DeliveryAddressPanel — tab "Địa chỉ nhận hàng" trong mục "Tôi"
 // (Profile.tsx). Danh sách địa chỉ đã lưu + thêm/sửa/xoá, mỗi địa chỉ
-// bắt buộc có toạ độ (ghim qua MapPicker.tsx). Yêu cầu email ĐÃ XÁC
+// bắt buộc có toạ độ (chọn qua AddressPicker.tsx). Yêu cầu email ĐÃ XÁC
 // THỰC — VPS tự chặn nếu chưa (xem lib/vps-client.ts).
 
-import { MapPicker } from "@/components/MapPicker";
+import {
+  AddressFormFields,
+  type AddressFormValue,
+  EMPTY_ADDRESS_FORM,
+  validateAddressForm,
+} from "@/components/AddressFormFields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { fullAddress } from "@/lib/address-format";
 import {
   addCustomerAddress,
   deleteCustomerAddress,
@@ -23,21 +27,8 @@ interface DeliveryAddressPanelProps {
   email: string;
 }
 
-type FormState = {
-  id: number | null; // null = đang thêm mới, có giá trị = đang sửa
-  label: string;
-  address: string;
-  lat: number | null;
-  lng: number | null;
-};
-
-const EMPTY_FORM: FormState = {
-  id: null,
-  label: "",
-  address: "",
-  lat: null,
-  lng: null,
-};
+// id: null = đang thêm mới, có giá trị = đang sửa.
+type FormState = AddressFormValue & { id: number | null };
 
 export function DeliveryAddressPanel({ email }: DeliveryAddressPanelProps) {
   const queryClient = useQueryClient();
@@ -52,7 +43,7 @@ export function DeliveryAddressPanel({ email }: DeliveryAddressPanelProps) {
   const [error, setError] = useState<string | null>(null);
 
   function openAddForm() {
-    setForm({ ...EMPTY_FORM });
+    setForm({ ...EMPTY_ADDRESS_FORM, id: null });
     setError(null);
   }
 
@@ -61,6 +52,7 @@ export function DeliveryAddressPanel({ email }: DeliveryAddressPanelProps) {
       id: a.id,
       label: a.label,
       address: a.address,
+      detail: a.detail ?? "",
       lat: a.lat,
       lng: a.lng,
     });
@@ -75,12 +67,9 @@ export function DeliveryAddressPanel({ email }: DeliveryAddressPanelProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form) return;
-    if (!form.address.trim()) {
-      setError("Vui lòng nhập địa chỉ.");
-      return;
-    }
-    if (form.lat === null || form.lng === null) {
-      setError("Vui lòng ghim vị trí trên bản đồ.");
+    const invalid = validateAddressForm(form);
+    if (invalid || form.lat === null || form.lng === null) {
+      setError(invalid);
       return;
     }
     setSaving(true);
@@ -89,6 +78,7 @@ export function DeliveryAddressPanel({ email }: DeliveryAddressPanelProps) {
       const data = {
         label: form.label.trim(),
         address: form.address.trim(),
+        detail: form.detail.trim(),
         lat: form.lat,
         lng: form.lng,
       };
@@ -160,40 +150,10 @@ export function DeliveryAddressPanel({ email }: DeliveryAddressPanelProps) {
             </button>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="addr-label">Đặt tên (tuỳ chọn)</Label>
-            <Input
-              id="addr-label"
-              value={form.label}
-              onChange={(e) =>
-                setForm((s) => (s ? { ...s, label: e.target.value } : s))
-              }
-              placeholder="VD: Nhà, Công ty"
-              data-ocid="delivery_address.label_input"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="addr-address">
-              Địa chỉ <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="addr-address"
-              value={form.address}
-              onChange={(e) =>
-                setForm((s) => (s ? { ...s, address: e.target.value } : s))
-              }
-              placeholder="Số nhà, đường, phường/xã, quận/huyện…"
-              data-ocid="delivery_address.address_input"
-            />
-          </div>
-
-          <MapPicker
-            lat={form.lat}
-            lng={form.lng}
-            onChange={(lat, lng) =>
-              setForm((s) => (s ? { ...s, lat, lng } : s))
-            }
+          <AddressFormFields
+            idPrefix="addr"
+            value={form}
+            onChange={(v) => setForm((s) => (s ? { ...s, ...v } : s))}
           />
 
           {error && (
@@ -255,7 +215,9 @@ export function DeliveryAddressPanel({ email }: DeliveryAddressPanelProps) {
                   {a.label && (
                     <p className="text-sm font-semibold">{a.label}</p>
                   )}
-                  <p className="text-sm text-muted-foreground">{a.address}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {fullAddress(a)}
+                  </p>
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">

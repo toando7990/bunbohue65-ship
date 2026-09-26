@@ -215,6 +215,8 @@ export interface CustomerAddress {
   email: string;
   label: string;
   address: string;
+  // Số tầng/phòng/ghi chú cho tài xế — tuỳ chọn (địa chỉ cũ không có).
+  detail?: string;
   lat: number;
   lng: number;
 }

@@ -17,7 +17,12 @@
 //   3. Có >= 1 địa chỉ — chọn 1 (tự chọn địa chỉ ĐẦU nếu khách chưa chọn
 //      gì), hiện địa chỉ đang chọn + nút "Sửa"/"Thêm địa chỉ khác".
 
-import { MapPicker } from "@/components/MapPicker";
+import {
+  AddressFormFields,
+  type AddressFormValue,
+  EMPTY_ADDRESS_FORM,
+  validateAddressForm,
+} from "@/components/AddressFormFields";
 import {
   Select,
   SelectContent,
@@ -25,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { fullAddress } from "@/lib/address-format";
 import {
   type GuestAddress,
   addGuestAddress,
@@ -63,10 +69,8 @@ export function DeliveryAddressSelector({
     verifiedEmail ? [] : listGuestAddresses(),
   );
   const [addingAddress, setAddingAddress] = useState(false);
-  const [newLabel, setNewLabel] = useState("");
-  const [newAddressText, setNewAddressText] = useState("");
-  const [newLat, setNewLat] = useState<number | null>(null);
-  const [newLng, setNewLng] = useState<number | null>(null);
+  const [newAddress, setNewAddress] =
+    useState<AddressFormValue>(EMPTY_ADDRESS_FORM);
   const [formError, setFormError] = useState<string | null>(null);
 
   const addresses: CustomerAddress[] = verifiedEmail
@@ -86,28 +90,23 @@ export function DeliveryAddressSelector({
   }, [addresses, selectedAddressId]);
 
   function openAddForm() {
-    setNewLabel("");
-    setNewAddressText("");
-    setNewLat(null);
-    setNewLng(null);
+    setNewAddress(EMPTY_ADDRESS_FORM);
     setFormError(null);
     setAddingAddress(true);
   }
 
   function handleSaveGuestAddress() {
-    if (!newAddressText.trim()) {
-      setFormError("Vui lòng nhập địa chỉ.");
-      return;
-    }
-    if (newLat === null || newLng === null) {
-      setFormError("Vui lòng ghim vị trí trên bản đồ.");
+    const invalid = validateAddressForm(newAddress);
+    if (invalid || newAddress.lat === null || newAddress.lng === null) {
+      setFormError(invalid);
       return;
     }
     const created = addGuestAddress(guestEmail, {
-      label: newLabel.trim(),
-      address: newAddressText.trim(),
-      lat: newLat,
-      lng: newLng,
+      label: newAddress.label.trim(),
+      address: newAddress.address.trim(),
+      detail: newAddress.detail.trim(),
+      lat: newAddress.lat,
+      lng: newAddress.lng,
     });
     const next = listGuestAddresses();
     setGuestAddresses(next);
@@ -165,29 +164,10 @@ export function DeliveryAddressSelector({
             ? "Nhập địa chỉ nhận hàng"
             : "Thêm địa chỉ khác"}
         </p>
-        <input
-          type="text"
-          value={newLabel}
-          onChange={(e) => setNewLabel(e.target.value)}
-          placeholder="Đặt tên (tuỳ chọn) — VD: Nhà, Công ty"
-          data-ocid="delivery_address_selector.label_input"
-          className="min-h-[40px] w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary"
-        />
-        <input
-          type="text"
-          value={newAddressText}
-          onChange={(e) => setNewAddressText(e.target.value)}
-          placeholder="Số nhà, đường, phường/xã, quận/huyện…"
-          data-ocid="delivery_address_selector.address_input"
-          className="min-h-[40px] w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary"
-        />
-        <MapPicker
-          lat={newLat}
-          lng={newLng}
-          onChange={(lat, lng) => {
-            setNewLat(lat);
-            setNewLng(lng);
-          }}
+        <AddressFormFields
+          idPrefix="order-addr"
+          value={newAddress}
+          onChange={setNewAddress}
         />
         {formError && (
           <p
@@ -246,7 +226,7 @@ export function DeliveryAddressSelector({
           <SelectContent>
             {addresses.map((a) => (
               <SelectItem key={a.id} value={String(a.id)}>
-                {a.label ? `${a.label} — ${a.address}` : a.address}
+                {a.label ? `${a.label}: ${fullAddress(a)}` : fullAddress(a)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -268,7 +248,7 @@ export function DeliveryAddressSelector({
                 className="text-sm text-muted-foreground"
                 data-ocid="delivery_address_selector.selected_address_text"
               >
-                {selected.address}
+                {fullAddress(selected)}
               </p>
             </div>
           </div>

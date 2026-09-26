@@ -5,10 +5,14 @@
 // tình chỉ chấp nhận email đã xác thực (địa chỉ nhà là dữ liệu nhạy cảm
 // hơn), nên khách mới không đi qua đường đó.
 
-import { MapPicker } from "@/components/MapPicker";
+import {
+  AddressFormFields,
+  type AddressFormValue,
+  EMPTY_ADDRESS_FORM,
+  validateAddressForm,
+} from "@/components/AddressFormFields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { fullAddress } from "@/lib/address-format";
 import {
   type GuestAddress,
   addGuestAddress,
@@ -24,21 +28,8 @@ interface GuestAddressPanelProps {
   guestEmail: string;
 }
 
-type FormState = {
-  id: number | null; // null = đang thêm mới, có giá trị = đang sửa
-  label: string;
-  address: string;
-  lat: number | null;
-  lng: number | null;
-};
-
-const EMPTY_FORM: FormState = {
-  id: null,
-  label: "",
-  address: "",
-  lat: null,
-  lng: null,
-};
+// id: null = đang thêm mới, có giá trị = đang sửa.
+type FormState = AddressFormValue & { id: number | null };
 
 export function GuestAddressPanel({ guestEmail }: GuestAddressPanelProps) {
   const [addresses, setAddresses] = useState<GuestAddress[]>(() =>
@@ -48,7 +39,7 @@ export function GuestAddressPanel({ guestEmail }: GuestAddressPanelProps) {
   const [error, setError] = useState<string | null>(null);
 
   function openAddForm() {
-    setForm({ ...EMPTY_FORM });
+    setForm({ ...EMPTY_ADDRESS_FORM, id: null });
     setError(null);
   }
 
@@ -57,6 +48,7 @@ export function GuestAddressPanel({ guestEmail }: GuestAddressPanelProps) {
       id: a.id,
       label: a.label,
       address: a.address,
+      detail: a.detail ?? "",
       lat: a.lat,
       lng: a.lng,
     });
@@ -71,17 +63,15 @@ export function GuestAddressPanel({ guestEmail }: GuestAddressPanelProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form) return;
-    if (!form.address.trim()) {
-      setError("Vui lòng nhập địa chỉ.");
-      return;
-    }
-    if (form.lat === null || form.lng === null) {
-      setError("Vui lòng ghim vị trí trên bản đồ.");
+    const invalid = validateAddressForm(form);
+    if (invalid || form.lat === null || form.lng === null) {
+      setError(invalid);
       return;
     }
     const data = {
       label: form.label.trim(),
       address: form.address.trim(),
+      detail: form.detail.trim(),
       lat: form.lat,
       lng: form.lng,
     };
@@ -137,40 +127,10 @@ export function GuestAddressPanel({ guestEmail }: GuestAddressPanelProps) {
             </button>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="guest-addr-label">Đặt tên (tuỳ chọn)</Label>
-            <Input
-              id="guest-addr-label"
-              value={form.label}
-              onChange={(e) =>
-                setForm((s) => (s ? { ...s, label: e.target.value } : s))
-              }
-              placeholder="VD: Nhà, Công ty"
-              data-ocid="guest_address.label_input"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="guest-addr-address">
-              Địa chỉ <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="guest-addr-address"
-              value={form.address}
-              onChange={(e) =>
-                setForm((s) => (s ? { ...s, address: e.target.value } : s))
-              }
-              placeholder="Số nhà, đường, phường/xã, quận/huyện…"
-              data-ocid="guest_address.address_input"
-            />
-          </div>
-
-          <MapPicker
-            lat={form.lat}
-            lng={form.lng}
-            onChange={(lat, lng) =>
-              setForm((s) => (s ? { ...s, lat, lng } : s))
-            }
+          <AddressFormFields
+            idPrefix="guest-addr"
+            value={form}
+            onChange={(v) => setForm((s) => (s ? { ...s, ...v } : s))}
           />
 
           {error && (
@@ -215,7 +175,9 @@ export function GuestAddressPanel({ guestEmail }: GuestAddressPanelProps) {
                   {a.label && (
                     <p className="text-sm font-semibold">{a.label}</p>
                   )}
-                  <p className="text-sm text-muted-foreground">{a.address}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {fullAddress(a)}
+                  </p>
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">

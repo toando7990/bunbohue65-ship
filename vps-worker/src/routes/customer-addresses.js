@@ -29,6 +29,7 @@ function toAddressJson(row) {
     email: row.email,
     label: row.label,
     address: row.address,
+    detail: row.detail || '',
     lat: row.lat,
     lng: row.lng,
   };
@@ -84,6 +85,8 @@ router.post('/customers/:email/addresses', async (req, res) => {
   const body = req.body || {};
   const label = String(body.label || '').trim();
   const address = String(body.address || '').trim();
+  // Số tầng/phòng/ghi chú cho tài xế — tuỳ chọn, cắt 200 ký tự.
+  const detail = String(body.detail || '').trim().slice(0, 200);
   const lat = Number(body.lat);
   const lng = Number(body.lng);
 
@@ -100,9 +103,9 @@ router.post('/customers/:email/addresses', async (req, res) => {
 
   const now = Date.now();
   const result = db.prepare(
-    `INSERT INTO customer_addresses (email, label, address, lat, lng, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(email, label, address, lat, lng, now, now);
+    `INSERT INTO customer_addresses (email, label, address, detail, lat, lng, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(email, label, address, detail, lat, lng, now, now);
 
   const row = db.prepare('SELECT * FROM customer_addresses WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(toAddressJson(row));
@@ -116,6 +119,8 @@ router.put('/customers/:email/addresses/:id', async (req, res) => {
   const body = req.body || {};
   const label = String(body.label || '').trim();
   const address = String(body.address || '').trim();
+  // Số tầng/phòng/ghi chú cho tài xế — tuỳ chọn, cắt 200 ký tự.
+  const detail = String(body.detail || '').trim().slice(0, 200);
   const lat = Number(body.lat);
   const lng = Number(body.lng);
 
@@ -136,8 +141,8 @@ router.put('/customers/:email/addresses/:id', async (req, res) => {
   }
 
   db.prepare(
-    `UPDATE customer_addresses SET label = ?, address = ?, lat = ?, lng = ?, updated_at = ? WHERE id = ?`
-  ).run(label, address, lat, lng, Date.now(), id);
+    `UPDATE customer_addresses SET label = ?, address = ?, detail = ?, lat = ?, lng = ?, updated_at = ? WHERE id = ?`
+  ).run(label, address, detail, lat, lng, Date.now(), id);
 
   const row = db.prepare('SELECT * FROM customer_addresses WHERE id = ?').get(id);
   res.json(toAddressJson(row));

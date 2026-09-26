@@ -1,5 +1,5 @@
-// Coverage cho DeliveryAddressPanel — mock hoàn toàn MapPicker (đã có
-// test riêng, xem MapPicker.test.tsx) và vps-client, tập trung vào luồng
+// Coverage cho DeliveryAddressPanel — mock hoàn toàn AddressPicker (đã có
+// test riêng, xem AddressPicker.test.tsx) và vps-client, tập trung vào luồng
 // thêm/sửa/xoá địa chỉ.
 
 import { DeliveryAddressPanel } from "@/components/DeliveryAddressPanel";
@@ -25,19 +25,34 @@ vi.mock("@/lib/vps-client", () => ({
   deleteCustomerAddress: (...args: unknown[]) => mockDelete(...args),
 }));
 
-vi.mock("@/components/MapPicker", () => ({
-  MapPicker: ({
+// AddressPicker (Google Maps / bản đồ dự phòng) có test riêng — ở đây
+// giả lập: ô địa chỉ + nút "ghim" trả toạ độ cố định.
+vi.mock("@/components/AddressPicker", () => ({
+  AddressPicker: ({
+    value,
     onChange,
   }: {
-    onChange: (lat: number, lng: number) => void;
+    value: { address: string; lat: number | null; lng: number | null };
+    onChange: (v: {
+      address: string;
+      lat: number | null;
+      lng: number | null;
+    }) => void;
   }) => (
-    <button
-      type="button"
-      data-ocid="mock-map-picker"
-      onClick={() => onChange(21.03, 105.85)}
-    >
-      Ghim vị trí giả lập
-    </button>
+    <div>
+      <input
+        data-ocid="address_picker.address_input"
+        value={value.address}
+        onChange={(e) => onChange({ ...value, address: e.target.value })}
+      />
+      <button
+        type="button"
+        data-ocid="mock-map-picker"
+        onClick={() => onChange({ ...value, lat: 21.03, lng: 105.85 })}
+      >
+        Ghim vị trí giả lập
+      </button>
+    </div>
   ),
 }));
 
@@ -108,7 +123,7 @@ describe("DeliveryAddressPanel", () => {
       ).toBeInTheDocument();
     });
     fireEvent.click(screen.getByTestId("delivery_address.add_button"));
-    fireEvent.change(screen.getByTestId("delivery_address.address_input"), {
+    fireEvent.change(screen.getByTestId("address_picker.address_input"), {
       target: { value: "123 Le Loi" },
     });
     fireEvent.click(screen.getByTestId("delivery_address.save_button"));
@@ -138,10 +153,14 @@ describe("DeliveryAddressPanel", () => {
       ).toBeInTheDocument();
     });
     fireEvent.click(screen.getByTestId("delivery_address.add_button"));
-    fireEvent.change(screen.getByTestId("delivery_address.label_input"), {
-      target: { value: "Nhà" },
+    // Nhãn mặc định "Nhà" đã chọn sẵn; thêm ghi chú cho tài xế.
+    expect(
+      screen.getByTestId("address_form_fields.label_chip.home"),
+    ).toHaveAttribute("aria-pressed", "true");
+    fireEvent.change(screen.getByTestId("address_form_fields.detail_input"), {
+      target: { value: "Tầng 3" },
     });
-    fireEvent.change(screen.getByTestId("delivery_address.address_input"), {
+    fireEvent.change(screen.getByTestId("address_picker.address_input"), {
       target: { value: "123 Le Loi" },
     });
     fireEvent.click(screen.getByTestId("mock-map-picker"));
@@ -151,6 +170,7 @@ describe("DeliveryAddressPanel", () => {
       expect(mockAdd).toHaveBeenCalledWith("a@test.com", {
         label: "Nhà",
         address: "123 Le Loi",
+        detail: "Tầng 3",
         lat: 21.03,
         lng: 105.85,
       });
@@ -168,11 +188,11 @@ describe("DeliveryAddressPanel", () => {
     });
     fireEvent.click(screen.getByTestId("delivery_address.edit_button.1"));
 
-    expect(screen.getByTestId("delivery_address.address_input")).toHaveValue(
+    expect(screen.getByTestId("address_picker.address_input")).toHaveValue(
       "123 Le Loi",
     );
 
-    fireEvent.change(screen.getByTestId("delivery_address.address_input"), {
+    fireEvent.change(screen.getByTestId("address_picker.address_input"), {
       target: { value: "123 Le Loi (sửa)" },
     });
     fireEvent.click(screen.getByTestId("delivery_address.save_button"));
@@ -181,6 +201,7 @@ describe("DeliveryAddressPanel", () => {
       expect(mockUpdate).toHaveBeenCalledWith("a@test.com", 1, {
         label: "Nhà",
         address: "123 Le Loi (sửa)",
+        detail: "",
         lat: 21.03,
         lng: 105.85,
       });

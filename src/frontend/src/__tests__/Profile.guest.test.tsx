@@ -166,6 +166,7 @@ describe("Profile — khách mới (chưa xác thực email)", () => {
       expect(mockAddCustomerAddress).toHaveBeenCalledWith("khach@example.com", {
         label: "Nhà",
         address: "123 Le Loi",
+        detail: "",
         lat: 21.03,
         lng: 105.85,
       });

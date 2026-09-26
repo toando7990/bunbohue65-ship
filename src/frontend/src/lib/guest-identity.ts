@@ -17,6 +17,7 @@
 // thì AN TOÀN để lưu qua API /customers thường (không yêu cầu xác thực,
 // trừ khi bật "nhận thông báo khuyến mại qua email").
 
+import type { CustomerAddressInput } from "@/lib/vps-client";
 import type { CustomerAddress } from "@/types";
 
 const GUEST_EMAIL_KEY = "bbh_guest_email";
@@ -94,7 +95,7 @@ export function listGuestAddresses(): GuestAddress[] {
 
 export function addGuestAddress(
   email: string,
-  data: { label: string; address: string; lat: number; lng: number },
+  data: CustomerAddressInput,
 ): GuestAddress {
   const addresses = readGuestAddresses();
   const nextId =
@@ -106,7 +107,7 @@ export function addGuestAddress(
 
 export function updateGuestAddress(
   id: number,
-  data: { label: string; address: string; lat: number; lng: number },
+  data: CustomerAddressInput,
 ): GuestAddress | null {
   const addresses = readGuestAddresses();
   const idx = addresses.findIndex((a) => a.id === id);

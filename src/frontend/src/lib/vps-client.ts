@@ -347,6 +347,27 @@ export async function updateCustomer(
   });
 }
 
+// Dữ liệu gửi khi thêm/sửa địa chỉ — detail (số tầng/phòng/ghi chú cho
+// tài xế) tuỳ chọn.
+export interface CustomerAddressInput {
+  label: string;
+  address: string;
+  detail?: string;
+  lat: number;
+  lng: number;
+}
+
+// Google Maps browser key (VPS .env GOOGLE_MAPS_BROWSER_KEY) — rỗng khi
+// chưa cấu hình, AddressPicker.tsx khi đó dùng bản đồ OpenStreetMap cũ.
+export async function getMapsConfig(): Promise<{ browserKey: string }> {
+  const res = await vpsFetch<{ ok: boolean; browserKey?: string }>({
+    method: "GET",
+    path: "/maps-config",
+    timeoutMs: 5000,
+  });
+  return { browserKey: String(res?.browserKey ?? "").trim() };
+}
+
 // Địa chỉ nhận hàng đã lưu (tab "Địa chỉ nhận hàng" trong mục "Tôi") —
 // CRUD đầy đủ, xem vps-worker/src/routes/customer-addresses.js. Toàn bộ
 // yêu cầu email ĐÃ XÁC THỰC (VPS tự kiểm tra lại qua canister, không tin
@@ -363,7 +384,7 @@ export async function listCustomerAddresses(
 
 export async function addCustomerAddress(
   email: string,
-  data: { label: string; address: string; lat: number; lng: number },
+  data: CustomerAddressInput,
 ): Promise<CustomerAddress> {
   return vpsFetch<CustomerAddress>({
     method: "POST",
@@ -375,7 +396,7 @@ export async function addCustomerAddress(
 export async function updateCustomerAddress(
   email: string,
   id: number,
-  data: { label: string; address: string; lat: number; lng: number },
+  data: CustomerAddressInput,
 ): Promise<CustomerAddress> {
   return vpsFetch<CustomerAddress>({
     method: "PUT",
