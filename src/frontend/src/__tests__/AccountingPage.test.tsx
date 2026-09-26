@@ -103,6 +103,85 @@ describe("AccountingPage enterprise accounting", () => {
     });
   });
 
+  it("v5 layout: revenue split by cash/transfer, tap to filter (tap again to clear), search, and expandable Bkav error", async () => {
+    setActivation();
+    const base = {
+      restaurantId: "R1",
+      cusName: "A",
+      bookingStatus: "confirmed",
+      paymentStatus: "paid",
+      invoiceStatus: "none",
+      createdAt: Date.now(),
+    };
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [
+        {
+          ...base,
+          orderId: "ORD-CASH1",
+          cusPhone: "0901111111",
+          amount: 60000,
+          paymentMethod: "cash",
+        },
+        {
+          ...base,
+          orderId: "ORD-CASH2",
+          cusPhone: "0902222222",
+          amount: 45000,
+          paymentMethod: "cash",
+        },
+        {
+          ...base,
+          orderId: "ORD-BANK",
+          cusPhone: "0903333333",
+          amount: 95000,
+          paymentMethod: "transfer",
+          invoiceStatus: "failed",
+          invoiceError: "Có lỗi xảy ra. Xin vui lòng thử lại sau [#1987044]",
+        },
+      ],
+      count: 3,
+      total: 200000,
+    });
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByTestId("accounting.revenue_total")).toHaveTextContent(
+        "200.000",
+      ),
+    );
+    expect(
+      screen.getByTestId("accounting.payment_method_filter.cash"),
+    ).toHaveTextContent("105.000");
+    expect(
+      screen.getByTestId("accounting.payment_method_filter.transfer"),
+    ).toHaveTextContent("95.000");
+    expect(screen.getByTestId("accounting.failed_count")).toHaveTextContent(
+      "1",
+    );
+
+    // Bấm "Chuyển khoản" → chỉ đơn chuyển khoản; bấm lại → bỏ lọc.
+    const bank = screen.getByTestId(
+      "accounting.payment_method_filter.transfer",
+    );
+    fireEvent.click(bank);
+    expect(screen.queryByText("ORD-CASH1")).not.toBeInTheDocument();
+    expect(screen.getByText("ORD-BANK")).toBeInTheDocument();
+    fireEvent.click(bank);
+    expect(screen.getByText("ORD-CASH1")).toBeInTheDocument();
+
+    // Lỗi Bkav thu gọn 1 dòng, "Xem chi tiết" mở đủ.
+    const err = screen.getByTestId("accounting.invoice_error.3");
+    expect(err).toHaveClass("truncate");
+    fireEvent.click(screen.getByTestId("accounting.invoice_error_toggle.3"));
+    expect(err).not.toHaveClass("truncate");
+
+    // Tìm theo SĐT.
+    fireEvent.change(screen.getByTestId("accounting.search_input"), {
+      target: { value: "0902 222" },
+    });
+    expect(screen.getByText("ORD-CASH2")).toBeInTheDocument();
+    expect(screen.queryByText("ORD-CASH1")).not.toBeInTheDocument();
+  });
+
   it("shows the auto-issue switch (off) and turns it on after confirmation", async () => {
     setActivation();
     mockSetAuto.mockResolvedValue({
@@ -180,7 +259,9 @@ describe("AccountingPage enterprise accounting", () => {
 
     renderPage();
     await waitFor(() => expect(mockGetEnterpriseHistory).toHaveBeenCalled());
-    expect(screen.getByText("Trạng thái đơn hàng")).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Trạng thái đơn hàng" }),
+    ).toBeInTheDocument();
     mockGetEnterpriseHistory.mockClear();
 
     fireEvent.click(screen.getByTestId("accounting.status_chip.all"));
@@ -285,6 +366,8 @@ describe("AccountingPage enterprise accounting", () => {
       .mockResolvedValueOnce({ ok: true, count: 4 })
       .mockResolvedValueOnce({ ok: true, deleted: 4 });
     renderPage();
+    // "Xoá đơn đã huỷ" nằm trong menu "⋯" (giao diện v5).
+    fireEvent.click(await screen.findByTestId("accounting.more_button"));
     fireEvent.click(await screen.findByTestId("accounting.bulk_delete_button"));
     await waitFor(() =>
       expect(
@@ -329,15 +412,10 @@ describe("AccountingPage enterprise accounting", () => {
         screen.getByTestId("accounting.issue_button.1"),
       ).toBeInTheDocument(),
     );
-    expect(screen.getByTestId("accounting.issue_banner")).toHaveTextContent(
-      "1 đơn đã thanh toán chưa phát hành hoá đơn",
-    );
-    // Công tắc TẮT → không còn lưới an toàn 22:00.
-    await waitFor(() =>
-      expect(screen.getByTestId("accounting.issue_banner")).toHaveTextContent(
-        "phát hành tự động đang tắt",
-      ),
-    );
+    // Ô số liệu "Chưa phát hành" (thay dải cảnh báo cũ — giao diện v5).
+    expect(
+      screen.getByTestId("accounting.not_invoiced_count"),
+    ).toHaveTextContent("1");
     expect(
       screen.queryByTestId("accounting.invoice_button.1"),
     ).not.toBeInTheDocument();
@@ -363,8 +441,8 @@ describe("AccountingPage enterprise accounting", () => {
       screen.queryByTestId("accounting.issue_button.1"),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId("accounting.issue_banner"),
-    ).not.toBeInTheDocument();
+      screen.getByTestId("accounting.not_invoiced_count"),
+    ).toHaveTextContent("0");
   });
 
   it("bulk-issues the selected orders (select all issuable) and skips orders that cannot be issued", async () => {
@@ -412,9 +490,7 @@ describe("AccountingPage enterprise accounting", () => {
     expect(cb("ORD-C")).toBeNull();
     expect(cb("ORD-D")).toBeNull();
 
-    fireEvent.click(
-      screen.getByTestId("accounting.select_all_issuable_button"),
-    );
+    fireEvent.click(screen.getByTestId("accounting.select_all_checkbox"));
     expect(screen.getByTestId("accounting.bulk_issue_bar")).toHaveTextContent(
       "Đã chọn 2 đơn",
     );
@@ -568,7 +644,7 @@ describe("AccountingPage enterprise accounting", () => {
     await waitFor(() => {
       expect(
         screen.getByTestId("accounting.not_invoiced_count"),
-      ).toHaveTextContent("1 đơn chưa phát hành hoá đơn");
+      ).toHaveTextContent("1");
     });
 
     fireEvent.click(
@@ -640,11 +716,10 @@ describe("AccountingPage enterprise accounting", () => {
     renderPage();
 
     await waitFor(() => {
-      expect(
-        screen.getByTestId("accounting.export_csv_button"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("ORD-R1-INVOICED")).toBeInTheDocument();
     });
-
+    // "Xuất CSV" nằm trong menu "⋯" (giao diện v5).
+    fireEvent.click(screen.getByTestId("accounting.more_button"));
     fireEvent.click(screen.getByTestId("accounting.export_csv_button"));
 
     expect(createUrlSpy).toHaveBeenCalled();

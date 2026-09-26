@@ -87,12 +87,13 @@ import {
 } from "@/lib/vps-client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
+  Banknote,
   CalendarRange,
-  ChevronDown,
   Download,
   ExternalLink,
+  Landmark,
   Loader2,
-  Pause,
+  MoreHorizontal,
   Play,
   Receipt,
   RefreshCw,
@@ -317,6 +318,11 @@ export function AccountingPage() {
   const [openingPdfOrderId, setOpeningPdfOrderId] = useState<string | null>(
     null,
   );
+  // Ô tìm kiếm: mã đơn, SĐT, tên khách, MST (lọc phía trình duyệt).
+  const [search, setSearch] = useState("");
+  // Menu "⋯" (Xuất CSV, Xoá đơn đã huỷ) + lỗi Bkav đang mở rộng.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
 
   const statuses: Array<"paid" | "cancelled"> =
     statusFilter === "all" ? ["paid", "cancelled"] : [statusFilter];
@@ -364,20 +370,50 @@ export function AccountingPage() {
   }, [historyQuery.data, filterKey]);
 
   const results = historyQuery.data?.orders ?? [];
-  const filteredResults = results.filter((o) => {
+  // Lọc phía trình duyệt, 3 tầng (giao diện v5 đã duyệt):
+  //  1. baseResults: nhà hàng + ô tìm kiếm → dùng cho ô "Doanh thu" (luôn
+  //     hiện đủ cả Tiền mặt lẫn Chuyển khoản).
+  //  2. scopedResults: + hình thức thanh toán → dùng cho các ô đếm đơn.
+  //  3. filteredResults: + trạng thái hoá đơn (bấm ô số liệu) → bảng.
+  const searchNorm = search.trim().toLowerCase().replace(/\s+/g, "");
+  const baseResults = results.filter((o) => {
     if (filterRestaurantId !== "all" && o.restaurantId !== filterRestaurantId)
       return false;
-    if (invoiceFilter !== "all" && o.invoiceStatus !== invoiceFilter)
-      return false;
-    if (!matchesPaymentMethod(o, paymentMethodFilter)) return false;
+    if (searchNorm) {
+      const hay = [o.orderId, o.cusPhone, o.cusName, o.cusTaxCode, o.cusTaxName]
+        .filter(Boolean)
+        .join("|")
+        .toLowerCase()
+        .replace(/\s+/g, "");
+      if (!hay.includes(searchNorm)) return false;
+    }
     return true;
   });
+  const scopedResults = baseResults.filter((o) =>
+    matchesPaymentMethod(o, paymentMethodFilter),
+  );
+  const filteredResults = scopedResults.filter(
+    (o) => invoiceFilter === "all" || o.invoiceStatus === invoiceFilter,
+  );
+  const paidOrders = baseResults.filter((o) => o.paymentStatus === "paid");
   const paidByMethod = (method: "cash" | "transfer") =>
-    filteredResults
-      .filter((o) => o.paymentStatus === "paid" && o.paymentMethod === method)
+    paidOrders
+      .filter((o) => o.paymentMethod === method)
       .reduce((sum, o) => sum + o.amount, 0);
-  const notInvoicedCount = filteredResults.filter(
-    (o) => o.invoiceStatus === InvoiceStatus.none,
+  const revenueTotal = paidOrders.reduce((sum, o) => sum + o.amount, 0);
+  const countByMethod = (method: "cash" | "transfer") =>
+    scopedResults.filter(
+      (o) => o.paymentStatus === "paid" && o.paymentMethod === method,
+    ).length;
+  const notInvoicedCount = scopedResults.filter(
+    (o) =>
+      o.paymentStatus === "paid" &&
+      o.bookingStatus !== "cancelled" &&
+      o.invoiceStatus === InvoiceStatus.none &&
+      !o.invoiceRequested, // đang phát hành thì không tính
+  ).length;
+  const failedCount = scopedResults.filter(
+    (o) => o.invoiceStatus === InvoiceStatus.failed,
   ).length;
   const isLoading = historyQuery.isLoading;
   const isError = historyQuery.isError;
@@ -403,10 +439,6 @@ export function AccountingPage() {
   const selectedTotal = selectedIssuable.reduce((s, o) => s + o.amount, 0);
   const allIssuableSelected =
     issuable.length > 0 && selectedIssuable.length === issuable.length;
-  // Đơn đã thanh toán, "Chưa phát hành", chưa yêu cầu — cho dải cảnh báo.
-  const awaitingIssue = issuable.filter(
-    (o) => o.invoiceStatus === InvoiceStatus.none,
-  );
   function toggleSelected(orderId: string) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -543,8 +575,22 @@ export function AccountingPage() {
     URL.revokeObjectURL(url);
   }
 
+  // Ô số liệu bấm được (giao diện v5): bấm lại ô đang chọn = bỏ lọc.
+  const kpiBase =
+    "flex flex-col items-start rounded-lg border px-3.5 py-2.5 text-left transition-smooth";
+  const kpiCls = (active: boolean) =>
+    `${kpiBase} ${active ? "border-primary bg-primary/5" : "border-transparent bg-muted/60 hover:bg-muted"}`;
+  const orderCountLabel =
+    statusFilter === "paid"
+      ? "Đơn đã thanh toán"
+      : statusFilter === "cancelled"
+        ? "Đơn đã huỷ"
+        : "Tất cả đơn";
+  const togglePayment = (method: "cash" | "transfer") =>
+    setPaymentMethodFilter((cur) => (cur === method ? "all" : method));
+
   return (
-    <section className="flex flex-col gap-6" data-ocid="accounting.page">
+    <section className="flex flex-col gap-4" data-ocid="accounting.page">
       {!deviceId && (
         <Card data-ocid="accounting.bind_admin_card">
           <CardHeader>
@@ -569,81 +615,31 @@ export function AccountingPage() {
           </CardContent>
         </Card>
       )}
-      <div
-        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground"
-        data-ocid="accounting.live_bar"
-      >
-        <span className="flex items-center gap-2">
-          <span
-            className={`inline-block h-2 w-2 rounded-full ${livePaused ? "bg-muted-foreground" : "bg-success"}`}
-            aria-hidden="true"
-          />
-          {livePaused
-            ? "Đã tạm dừng tự làm mới"
-            : "Tự động làm mới mỗi 5 giây theo bộ lọc hiện tại"}
-          {historyQuery.dataUpdatedAt > 0 && (
-            <span data-ocid="accounting.last_updated">
-              · cập nhật lúc{" "}
-              <b className="text-foreground">
-                {new Date(historyQuery.dataUpdatedAt).toLocaleTimeString(
-                  "vi-VN",
-                )}
-              </b>
-            </span>
-          )}
-          {historyQuery.isFetching && (
-            <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
-          )}
-        </span>
-        <button
-          type="button"
-          onClick={() => setLivePaused((v) => !v)}
-          data-ocid="accounting.live_toggle"
-          aria-pressed={livePaused}
-          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 font-medium text-foreground hover:bg-secondary"
-        >
-          {livePaused ? (
-            <Play className="h-3 w-3" aria-hidden="true" />
-          ) : (
-            <Pause className="h-3 w-3" aria-hidden="true" />
-          )}
-          {livePaused ? "Tiếp tục" : "Tạm dừng"}
-        </button>
-      </div>
 
-      {/* Bộ lọc + danh sách nằm thẳng trên nền trang (không panel), theo
-          bản xem trước đã duyệt (accounting_filters_v4):
-            Hàng 1: Nhà hàng · Hôm nay/Tuần này/Tháng này · Từ–Đến ngày · ô tổng
-            Hàng 2: Trạng thái đơn hàng · Hình thức thanh toán · Trạng thái hoá đơn */}
-      <div className="flex flex-col gap-4" data-ocid="accounting.lookup_card">
-        <div
-          className="flex flex-wrap items-end gap-x-3.5 gap-y-3"
-          data-ocid="accounting.filter_row_1"
-        >
-          <div className="flex flex-col gap-1.5">
-            <Label
-              htmlFor="restaurant-filter"
-              className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-            >
-              Nhà hàng
-            </Label>
-            <select
-              id="restaurant-filter"
-              value={filterRestaurantId}
-              onChange={(e) => setFilterRestaurantId(e.target.value)}
-              data-ocid="accounting.restaurant_filter"
-              className="h-10 min-w-[160px] rounded-md border border-input bg-card px-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring"
-            >
-              <option value="all">Tất cả nhà hàng</option>
-              {(restaurants ?? []).map((r) => (
-                <option key={r.restaurantId} value={r.restaurantId}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* ---- Thanh công cụ 1 dòng: nhà hàng · khoảng ngày | làm mới ·
+          tự phát hành · ⋯ ---- */}
+      <div
+        className="flex flex-wrap items-center justify-between gap-2"
+        data-ocid="accounting.filter_row_1"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            id="restaurant-filter"
+            aria-label="Nhà hàng"
+            value={filterRestaurantId}
+            onChange={(e) => setFilterRestaurantId(e.target.value)}
+            data-ocid="accounting.restaurant_filter"
+            className="h-9 min-w-[160px] rounded-md border border-input bg-card px-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-ring"
+          >
+            <option value="all">Tất cả nhà hàng</option>
+            {(restaurants ?? []).map((r) => (
+              <option key={r.restaurantId} value={r.restaurantId}>
+                {r.name}
+              </option>
+            ))}
+          </select>
           <div
-            className="flex flex-wrap gap-2 pb-0.5"
+            className="flex flex-wrap gap-1.5"
             data-ocid="accounting.quick_ranges"
           >
             {QUICK_RANGES.map(({ value, label }) => {
@@ -659,252 +655,340 @@ export function AccountingPage() {
                   }}
                   data-ocid={`accounting.quick_range.${value}`}
                   aria-pressed={active}
-                  className={
+                  className={`rounded-full border px-3 py-1 text-xs font-medium ${
                     active
-                      ? "rounded-full border border-primary bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary"
-                      : "rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
-                  }
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:bg-secondary"
+                  }`}
                 >
                   {label}
                 </button>
               );
             })}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label
-              htmlFor="from-date"
-              className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-            >
-              Từ ngày
-            </Label>
-            <Input
+          <div className="flex h-9 items-center gap-1 rounded-md border border-input bg-card px-2">
+            <CalendarRange
+              className="h-3.5 w-3.5 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <input
               id="from-date"
               type="date"
+              aria-label="Từ ngày"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
               data-ocid="accounting.from_date_input"
-              className="w-[150px] bg-card"
+              className="w-[118px] bg-transparent text-xs text-foreground outline-none"
             />
-          </div>
-          <span className="pb-2 text-muted-foreground">—</span>
-          <div className="flex flex-col gap-1.5">
-            <Label
-              htmlFor="to-date"
-              className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-            >
-              Đến ngày
-            </Label>
-            <Input
+            <span className="text-muted-foreground">–</span>
+            <input
               id="to-date"
               type="date"
+              aria-label="Đến ngày"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
               data-ocid="accounting.to_date_input"
-              className="w-[150px] bg-card"
+              className="w-[118px] bg-transparent text-xs text-foreground outline-none"
             />
           </div>
+        </div>
 
-          {historyQuery.data && (
-            <span
-              className="hidden h-10 w-px self-end bg-border md:block"
-              aria-hidden="true"
-            />
-          )}
-          {historyQuery.data && (
-            <div
-              className="flex flex-wrap items-center gap-2 pb-1.5"
-              data-ocid="accounting.summary"
-            >
-              <span className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
-                {filteredResults.length} đơn
-              </span>
-              <span className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
-                Tổng{" "}
-                {formatVnd(
-                  filteredResults.reduce((sum, o) => sum + o.amount, 0),
+        <div className="relative flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setLivePaused((v) => !v)}
+            data-ocid="accounting.live_toggle"
+            aria-pressed={livePaused}
+            title={
+              livePaused
+                ? "Đã tạm dừng tự làm mới — bấm để tiếp tục"
+                : "Tự làm mới mỗi 5 giây — bấm để tạm dừng"
+            }
+            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:bg-secondary"
+          >
+            {historyQuery.isFetching ? (
+              <Loader2
+                className="h-3.5 w-3.5 animate-spin"
+                aria-hidden="true"
+              />
+            ) : livePaused ? (
+              <Play className="h-3.5 w-3.5" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+            {historyQuery.dataUpdatedAt > 0 && (
+              <span data-ocid="accounting.last_updated">
+                {new Date(historyQuery.dataUpdatedAt).toLocaleTimeString(
+                  "vi-VN",
                 )}
               </span>
-              <span
-                className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground"
-                data-ocid="accounting.method_split"
-              >
-                Tiền mặt {formatVnd(paidByMethod("cash"))} · Chuyển khoản{" "}
-                {formatVnd(paidByMethod("transfer"))}
-              </span>
-              {notInvoicedCount > 0 && (
-                <span
-                  className="rounded-full bg-destructive/12 px-3 py-1 text-xs font-semibold text-destructive"
-                  data-ocid="accounting.not_invoiced_count"
-                >
-                  {notInvoicedCount} đơn chưa phát hành hoá đơn
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div
-          className="flex flex-wrap items-end gap-x-6 gap-y-3"
-          data-ocid="accounting.filter_row_2"
-        >
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Trạng thái đơn hàng
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  ["all", "Tất cả"],
-                  ["paid", "Đã thanh toán"],
-                  ["cancelled", "Đã huỷ"],
-                ] as const
-              ).map(([value, label]) => {
-                const active = statusFilter === value;
-                const activeCls =
-                  value === "paid"
-                    ? "border-success bg-success/15 text-success"
-                    : value === "cancelled"
-                      ? "border-destructive bg-destructive/15 text-destructive"
-                      : "border-info bg-info/15 text-info";
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setStatusFilter(value)}
-                    aria-pressed={active}
-                    data-ocid={`accounting.status_chip.${value}`}
-                    className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-smooth ${
-                      active
-                        ? activeCls
-                        : "border-border bg-card text-muted-foreground"
-                    }`}
-                  >
-                    {value === "paid" && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                    )}
-                    {value === "cancelled" && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
-                    )}
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5 md:border-l md:border-border md:pl-6">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Hình thức thanh toán
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {PAYMENT_METHOD_FILTERS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setPaymentMethodFilter(value)}
-                  aria-pressed={paymentMethodFilter === value}
-                  data-ocid={`accounting.payment_method_filter.${value}`}
-                  className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-smooth ${
-                    paymentMethodFilter === value
-                      ? "border-info bg-info/15 text-info"
-                      : "border-border bg-card text-muted-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5 md:border-l md:border-border md:pl-6">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Trạng thái hoá đơn
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  ["all", "Tất cả"],
-                  [InvoiceStatus.none, "Chưa phát hành"],
-                  [InvoiceStatus.invoiced, "Đã phát hành"],
-                  [InvoiceStatus.failed, "Thất bại"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setInvoiceFilter(value)}
-                  aria-pressed={invoiceFilter === value}
-                  data-ocid={`accounting.invoice_filter.${value}`}
-                  className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-semibold transition-smooth ${
-                    invoiceFilter === value
-                      ? "border-info bg-info/15 text-info"
-                      : "border-border bg-card text-muted-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {deviceId && <InvoiceAutoToggle deviceId={deviceId} />}
-
-        {awaitingIssue.length > 0 && (
-          <div
-            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm text-warning"
-            data-ocid="accounting.issue_banner"
-          >
-            <span>
-              ⏰{" "}
-              <b>
-                {awaitingIssue.length} đơn đã thanh toán chưa phát hành hoá đơn.
-              </b>{" "}
-              Hoá đơn phải phát hành chậm nhất{" "}
-              <b>hết ngày làm việc tiếp theo</b> sau ngày bán
-              {invoiceAutoOn
-                ? " — đơn còn sót sẽ tự phát hành lúc 22:00 ngày hạn chót."
-                : " — phát hành tự động đang tắt, đơn không được tự phát hành."}
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setSelected(new Set(issuable.map((o) => o.orderId)))
-              }
-              data-ocid="accounting.select_all_issuable_button"
-            >
-              Chọn tất cả đơn chưa phát hành
-            </Button>
-          </div>
-        )}
-
-        <div className="flex flex-wrap justify-end gap-2">
-          {/* Xoá hàng loạt KHÔNG phụ thuộc bộ lọc đang xem — luôn hiện. */}
+            )}
+            {livePaused && <span>· đã tạm dừng</span>}
+          </button>
+          {deviceId && <InvoiceAutoToggle deviceId={deviceId} compact />}
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            onClick={handleOpenBulkDelete}
-            disabled={bulkDeleteMutation.isPending}
-            data-ocid="accounting.bulk_delete_button"
+            size="icon"
+            className="h-9 w-9"
+            aria-label="Thêm thao tác"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen((v) => !v)}
+            data-ocid="accounting.more_button"
           >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-            Xoá tất cả đơn đã huỷ trước hôm nay
+            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
           </Button>
-          {results.length > 0 && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleExportCsv}
-              data-ocid="accounting.export_csv_button"
+          {moreOpen && (
+            <div
+              className="absolute right-0 top-11 z-30 w-64 rounded-md border border-border bg-popover py-1 text-sm shadow-elevated"
+              data-ocid="accounting.more_menu"
             >
-              <Download className="h-3.5 w-3.5" aria-hidden="true" />
-              Xuất CSV
-            </Button>
+              <button
+                type="button"
+                disabled={results.length === 0}
+                onClick={() => {
+                  setMoreOpen(false);
+                  handleExportCsv();
+                }}
+                data-ocid="accounting.export_csv_button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-secondary disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                Xuất CSV (theo bộ lọc)
+              </button>
+              <button
+                type="button"
+                disabled={bulkDeleteMutation.isPending}
+                onClick={() => {
+                  setMoreOpen(false);
+                  handleOpenBulkDelete();
+                }}
+                data-ocid="accounting.bulk_delete_button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-destructive hover:bg-secondary"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                Xoá tất cả đơn đã huỷ trước hôm nay
+              </button>
+            </div>
           )}
         </div>
+      </div>
 
+      {/* ---- 4 ô số liệu — bấm để lọc ---- */}
+      <div
+        className="grid grid-cols-3 gap-2 lg:grid-cols-[1fr_1fr_1fr_1.9fr]"
+        data-ocid="accounting.summary"
+      >
+        <button
+          type="button"
+          onClick={() => setInvoiceFilter("all")}
+          aria-pressed={invoiceFilter === "all"}
+          data-ocid="accounting.invoice_filter.all"
+          className={kpiCls(invoiceFilter === "all")}
+        >
+          <span className="text-xs text-muted-foreground">
+            {orderCountLabel}
+          </span>
+          <span className="text-xl font-semibold">{scopedResults.length}</span>
+          <span className="text-[11px] text-muted-foreground">
+            Tiền mặt {countByMethod("cash")} · CK {countByMethod("transfer")}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setInvoiceFilter((f) =>
+              f === InvoiceStatus.none ? "all" : InvoiceStatus.none,
+            )
+          }
+          aria-pressed={invoiceFilter === InvoiceStatus.none}
+          data-ocid={`accounting.invoice_filter.${InvoiceStatus.none}`}
+          className={kpiCls(invoiceFilter === InvoiceStatus.none)}
+        >
+          <span className="text-xs text-muted-foreground">Chưa phát hành</span>
+          <span
+            className={`text-xl font-semibold ${notInvoicedCount > 0 ? "text-warning" : ""}`}
+            data-ocid="accounting.not_invoiced_count"
+          >
+            {notInvoicedCount}
+          </span>
+          <span className="text-[11px] text-muted-foreground">
+            {invoiceAutoOn
+              ? "Còn sót: tự phát hành 22:00 ngày hạn chót"
+              : "Hạn: hết ngày làm việc tiếp theo"}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setInvoiceFilter((f) =>
+              f === InvoiceStatus.failed ? "all" : InvoiceStatus.failed,
+            )
+          }
+          aria-pressed={invoiceFilter === InvoiceStatus.failed}
+          data-ocid={`accounting.invoice_filter.${InvoiceStatus.failed}`}
+          className={kpiCls(invoiceFilter === InvoiceStatus.failed)}
+        >
+          <span className="text-xs text-muted-foreground">Thất bại</span>
+          <span
+            className={`text-xl font-semibold ${failedCount > 0 ? "text-destructive" : ""}`}
+            data-ocid="accounting.failed_count"
+          >
+            {failedCount}
+          </span>
+          <span className="text-[11px] text-muted-foreground">
+            Cần phát hành lại
+          </span>
+        </button>
+        <div
+          className="col-span-3 flex flex-col rounded-lg bg-muted/60 px-3.5 py-2.5 lg:col-span-1"
+          data-ocid="accounting.revenue"
+        >
+          <span className="text-xs text-muted-foreground">Doanh thu</span>
+          <span
+            className="text-xl font-semibold"
+            data-ocid="accounting.revenue_total"
+          >
+            {formatVnd(revenueTotal)}
+          </span>
+          <div
+            className="mt-1.5 grid grid-cols-2 gap-1.5"
+            data-ocid="accounting.method_split"
+          >
+            {(
+              [
+                ["cash", "Tiền mặt", Banknote],
+                ["transfer", "Chuyển khoản", Landmark],
+              ] as const
+            ).map(([method, label, Icon]) => {
+              const active = paymentMethodFilter === method;
+              return (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => togglePayment(method)}
+                  aria-pressed={active}
+                  title={
+                    active
+                      ? "Bấm lại để bỏ lọc"
+                      : `Chỉ xem đơn ${label.toLowerCase()}`
+                  }
+                  data-ocid={`accounting.payment_method_filter.${method}`}
+                  className={`flex flex-col items-start rounded-md border bg-card px-2.5 py-1.5 text-left ${
+                    active
+                      ? "border-primary"
+                      : "border-border hover:bg-secondary"
+                  }`}
+                >
+                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Icon className="h-3 w-3" aria-hidden="true" />
+                    {label}
+                  </span>
+                  <span className="text-sm font-semibold">
+                    {formatVnd(paidByMethod(method))}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ---- Trạng thái đơn + tìm kiếm ---- */}
+      <div
+        className="flex flex-wrap items-center justify-between gap-2"
+        data-ocid="accounting.filter_row_2"
+      >
+        <fieldset
+          className="flex flex-wrap items-center gap-1.5"
+          aria-label="Trạng thái đơn hàng"
+        >
+          {(
+            [
+              ["paid", "Đã thanh toán"],
+              ["cancelled", "Đã huỷ"],
+              ["all", "Tất cả"],
+            ] as const
+          ).map(([value, label]) => {
+            const active = statusFilter === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatusFilter(value)}
+                aria-pressed={active}
+                data-ocid={`accounting.status_chip.${value}`}
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                  active
+                    ? "border-info bg-info/15 text-info"
+                    : "border-border bg-card text-muted-foreground hover:bg-secondary"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </fieldset>
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm mã đơn, SĐT, MST"
+            aria-label="Tìm đơn"
+            data-ocid="accounting.search_input"
+            className="h-9 w-[220px] bg-card pl-8 text-sm"
+          />
+        </div>
+      </div>
+
+      {selectedIssuable.length > 0 && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-info/10 px-3.5 py-2 text-sm text-info"
+          data-ocid="accounting.bulk_issue_bar"
+        >
+          <span>
+            Đã chọn <b>{selectedIssuable.length}</b> đơn ·{" "}
+            {formatVnd(selectedTotal)}
+          </span>
+          <span className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelected(new Set())}
+              data-ocid="accounting.bulk_clear_button"
+            >
+              Bỏ chọn
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={issueMutation.isPending}
+              onClick={() =>
+                handleIssue(selectedIssuable.map((o) => o.orderId))
+              }
+              data-ocid="accounting.bulk_issue_button"
+            >
+              {issueMutation.isPending ? (
+                <Loader2
+                  className="h-3.5 w-3.5 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              Phát hành đã chọn ({selectedIssuable.length})
+            </Button>
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4" data-ocid="accounting.lookup_card">
         {isLoading ? (
           <div
             className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-8 text-sm text-muted-foreground"
@@ -947,10 +1031,18 @@ export function AccountingPage() {
             className="overflow-x-auto rounded-lg border border-border bg-card"
             data-ocid="accounting.lookup_table"
           >
-            <Table>
+            <Table className="min-w-[860px] table-fixed">
+              <colgroup>
+                <col className="w-10" />
+                <col className="w-[27%]" />
+                <col className="w-[22%]" />
+                <col className="w-[14%]" />
+                <col />
+                <col className="w-[132px]" />
+              </colgroup>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="ent-th w-8">
+                  <TableHead className="ent-th">
                     <input
                       type="checkbox"
                       className="h-4 w-4 accent-primary"
@@ -967,14 +1059,13 @@ export function AccountingPage() {
                       data-ocid="accounting.select_all_checkbox"
                     />
                   </TableHead>
-                  <TableHead className="ent-th">Mã đơn</TableHead>
-                  <TableHead className="ent-th">Nhà hàng</TableHead>
+                  <TableHead className="ent-th">Đơn</TableHead>
                   <TableHead className="ent-th">Khách hàng</TableHead>
-                  <TableHead className="ent-th">MST khách</TableHead>
                   <TableHead className="ent-th">Tổng tiền</TableHead>
-                  <TableHead className="ent-th">Trạng thái</TableHead>
                   <TableHead className="ent-th">Hoá đơn</TableHead>
-                  <TableHead className="ent-th text-right">Thao tác</TableHead>
+                  <TableHead className="ent-th">
+                    <span className="sr-only">Thao tác</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -985,18 +1076,26 @@ export function AccountingPage() {
                     order.invoiceStatus === InvoiceStatus.none &&
                     !!order.invoiceRequested;
                   const isSelected = !blocked && selected.has(order.orderId);
+                  const errorOpen = expandedErrors.has(order.orderId);
+                  const canIssue =
+                    !isCancelled &&
+                    order.paymentStatus === "paid" &&
+                    (order.invoiceStatus === InvoiceStatus.failed ||
+                      (order.invoiceStatus === InvoiceStatus.none && !issuing));
+                  const isReissue =
+                    order.invoiceStatus === InvoiceStatus.failed;
                   return (
                     <TableRow
                       key={order.orderId}
-                      className={`ent-table-row transition-colors duration-1000 ${newIds.has(order.orderId) ? "bg-warning/15" : isSelected ? "bg-warning/5" : ""}`}
+                      className={`ent-table-row transition-colors duration-1000 ${newIds.has(order.orderId) ? "bg-warning/15" : isSelected ? "bg-info/5" : ""}`}
                       data-ocid={`accounting.row.${idx + 1}`}
                       data-new={newIds.has(order.orderId) ? "true" : undefined}
                     >
-                      <TableCell className="ent-td w-8">
+                      <TableCell className="ent-td align-top">
                         {!blocked && (
                           <input
                             type="checkbox"
-                            className="h-4 w-4 accent-primary"
+                            className="mt-0.5 h-4 w-4 accent-primary"
                             aria-label={`Chọn đơn ${order.orderId}`}
                             checked={isSelected}
                             onChange={() => toggleSelected(order.orderId)}
@@ -1004,79 +1103,71 @@ export function AccountingPage() {
                           />
                         )}
                       </TableCell>
-                      <TableCell className="ent-td">
-                        <div className="flex flex-col">
-                          <span className="flex items-center gap-1.5">
-                            <span className="font-mono text-xs font-semibold text-foreground">
-                              {order.orderId}
-                            </span>
-                            <CopyOrderIdButton
-                              orderId={order.orderId}
-                              ocid={`accounting.copy_order_id.${idx + 1}`}
-                            />
+                      <TableCell className="ent-td align-top">
+                        <span className="flex items-start gap-1">
+                          <span className="break-all font-mono text-xs font-semibold text-foreground">
+                            {order.orderId}
                           </span>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDateTime(order.createdAt)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="ent-td">
-                        <span className="text-xs text-muted-foreground">
+                          <CopyOrderIdButton
+                            orderId={order.orderId}
+                            ocid={`accounting.copy_order_id.${idx + 1}`}
+                          />
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {formatDateTime(order.createdAt)} ·{" "}
                           {restaurantNameById.get(order.restaurantId) ??
                             order.restaurantId}
                         </span>
                       </TableCell>
-                      <TableCell className="ent-td">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-foreground">
-                            {order.cusName || "Khách vãng lai"}
+                      <TableCell className="ent-td align-top">
+                        <span className="block text-sm font-medium text-foreground">
+                          {order.cusName || "Khách vãng lai"}
+                        </span>
+                        {order.cusPhone && (
+                          <span className="block text-xs text-muted-foreground">
+                            {order.cusPhone}
                           </span>
-                          {order.cusPhone && (
-                            <span className="text-xs text-muted-foreground">
-                              {order.cusPhone}
-                            </span>
-                          )}
+                        )}
+                        <div className="mt-0.5">
+                          <TaxCodeCell
+                            key={`${order.orderId}:${order.cusTaxCode ?? ""}`}
+                            deviceId={deviceId}
+                            orderId={order.orderId}
+                            taxCode={order.cusTaxCode ?? ""}
+                            taxName={order.cusTaxName ?? ""}
+                            editable={
+                              !isCancelled &&
+                              order.invoiceStatus !== InvoiceStatus.invoiced &&
+                              !issuing
+                            }
+                            onSaved={() => historyQuery.refetch()}
+                            ocid={`accounting.tax_code.${idx + 1}`}
+                          />
                         </div>
                       </TableCell>
-                      <TableCell className="ent-td">
-                        <TaxCodeCell
-                          key={`${order.orderId}:${order.cusTaxCode ?? ""}`}
-                          deviceId={deviceId}
-                          orderId={order.orderId}
-                          taxCode={order.cusTaxCode ?? ""}
-                          taxName={order.cusTaxName ?? ""}
-                          editable={
-                            !isCancelled &&
-                            order.invoiceStatus !== InvoiceStatus.invoiced &&
-                            !issuing
-                          }
-                          onSaved={() => historyQuery.refetch()}
-                          ocid={`accounting.tax_code.${idx + 1}`}
-                        />
-                      </TableCell>
-                      <TableCell className="ent-td">
-                        <span className="font-mono text-sm font-semibold text-foreground">
+                      <TableCell className="ent-td align-top">
+                        <span className="block font-mono text-sm font-semibold text-foreground">
                           {formatVnd(order.amount)}
                         </span>
-                      </TableCell>
-                      <TableCell className="ent-td">
-                        <span
-                          className={`ent-pill ${isCancelled ? "badge-destructive" : "badge-success"}`}
-                          data-ocid={`accounting.status_badge.${idx + 1}`}
-                        >
-                          {isCancelled ? "Đã huỷ" : "Đã thanh toán"}
-                        </span>
-                        {!isCancelled &&
+                        {isCancelled ? (
+                          <span
+                            className="ent-pill badge-destructive mt-1"
+                            data-ocid={`accounting.status_badge.${idx + 1}`}
+                          >
+                            Đã huỷ
+                          </span>
+                        ) : (
                           paymentMethodLabel(order.paymentMethod) && (
                             <span
-                              className="mt-1 block text-xs text-muted-foreground"
+                              className="block text-xs text-muted-foreground"
                               data-ocid={`accounting.payment_method.${idx + 1}`}
                             >
                               {paymentMethodLabel(order.paymentMethod)}
                             </span>
-                          )}
+                          )
+                        )}
                       </TableCell>
-                      <TableCell className="ent-td">
+                      <TableCell className="ent-td align-top">
                         {issuing ? (
                           <span
                             className="ent-pill badge-warning inline-flex items-center gap-1"
@@ -1098,25 +1189,45 @@ export function AccountingPage() {
                             ] ?? order.invoiceStatus}
                           </span>
                         )}
-                        {/* Lý do THẬT Bkav từ chối (invoiceError từ VPS) —
-                              chỉ hiện cho đơn thất bại, để kế toán biết vì
-                              sao hoá đơn không phát hành được. */}
-                        {order.invoiceStatus === InvoiceStatus.failed &&
-                          order.invoiceError && (
-                            <span
-                              className="mt-1 block max-w-[240px] break-words text-xs text-destructive"
-                              title={order.invoiceError}
-                              data-ocid={`accounting.invoice_error.${idx + 1}`}
-                            >
-                              {order.invoiceError}
+                        {order.invoiceStatus === InvoiceStatus.invoiced &&
+                          order.invoiceId && (
+                            <span className="block text-xs text-muted-foreground">
+                              Số {order.invoiceId}
                             </span>
                           )}
+                        {/* Lý do THẬT Bkav từ chối — thu gọn 1 dòng, bấm
+                            "Xem chi tiết" để mở đủ. */}
+                        {order.invoiceStatus === InvoiceStatus.failed &&
+                          order.invoiceError && (
+                            <>
+                              <span
+                                className={`mt-1 block text-xs text-destructive ${errorOpen ? "whitespace-normal break-words" : "truncate"}`}
+                                title={order.invoiceError}
+                                data-ocid={`accounting.invoice_error.${idx + 1}`}
+                              >
+                                {order.invoiceError}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setExpandedErrors((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(order.orderId))
+                                      next.delete(order.orderId);
+                                    else next.add(order.orderId);
+                                    return next;
+                                  })
+                                }
+                                data-ocid={`accounting.invoice_error_toggle.${idx + 1}`}
+                                className="text-xs font-medium text-info hover:underline"
+                              >
+                                {errorOpen ? "Thu gọn" : "Xem chi tiết"}
+                              </button>
+                            </>
+                          )}
                       </TableCell>
-                      <TableCell className="ent-td">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* Nút "Xoá" (thay "Dọn dẹp") — chỉ hiện cho đơn đã
-                                huỷ; khoá kèm lý do nếu không đủ điều kiện (VPS
-                                vẫn kiểm tra lại toàn bộ). */}
+                      <TableCell className="ent-td align-top">
+                        <div className="flex justify-end">
                           {isCancelled &&
                             (() => {
                               const reason = deleteBlockedReason(order);
@@ -1147,55 +1258,44 @@ export function AccountingPage() {
                                 </Button>
                               );
                             })()}
-                          {/* "Phát hành" / "Phát hành lại" — Kế toán tự phát
-                                hành (không còn tự động khi thanh toán). Đơn
-                                quá hạn: khoá nút kèm lý do (VPS kiểm tra lại). */}
-                          {!isCancelled &&
-                            order.paymentStatus === "paid" &&
-                            (order.invoiceStatus === InvoiceStatus.failed ||
-                              (order.invoiceStatus === InvoiceStatus.none &&
-                                !issuing)) && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                disabled={!!blocked || issueMutation.isPending}
-                                title={
-                                  blocked ??
-                                  "Phát hành hoá đơn Bkav cho đơn này"
-                                }
-                                onClick={() => handleIssue([order.orderId])}
-                                data-ocid={
-                                  order.invoiceStatus === InvoiceStatus.failed
-                                    ? `accounting.reissue_button.${idx + 1}`
-                                    : `accounting.issue_button.${idx + 1}`
-                                }
-                              >
-                                {order.invoiceStatus ===
-                                InvoiceStatus.failed ? (
-                                  <RefreshCw
-                                    className="h-3.5 w-3.5"
-                                    aria-hidden="true"
-                                  />
-                                ) : (
-                                  <Receipt
-                                    className="h-3.5 w-3.5"
-                                    aria-hidden="true"
-                                  />
-                                )}
-                                {order.invoiceStatus === InvoiceStatus.failed
-                                  ? "Phát hành lại"
-                                  : "Phát hành"}
-                              </Button>
-                            )}
-                          {order.invoiceStatus === InvoiceStatus.invoiced ? (
+                          {canIssue && (
                             <Button
                               type="button"
-                              variant="ghost"
+                              size="sm"
+                              variant={isReissue ? "outline" : "default"}
+                              disabled={!!blocked || issueMutation.isPending}
+                              title={
+                                blocked ?? "Phát hành hoá đơn Bkav cho đơn này"
+                              }
+                              onClick={() => handleIssue([order.orderId])}
+                              data-ocid={
+                                isReissue
+                                  ? `accounting.reissue_button.${idx + 1}`
+                                  : `accounting.issue_button.${idx + 1}`
+                              }
+                            >
+                              {isReissue ? (
+                                <RefreshCw
+                                  className="h-3.5 w-3.5"
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <Receipt
+                                  className="h-3.5 w-3.5"
+                                  aria-hidden="true"
+                                />
+                              )}
+                              {isReissue ? "Phát hành lại" : "Phát hành"}
+                            </Button>
+                          )}
+                          {order.invoiceStatus === InvoiceStatus.invoiced && (
+                            <Button
+                              type="button"
+                              variant="outline"
                               size="sm"
                               disabled={openingPdfOrderId === order.orderId}
                               onClick={() => handleViewPdf(order.orderId)}
                               data-ocid={`accounting.view_pdf_button.${idx + 1}`}
-                              className="text-info hover:text-info"
                             >
                               {openingPdfOrderId === order.orderId ? (
                                 <Loader2
@@ -1210,7 +1310,7 @@ export function AccountingPage() {
                               )}
                               Xem PDF
                             </Button>
-                          ) : null}
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1221,45 +1321,6 @@ export function AccountingPage() {
           </div>
         )}
       </div>
-
-      {selectedIssuable.length > 0 && (
-        <div
-          className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit max-w-[calc(100%-2rem)] flex-wrap items-center gap-3 rounded-xl bg-foreground px-4 py-2.5 text-sm text-background shadow-elevated"
-          data-ocid="accounting.bulk_issue_bar"
-        >
-          <span>
-            Đã chọn <b>{selectedIssuable.length}</b> đơn ·{" "}
-            {formatVnd(selectedTotal)}
-          </span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="text-foreground"
-            onClick={() => setSelected(new Set())}
-            data-ocid="accounting.bulk_clear_button"
-          >
-            Bỏ chọn
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={issueMutation.isPending}
-            onClick={() => handleIssue(selectedIssuable.map((o) => o.orderId))}
-            data-ocid="accounting.bulk_issue_button"
-          >
-            {issueMutation.isPending ? (
-              <Loader2
-                className="h-3.5 w-3.5 animate-spin"
-                aria-hidden="true"
-              />
-            ) : (
-              <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
-            Phát hành hoá đơn ({selectedIssuable.length})
-          </Button>
-        </div>
-      )}
 
       {/* Tuỳ chọn nâng cao — thu gọn (dùng cho đơn KHÔNG còn trong danh
           sách lọc hiện tại, ít dùng hơn thao tác trực tiếp từ bảng). */}

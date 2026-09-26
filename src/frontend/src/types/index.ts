@@ -317,4 +317,6 @@ export interface VpsEnterpriseHistoryOrder {
   invoiceRequested?: boolean;
   // Bkav đã có hoá đơn (đơn "failed" do mất phản hồi) — không phát hành lại.
   hasBkavPdf?: boolean;
+  // Số hoá đơn Bkav — chỉ có khi invoiceStatus = invoiced.
+  invoiceId?: string;
 }
