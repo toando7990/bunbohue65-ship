@@ -32,6 +32,23 @@ const BASE_INVOICE = {
 };
 
 describe("buildReceiptBytes", () => {
+  it("prints the voucher discount and the VAT line (ESC/POS bytes)", () => {
+    const bytes = buildReceiptBytes({
+      orderId: "ORD-1",
+      invoice: {
+        ...BASE_INVOICE,
+        voucherCode: "VC20",
+        voucherDiscountAmount: 20000,
+        vatRate: 8,
+      },
+    });
+    const text = new TextDecoder("latin1").decode(bytes);
+    expect(text).toContain("(VC20)");
+    expect(text).toContain("-20.000");
+    expect(text).toContain("GTGT 8%");
+    expect(text).toContain("5.555");
+  });
+
   it("returns a non-empty Uint8Array for a fully-issued invoice", () => {
     const bytes = buildReceiptBytes({
       orderId: "ORD-1",

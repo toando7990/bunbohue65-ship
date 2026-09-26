@@ -58,6 +58,44 @@ describe("invoice-receipt", () => {
     expect(html).toContain("Bún bò");
   });
 
+  it("shows goods total, promotion and voucher discounts, and the VAT included (never 'Tổng tiền thuế 0đ')", () => {
+    const html = buildInvoiceReceiptHtml("ORD-1", {
+      ...BASE,
+      invoiced: false,
+      invoiceId: "",
+      items: [
+        { name: "Bát Xanh", price: 60000, quantity: 1, unitName: "tô" },
+        { name: "Quẩy", price: 5000, quantity: 4, unitName: "đĩa" },
+      ],
+      goodsAmount: 80000,
+      kmProgramName: "Giờ vàng",
+      kmDiscountAmount: 15000,
+      voucherCode: "VC10",
+      voucherDiscountAmount: 5000,
+      amount: 60000,
+      taxTotal: 4444,
+      vatRate: 8,
+    });
+    const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    expect(text).toContain("Tổng tiền hàng 80.000đ");
+    expect(text).toContain("Khuyến mãi (Giờ vàng) -15.000đ");
+    expect(text).toContain("Phiếu giảm giá (VC10) -5.000đ");
+    expect(text).toContain("TỔNG THANH TOÁN 60.000đ");
+    expect(text).toContain("Trong đó thuế GTGT 8% 4.444đ");
+    expect(text).not.toContain("Tổng tiền thuế");
+  });
+
+  it("omits discount lines when the order has none", () => {
+    const html = buildInvoiceReceiptHtml("ORD-1", {
+      ...BASE,
+      invoiced: false,
+      invoiceId: "",
+    });
+    expect(html).not.toContain("Khuyến mãi");
+    expect(html).not.toContain("Phiếu giảm giá");
+    expect(html).toContain("Trong đó thuế GTGT 8%");
+  });
+
   it("printInvoiceReceipt uses the receipt endpoint (does not require an issued invoice)", async () => {
     mockGetReceipt.mockResolvedValue({
       ...BASE,

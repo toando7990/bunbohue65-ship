@@ -139,6 +139,13 @@ export interface InvoiceResponse {
   amount?: number;
   goodsAmount?: number;
   taxTotal?: number;
+  // GET /receipt/:orderId: thuế suất GTGT (%) và khuyến mãi / phiếu giảm
+  // giá (ĐÃ GỒM VAT) — in trên phiếu thanh toán.
+  vatRate?: number;
+  kmProgramName?: string;
+  kmDiscountAmount?: number;
+  voucherCode?: string;
+  voucherDiscountAmount?: number;
   createdAt?: number;
   items?: Array<{
     name: string;

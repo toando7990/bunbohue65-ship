@@ -21,6 +21,7 @@
 // bước kết nối, an toàn khi tách riêng.
 
 import { COMPANY_INFO } from "@/lib/company-info";
+import { receiptSummary } from "@/lib/receipt-summary";
 import type { InvoiceResponse } from "@/types";
 import ReceiptPrinterEncoder from "@point-of-sale/receipt-printer-encoder";
 
@@ -194,7 +195,7 @@ export interface PrintReceiptInput {
 export function buildReceiptBytes(input: PrintReceiptInput): Uint8Array {
   const { orderId, invoice, columns = 48 } = input;
   const items = invoice.items ?? [];
-  const totalQty = items.reduce((sum, it) => sum + it.quantity, 0);
+  const summary = receiptSummary(invoice);
 
   // LƯU Ý QUAN TRỌNG VỀ TIẾNG VIỆT: bảng mã "xprinter" có sẵn trong thư
   // viện này KHÔNG chứa windows1258 (tiếng Việt) — dù phần cứng Xprinter
@@ -263,10 +264,7 @@ export function buildReceiptBytes(input: PrintReceiptInput): Uint8Array {
         { width: columns - 12, align: "left" },
         { width: 12, align: "right" },
       ],
-      [
-        ["Tổng SL món", String(totalQty)],
-        ["Tổng tiền thuế", formatVnd(invoice.taxTotal ?? 0)],
-      ],
+      summary.before,
     )
     .newline()
     .bold(true)
@@ -275,9 +273,16 @@ export function buildReceiptBytes(input: PrintReceiptInput): Uint8Array {
         { width: columns - 12, align: "left" },
         { width: 12, align: "right" },
       ],
-      [["TỔNG THANH TOÁN", formatVnd(invoice.amount ?? 0)]],
+      [summary.total],
     )
     .bold(false)
+    .table(
+      [
+        { width: columns - 12, align: "left" },
+        { width: 12, align: "right" },
+      ],
+      summary.after,
+    )
     .newline();
 
   // Chưa có hoá đơn (Kế toán phát hành sau) → in phiếu không kèm thông tin

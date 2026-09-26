@@ -18,6 +18,7 @@ import {
   printReceipt,
   reconnectPrinter,
 } from "@/lib/printer";
+import { receiptSummary } from "@/lib/receipt-summary";
 import { getReceipt } from "@/lib/vps-client";
 import type { InvoiceResponse } from "@/types";
 
@@ -46,7 +47,9 @@ export function buildInvoiceReceiptHtml(
   invoice: InvoiceResponse,
 ): string {
   const items = invoice.items ?? [];
-  const totalQty = items.reduce((sum, it) => sum + it.quantity, 0);
+  const summary = receiptSummary(invoice);
+  const tr = ([label, value]: [string, string], cls = "") =>
+    `<tr${cls ? ` class="${cls}"` : ""}><td>${esc(label)}</td><td class="r">${esc(value)}</td></tr>`;
   const rows = items
     .map(
       (it) =>
@@ -69,9 +72,9 @@ th { text-align: left; } hr { border: 0; border-top: 1px dashed #000; margin: 6p
 <div>Mã đơn: ${esc(orderId)}</div>
 <div>Ngày tạo: ${dateTime(invoice.createdAt ?? Date.now())}</div>
 <hr><table><tr><th>Tên món</th><th class="r">SL</th><th class="r">T.Tiền</th></tr>${rows}</table><hr>
-<table><tr><td>Tổng SL món</td><td class="r">${totalQty}</td></tr>
-<tr><td>Tổng tiền thuế</td><td class="r">${vnd(invoice.taxTotal ?? 0)}</td></tr>
-<tr class="total"><td>TỔNG THANH TOÁN</td><td class="r">${vnd(invoice.amount ?? 0)}</td></tr></table>
+<table>${summary.before.map((r) => tr(r)).join("")}
+${tr(summary.total, "total")}
+${summary.after.map((r) => tr(r)).join("")}</table>
 ${
   invoice.invoiceId
     ? `<p class="c">** Thông tin hoá đơn điện tử **</p>

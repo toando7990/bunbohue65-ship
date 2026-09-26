@@ -612,8 +612,30 @@ router.get('/receipt/:orderId', (req, res, next) => {
     const db = req.app.locals.db;
     const row = db.prepare('SELECT * FROM orders WHERE order_id = ?').get(req.params.orderId);
     if (!row) return res.status(404).json({ ok: false, error: 'order not found' });
-    const items = db.prepare('SELECT name, price, quantity, unit_name FROM order_items WHERE order_id = ?').all(row.order_id);
+    const items = db.prepare('SELECT name, price, quantity, unit_name, vat_rate FROM order_items WHERE order_id = ?').all(row.order_id);
     const invoiced = row.invoice_status === 'invoiced' && !!row.invoice_id;
+    // Tiền thuế GTGT in trên phiếu — tính ĐÚNG như khi lập hoá đơn Bkav
+    // (bkav.buildJsonPayload) để phiếu và hoá đơn điện tử khớp từng đồng.
+    // BUG THẬT đã sửa: trước in orders.tax_total (luôn 0 — giá thực đơn đã
+    // gồm thuế) → phiếu ghi "Tổng tiền thuế 0đ".
+    const vatRate = orderTaxRate(items, row.order_id);
+    let vatAmount = 0;
+    try {
+      const lines = bkav.buildJsonPayload(
+        {
+          orderId: row.order_id,
+          items: items.map((it) => ({ name: it.name, price: it.price, quantity: it.quantity, unitName: it.unit_name || '' })),
+          amount: row.amount,
+          kmDiscountAmount: row.km_discount_amount,
+          voucherDiscountAmount: row.voucher_discount_amount,
+          taxRate: vatRate,
+        },
+        {},
+      ).commandObject[0].listInvoiceDetailsWS;
+      vatAmount = lines.reduce((s2, l) => s2 + Number(l.taxAmount || 0), 0);
+    } catch (e) {
+      console.warn('[receipt] không tính được tiền thuế:', row.order_id, e.message);
+    }
     res.json({
       ok: true,
       invoiced,
@@ -625,7 +647,14 @@ router.get('/receipt/:orderId', (req, res, next) => {
       cusName: row.cus_name,
       amount: row.amount,
       goodsAmount: row.goods_amount,
-      taxTotal: row.tax_total,
+      taxTotal: vatAmount,
+      vatRate,
+      // Khuyến mãi (theo khung giờ) + phiếu giảm giá — ĐÃ GỒM VAT, in trên
+      // phiếu để khách thấy vì sao tổng thanh toán nhỏ hơn tổng tiền món.
+      kmProgramName: row.km_program_name || '',
+      kmDiscountAmount: Number(row.km_discount_amount || 0),
+      voucherCode: row.voucher_code || '',
+      voucherDiscountAmount: Number(row.voucher_discount_amount || 0),
       createdAt: row.created_at,
       items: items.map((it) => ({ name: it.name, price: it.price, quantity: it.quantity, unitName: it.unit_name })),
     });
