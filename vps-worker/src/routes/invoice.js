@@ -254,6 +254,13 @@ function startInvoiceCron(db) {
             }
           }
 
+          // Tra cứu lúc phát hành lỗi/không thấy → dùng tên công ty Kế toán
+          // đã tra cứu + lưu khi thêm MST (orders.cus_tax_name), trước khi
+          // phải dùng tên khách tự gõ.
+          if (hasTaxCode && !buyerName && row.cus_tax_name) {
+            buyerName = row.cus_tax_name;
+          }
+
           const inv = await bkav.createInvoice(
             {
               orderId: row.order_id, cusName: row.cus_name, cusTaxCode: row.cus_tax_code,
@@ -283,8 +290,8 @@ function startInvoiceCron(db) {
           // bao giờ chạy tới). Ghi log raw response TRƯỚC, LUÔN LUÔN — dù
           // thành công hay thất bại — để không bao giờ mất dấu vết nữa.
           const invoiceNo = inv.invoiceNo;
-          db.prepare(`INSERT INTO bkav_logs (order_id, invoice_id, command, response_xml, created_at) VALUES (?, ?, 'CreateInvoice', ?, ?)`)
-            .run(row.order_id, invoiceNo || '', JSON.stringify(inv.raw), Date.now());
+          db.prepare(`INSERT INTO bkav_logs (order_id, invoice_id, command, request_xml, response_xml, created_at) VALUES (?, ?, 'CreateInvoice', ?, ?, ?)`)
+            .run(row.order_id, invoiceNo || '', JSON.stringify(inv.request || null).slice(0, 20000), JSON.stringify(inv.raw), Date.now());
 
           if (invoiceNo) {
             // Lấy PDF URL qua CmdType 816 ngay sau khi tạo invoice thành công.

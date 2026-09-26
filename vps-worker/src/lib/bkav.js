@@ -410,10 +410,17 @@ function buildJsonPayload(invoice, config) {
       invoice: {
         invoiceTypeID: 1,
         invoiceDate: dateStr,
-        buyerName: isRetail ? 'Bán cho người tiêu dùng' : buyerName,
-        buyerTaxCode: isRetail ? '' : buyerTaxCode,
-        buyerUnitName: isRetail ? '' : (invoice.buyerUnitName || ''),
-        buyerAddress: isRetail ? '' : buyerAddress,
+        // Hoá đơn CÔNG TY (có MST): tên công ty nằm ở BuyerUnitName ("Đơn vị
+        // mua hàng"), BuyerName (tên người mua) để trống — đúng mẫu Bkav
+        // (FAQ_WebServices_Bkav, lệnh 100–127: BuyerName "", BuyerTaxCode,
+        // BuyerUnitName "CONG TY ABC"). BUG THẬT đã sửa: trước đây tên công
+        // ty bị đặt vào BuyerName và BuyerUnitName rỗng — hoá đơn có MST mà
+        // không có đơn vị mua hàng. Giới hạn độ dài theo TT78: BuyerName 100,
+        // BuyerUnitName/BuyerAddress 400, BuyerTaxCode 14.
+        buyerName: isRetail ? 'Bán cho người tiêu dùng' : String(invoice.buyerContactName || '').slice(0, 100),
+        buyerTaxCode: isRetail ? '' : String(buyerTaxCode).trim().slice(0, 14),
+        buyerUnitName: isRetail ? '' : String(invoice.buyerUnitName || buyerName).slice(0, 400),
+        buyerAddress: isRetail ? '' : String(buyerAddress).slice(0, 400),
         buyerBankAccount: '',
         payMethodID: 3,
         receiveTypeID: 1,
@@ -620,6 +627,10 @@ async function createInvoice(invoice, config) {
   const payload = buildJsonPayload(invoice, config);
   const result = await callBkavViaProxy(payload, config);
   return {
+    // Nội dung ĐÃ GỬI (chưa mã hoá, đúng tên trường Bkav nhận) — cron lưu
+    // vào bkav_logs.request_xml để đối chiếu khi Bkav báo lỗi nội bộ
+    // "Có lỗi xảy ra... [#mã sự cố]" (không nói trường nào sai).
+    request: toPascalKeys(payload),
     success: result.success,
     invoiceNo: result.invoiceNo,
     invoiceDate: result.invoiceDate,
