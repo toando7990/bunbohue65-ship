@@ -93,12 +93,18 @@ function splitPartnerToken() {
 // InvoiceTypeID, ListInvoiceDetailsWS, Qty...) — đúng như mẫu đã chạy thật
 // với Bkav. Trước gửi viết thường (cmdType, invoice, qty...) → nghi ngờ Bkav
 // (.NET) đọc ra giá trị rỗng → lỗi nội bộ. Chỉ đổi TÊN trường, không đổi giá trị.
+// Ngoại lệ: tên trường mẫu Bkav viết thường chữ đầu — giữ ĐÚNG như mẫu
+// ("isBTH", FAQ_WebServices_Bkav mục "Cấu trúc các trường thông tin chuẩn").
+// Trước gửi "IsBTH" — Bkav đọc phân biệt hoa/thường sẽ bỏ qua trường này.
+const KEEP_KEY_CASE = new Set(['isBTH']);
+
 function toPascalKeys(v) {
   if (Array.isArray(v)) return v.map(toPascalKeys);
   if (v && typeof v === 'object') {
     const out = {};
     for (const [k, val] of Object.entries(v)) {
-      out[k.charAt(0).toUpperCase() + k.slice(1)] = toPascalKeys(val);
+      const key = KEEP_KEY_CASE.has(k) ? k : k.charAt(0).toUpperCase() + k.slice(1);
+      out[key] = toPascalKeys(val);
     }
     return out;
   }
@@ -380,7 +386,7 @@ function parseProxyResponse(bodyText) {
 //                             empty buyerTaxCode/buyerUnitName/buyerAddress
 //   - isRetailInvoice=false → dùng buyerName/buyerTaxCode/buyerAddress
 //                             từ invoice (hoặc từ vatInfo/company fields)
-//   - taxRateID: 0%→1, 5%→2, 10%→3, 8%→4 (default 3 = 10%)
+//   - taxRateID theo bảng Bkav: 0%→1, 5%→2, 10%→3, 8%→9 (default 3 = 10%)
 //   - invoiceSerial: prod dùng config.prodInvoiceSerial, demo '' (Bkav auto-assign)
 //   - partnerInvoiceStringID = String(orderId)
 //
@@ -405,7 +411,12 @@ function buildJsonPayload(invoice, config) {
     .replace(/\.\d{3}Z$/, '')}+07:00`;
   const isRetail = invoice.isRetailInvoice !== false; // default true
 
-  const taxRateMap = { 0: 1, 5: 2, 10: 3, 8: 4 };
+  // Bảng "Danh sách TaxRateID và TaxRate" (FAQ_WebServices_Bkav): 1=0%,
+  // 2=5%, 3=10%, 4=KHÔNG CHỊU THUẾ, 5=không kê khai, 6=thuế nhà thầu,
+  // 7=5%x70%, 8=10%x70%, 9=8%. BUG THẬT NGHIÊM TRỌNG đã sửa: trước gửi 8% →
+  // 4 ("Không chịu thuế") kèm TaxRate 8 và tiền thuế > 0 — dữ liệu tự mâu
+  // thuẫn, nghi là nguyên nhân lỗi nội bộ Bkav "Có lỗi xảy ra... [#mã]".
+  const taxRateMap = { 0: 1, 5: 2, 10: 3, 8: 9 };
   const taxRateID = taxRateMap[invoice.taxRate] ?? 3; // default 10% → 3
 
   // Lệnh tạo hoá đơn (xem tài liệu Bkav): 100 = Bkav chọn mẫu số + ký hiệu,
