@@ -544,10 +544,12 @@ function buildInvoiceLines(invoice, taxRateID) {
   //    cho đơn không có khuyến mãi).
   //  - Tiền thuế = tiền khách trả − T (phần còn lại) → T + thuế khớp tuyệt đối.
   // Không có số tiền khách trả (gọi cũ) → giữ công thức cũ.
-  const paid = Number(invoice.amount);
+  // paid = 0 (phiếu giảm giá 100%) cũng đi nhánh này — BUG THẬT đã sửa: trước
+  // đi nhánh cũ, chiết khấu làm tròn thiếu 1đ → hoá đơn 1đ dù khách trả 0đ.
+  const paid = invoice.amount == null ? Number.NaN : Number(invoice.amount);
   let totalDiscountPreTax;
   let totalTax;
-  if (Number.isFinite(paid) && paid > 0) {
+  if (Number.isFinite(paid) && paid >= 0) {
     const targetTaxable = Math.round(paid / vatDivisor);
     totalDiscountPreTax =
       totalDiscountInclusiveVat > 0
