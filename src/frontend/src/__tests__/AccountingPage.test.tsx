@@ -33,6 +33,8 @@ const mockGetEnterpriseHistory = vi.fn();
 const mockGenerateCode = vi.fn();
 const mockActivateDevice = vi.fn();
 const mockGetInvoice = vi.fn();
+const mockGetAuto = vi.fn();
+const mockSetAuto = vi.fn();
 
 vi.mock("@/hooks/useQueries", () => ({
   useRestaurants: () => ({
@@ -54,6 +56,8 @@ vi.mock("@/lib/vps-client", () => ({
   enterpriseIssueInvoices: (...args: unknown[]) => mockIssue(...args),
   enterpriseLookupTaxCode: (...args: unknown[]) => mockLookupTax(...args),
   enterpriseSetOrderTaxCode: (...args: unknown[]) => mockSetTax(...args),
+  enterpriseGetInvoiceAuto: (...args: unknown[]) => mockGetAuto(...args),
+  enterpriseSetInvoiceAuto: (...args: unknown[]) => mockSetAuto(...args),
   enterpriseDeleteOrder: (deviceId: string, orderId: string) =>
     mockDeleteOrder(deviceId, orderId),
   enterpriseDeleteCancelledOrders: (deviceId: string, dryRun: boolean) =>
@@ -90,6 +94,65 @@ describe("AccountingPage enterprise accounting", () => {
       count: 0,
       total: 0,
     });
+    mockGetAuto.mockResolvedValue({
+      ok: true,
+      enabled: false,
+      since: null,
+      updatedAt: null,
+      updatedBy: "",
+    });
+  });
+
+  it("shows the auto-issue switch (off) and turns it on after confirmation", async () => {
+    setActivation();
+    mockSetAuto.mockResolvedValue({
+      ok: true,
+      enabled: true,
+      since: Date.now(),
+      updatedAt: Date.now(),
+      updatedBy: "dev-acc",
+    });
+    renderPage();
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("accounting.invoice_auto.state"),
+      ).toHaveTextContent("Đang tắt"),
+    );
+    expect(mockGetAuto).toHaveBeenCalledWith("dev-acc");
+    fireEvent.click(screen.getByTestId("accounting.invoice_auto.switch"));
+    expect(
+      await screen.findByText("Bật phát hành tự động?"),
+    ).toBeInTheDocument();
+    expect(mockSetAuto).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByTestId("accounting.invoice_auto.confirm_button"),
+    );
+    await waitFor(() =>
+      expect(mockSetAuto).toHaveBeenCalledWith("dev-acc", true),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("accounting.invoice_auto.state"),
+      ).toHaveTextContent("Đang bật"),
+    );
+  });
+
+  it("cancelling the confirmation leaves the switch unchanged", async () => {
+    setActivation();
+    renderPage();
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("accounting.invoice_auto.state"),
+      ).toHaveTextContent("Đang tắt"),
+    );
+    fireEvent.click(screen.getByTestId("accounting.invoice_auto.switch"));
+    fireEvent.click(
+      await screen.findByTestId("accounting.invoice_auto.cancel_button"),
+    );
+    expect(mockSetAuto).not.toHaveBeenCalled();
+    expect(
+      screen.getByTestId("accounting.invoice_auto.state"),
+    ).toHaveTextContent("Đang tắt");
   });
 
   afterEach(() => {
@@ -268,6 +331,12 @@ describe("AccountingPage enterprise accounting", () => {
     );
     expect(screen.getByTestId("accounting.issue_banner")).toHaveTextContent(
       "1 đơn đã thanh toán chưa phát hành hoá đơn",
+    );
+    // Công tắc TẮT → không còn lưới an toàn 22:00.
+    await waitFor(() =>
+      expect(screen.getByTestId("accounting.issue_banner")).toHaveTextContent(
+        "phát hành tự động đang tắt",
+      ),
     );
     expect(
       screen.queryByTestId("accounting.invoice_button.1"),

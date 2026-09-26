@@ -194,6 +194,15 @@ CREATE TABLE IF NOT EXISTS bkav_logs (
   created_at   INTEGER NOT NULL
 );
 
+-- Cài đặt vận hành dạng khoá/giá trị (VD invoice_auto: công tắc phát hành
+-- hoá đơn Bkav tự động trên trang Kế toán). value là JSON.
+CREATE TABLE IF NOT EXISTS app_settings (
+  key         TEXT PRIMARY KEY,
+  value       TEXT NOT NULL,
+  updated_at  INTEGER NOT NULL,
+  updated_by  TEXT NOT NULL DEFAULT ''
+);
+
 CREATE INDEX IF NOT EXISTS idx_orders_restaurant_id ON orders(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_orders_booking_status ON orders(booking_status);
 CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);

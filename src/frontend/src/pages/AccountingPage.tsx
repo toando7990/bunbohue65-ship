@@ -9,9 +9,10 @@
 //  2. Xoá đơn đã huỷ, chưa từng thanh toán, từ hôm trước (VPS — thay cho
 //     "Dọn dẹp" = huỷ đơn thủ công trước đây, đã bỏ theo yêu cầu).
 //  3. PHÁT HÀNH hoá đơn Bkav — Kế toán tự bấm "Phát hành" (từng đơn hoặc
-//     chọn nhiều đơn), KHÔNG còn tự động phát hành khi đơn thanh toán. Lưới
-//     an toàn 22:00 T2–T6 tự phát hành đơn tới hạn chót (VPS routes/
-//     invoice.js). Thêm MST khách (tuỳ chọn) → hoá đơn công ty.
+//     chọn nhiều đơn). Công tắc "Phát hành tự động" (InvoiceAutoToggle):
+//     BẬT → đơn tạo sau lúc bật tự phát hành khi thanh toán + lưới an toàn
+//     22:00 T2–T6; TẮT → không tự phát hành gì (VPS lib/invoice-settings.js).
+//     Thêm MST khách (tuỳ chọn) → hoá đơn công ty.
 // Tất cả gọi qua hook/API deviceId-scoped với deviceId của thiết bị kế toán
 // (lưu trong localStorage theo mẫu bbh_*_activation). Admin gọi với deviceId
 // rỗng vẫn hợp lệ (isAdmin short-circuits ở canister VÀ ở VPS route mới,
@@ -21,6 +22,10 @@ import { InvoiceStatus, PaymentStatus } from "@/backend";
 import { DeviceRole } from "@/backend";
 import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
 import { getDeviceId } from "@/components/EnterpriseActivationForm";
+import {
+  InvoiceAutoToggle,
+  useInvoiceAuto,
+} from "@/components/InvoiceAutoToggle";
 import { TaxCodeCell } from "@/components/TaxCodeCell";
 import {
   AlertDialog,
@@ -391,6 +396,8 @@ export function AccountingPage() {
   // Đơn phát hành được trong danh sách đang lọc + đơn đang chọn (chỉ giữ
   // đơn còn phát hành được — danh sách tự làm mới mỗi 5 giây).
   const issuable = filteredResults.filter((o) => !issueBlockedReason(o));
+  // Công tắc phát hành tự động: TẮT thì không còn lưới an toàn 22:00.
+  const invoiceAutoOn = useInvoiceAuto(deviceId).data?.enabled === true;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const selectedIssuable = issuable.filter((o) => selected.has(o.orderId));
   const selectedTotal = selectedIssuable.reduce((s, o) => s + o.amount, 0);
@@ -839,6 +846,8 @@ export function AccountingPage() {
           </div>
         </div>
 
+        {deviceId && <InvoiceAutoToggle deviceId={deviceId} />}
+
         {awaitingIssue.length > 0 && (
           <div
             className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm text-warning"
@@ -850,8 +859,10 @@ export function AccountingPage() {
                 {awaitingIssue.length} đơn đã thanh toán chưa phát hành hoá đơn.
               </b>{" "}
               Hoá đơn phải phát hành chậm nhất{" "}
-              <b>hết ngày làm việc tiếp theo</b> sau ngày bán — đơn còn sót sẽ
-              tự phát hành lúc 22:00 ngày hạn chót.
+              <b>hết ngày làm việc tiếp theo</b> sau ngày bán
+              {invoiceAutoOn
+                ? " — đơn còn sót sẽ tự phát hành lúc 22:00 ngày hạn chót."
+                : " — phát hành tự động đang tắt, đơn không được tự phát hành."}
             </span>
             <Button
               type="button"

@@ -22,6 +22,7 @@ const express = require('express');
 const canister = require('../lib/canister');
 const bkav = require('../lib/bkav');
 const { rateLimit } = require('../middleware/rate-limit');
+const { getInvoiceAuto, setInvoiceAuto } = require('../lib/invoice-settings');
 
 const router = express.Router();
 router.use('/orders/enterprise', rateLimit({ windowMs: 60000, max: 30, message: 'Too many requests' }));
@@ -316,6 +317,38 @@ router.post('/orders/enterprise/invoice/issue', async (req, res, next) => {
       queued.push(id);
     }
     res.json({ ok: true, queued, rejected });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /orders/enterprise/invoice/auto-setting { deviceId } — đọc công tắc
+// "Phát hành hoá đơn Bkav tự động".
+// POST /orders/enterprise/invoice/auto { deviceId, enabled } — bật/tắt.
+// Chi tiết hành vi: lib/invoice-settings.js.
+router.post('/orders/enterprise/invoice/auto-setting', async (req, res, next) => {
+  try {
+    const g = await guardDevice(req, res);
+    if (!g) return;
+    res.json({ ok: true, ...getInvoiceAuto(g.db) });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post('/orders/enterprise/invoice/auto', async (req, res, next) => {
+  try {
+    const g = await guardDevice(req, res);
+    if (!g) return;
+    const enabled = (req.body || {}).enabled;
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ ok: false, error: 'Thiếu enabled (true/false).' });
+    }
+    const s = setInvoiceAuto(g.db, enabled, g.deviceId, Date.now());
+    g.db.prepare(`INSERT INTO bkav_logs (order_id, command, error, created_at) VALUES ('', 'AutoSetting', ?, ?)`)
+      .run(`${enabled ? 'BẬT' : 'TẮT'} phát hành tự động (thiết bị ${g.deviceId})`, Date.now());
+    console.log(`[invoice/auto] ${enabled ? 'BẬT' : 'TẮT'} phát hành tự động — thiết bị ${g.deviceId}`);
+    res.json({ ok: true, ...s });
   } catch (e) {
     next(e);
   }

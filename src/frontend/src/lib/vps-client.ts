@@ -700,6 +700,38 @@ export async function enterpriseIssueInvoices(
   });
 }
 
+// Công tắc "Phát hành hoá đơn Bkav tự động" (trang Kế toán). BẬT: đơn tạo
+// sau lúc bật được phát hành ngay khi thanh toán. TẮT: không tự gửi Bkav,
+// kể cả lưới an toàn 22:00. since/updatedAt: mili-giây.
+export interface InvoiceAutoSetting {
+  ok: boolean;
+  enabled: boolean;
+  since: number | null;
+  updatedAt: number | null;
+  updatedBy: string;
+}
+
+export async function enterpriseGetInvoiceAuto(
+  deviceId: string,
+): Promise<InvoiceAutoSetting> {
+  return vpsFetch({
+    method: "POST",
+    path: "/orders/enterprise/invoice/auto-setting",
+    body: { deviceId },
+  });
+}
+
+export async function enterpriseSetInvoiceAuto(
+  deviceId: string,
+  enabled: boolean,
+): Promise<InvoiceAutoSetting> {
+  return vpsFetch({
+    method: "POST",
+    path: "/orders/enterprise/invoice/auto",
+    body: { deviceId, enabled },
+  });
+}
+
 // Tra cứu MST (Bkav) — tên + địa chỉ đã đăng ký với cơ quan thuế.
 export async function enterpriseLookupTaxCode(
   deviceId: string,

@@ -21,6 +21,7 @@ const bkav = require('../lib/bkav');
 const canister = require('../lib/canister');
 const nodemailer = require('nodemailer');
 const shutdown = require('../lib/shutdown');
+const { getInvoiceAuto, requestAutoInvoices } = require('../lib/invoice-settings');
 
 const router = express.Router();
 
@@ -184,6 +185,13 @@ function startInvoiceCron(db) {
       // (requestDueInvoices bên dưới). Khung thời gian: từ đầu ngày làm
       // việc trước — hạn chót phát hành theo NĐ 70/2025.
       const windowStartMs = startOfPreviousWorkingDayUtc7(Date.now());
+      // Công tắc "Phát hành tự động" (trang Kế toán) đang BẬT → đánh dấu
+      // đơn đã thanh toán tạo từ lúc bật, phát hành ngay trong nhịp này.
+      try {
+        requestAutoInvoices(db, Date.now());
+      } catch (e) {
+        console.error('[invoice/cron] tự đánh dấu (phát hành tự động) lỗi:', e.message);
+      }
       const rows = db.prepare(
         `SELECT * FROM orders WHERE payment_status = 'paid' AND invoice_status = 'none' AND booking_status <> 'cancelled' AND invoice_requested = 1 AND created_at >= ? ORDER BY created_at ASC`,
       ).all(windowStartMs);
@@ -583,6 +591,9 @@ function startInvoiceSafetyNetCron(db) {
     () => {
       if (shutdown.shuttingDown) return;
       try {
+        // Công tắc "Phát hành tự động" TẮT → KHÔNG tự phát hành gì, kể cả
+        // lưới an toàn (người dùng chọn "Tắt luôn").
+        if (!getInvoiceAuto(db).enabled) return;
         requestDueInvoices(db, Date.now());
       } catch (e) {
         console.error('[invoice/safety-net] lỗi:', e.message);
