@@ -163,7 +163,8 @@ let invoiceCronRunning = false;
 function orderTaxRate(items, orderId) {
   const counts = new Map();
   for (const it of items) {
-    const r = Number.isFinite(Number(it.vat_rate)) ? Number(it.vat_rate) : 8;
+    // vat_rate NULL/rỗng → 8% (trước Number(null) = 0 → nhầm thành 0%).
+    const r = it.vat_rate == null || it.vat_rate === '' || !Number.isFinite(Number(it.vat_rate)) ? 8 : Number(it.vat_rate);
     counts.set(r, (counts.get(r) || 0) + 1);
   }
   if (counts.size === 0) return 8;

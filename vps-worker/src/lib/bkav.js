@@ -393,8 +393,49 @@ function parseProxyResponse(bodyText) {
 // Backward compat: nếu caller truyền field cũ (cusName, cusTaxCode,
 // cusAddress), map sang field mới tương ứng.
 // ------------------------------------------------------------
+// Bkav (.NET) KHÔNG nhận null cho trường số — lỗi thật Bkav trả về:
+// "Error converting value {null} to type 'System.Double'. Path
+// '[0].ListInvoiceDetailsWS[0].DiscountAmount'". JSON.stringify biến NaN /
+// Infinity thành null, nên PHẢI chặn mọi số không hợp lệ trước khi gửi.
+// Trả danh sách đường dẫn có null/NaN (rỗng = sạch).
+function findInvalidNumbers(v, path = '') {
+  if (v === null) return [path || '(gốc)'];
+  if (typeof v === 'number') return Number.isFinite(v) ? [] : [path];
+  if (Array.isArray(v)) return v.flatMap((x, i) => findInvalidNumbers(x, `${path}[${i}]`));
+  if (v && typeof v === 'object') {
+    return Object.entries(v).flatMap(([k, x]) => findInvalidNumbers(x, path ? `${path}.${k}` : k));
+  }
+  return [];
+}
+
 function buildJsonPayload(invoice, config) {
   config = config || {};
+  // Thuế suất chỉ nhận 0/5/8/10 — thiếu/sai → 8% (mức áp dụng cho nhà hàng).
+  // BUG THẬT đã sửa: thiếu taxRate → mọi Price/Amount/TaxAmount thành null
+  // (NaN), và TaxRateID mặc định 3 (10%) lệch với thuế thực tế.
+  const rawRate = Number(invoice.taxRate);
+  invoice = { ...invoice, taxRate: [0, 5, 8, 10].includes(rawRate) ? rawRate : 8 };
+  // Giá / số lượng từng món phải là số hợp lệ — sai thì dừng với lời nhắn rõ
+  // (hiện ở trang Kế toán), KHÔNG gửi Bkav dữ liệu hỏng.
+  for (const it of invoice.items || []) {
+    const price = Number(it.price);
+    const qty = Number(it.quantity);
+    if (it.price == null || !Number.isFinite(price) || price < 0) {
+      throw new Error(`Món "${it.name}" có đơn giá không hợp lệ (${it.price}) — không phát hành được hoá đơn.`);
+    }
+    if (it.quantity == null || !Number.isFinite(qty) || qty <= 0) {
+      throw new Error(`Món "${it.name}" có số lượng không hợp lệ (${it.quantity}) — không phát hành được hoá đơn.`);
+    }
+  }
+  const payload = buildJsonPayloadInner(invoice, config);
+  const bad = findInvalidNumbers(payload);
+  if (bad.length > 0) {
+    throw new Error(`Dữ liệu hoá đơn có trường số rỗng/không hợp lệ: ${bad.slice(0, 5).join(', ')} — không gửi Bkav.`);
+  }
+  return payload;
+}
+
+function buildJsonPayloadInner(invoice, config) {
 
   const buyerName = invoice.buyerName || invoice.cusName || '';
   const buyerTaxCode = invoice.buyerTaxCode || invoice.cusTaxCode || '';
@@ -417,7 +458,7 @@ function buildJsonPayload(invoice, config) {
   // 4 ("Không chịu thuế") kèm TaxRate 8 và tiền thuế > 0 — dữ liệu tự mâu
   // thuẫn, nghi là nguyên nhân lỗi nội bộ Bkav "Có lỗi xảy ra... [#mã]".
   const taxRateMap = { 0: 1, 5: 2, 10: 3, 8: 9 };
-  const taxRateID = taxRateMap[invoice.taxRate] ?? 3; // default 10% → 3
+  const taxRateID = taxRateMap[invoice.taxRate]; // taxRate đã chuẩn hoá ở buildJsonPayload
 
   // Lệnh tạo hoá đơn (xem tài liệu Bkav): 100 = Bkav chọn mẫu số + ký hiệu,
   // KHÔNG cấp số (nháp); 101 = Bkav chọn mẫu số + ký hiệu VÀ cấp số (chờ
@@ -537,14 +578,15 @@ function buildInvoiceLines(invoice, taxRateID) {
   // Đơn giá TRƯỚC THUẾ làm tròn từng đơn giá (khớp Bkav), thành tiền = đơn
   // giá × số lượng.
   const roundedLines = items.map((it) => {
-    const roundedUnitPrice = Math.round(it.price / vatDivisor);
-    return { it, roundedUnitPrice, preTaxAmount: roundedUnitPrice * it.quantity };
+    const quantity = Number(it.quantity);
+    const roundedUnitPrice = Math.round(Number(it.price) / vatDivisor);
+    return { it: { ...it, quantity }, roundedUnitPrice, preTaxAmount: roundedUnitPrice * quantity };
   });
   const goodsAmountPreTax = roundedLines.reduce((s, l) => s + l.preTaxAmount, 0);
 
   // Tổng chiết khấu (KM Hệ 1 + phiếu giảm giá) — ĐÃ GỒM VAT.
   const totalDiscountInclusiveVat =
-    Number(invoice.kmDiscountAmount || 0) + Number(invoice.voucherDiscountAmount || 0);
+    (Number(invoice.kmDiscountAmount) || 0) + (Number(invoice.voucherDiscountAmount) || 0);
 
   // TỔNG HOÁ ĐƠN = ĐÚNG SỐ TIỀN KHÁCH ĐÃ TRẢ (theo yêu cầu). Trước đây tính
   // ngược giá chưa thuế rồi làm tròn từng bước → tổng lệch 1–3đ so với tiền
