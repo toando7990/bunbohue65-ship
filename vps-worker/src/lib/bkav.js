@@ -408,6 +408,11 @@ function findInvalidNumbers(v, path = '') {
   return [];
 }
 
+function validEmail(v) {
+  const e = String(v || '').trim();
+  return e.length <= 550 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : '';
+}
+
 function buildJsonPayload(invoice, config) {
   config = config || {};
   // Thuế suất chỉ nhận 0/5/8/10 — thiếu/sai → 8% (mức áp dụng cho nhà hàng).
@@ -489,10 +494,13 @@ function buildJsonPayloadInner(invoice, config) {
         buyerBankAccount: '',
         payMethodID: 3,
         receiveTypeID: 1,
-        receiverEmail: invoice.receiverEmail || '',
-        receiverMobile: invoice.receiverMobile || '',
-        receiverAddress: invoice.receiverAddress || '',
-        receiverName: invoice.receiverName || '',
+        // Giới hạn độ dài theo bảng "Kiểu dữ liệu các trường thông tin" (lấy
+        // mức nhỏ hơn giữa hệ thống Bkav và TT78). Email quá dài/sai dạng →
+        // bỏ trống (cắt ngắn sẽ thành email sai).
+        receiverEmail: validEmail(invoice.receiverEmail),
+        receiverMobile: String(invoice.receiverMobile || '').slice(0, 20),
+        receiverAddress: String(invoice.receiverAddress || '').slice(0, 550),
+        receiverName: String(invoice.receiverName || '').slice(0, 100),
         note: '',
         billCode: '',
         currencyID: 'VND',
@@ -639,8 +647,9 @@ function buildInvoiceLines(invoice, taxRateID) {
     taxSoFar += lineTax;
     return {
       itemTypeID: 0,
-      itemName: it.name,
-      unitName: it.unitName || '',
+      // ItemName tối đa 500 (TT78), UnitName tối đa 20 ký tự.
+      itemName: String(it.name || '').slice(0, 500),
+      unitName: String(it.unitName || '').slice(0, 20),
       qty: it.quantity,
       price: roundedUnitPrice,
       amount: preTaxAmount,
