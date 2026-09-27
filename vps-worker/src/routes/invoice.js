@@ -276,6 +276,8 @@ function startInvoiceCron(db) {
               cusAddress: row.cus_address, items, amount: row.amount,
               goodsAmount: row.goods_amount, taxTotal: row.tax_total,
               receiverEmail: row.receiver_email,
+              // Hình thức thanh toán thật → PayMethodID (1 TM / 2 CK).
+              paymentMethod: row.payment_method,
               isRetailInvoice: !hasTaxCode,
               // Ghi đè bằng dữ liệu tra cứu MST nếu có — undefined thì
               // buildJsonPayload() tự fallback về cusName/cusAddress.

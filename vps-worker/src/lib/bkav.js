@@ -408,6 +408,15 @@ function findInvalidNumbers(v, path = '') {
   return [];
 }
 
+// orders.payment_method: 'cash' (quầy / tài xế xác nhận tiền mặt),
+// 'transfer' (QR Tingee / ảnh chuyển khoản). Khác → 3 (TM/CK).
+function payMethodIdFor(method) {
+  const m = String(method || '').toLowerCase();
+  if (m === 'cash') return 1;
+  if (m === 'transfer') return 2;
+  return 3;
+}
+
 function validEmail(v) {
   const e = String(v || '').trim();
   return e.length <= 550 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : '';
@@ -492,7 +501,10 @@ function buildJsonPayloadInner(invoice, config) {
         buyerUnitName: isRetail ? '' : String(invoice.buyerUnitName || buyerName).slice(0, 400),
         buyerAddress: isRetail ? '' : String(buyerAddress).slice(0, 400),
         buyerBankAccount: '',
-        payMethodID: 3,
+        // Hình thức thanh toán THẬT của đơn (bảng "Danh sách hình thức thanh
+        // toán" Bkav): 1 = Tiền mặt, 2 = Chuyển khoản, 3 = TM/CK (chưa rõ).
+        // BUG THẬT đã sửa: trước luôn gửi 3 cho mọi đơn.
+        payMethodID: payMethodIdFor(invoice.paymentMethod),
         receiveTypeID: 1,
         // Giới hạn độ dài theo bảng "Kiểu dữ liệu các trường thông tin" (lấy
         // mức nhỏ hơn giữa hệ thống Bkav và TT78). Email quá dài/sai dạng →
@@ -794,6 +806,7 @@ module.exports = {
   getInvoicePdf816,
   lookupTaxCode,
   buildJsonPayload,
+  payMethodIdFor,
   callBkavViaProxy,
   parseProxyResponse,
 };
