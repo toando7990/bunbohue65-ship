@@ -341,7 +341,11 @@ function parseProxyResponse(bodyText) {
   let maCQT = '';
   let maTraCuu = '';
   let invoiceGUID = '';
+  let invoiceForm = '';
+  let invoiceSerial = '';
   if (success && first) {
+    invoiceForm = String(first.InvoiceForm ?? '');
+    invoiceSerial = String(first.InvoiceSerial ?? '');
     // GUID hoá đơn trên Bkav — cần để tra lại số hoá đơn (lệnh 800) khi
     // Bkav tạo NHÁP (lệnh 100/110 luôn trả InvoiceNo 0).
     invoiceGUID = String(first.InvoiceGUID ?? '');
@@ -372,6 +376,8 @@ function parseProxyResponse(bodyText) {
     maCQT,
     maTraCuu,
     invoiceGUID,
+    invoiceForm,
+    invoiceSerial,
     error: errorText,
     errorCode: (itemFailed ? first.Status : json.Code ?? json.Status) ?? '',
     raw: json,
@@ -746,6 +752,8 @@ async function createInvoice(invoice, config) {
     maCQT: result.maCQT,
     maTraCuu: result.maTraCuu,
     invoiceGUID: result.invoiceGUID,
+    invoiceForm: result.invoiceForm,
+    invoiceSerial: result.invoiceSerial,
     cmdType: payload.cmdType,
     error: result.error,
     errorCode: result.errorCode,
@@ -798,7 +806,109 @@ async function getInvoicePdf816(orderId, config) {
   return { pdf_url: `${base}/${path}` };
 }
 
+// ------------------------------------------------------------
+// getInvoiceInfo800 — lấy thông tin hoá đơn (mẫu số, ký hiệu, số, ngày,
+// GUID) theo PartnerInvoiceStringID hoặc InvoiceGUID (CmdType 800). Dùng
+// để dựng OriginalInvoiceIdentify khi thay thế / điều chỉnh hoá đơn phát
+// hành trước khi hệ thống lưu mẫu số + ký hiệu.
+// ------------------------------------------------------------
+async function getInvoiceInfo800(identifier, config) {
+  const result = await callBkavViaProxy({ cmdType: 800, commandObject: String(identifier) }, config);
+  if (!result.success) {
+    throw new Error(result.error || 'Bkav không trả thông tin hoá đơn (lệnh 800).');
+  }
+  let obj = result.raw?.Object;
+  try {
+    obj = typeof obj === 'string' ? JSON.parse(obj) : obj;
+  } catch {
+    obj = null;
+  }
+  const inv = (Array.isArray(obj) ? obj[0] : obj)?.Invoice || (Array.isArray(obj) ? obj[0] : obj) || {};
+  const invoiceNo = Number(inv.InvoiceNo || 0);
+  if (!inv.InvoiceForm || !inv.InvoiceSerial || !invoiceNo) {
+    throw new Error('Bkav chưa có mẫu số / ký hiệu / số cho hoá đơn này (có thể chưa ký).');
+  }
+  return {
+    invoiceForm: String(inv.InvoiceForm),
+    invoiceSerial: String(inv.InvoiceSerial),
+    invoiceNo,
+    invoiceDate: String(inv.InvoiceDate || ''),
+    invoiceGUID: String(inv.InvoiceGUID || ''),
+  };
+}
+
+// "[mẫu số]_[ký hiệu]_[số 7 chữ số]" — đúng mẫu Bkav "[1]_[C22TAA]_[0000001]".
+function originalInvoiceIdentify(form, serial, no) {
+  return `[${form}]_[${serial}]_[${String(Number(no)).padStart(7, '0')}]`;
+}
+
+// ------------------------------------------------------------
+// buildCorrectionPayload — THAY THẾ (123) / ĐIỀU CHỈNH THÔNG TIN (124)
+// hoá đơn đã phát hành (FAQ_WebServices_Bkav "Mã lệnh 120, 123" / "121,
+// 124"). Món + số tiền GIỮ NGUYÊN như đơn gốc (người dùng đã chốt), chỉ
+// đổi thông tin người mua.
+//  - replace: hoá đơn mới đầy đủ (dòng hàng như lần phát hành đầu), cùng
+//    mẫu số + ký hiệu với hoá đơn gốc, Bkav cấp số.
+//  - adjust:  1 dòng diễn giải (ItemTypeID 4) "Điều chỉnh thông tin…", số
+//    tiền 0; mẫu số/ký hiệu để Bkav chọn (đúng mẫu tài liệu).
+// original: { invoiceForm, invoiceSerial, invoiceNo, invoiceDate }.
+// ------------------------------------------------------------
+function buildCorrectionPayload(kind, invoice, original, opts) {
+  const base = buildJsonPayload(invoice, {});
+  const co = base.commandObject[0];
+  const identify = originalInvoiceIdentify(original.invoiceForm, original.invoiceSerial, original.invoiceNo);
+  const reason = String(opts.reason || '').trim().slice(0, 255);
+  co.invoice.reason = reason;
+  co.invoice.originalInvoiceIdentify = identify;
+  co.invoice.invoiceNo = 0;
+  co.partnerInvoiceID = 0;
+  co.partnerInvoiceStringID = String(opts.partnerId).slice(0, 36);
+  if (kind === 'replace') {
+    base.cmdType = 123;
+    co.invoice.invoiceForm = original.invoiceForm;
+    co.invoice.invoiceSerial = original.invoiceSerial;
+  } else {
+    base.cmdType = 124;
+    co.invoice.invoiceForm = '';
+    co.invoice.invoiceSerial = '';
+    const d = original.invoiceDate ? new Date(original.invoiceDate) : null;
+    const dateText = d && !Number.isNaN(d.getTime())
+      ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+      : '';
+    const first = co.listInvoiceDetailsWS[0] || {};
+    co.listInvoiceDetailsWS = [{
+      itemTypeID: 4,
+      itemName: `Điều chỉnh thông tin người mua cho hoá đơn mẫu số ${original.invoiceForm} ký hiệu ${original.invoiceSerial} số ${String(Number(original.invoiceNo)).padStart(8, '0')}${dateText ? ` ngày ${dateText}` : ''}. Lý do: ${reason}`.slice(0, 500),
+      unitName: '',
+      qty: 0,
+      price: 0,
+      amount: 0,
+      taxRateID: first.taxRateID ?? 9,
+      taxRate: first.taxRate ?? 8,
+      taxAmount: 0,
+      discountRate: 0,
+      discountAmount: 0,
+      isDiscount: false,
+      itemCode: '',
+      otherAmount: 0,
+      userDefineDetails: '',
+      specialtyItems: '',
+    }];
+  }
+  return base;
+}
+
+async function sendCorrection(kind, invoice, original, opts, config) {
+  const payload = buildCorrectionPayload(kind, invoice, original, opts);
+  const result = await callBkavViaProxy(payload, config);
+  return { request: toPascalKeys(payload), ...result };
+}
+
 module.exports = {
+  getInvoiceInfo800,
+  originalInvoiceIdentify,
+  buildCorrectionPayload,
+  sendCorrection,
   toPascalKeys,
   encryptCommandData,
   buildSoapEnvelope,

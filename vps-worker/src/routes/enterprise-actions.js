@@ -361,6 +361,137 @@ function normalizeTaxCode(v) {
   return String(v || '').replace(/\s+/g, '').trim();
 }
 
+// POST /orders/enterprise/:id/invoice-correction
+//   { deviceId, kind: 'replace'|'adjust', buyerTaxCode, buyerName,
+//     buyerAddress, receiverEmail, reason }
+// THAY THẾ (Bkav lệnh 123) hoặc ĐIỀU CHỈNH THÔNG TIN (lệnh 124) hoá đơn ĐÃ
+// phát hành. Món + số tiền giữ nguyên như đơn gốc (người dùng đã chốt) —
+// chỉ đổi thông tin người mua. Gọi Bkav NGAY (không qua cron), trả kết quả.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const correctionInFlight = new Set();
+router.post('/orders/enterprise/:id/invoice-correction', async (req, res, next) => {
+  const orderId = req.params.id;
+  try {
+    const g = await guardDevice(req, res);
+    if (!g) return;
+    const body = req.body || {};
+    const kind = body.kind === 'adjust' ? 'adjust' : body.kind === 'replace' ? 'replace' : '';
+    const reason = String(body.reason || '').trim();
+    const taxCode = normalizeTaxCode(body.buyerTaxCode);
+    const buyerName = String(body.buyerName || '').trim();
+    const buyerAddress = String(body.buyerAddress || '').trim();
+    const receiverEmail = String(body.receiverEmail || '').trim();
+    if (!kind) return res.status(400).json({ ok: false, error: 'Chọn Thay thế hoặc Điều chỉnh.' });
+    if (reason.length < 5) return res.status(400).json({ ok: false, error: 'Nhập lý do (ít nhất 5 ký tự).' });
+    if (taxCode && !TAX_CODE_RE.test(taxCode)) return res.status(400).json({ ok: false, error: 'Mã số thuế không hợp lệ.' });
+    if (taxCode && !buyerName) return res.status(400).json({ ok: false, error: 'Nhập tên đơn vị mua hàng.' });
+    if (receiverEmail && !EMAIL_RE.test(receiverEmail)) return res.status(400).json({ ok: false, error: 'Email không hợp lệ.' });
+
+    const row = g.db.prepare('SELECT * FROM orders WHERE order_id = ?').get(orderId);
+    if (!row) return res.status(404).json({ ok: false, error: 'Không tìm thấy đơn hàng.' });
+    if (row.invoice_status !== 'invoiced' || !row.invoice_id) {
+      return res.status(409).json({ ok: false, error: 'Đơn chưa có hoá đơn đã phát hành.' });
+    }
+    if (correctionInFlight.has(orderId)) {
+      return res.status(409).json({ ok: false, error: 'Đơn này đang được xử lý — đợi vài giây.' });
+    }
+    correctionInFlight.add(orderId);
+
+    const { orderTaxRate, partnerIdOf, syncInvoiceStatusToCanister } = require('./invoice');
+    // Hoá đơn gốc: mẫu số + ký hiệu đã lưu, hoặc hỏi Bkav (lệnh 800) cho
+    // hoá đơn phát hành trước khi hệ thống lưu các trường này.
+    let original = {
+      invoiceForm: row.bkav_invoice_form,
+      invoiceSerial: row.bkav_invoice_serial,
+      invoiceNo: Number(row.invoice_id),
+      invoiceDate: '',
+    };
+    try {
+      const info = await bkav.getInvoiceInfo800(row.bkav_invoice_guid || partnerIdOf(row));
+      original = info;
+      g.db.prepare('UPDATE orders SET bkav_invoice_form = ?, bkav_invoice_serial = ?, bkav_invoice_guid = ? WHERE order_id = ?')
+        .run(info.invoiceForm, info.invoiceSerial, info.invoiceGUID, orderId);
+    } catch (e) {
+      if (!original.invoiceForm || !original.invoiceSerial || !original.invoiceNo) {
+        correctionInFlight.delete(orderId);
+        return res.status(502).json({ ok: false, error: `Không lấy được thông tin hoá đơn gốc từ Bkav: ${e.message}` });
+      }
+    }
+
+    const items = g.db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId);
+    const n = g.db.prepare('SELECT COUNT(*) AS c FROM invoice_corrections WHERE order_id = ?').get(orderId).c + 1;
+    const partnerId = `${orderId}-${kind === 'replace' ? 'T' : 'D'}${n}`;
+    const invoiceInput = {
+      orderId,
+      items: items.map((it) => ({ name: it.name, price: it.price, quantity: it.quantity, unitName: it.unit_name || '' })),
+      amount: row.amount,
+      kmDiscountAmount: row.km_discount_amount,
+      voucherDiscountAmount: row.voucher_discount_amount,
+      taxRate: orderTaxRate(items, orderId),
+      paymentMethod: row.payment_method,
+      receiverEmail,
+      isRetailInvoice: !taxCode,
+      buyerTaxCode: taxCode,
+      buyerName,
+      buyerUnitName: buyerName,
+      buyerAddress,
+    };
+
+    let result;
+    try {
+      result = await bkav.sendCorrection(kind, invoiceInput, original, { reason, partnerId });
+    } catch (e) {
+      result = { success: false, error: e.message, raw: null, request: null };
+    }
+    const command = kind === 'replace' ? 'ReplaceInvoice' : 'AdjustInvoice';
+    const now = Date.now();
+    g.db.prepare(`INSERT INTO bkav_logs (order_id, invoice_id, command, request_xml, response_xml, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      .run(orderId, result.invoiceNo || '', command, JSON.stringify(result.request || null).slice(0, 20000),
+        typeof result.raw === 'string' ? result.raw : JSON.stringify(result.raw ?? null), result.success ? '' : String(result.error || ''), now);
+    const identify = bkav.originalInvoiceIdentify(original.invoiceForm, original.invoiceSerial, original.invoiceNo);
+    g.db.prepare(`INSERT INTO invoice_corrections (order_id, kind, partner_id, original_identify, new_invoice_no, buyer_tax_code, buyer_name, reason, status, error, device_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(orderId, kind, partnerId, identify, result.invoiceNo || '', taxCode, buyerName, reason,
+        result.success ? 'ok' : 'failed', result.success ? '' : String(result.error || ''), g.deviceId, now);
+
+    if (!result.success) {
+      correctionInFlight.delete(orderId);
+      return res.status(502).json({ ok: false, error: `Bkav từ chối: ${result.error || 'không rõ lý do'}` });
+    }
+
+    const newNo = result.invoiceNo || '';
+    if (kind === 'replace') {
+      // Hoá đơn hiện hành của đơn = hoá đơn thay thế.
+      g.db.prepare(`UPDATE orders SET invoice_replaced_no = ?, invoice_id = ?, bkav_ma_cqt = ?, bkav_ma_tra_cuu = ?,
+          bkav_partner_id = ?, bkav_invoice_form = ?, bkav_invoice_serial = ?, bkav_invoice_guid = ?, pdf_url = '',
+          cus_tax_code = ?, cus_tax_name = ?, updated_at = ? WHERE order_id = ?`)
+        .run(row.invoice_id, newNo || row.invoice_id, result.maCQT || '', result.maTraCuu || '', partnerId,
+          result.invoiceForm || original.invoiceForm, result.invoiceSerial || original.invoiceSerial, result.invoiceGUID || '',
+          taxCode, taxCode ? buyerName : '', now, orderId);
+      let pdfUrl = '';
+      try {
+        pdfUrl = (await bkav.getInvoicePdf816(partnerId))?.pdf_url || '';
+        if (pdfUrl) g.db.prepare('UPDATE orders SET pdf_url = ? WHERE order_id = ?').run(pdfUrl, orderId);
+      } catch {
+        // PDF lấy lại được sau (nút Xem PDF gọi 816 theo bkav_partner_id).
+      }
+      try {
+        await syncInvoiceStatusToCanister(orderId, 'invoiced', newNo || row.invoice_id, pdfUrl);
+      } catch {
+        // Canister chỉ để hiển thị phía khách — lỗi không chặn kết quả.
+      }
+    } else {
+      g.db.prepare('UPDATE orders SET invoice_adjusted_no = ?, updated_at = ? WHERE order_id = ?').run(newNo || '(chưa có số)', now, orderId);
+    }
+    correctionInFlight.delete(orderId);
+    console.log(`[invoice-correction] ${command} ${orderId}: ${identify} → số ${newNo || '(chưa có số)'} (thiết bị ${g.deviceId})`);
+    res.json({ ok: true, kind, invoiceNo: newNo, originalIdentify: identify });
+  } catch (e) {
+    correctionInFlight.delete(orderId);
+    next(e);
+  }
+});
+
 // POST /orders/enterprise/tax-code-lookup { deviceId, taxCode } — tra cứu
 // tên + địa chỉ đã đăng ký với cơ quan thuế (Bkav CmdType 904) để Kế toán
 // kiểm tra trước khi lưu MST cho đơn.

@@ -374,6 +374,32 @@ function initSchema(db) {
   if (!colNames.has('cus_tax_name')) {
     db.exec("ALTER TABLE orders ADD COLUMN cus_tax_name TEXT NOT NULL DEFAULT ''");
   }
+  // Thông tin hoá đơn Bkav cần cho THAY THẾ / ĐIỀU CHỈNH (lệnh 123/124 —
+  // OriginalInvoiceIdentify "[mẫu số]_[ký hiệu]_[số]"):
+  //  bkav_partner_id    — PartnerInvoiceStringID của hoá đơn hiện hành
+  //                       (rỗng = order_id; hoá đơn thay thế dùng "<order>-T1"…)
+  //  bkav_invoice_form/serial/guid — mẫu số, ký hiệu, GUID hoá đơn hiện hành
+  //  invoice_replaced_no — số hoá đơn gốc đã bị thay thế (hiển thị)
+  //  invoice_adjusted_no — số hoá đơn điều chỉnh gần nhất (hiển thị)
+  for (const col of ['bkav_partner_id', 'bkav_invoice_form', 'bkav_invoice_serial', 'bkav_invoice_guid', 'invoice_replaced_no', 'invoice_adjusted_no']) {
+    if (!colNames.has(col)) db.exec(`ALTER TABLE orders ADD COLUMN ${col} TEXT NOT NULL DEFAULT ''`);
+  }
+  // Nhật ký thay thế / điều chỉnh hoá đơn (Kế toán).
+  db.exec(`CREATE TABLE IF NOT EXISTS invoice_corrections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id TEXT NOT NULL,
+    kind TEXT NOT NULL,              -- replace | adjust
+    partner_id TEXT NOT NULL,
+    original_identify TEXT NOT NULL,
+    new_invoice_no TEXT NOT NULL DEFAULT '',
+    buyer_tax_code TEXT NOT NULL DEFAULT '',
+    buyer_name TEXT NOT NULL DEFAULT '',
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL,            -- ok | failed
+    error TEXT NOT NULL DEFAULT '',
+    device_id TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL
+  )`);
 
   // customers: thêm km_notify_opt_in (Giai đoạn 4b) nếu DB cũ chưa có.
   const customerCols = db.prepare('PRAGMA table_info(customers)').all();

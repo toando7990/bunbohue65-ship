@@ -35,6 +35,7 @@ const mockActivateDevice = vi.fn();
 const mockGetInvoice = vi.fn();
 const mockGetAuto = vi.fn();
 const mockSetAuto = vi.fn();
+const mockCorrect = vi.fn();
 
 vi.mock("@/hooks/useQueries", () => ({
   useRestaurants: () => ({
@@ -58,6 +59,7 @@ vi.mock("@/lib/vps-client", () => ({
   enterpriseSetOrderTaxCode: (...args: unknown[]) => mockSetTax(...args),
   enterpriseGetInvoiceAuto: (...args: unknown[]) => mockGetAuto(...args),
   enterpriseSetInvoiceAuto: (...args: unknown[]) => mockSetAuto(...args),
+  enterpriseCorrectInvoice: (...args: unknown[]) => mockCorrect(...args),
   enterpriseDeleteOrder: (deviceId: string, orderId: string) =>
     mockDeleteOrder(deviceId, orderId),
   enterpriseDeleteCancelledOrders: (deviceId: string, dryRun: boolean) =>
@@ -180,6 +182,45 @@ describe("AccountingPage enterprise accounting", () => {
     });
     expect(screen.getByText("ORD-CASH2")).toBeInTheDocument();
     expect(screen.queryByText("ORD-CASH1")).not.toBeInTheDocument();
+  });
+
+  it("invoiced order: shows number/serial and opens the replace dialog from the '⋯' menu", async () => {
+    setActivation();
+    mockGetEnterpriseHistory.mockResolvedValue({
+      orders: [
+        {
+          orderId: "ORD-INV",
+          restaurantId: "R1",
+          cusName: "Tuấn",
+          cusPhone: "0987",
+          amount: 45000,
+          bookingStatus: "confirmed",
+          paymentStatus: "paid",
+          paymentMethod: "cash",
+          invoiceStatus: "invoiced",
+          invoiceId: "124",
+          invoiceSerial: "C26MAA",
+          invoiceReplacedNo: "123",
+          createdAt: Date.now(),
+        },
+      ],
+      count: 1,
+      total: 45000,
+    });
+    renderPage();
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("accounting.invoice_number.1"),
+      ).toHaveTextContent("Số 124 · C26MAA · thay thế số 123"),
+    );
+    fireEvent.click(screen.getByTestId("accounting.invoice_menu.1"));
+    fireEvent.click(screen.getByTestId("accounting.replace_invoice_button.1"));
+    expect(
+      await screen.findByTestId("accounting.correction_dialog"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("accounting.correction_kind.replace"),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows the auto-issue switch (off) and turns it on after confirmation", async () => {

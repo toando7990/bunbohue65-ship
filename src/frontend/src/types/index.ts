@@ -319,4 +319,8 @@ export interface VpsEnterpriseHistoryOrder {
   hasBkavPdf?: boolean;
   // Số hoá đơn Bkav — chỉ có khi invoiceStatus = invoiced.
   invoiceId?: string;
+  // Ký hiệu hoá đơn + lịch sử sửa (thay thế / điều chỉnh) — trang Kế toán.
+  invoiceSerial?: string;
+  invoiceReplacedNo?: string;
+  invoiceAdjustedNo?: string;
 }

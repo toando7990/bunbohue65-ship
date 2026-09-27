@@ -732,6 +732,36 @@ export async function enterpriseSetInvoiceAuto(
   });
 }
 
+// Thay thế (Bkav lệnh 123) / điều chỉnh thông tin (lệnh 124) hoá đơn đã
+// phát hành — số tiền giữ nguyên, chỉ đổi thông tin người mua.
+export interface InvoiceCorrectionInput {
+  kind: "replace" | "adjust";
+  buyerTaxCode: string;
+  buyerName: string;
+  buyerAddress: string;
+  receiverEmail: string;
+  reason: string;
+}
+
+export async function enterpriseCorrectInvoice(
+  deviceId: string,
+  orderId: string,
+  input: InvoiceCorrectionInput,
+): Promise<{
+  ok: boolean;
+  kind: string;
+  invoiceNo: string;
+  originalIdentify: string;
+}> {
+  return vpsFetch({
+    method: "POST",
+    path: `/orders/enterprise/${encodeURIComponent(orderId)}/invoice-correction`,
+    body: { deviceId, ...input },
+    // VPS gọi Bkav 2–3 lệnh liên tiếp (800 → 123/124 → 816).
+    timeoutMs: 90000,
+  });
+}
+
 // Tra cứu MST (Bkav) — tên + địa chỉ đã đăng ký với cơ quan thuế.
 export async function enterpriseLookupTaxCode(
   deviceId: string,

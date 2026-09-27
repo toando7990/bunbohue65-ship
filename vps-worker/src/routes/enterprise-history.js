@@ -106,7 +106,8 @@ router.get('/orders/enterprise-history', async (req, res, next) => {
     const rows = db.prepare(
       `SELECT order_id, restaurant_id, cus_name, cus_phone, amount,
               booking_status, payment_status, payment_method, invoice_status, invoice_error, created_at,
-              cus_tax_code, cus_tax_name, invoice_requested, pdf_url, invoice_id
+              cus_tax_code, cus_tax_name, invoice_requested, pdf_url, invoice_id,
+              bkav_invoice_serial, invoice_replaced_no, invoice_adjusted_no
        FROM orders
        WHERE created_at >= ? AND created_at < ? AND (${conditions.join(' OR ')})
        ORDER BY created_at DESC
@@ -140,6 +141,10 @@ router.get('/orders/enterprise-history', async (req, res, next) => {
       hasBkavPdf: !!r.pdf_url,
       // Số hoá đơn Bkav (đơn đã phát hành) — hiện dưới nhãn "Đã phát hành".
       invoiceId: r.invoice_status === 'invoiced' ? r.invoice_id || '' : '',
+      // Ký hiệu + lịch sử sửa hoá đơn (Kế toán thay thế / điều chỉnh).
+      invoiceSerial: r.bkav_invoice_serial || '',
+      invoiceReplacedNo: r.invoice_replaced_no || '',
+      invoiceAdjustedNo: r.invoice_adjusted_no || '',
     }));
 
     res.json({ ok: true, orders, count: orders.length, total });

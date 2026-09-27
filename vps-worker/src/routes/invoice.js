@@ -335,8 +335,9 @@ function startInvoiceCron(db) {
             }
 
             // Push canister với 5 tham số: orderId, invoiceStatus, invoiceId, pdfUrl, hmac.
-            db.prepare(`UPDATE orders SET invoice_status = 'invoiced', invoice_id = ?, pdf_url = ?, bkav_ma_cqt = ?, bkav_ma_tra_cuu = ?, updated_at = ? WHERE order_id = ?`)
-              .run(invoiceNo, pdfUrl, inv.maCQT || '', inv.maTraCuu || '', Date.now(), row.order_id);
+            db.prepare(`UPDATE orders SET invoice_status = 'invoiced', invoice_id = ?, pdf_url = ?, bkav_ma_cqt = ?, bkav_ma_tra_cuu = ?,
+                bkav_partner_id = ?, bkav_invoice_form = ?, bkav_invoice_serial = ?, bkav_invoice_guid = ?, updated_at = ? WHERE order_id = ?`)
+              .run(invoiceNo, pdfUrl, inv.maCQT || '', inv.maTraCuu || '', row.order_id, inv.invoiceForm || '', inv.invoiceSerial || '', inv.invoiceGUID || '', Date.now(), row.order_id);
             await syncInvoiceStatusToCanister(row.order_id, 'invoiced', invoiceNo, pdfUrl);
             if (pdf816Ok) {
               db.prepare(`INSERT INTO bkav_logs (order_id, invoice_id, command, response_xml, created_at) VALUES (?, ?, 'GetInvoicePDF816', ?, ?)`)
@@ -406,6 +407,12 @@ function startInvoiceCron(db) {
   return task;
 }
 
+// PartnerInvoiceStringID của hoá đơn HIỆN HÀNH — hoá đơn thay thế dùng
+// "<orderId>-T1"… (routes/enterprise-actions.js), hoá đơn đầu dùng orderId.
+function partnerIdOf(row) {
+  return (row && row.bkav_partner_id) || (row && row.order_id) || '';
+}
+
 // Helper: build InvoiceResponse (camelCase) cho một order.
 // Dùng getInvoicePdf816(orderId) (CmdType 816, theo PartnerInvoiceStringID)
 // thay vì getInvoicePdf(invoiceId) cũ — 2 API Bkav khác nhau; cron đã tự
@@ -418,7 +425,7 @@ async function buildInvoiceResponse(db, orderId) {
     return { status: 404, body: { ok: false, error: 'invoice not yet issued' } };
   }
   try {
-    const pdf = await bkav.getInvoicePdf816(orderId);
+    const pdf = await bkav.getInvoicePdf816(partnerIdOf(row));
     const items = db.prepare('SELECT name, price, quantity, unit_name FROM order_items WHERE order_id = ?').all(orderId);
     return {
       status: 200,
@@ -475,7 +482,7 @@ router.post('/invoice/:orderId/email', async (req, res, next) => {
 
     let pdfUrl = '';
     try {
-      const pdf = await bkav.getInvoicePdf816(req.params.orderId);
+      const pdf = await bkav.getInvoicePdf816(partnerIdOf(row));
       pdfUrl = pdf?.pdf_url || '';
     } catch (e) {
       db.prepare(`INSERT INTO bkav_logs (order_id, invoice_id, command, error, created_at) VALUES (?, ?, 'GetInvoicePDF816', ?, ?)`)
@@ -516,13 +523,13 @@ router.post('/invoice/:orderId/email', async (req, res, next) => {
 router.get('/order/:id/invoice', async (req, res, next) => {
   try {
     const db = req.app.locals.db;
-    const row = db.prepare(`SELECT invoice_id, invoice_status, shared_link FROM orders WHERE order_id = ?`).get(req.params.id);
+    const row = db.prepare(`SELECT order_id, invoice_id, invoice_status, shared_link, bkav_partner_id FROM orders WHERE order_id = ?`).get(req.params.id);
     if (!row) return res.status(404).json({ error: 'order not found' });
     if (row.invoice_status !== 'invoiced' || !row.invoice_id) {
       return res.status(404).json({ error: 'invoice not yet issued' });
     }
     try {
-      const pdf = await bkav.getInvoicePdf816(req.params.id);
+      const pdf = await bkav.getInvoicePdf816(partnerIdOf(row));
       res.json({ invoice_id: row.invoice_id, pdf_url: pdf?.pdf_url || '', shared_link: row.shared_link });
     } catch (e) {
       db.prepare(`INSERT INTO bkav_logs (order_id, invoice_id, command, error, created_at) VALUES (?, ?, 'GetInvoicePDF816', ?, ?)`)
@@ -544,7 +551,7 @@ router.post('/order/:id/invoice/email', async (req, res, next) => {
     if (row.invoice_status !== 'invoiced' || !row.invoice_id) {
       return res.status(404).json({ error: 'invoice not yet issued' });
     }
-    const pdf = await bkav.getInvoicePdf816(req.params.id);
+    const pdf = await bkav.getInvoicePdf816(partnerIdOf(row));
     if (!pdf?.pdf_url) return res.status(502).json({ error: 'GetInvoicePDF816 returned no url' });
 
     const transporter = nodemailer.createTransport({
@@ -671,3 +678,6 @@ module.exports.startInvoiceCron = startInvoiceCron;
 module.exports.startInvoiceSafetyNetCron = startInvoiceSafetyNetCron;
 module.exports.requestDueInvoices = requestDueInvoices;
 module.exports.startOfPreviousWorkingDayUtc7 = startOfPreviousWorkingDayUtc7;
+module.exports.orderTaxRate = orderTaxRate;
+module.exports.partnerIdOf = partnerIdOf;
+module.exports.syncInvoiceStatusToCanister = syncInvoiceStatusToCanister;

@@ -26,6 +26,11 @@ import {
   InvoiceAutoToggle,
   useInvoiceAuto,
 } from "@/components/InvoiceAutoToggle";
+import {
+  type CorrectionKind,
+  type CorrectionTarget,
+  InvoiceCorrectionDialog,
+} from "@/components/InvoiceCorrectionDialog";
 import { TaxCodeCell } from "@/components/TaxCodeCell";
 import {
   AlertDialog,
@@ -323,6 +328,13 @@ export function AccountingPage() {
   // Menu "⋯" (Xuất CSV, Xoá đơn đã huỷ) + lỗi Bkav đang mở rộng.
   const [moreOpen, setMoreOpen] = useState(false);
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
+  // Thay thế / điều chỉnh hoá đơn đã phát hành: menu "⋯" trên dòng + hộp
+  // thoại InvoiceCorrectionDialog.
+  const [invoiceMenuFor, setInvoiceMenuFor] = useState<string | null>(null);
+  const [correction, setCorrection] = useState<{
+    target: CorrectionTarget;
+    kind: CorrectionKind;
+  } | null>(null);
 
   const statuses: Array<"paid" | "cancelled"> =
     statusFilter === "all" ? ["paid", "cancelled"] : [statusFilter];
@@ -1191,10 +1203,27 @@ export function AccountingPage() {
                         )}
                         {order.invoiceStatus === InvoiceStatus.invoiced &&
                           order.invoiceId && (
-                            <span className="block text-xs text-muted-foreground">
+                            <span
+                              className="block text-xs text-muted-foreground"
+                              data-ocid={`accounting.invoice_number.${idx + 1}`}
+                            >
                               Số {order.invoiceId}
+                              {order.invoiceSerial
+                                ? ` · ${order.invoiceSerial}`
+                                : ""}
+                              {order.invoiceReplacedNo
+                                ? ` · thay thế số ${order.invoiceReplacedNo}`
+                                : ""}
                             </span>
                           )}
+                        {order.invoiceAdjustedNo && (
+                          <span
+                            className="block text-xs text-info"
+                            data-ocid={`accounting.invoice_adjusted.${idx + 1}`}
+                          >
+                            Đã điều chỉnh (số {order.invoiceAdjustedNo})
+                          </span>
+                        )}
                         {/* Lý do THẬT Bkav từ chối — thu gọn 1 dòng, bấm
                             "Xem chi tiết" để mở đủ. */}
                         {order.invoiceStatus === InvoiceStatus.failed &&
@@ -1311,6 +1340,65 @@ export function AccountingPage() {
                               Xem PDF
                             </Button>
                           )}
+                          {order.invoiceStatus === InvoiceStatus.invoiced && (
+                            <div className="relative ml-1">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                aria-label="Sửa hoá đơn"
+                                aria-expanded={invoiceMenuFor === order.orderId}
+                                onClick={() =>
+                                  setInvoiceMenuFor((cur) =>
+                                    cur === order.orderId
+                                      ? null
+                                      : order.orderId,
+                                  )
+                                }
+                                data-ocid={`accounting.invoice_menu.${idx + 1}`}
+                              >
+                                <MoreHorizontal
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                />
+                              </Button>
+                              {invoiceMenuFor === order.orderId && (
+                                <div className="absolute right-0 top-9 z-30 w-52 rounded-md border border-border bg-popover py-1 text-sm shadow-elevated">
+                                  {(
+                                    [
+                                      ["replace", "Thay thế hoá đơn"],
+                                      ["adjust", "Điều chỉnh thông tin"],
+                                    ] as const
+                                  ).map(([kind, label]) => (
+                                    <button
+                                      key={kind}
+                                      type="button"
+                                      onClick={() => {
+                                        setInvoiceMenuFor(null);
+                                        setCorrection({
+                                          kind,
+                                          target: {
+                                            orderId: order.orderId,
+                                            invoiceId: order.invoiceId ?? "",
+                                            invoiceSerial: order.invoiceSerial,
+                                            amount: order.amount,
+                                            createdAt: order.createdAt,
+                                            cusTaxCode: order.cusTaxCode,
+                                            cusTaxName: order.cusTaxName,
+                                          },
+                                        });
+                                      }}
+                                      data-ocid={`accounting.${kind}_invoice_button.${idx + 1}`}
+                                      className="flex w-full px-3 py-2 text-left hover:bg-secondary"
+                                    >
+                                      {label}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1321,6 +1409,14 @@ export function AccountingPage() {
           </div>
         )}
       </div>
+
+      <InvoiceCorrectionDialog
+        deviceId={deviceId}
+        target={correction?.target ?? null}
+        initialKind={correction?.kind ?? "replace"}
+        onClose={() => setCorrection(null)}
+        onDone={() => historyQuery.refetch()}
+      />
 
       {/* Tuỳ chọn nâng cao — thu gọn (dùng cho đơn KHÔNG còn trong danh
           sách lọc hiện tại, ít dùng hơn thao tác trực tiếp từ bảng). */}
