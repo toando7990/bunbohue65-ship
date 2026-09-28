@@ -476,6 +476,11 @@ export const idlService = IDL.Service({
   'getStoreHours' : IDL.Func([], [StoreHours], ['query']),
   'getUpgradeState' : IDL.Func([], [UpgradeState], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'issueVpsAdminTicket' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Text, 'err' : IDL.Text })],
+      [],
+    ),
   'isEmailVerified' : IDL.Func([Email], [IDL.Bool], ['query']),
   'isPromotionUsed' : IDL.Func([IDL.Text, IDL.Text], [Result_13], ['query']),
   'isRegistrationPromoUsed' : IDL.Func(
@@ -1122,6 +1127,11 @@ export const idlFactory = ({ IDL }) => {
     'getStoreHours' : IDL.Func([], [StoreHours], ['query']),
     'getUpgradeState' : IDL.Func([], [UpgradeState], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'issueVpsAdminTicket' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Text, 'err' : IDL.Text })],
+        [],
+      ),
     'isEmailVerified' : IDL.Func([Email], [IDL.Bool], ['query']),
     'isPromotionUsed' : IDL.Func([IDL.Text, IDL.Text], [Result_13], ['query']),
     'isRegistrationPromoUsed' : IDL.Func(

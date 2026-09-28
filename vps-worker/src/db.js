@@ -419,6 +419,71 @@ function initSchema(db) {
   if (!addressCols.some((c) => c.name === 'detail')) {
     db.exec("ALTER TABLE customer_addresses ADD COLUMN detail TEXT NOT NULL DEFAULT ''");
   }
+
+  // Giao hàng 2 hãng (Lalamove + Ahamove):
+  //  - orders.cus_lat/cus_lng: toạ độ khách (cần để đặt lại tài xế khi
+  //    chuyển hãng — trước đây chỉ nằm ở bước báo giá, không lưu);
+  //  - orders.delivery_provider / delivery_order_id: lượt giao HIỆN TẠI;
+  //  - bảng deliveries: MỖI lần gọi tài xế 1 dòng (kể cả lượt bị huỷ để
+  //    chuyển hãng) — lịch sử + thống kê cho thẻ "Giao hàng" ở /admin.
+  if (!colNames.has('cus_lat')) db.exec('ALTER TABLE orders ADD COLUMN cus_lat REAL');
+  if (!colNames.has('cus_lng')) db.exec('ALTER TABLE orders ADD COLUMN cus_lng REAL');
+  if (!colNames.has('delivery_provider')) {
+    db.exec("ALTER TABLE orders ADD COLUMN delivery_provider TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has('delivery_order_id')) {
+    db.exec("ALTER TABLE orders ADD COLUMN delivery_order_id TEXT NOT NULL DEFAULT ''");
+  }
+  db.exec(`CREATE TABLE IF NOT EXISTS deliveries (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id      TEXT NOT NULL,
+    attempt       INTEGER NOT NULL,          -- 1, 2 (tối đa 1 lần chuyển hãng)
+    provider      TEXT NOT NULL,             -- lalamove | ahamove
+    external_id   TEXT NOT NULL DEFAULT '',  -- mã đơn phía hãng
+    raw_status    TEXT NOT NULL DEFAULT '',
+    sub_status    TEXT NOT NULL DEFAULT '',
+    drop_status   TEXT NOT NULL DEFAULT '',
+    unified       TEXT NOT NULL DEFAULT 'finding',
+    driver_id     TEXT NOT NULL DEFAULT '',
+    driver_name   TEXT NOT NULL DEFAULT '',
+    driver_phone  TEXT NOT NULL DEFAULT '',
+    driver_plate  TEXT NOT NULL DEFAULT '',
+    share_link    TEXT NOT NULL DEFAULT '',
+    fee           INTEGER,                   -- phí hãng báo (VND)
+    reason        TEXT NOT NULL DEFAULT '',  -- vì sao có lượt này (chuyển hãng…)
+    end_reason    TEXT NOT NULL DEFAULT '',  -- vì sao lượt này kết thúc
+    ended         INTEGER NOT NULL DEFAULT 0,
+    created_at    INTEGER NOT NULL,
+    updated_at    INTEGER NOT NULL,
+    refreshed_at  INTEGER NOT NULL DEFAULT 0,
+    assigned_at   INTEGER,
+    picked_at     INTEGER,
+    completed_at  INTEGER
+  )`);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_deliveries_order ON deliveries(order_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_deliveries_active ON deliveries(ended, provider)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_deliveries_external ON deliveries(provider, external_id)');
+  // Đơn Lalamove cũ (trước khi có bảng deliveries) → 1 dòng lịch sử, để
+  // "Theo dõi đơn" dùng chung 1 đường đọc. Chạy 1 lần (bỏ qua đơn đã có).
+  db.exec(`INSERT INTO deliveries (order_id, attempt, provider, external_id, raw_status, unified,
+      driver_id, share_link, fee, ended, created_at, updated_at)
+    SELECT o.order_id, 1, 'lalamove', o.lalamove_order_id, o.lalamove_status,
+      CASE o.lalamove_status
+        WHEN 'ON_GOING' THEN 'to_pickup' WHEN 'PICKED_UP' THEN 'delivering'
+        WHEN 'COMPLETED' THEN 'delivered'
+        WHEN 'CANCELED' THEN 'cancelled' WHEN 'REJECTED' THEN 'cancelled' WHEN 'EXPIRED' THEN 'cancelled'
+        ELSE 'finding' END,
+      o.lalamove_driver_id, o.lalamove_share_link, o.shipping_fee,
+      CASE WHEN o.lalamove_status IN ('COMPLETED','CANCELED','REJECTED','EXPIRED') THEN 1 ELSE 0 END,
+      o.updated_at, o.updated_at
+    FROM orders o
+    WHERE o.lalamove_order_id <> ''
+      AND NOT EXISTS (SELECT 1 FROM deliveries d WHERE d.order_id = o.order_id)`);
+  db.exec(`UPDATE orders SET delivery_provider = 'lalamove', delivery_order_id = lalamove_order_id
+    WHERE lalamove_order_id <> '' AND delivery_order_id = ''`);
+  // Đơn Lalamove cũ đang dở quá 1 ngày: coi như đã kết thúc (không poll mãi).
+  db.prepare(`UPDATE deliveries SET ended = 1, end_reason = 'Đơn cũ trước khi nâng cấp'
+    WHERE ended = 0 AND created_at < ?`).run(Date.now() - 24 * 60 * 60 * 1000);
 }
 
 // Backup daily: copy DB file (WAL checkpoint) → gzip vào BACKUP_DIR.

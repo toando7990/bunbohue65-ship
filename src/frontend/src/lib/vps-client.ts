@@ -505,6 +505,123 @@ export async function getLalamoveStatus(
   });
 }
 
+// ---- Giao hàng 2 hãng (Lalamove + Ahamove) — vps-worker/src/lib/delivery.js ----
+export type DeliveryProvider = "lalamove" | "ahamove";
+// Trạng thái chung cho cả 2 hãng.
+export type DeliveryStatus =
+  | "finding"
+  | "to_pickup"
+  | "at_pickup"
+  | "delivering"
+  | "near_drop"
+  | "delivered"
+  | "cancelled"
+  | "failed"
+  | "place_failed";
+export interface DeliveryInfo {
+  provider: DeliveryProvider | "";
+  providerName: string;
+  externalId?: string;
+  status: DeliveryStatus;
+  statusLabel: string;
+  rawStatus?: string;
+  /** 0 tìm tài xế · 1 tới quán · 2 đang giao · 3 đã giao · -1 kết thúc bất thường */
+  step: number;
+  driver?: { name: string; phone: string; plate: string } | null;
+  shareLink?: string;
+  times?: {
+    createdAt: number;
+    assignedAt: number | null;
+    pickedAt: number | null;
+    completedAt: number | null;
+  };
+  /** Có khi đơn đã chuyển hãng (hãng trước không có tài xế / lỗi / huỷ). */
+  switched?: {
+    from: DeliveryProvider | "";
+    fromName: string;
+    reason: string;
+    at: number;
+  } | null;
+  /** true = không còn hãng nào để thử — nhà hàng sẽ liên hệ khách. */
+  allFailed: boolean;
+  endReason?: string;
+  attempts: number;
+}
+export async function getDeliveryStatus(
+  orderId: string,
+): Promise<DeliveryInfo | null> {
+  const res = await vpsFetch<{ ok: boolean; delivery: DeliveryInfo | null }>({
+    method: "GET",
+    path: `/order/${encodeURIComponent(orderId)}/delivery`,
+  });
+  return res.delivery ?? null;
+}
+export async function getDeliveryStatuses(
+  orderIds: string[],
+): Promise<Record<string, DeliveryInfo>> {
+  if (orderIds.length === 0) return {};
+  const res = await vpsFetch<{
+    ok: boolean;
+    deliveries: Record<string, DeliveryInfo>;
+  }>({
+    method: "POST",
+    path: "/orders/delivery-status",
+    body: { orderIds: orderIds.slice(0, 50) },
+  });
+  return res.deliveries ?? {};
+}
+
+export type DeliveryMode = "auto" | "round_robin" | "lalamove" | "ahamove";
+export interface DeliverySettings {
+  mode: DeliveryMode;
+  tieVnd: number;
+  failoverMinutes: number;
+  redispatchOnCancel: boolean;
+  lalamoveEnabled: boolean;
+  ahamoveEnabled: boolean;
+}
+export interface DeliveryProviderState {
+  configured: boolean;
+  env: string;
+  autoDispatch: boolean;
+  ok: boolean;
+  error: string;
+  serviceId?: string;
+}
+export interface DeliveryAdminInfo {
+  settings: DeliverySettings;
+  providers: Record<DeliveryProvider, DeliveryProviderState>;
+  webhook: { url: string; lastReceivedAt: number | null };
+  stats: Array<{
+    provider: DeliveryProvider;
+    orders: number;
+    avgFee: number | null;
+    avgAssignMinutes: number | null;
+    switchedAway: number;
+  }>;
+}
+/** ticket: vé quản trị do canister cấp (issueVpsAdminTicket("delivery")). */
+export async function getDeliveryAdmin(
+  ticket: string,
+): Promise<DeliveryAdminInfo> {
+  return vpsFetch<DeliveryAdminInfo>({
+    method: "GET",
+    path: "/admin/delivery",
+    headers: { "X-Admin-Ticket": ticket },
+  });
+}
+export async function saveDeliverySettings(
+  ticket: string,
+  settings: DeliverySettings,
+): Promise<DeliveryAdminInfo> {
+  return vpsFetch<DeliveryAdminInfo>({
+    method: "POST",
+    path: "/admin/delivery",
+    headers: { "X-Admin-Ticket": ticket },
+    body: { settings },
+  });
+}
+
 export async function deleteCustomerAddress(
   email: string,
   id: number,

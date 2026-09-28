@@ -40,6 +40,7 @@ import {
   isSalesPromoUsed as isSalesPromoUsedFn,
   isStoreOpen as isStoreOpenFn,
   issueInvoiceByDevice as issueInvoiceByDeviceFn,
+  issueVpsAdminTicket as issueVpsAdminTicketFn,
   listDevicesByRestaurant as listDevicesByRestaurantFn,
   listDevicesByRole as listDevicesByRoleFn,
   listMenus as listMenusFn,
@@ -69,6 +70,7 @@ import {
 } from "@/lib/canister";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useRef } from "react";
 
 function useActorOrNull() {
   const { actor, isFetching } = useActor(createActor);
@@ -1008,4 +1010,20 @@ export function useMyVouchers(email: string | null) {
       actor && email ? listMyVouchersFn(actor, email) : Promise.resolve([]),
     enabled: !!actor && !isFetching && !!email,
   });
+}
+
+// Vé quản trị VPS (canister cấp, hạn 10 phút) — lưu lại 8 phút để không gọi
+// canister mỗi lần. Trả hàm lấy vé; null khi chưa có actor.
+export function useVpsAdminTicket(purpose: "delivery") {
+  const { actor, isFetching } = useActorOrNull();
+  const cache = useRef<{ ticket: string; at: number } | null>(null);
+  const getTicket = useCallback(async () => {
+    if (!actor) throw new Error("Actor not ready");
+    const c = cache.current;
+    if (c && Date.now() - c.at < 8 * 60 * 1000) return c.ticket;
+    const ticket = await issueVpsAdminTicketFn(actor, purpose);
+    cache.current = { ticket, at: Date.now() };
+    return ticket;
+  }, [actor, purpose]);
+  return { ready: !!actor && !isFetching, getTicket };
 }

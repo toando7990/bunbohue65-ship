@@ -290,6 +290,9 @@ describe("CreateOrder — chọn địa chỉ bắt buộc + tự chọn nhà h�
           cusAddress: "123 Le Loi",
           lalamovePickupStopId: "STOP_PICKUP",
           lalamoveDropStopId: "STOP_DROP",
+          // Toạ độ khách — VPS cần để đặt tài xế / chuyển hãng.
+          dropLat: 21.0285,
+          dropLng: 105.8542,
         }),
       );
     });

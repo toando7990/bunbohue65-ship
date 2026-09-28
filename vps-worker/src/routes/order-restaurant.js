@@ -48,12 +48,12 @@ router.post('/order/:id/restaurant', async (req, res, next) => {
         error: 'Đơn đã thanh toán hoặc đã huỷ, không thể đổi nhà hàng',
       });
     }
-    // Đã gọi tài xế Lalamove (tài xế đang tới/đã lấy hàng ở nhà hàng cũ)
-    // → không cho đổi nhà hàng nữa. OrderTracker.tsx cũng đã ẩn nút.
-    if (row.lalamove_order_id) {
+    // Đã gọi tài xế (Lalamove/Ahamove — tài xế đang tới/đã lấy hàng ở nhà
+    // hàng cũ) → không cho đổi nhà hàng nữa. OrderTracker.tsx cũng đã ẩn nút.
+    if (row.lalamove_order_id || row.delivery_order_id) {
       return res.status(400).json({
         ok: false,
-        error: 'Đơn đã gọi tài xế Lalamove, không thể đổi nhà hàng',
+        error: 'Đơn đã gọi tài xế, không thể đổi nhà hàng',
       });
     }
     if (row.restaurant_id === newRestaurantId) {

@@ -478,17 +478,25 @@ Tingee trả `code=91 'Request expired'` khi `x-request-timestamp` nằm **trong
 - `cancel_comment`: lý do hủy. Auto-cancel (không có tài xế chấp nhận) → `cancel_by_user = false`, `cancel_comment = "Auto cancel, no driver accepted"`.
 - Unknown statuses returned unchanged (không map).
 
-### Env vars
+### Giao hàng 2 hãng (Lalamove + Ahamove) — 09/2026
+
+Code: `src/lib/ahamove.js` (API v3), `src/lib/delivery.js` (chọn hãng, đặt tài xế,
+tự chuyển hãng, trạng thái chung), `src/routes/delivery.js`. Cài đặt ở thẻ
+"Giao hàng" trang /admin (vé quản trị do canister cấp — `issueVpsAdminTicket`).
 
 | Var | Bắt buộc | Mô tả |
 |-----|----------|-------|
-| `AHAMOVE_API_KEY` | ✓ | API key (body `api_key` khi lấy token); cũng dùng làm secret mặc định cho webhook HMAC nếu `AHAMOVE_WEBHOOK_SECRET` không set |
-| `AHAMOVE_PHONE` | ✓ | Số điện thoại (body `mobile` khi lấy token) |
-| `AHAMOVE_BASE_URL` | optional | Base URL, default `https://partner-api.ahamove.com`. Staging: `https://partner-apistg.ahamove.com` |
-| `AHAMOVE_WEBHOOK_SECRET` | optional | Secret riêng cho webhook HMAC-SHA256 verification. Nếu không set, fallback sang `AHAMOVE_API_KEY`. Production KHÔNG được bỏ trống. |
-| `AHAMOVE_SERVICE_ID` | optional | Service ID mặc định cho Ahamove create-order, default `HAN-BIKE` |
+| `AHAMOVE_API_KEY` | ✓ | API key Ahamove (body `api_key` khi lấy token) |
+| `AHAMOVE_PHONE` | ✓ | SĐT tài khoản Ahamove (body `mobile`, tự đổi sang dạng 84…) |
+| `AHAMOVE_ENV` | optional | `production` = máy chủ thật; mặc định máy chủ thử nghiệm (`partner-apistg`) |
+| `AHAMOVE_BASE_URL` | optional | Ghi đè base URL (không kèm `/v3`) |
+| `AHAMOVE_SERVICE_ID` | optional | Mã dịch vụ, mặc định `HAN-BIKE` |
+| `AHAMOVE_AUTO_DISPATCH` | optional | `true` = cho phép TỰ ĐẶT tài xế Ahamove thật (phát sinh phí). Mặc định tắt |
+| `AHAMOVE_WEBHOOK_KEY` | optional | Khoá Ahamove gửi kèm webhook (header `apikey` hoặc `Authorization: Bearer`). VPS luôn đọc lại trạng thái qua API |
+| `LALAMOVE_AUTO_DISPATCH` | optional | `true` = cho phép tự đặt tài xế Lalamove thật (như trước) |
+| `VPS_PUBLIC_URL` | optional | Để hiện đường dẫn webhook `…/webhook/ahamove` cho Ahamove cài |
 
-> **Lưu ý `.env`:** `AHAMOVE_PHONE` là biến môi trường bắt buộc, phải được set thủ công trong file `.env` (file `.env.example` không được commit trong repo).
+Chạy kiểm thử: `npm test`.
 
 ## Bkav eHoadon — kiến trúc thật (đã xác nhận, xem vps-worker/bkav-proxy/)
 

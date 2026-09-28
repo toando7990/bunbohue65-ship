@@ -131,6 +131,10 @@ export const mockBackend: backendInterface = {
     err: "Mock: không hỗ trợ",
   }),
   setStoreHours: async () => ({ __kind__: "ok", ok: null }),
+  issueVpsAdminTicket: async () => ({
+    __kind__: "err",
+    err: "Mock: không hỗ trợ",
+  }),
   setVpsSecret: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   snapshotUpgradeState: async () => new Uint8Array(),
   updateInvoiceStatus: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),

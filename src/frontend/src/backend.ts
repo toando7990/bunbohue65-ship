@@ -579,6 +579,13 @@ export interface backendInterface {
     getStoreHours(): Promise<StoreHours>;
     getUpgradeState(): Promise<UpgradeState>;
     isCallerAdmin(): Promise<boolean>;
+    issueVpsAdminTicket(purpose: string): Promise<{
+        __kind__: "ok";
+        ok: string;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     isEmailVerified(email: Email): Promise<boolean>;
     isPromotionUsed(deviceId: string, code: string): Promise<Result_13>;
     isRegistrationPromoUsed(deviceId: string, code: string): Promise<Result_13>;
@@ -1374,6 +1381,27 @@ export class Backend implements backendInterface {
             const result = await this.actor.getUpgradeState();
             return from_candid_UpgradeState_n60(this._uploadFile, this._downloadFile, result);
         }
+    }
+    async issueVpsAdminTicket(arg0: string): Promise<{
+        __kind__: "ok";
+        ok: string;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        const call = () => this.actor.issueVpsAdminTicket(arg0);
+        let result;
+        if (this.processError) {
+            try {
+                result = await call();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            result = await call();
+        }
+        return "ok" in result ? { __kind__: "ok", ok: result.ok } : { __kind__: "err", err: result.err };
     }
     async isCallerAdmin(): Promise<boolean> {
         if (this.processError) {

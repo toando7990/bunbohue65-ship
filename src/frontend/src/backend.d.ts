@@ -530,6 +530,13 @@ export interface backendInterface {
     getStoreHours(): Promise<StoreHours>;
     getUpgradeState(): Promise<UpgradeState>;
     isCallerAdmin(): Promise<boolean>;
+    issueVpsAdminTicket(purpose: string): Promise<{
+        __kind__: "ok";
+        ok: string;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     isEmailVerified(email: Email): Promise<boolean>;
     isPromotionUsed(deviceId: string, code: string): Promise<Result_13>;
     isRegistrationPromoUsed(deviceId: string, code: string): Promise<Result_13>;

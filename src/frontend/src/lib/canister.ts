@@ -777,3 +777,12 @@ export async function listMyVouchers(
 
 // Re-export enums for convenience in components.
 export { BookingStatus, DeviceRole, InvoiceStatus, PaymentStatus };
+
+// Vé quản trị để trang /admin gọi API quản trị trên VPS (VPS kiểm tra bằng
+// VPS_SECRET, hạn 10 phút) — xem vps-worker/src/lib/admin-ticket.js.
+export async function issueVpsAdminTicket(
+  actor: Backend,
+  purpose: "delivery",
+): Promise<string> {
+  return unwrap(await actor.issueVpsAdminTicket(purpose));
+}

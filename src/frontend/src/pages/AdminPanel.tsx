@@ -2,6 +2,7 @@
 // revokeDevice, cleanupExpiredActivations, getCanisterIdText. UI tiếng
 // Việt.
 
+import { DeliverySettingsCard } from "@/components/delivery/DeliverySettingsCard";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -396,6 +397,10 @@ export function AdminPanel() {
             </Button>
           </form>
         </SectionCard>
+      </div>
+
+      <div className="mt-6">
+        <DeliverySettingsCard />
       </div>
     </section>
   );

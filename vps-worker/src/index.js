@@ -47,6 +47,8 @@ const enterpriseActionsRoutes = require('./routes/enterprise-actions');
 const orderPromoInfoRoutes = require('./routes/order-promo-info');
 const mapsConfigRoutes = require('./routes/maps-config');
 const driverPickupLookupRoutes = require('./routes/driver-pickup-lookup');
+const deliveryRoutes = require('./routes/delivery');
+const delivery = require('./lib/delivery');
 
 const cronJobs = [];
 
@@ -100,6 +102,7 @@ app.use('/', enterpriseActionsRoutes);
 app.use('/', orderPromoInfoRoutes);
 app.use('/', mapsConfigRoutes);
 app.use('/', driverPickupLookupRoutes);
+app.use('/', deliveryRoutes);
 app.use('/', analyticsRoutes);
 
 // Error handler
@@ -141,6 +144,21 @@ cronJobs.push(invoiceRoutes.startInvoiceSafetyNetCron(db));
 cronJobs.push(salesBonusCron.startSalesBonusCron(db));
 cronJobs.push(kmNotifyCron.startKmNotifyCron(db));
 cronJobs.push(promoExpiryCron.startPromoExpiryCron());
+
+// Giao hàng 30s: làm mới trạng thái Lalamove/Ahamove, tự chuyển hãng khi
+// quá lâu chưa có tài xế hoặc hãng huỷ (lib/delivery.js).
+let deliveryTickRunning = false;
+cronJobs.push(cron.schedule('*/30 * * * * *', async () => {
+  if (shutdown.shuttingDown || deliveryTickRunning) return;
+  deliveryTickRunning = true;
+  try {
+    await delivery.tick(db);
+  } catch (e) {
+    console.error('[cron] delivery tick lỗi:', e.message);
+  } finally {
+    deliveryTickRunning = false;
+  }
+}));
 
 // --- Start ---
 app.listen(PORT, () => {

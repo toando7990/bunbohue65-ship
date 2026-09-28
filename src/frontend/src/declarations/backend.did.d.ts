@@ -414,6 +414,11 @@ export interface _SERVICE {
   'getStoreHours' : ActorMethod<[], StoreHours>,
   'getUpgradeState' : ActorMethod<[], UpgradeState>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'issueVpsAdminTicket' : ActorMethod<
+    [string],
+    { 'ok' : string } |
+      { 'err' : string }
+  >,
   'isEmailVerified' : ActorMethod<[Email], boolean>,
   'isPromotionUsed' : ActorMethod<[string, string], Result_13>,
   'isRegistrationPromoUsed' : ActorMethod<[string, string], Result_13>,

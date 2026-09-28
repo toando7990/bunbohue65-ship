@@ -1,12 +1,13 @@
 {
   "name": "bunbohue65-vps-worker",
   "version": "1.0.0",
-  "description": "VPS worker cho Bunbohue65 — Ahamove + Tingee + Bkav integration, push state to IC canister",
+  "description": "VPS worker cho Bunbohue65 — Lalamove + Ahamove + Tingee + Bkav integration, push state to IC canister",
   "type": "commonjs",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "@icp-sdk/core": "^5.3.0",
