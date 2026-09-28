@@ -1,13 +1,14 @@
-// DriverScreenScan — nút "Chụp màn hình tài xế" ở tab Hàng đợi (/driver).
-// Nhân viên chụp phần ghi chú đơn trên điện thoại tài xế Lalamove → VPS
-// đọc chữ (routes/driver-pickup-lookup.js) → tìm đúng đơn → mở màn thanh
-// toán với mã nhận hàng đã điền sẵn (giống quét "QR nhận hàng"). Không
-// đọc được → chụp lại hoặc nhập tay mã nhận hàng tài xế đọc.
+// DriverScreenScan — nút "Quét màn hình tài xế" ở tab Hàng đợi (/driver).
+// Mở camera NGAY TRONG TRANG (LiveScreenScanner) và tự đọc liên tục phần
+// ghi chú đơn trên điện thoại tài xế Lalamove → VPS đọc chữ (routes/
+// driver-pickup-lookup.js) → tìm đúng đơn → mở màn thanh toán với mã nhận
+// hàng đã điền sẵn. Không cần bấm chụp — nhanh hơn chế độ chụp ảnh cũ.
 //
-// Dùng camera GỐC của máy (input capture="environment") — không cần xin
-// quyền camera cho trình duyệt. Ảnh được thu nhỏ trước khi gửi (nhanh hơn,
-// đọc chữ vẫn đủ nét) và KHÔNG được lưu lại trên VPS.
+// Dự phòng: trình duyệt không mở được camera (chưa cho quyền, máy cũ) →
+// "Chụp ảnh" bằng camera GỐC của máy (input capture="environment") như
+// trước; hoặc nhập tay mã nhận hàng. Ảnh KHÔNG được lưu lại trên VPS.
 
+import { LiveScreenScanner } from "@/components/LiveScreenScanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,12 +18,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { canLiveScan } from "@/lib/live-scan";
 import {
   type PickupLookupMatch,
   lookupPickupByCode,
   lookupPickupByPhoto,
 } from "@/lib/vps-client";
-import { Camera, CheckCircle2, Loader2, Search } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, ScanLine, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const AUTO_OPEN_MS = 2000;
@@ -30,6 +32,7 @@ const MAX_SIDE = 2000;
 
 type Phase =
   | { kind: "idle" }
+  | { kind: "scanning" }
   | { kind: "reading" }
   | { kind: "found"; matches: PickupLookupMatch[] }
   | { kind: "notFound"; error?: string };
@@ -149,20 +152,32 @@ export function DriverScreenScan({
     fileRef.current?.click();
   }
 
+  // Nút chính: quét trực tiếp nếu trình duyệt mở được camera, không thì
+  // chụp ảnh như trước.
+  function startScan() {
+    setCode("");
+    if (canLiveScan()) {
+      setPhase({ kind: "scanning" });
+      setOpen(true);
+    } else {
+      retake();
+    }
+  }
+
   return (
     <>
       <button
         type="button"
-        onClick={retake}
+        onClick={startScan}
         data-ocid="driver.screen_scan_button"
         className="flex w-full items-center gap-3 rounded-xl bg-gradient-primary p-3.5 text-left text-primary-foreground shadow-md transition-smooth hover:opacity-95"
       >
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/15">
-          <Camera className="h-6 w-6" aria-hidden="true" />
+          <ScanLine className="h-6 w-6" aria-hidden="true" />
         </span>
         <span>
           <span className="block text-base font-bold">
-            Chụp màn hình tài xế
+            Quét màn hình tài xế
           </span>
           <span className="block text-xs opacity-90">
             Tự tìm đơn + tự điền mã nhận hàng
@@ -183,12 +198,45 @@ export function DriverScreenScan({
         }}
       />
 
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          // Đóng → tắt camera (LiveScreenScanner bị gỡ).
+          if (!o) setPhase({ kind: "idle" });
+        }}
+      >
         <SheetContent
           side="bottom"
           className="rounded-t-2xl"
           data-ocid="driver.screen_scan_sheet"
         >
+          {phase.kind === "scanning" && (
+            <div className="flex flex-col gap-2 p-4 pt-0">
+              <SheetHeader className="px-0">
+                <SheetTitle>Quét màn hình tài xế</SheetTitle>
+                <SheetDescription className="sr-only">
+                  Camera tự đọc mã nhận hàng trên điện thoại tài xế
+                </SheetDescription>
+              </SheetHeader>
+              <LiveScreenScanner
+                restaurantId={restaurantId}
+                deviceId={deviceId}
+                onFound={showResult}
+                onError={(message) =>
+                  setPhase({ kind: "notFound", error: message })
+                }
+                onManual={() =>
+                  setPhase({
+                    kind: "notFound",
+                    error: "Nhập mã nhận hàng tài xế đọc cho bạn.",
+                  })
+                }
+                onPhoto={retake}
+              />
+            </div>
+          )}
+
           {phase.kind === "reading" && (
             <SheetHeader>
               <SheetTitle>Đang đọc mã trên ảnh…</SheetTitle>
@@ -293,11 +341,17 @@ export function DriverScreenScan({
                   type="button"
                   variant="outline"
                   className="min-h-[44px] flex-1"
-                  onClick={retake}
+                  onClick={() =>
+                    canLiveScan() ? setPhase({ kind: "scanning" }) : retake()
+                  }
                   data-ocid="driver.screen_scan_retake"
                 >
-                  <Camera className="h-4 w-4" aria-hidden="true" />
-                  Chụp lại
+                  {canLiveScan() ? (
+                    <ScanLine className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Camera className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  {canLiveScan() ? "Quét lại" : "Chụp lại"}
                 </Button>
                 <Button
                   type="button"

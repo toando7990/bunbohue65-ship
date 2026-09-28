@@ -154,6 +154,66 @@ router.post('/driver/pickup-lookup/photo', upload.single('image'), async (req, r
   }
 });
 
+// ------------------------------------------------------------
+// POST /driver/screen-scan/frame — "Quét màn hình tài xế" (quét trực
+// tiếp): trình duyệt gửi LIÊN TỤC khung hình nhỏ (chỉ phần trong khung
+// ngắm, ~1200px) cho tới khi đọc được. Khác /photo:
+//  - giới hạn riêng 120 khung/phút (quét ~1 khung/giây; /photo chỉ 20/phút)
+//  - kết quả kiểm tra thiết bị được nhớ 60 giây (không gọi canister mỗi
+//    khung — đó là phần chậm nhất)
+//  - chỉ ghi log khi tìm thấy đơn (tránh log mỗi khung)
+// Ảnh KHÔNG được lưu lại.
+// ------------------------------------------------------------
+const FRAME_MAX_BYTES = 1.5 * 1024 * 1024;
+const frameUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: FRAME_MAX_BYTES },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED.includes(file.mimetype)) return cb(new Error('Only jpg/png/webp images are accepted'));
+    cb(null, true);
+  },
+});
+const deviceOkCache = new Map(); // `${restaurantId}:${deviceId}` → hết hạn (ms)
+const DEVICE_CACHE_MS = 60 * 1000;
+async function requireActiveDeviceCached(restaurantId, deviceId, res) {
+  const key = `${restaurantId}:${deviceId}`;
+  const exp = deviceOkCache.get(key);
+  if (exp && exp > Date.now()) return true;
+  const ok = await requireActiveDevice(restaurantId, deviceId, res);
+  if (ok) deviceOkCache.set(key, Date.now() + DEVICE_CACHE_MS);
+  else deviceOkCache.delete(key);
+  return ok;
+}
+
+router.post(
+  '/driver/screen-scan/frame',
+  rateLimit({ windowMs: 60000, max: 120, message: 'Quét quá nhanh — đợi vài giây.' }),
+  frameUpload.single('image'),
+  async (req, res, next) => {
+    try {
+      const db = req.app.locals.db;
+      const restaurantId = String((req.body || {}).restaurantId || '').trim();
+      const deviceId = String((req.body || {}).deviceId || '').trim();
+      if (!req.file) return res.status(400).json({ ok: false, message: 'Thiếu khung hình.' });
+      if (!(await requireActiveDeviceCached(restaurantId, deviceId, res))) return;
+      let text = '';
+      try {
+        text = await extractTextFromImage(req.file.buffer);
+      } catch (e) {
+        console.error('[screen-scan] OCR lỗi:', e.message);
+      }
+      const read = parsePickupScreenText(text);
+      const matches = findMatches(db, restaurantId, read);
+      if (matches.length > 0) {
+        console.log('[screen-scan] khung:', restaurantId, 'đọc', JSON.stringify(read), '→', matches.length, 'đơn');
+      }
+      res.json({ ok: true, matches, read });
+    } catch (e) {
+      next(e);
+    }
+  },
+);
+
 router.post('/driver/pickup-lookup/code', async (req, res, next) => {
   try {
     const db = req.app.locals.db;
@@ -174,3 +234,4 @@ router.post('/driver/pickup-lookup/code', async (req, res, next) => {
 
 module.exports = router;
 module.exports._findMatches = findMatches;
+module.exports._deviceOkCache = deviceOkCache;

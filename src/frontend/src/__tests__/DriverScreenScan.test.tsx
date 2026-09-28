@@ -1,6 +1,7 @@
-// Coverage cho DriverScreenScan — nút "Chụp màn hình tài xế" ở /driver:
-// chụp → VPS đọc mã → tìm thấy thì tự mở thanh toán (mã điền sẵn);
-// không đọc được thì nhập tay mã nhận hàng.
+// Coverage cho DriverScreenScan — nút "Quét màn hình tài xế" ở /driver:
+// quét trực tiếp bằng camera trong trang (dự phòng: chụp ảnh) → VPS đọc mã
+// → tìm thấy thì tự mở thanh toán (mã điền sẵn); không đọc được thì nhập
+// tay mã nhận hàng.
 
 import { DriverScreenScan } from "@/components/DriverScreenScan";
 import {
@@ -14,10 +15,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mockByPhoto = vi.fn();
 const mockByCode = vi.fn();
+const mockByFrame = vi.fn();
 vi.mock("@/lib/vps-client", () => ({
   lookupPickupByPhoto: (...a: unknown[]) => mockByPhoto(...a),
   lookupPickupByCode: (...a: unknown[]) => mockByCode(...a),
+  lookupPickupByFrame: (...a: unknown[]) => mockByFrame(...a),
+  VpsHttpError: class VpsHttpError extends Error {
+    status = 0;
+  },
 }));
+
+function setCamera(getUserMedia?: (...a: unknown[]) => Promise<unknown>) {
+  Object.defineProperty(navigator, "mediaDevices", {
+    configurable: true,
+    value: getUserMedia ? { getUserMedia } : undefined,
+  });
+}
 
 const MATCH = {
   orderId: "ORD-1727331200123-a1b2c3d4",
@@ -48,6 +61,66 @@ describe("DriverScreenScan", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    setCamera(undefined);
+  });
+
+  it("'Quét màn hình tài xế' opens the in-page camera (rear), and closing it turns the camera off", async () => {
+    const stopTrack = vi.fn();
+    const stream = {
+      getTracks: () => [{ stop: stopTrack }],
+      getVideoTracks: () => [{ stop: stopTrack }],
+    };
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    setCamera(getUserMedia);
+    renderScan();
+    expect(screen.getByTestId("driver.screen_scan_button")).toHaveTextContent(
+      "Quét màn hình tài xế",
+    );
+    fireEvent.click(screen.getByTestId("driver.screen_scan_button"));
+    expect(await screen.findByTestId("driver.live_scan")).toBeInTheDocument();
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalled());
+    expect(getUserMedia.mock.calls[0][0]).toMatchObject({
+      audio: false,
+      video: { facingMode: { ideal: "environment" } },
+    });
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: "Escape",
+    });
+    await waitFor(() => expect(stopTrack).toHaveBeenCalled());
+  });
+
+  it("falls back to typing the code when camera permission is denied", async () => {
+    setCamera(vi.fn().mockRejectedValue(new Error("NotAllowedError")));
+    renderScan();
+    fireEvent.click(screen.getByTestId("driver.screen_scan_button"));
+    expect(
+      await screen.findByTestId("driver.screen_scan_not_found"),
+    ).toHaveTextContent("Không mở được camera");
+    expect(
+      screen.getByTestId("driver.screen_scan_code_input"),
+    ).toBeInTheDocument();
+  });
+
+  it("'Nhập mã tay' while scanning switches to the code input", async () => {
+    setCamera(vi.fn(() => new Promise(() => {})));
+    renderScan();
+    fireEvent.click(screen.getByTestId("driver.screen_scan_button"));
+    fireEvent.click(await screen.findByTestId("driver.live_scan_manual"));
+    expect(
+      screen.getByTestId("driver.screen_scan_code_input"),
+    ).toBeInTheDocument();
+  });
+
+  it("without in-page camera support, the button falls back to the native photo capture", () => {
+    setCamera(undefined);
+    const click = vi
+      .spyOn(HTMLInputElement.prototype, "click")
+      .mockImplementation(() => {});
+    renderScan();
+    fireEvent.click(screen.getByTestId("driver.screen_scan_button"));
+    expect(click).toHaveBeenCalled();
+    expect(screen.queryByTestId("driver.live_scan")).not.toBeInTheDocument();
+    click.mockRestore();
   });
 
   it("uses the device's native camera (capture=environment)", () => {

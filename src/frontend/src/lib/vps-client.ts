@@ -305,6 +305,27 @@ export async function lookupPickupByPhoto(
   return res.matches ?? [];
 }
 
+// "Quét màn hình tài xế": gửi 1 khung hình nhỏ (phần trong khung ngắm) —
+// VPS đọc chữ + tìm đơn, không lưu ảnh (routes/driver-pickup-lookup.js).
+export async function lookupPickupByFrame(
+  restaurantId: string,
+  deviceId: string,
+  frame: Blob,
+): Promise<PickupLookupMatch[]> {
+  const formData = new FormData();
+  formData.append("restaurantId", restaurantId);
+  formData.append("deviceId", deviceId);
+  formData.append("image", frame, "frame.jpg");
+  const res = await vpsFetch<{ ok: boolean; matches?: PickupLookupMatch[] }>({
+    method: "POST",
+    path: "/driver/screen-scan/frame",
+    body: formData,
+    isFormData: true,
+    timeoutMs: 10000,
+  });
+  return res.matches ?? [];
+}
+
 export async function lookupPickupByCode(
   restaurantId: string,
   deviceId: string,
