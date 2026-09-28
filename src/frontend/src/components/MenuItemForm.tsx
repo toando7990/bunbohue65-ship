@@ -46,6 +46,8 @@ export interface MenuItemFormProps {
   onSaved?: () => void;
   /** Callback khi hủy. */
   onCancel?: () => void;
+  /** Nhóm món chọn sẵn khi thêm món mới (nút "+ Thêm vào nhóm"). */
+  defaultCategory?: string;
 }
 
 function generateItemId(name: string): string {
@@ -76,7 +78,12 @@ function parseBigInput(s: string): bigint {
   }
 }
 
-export function MenuItemForm({ item, onSaved, onCancel }: MenuItemFormProps) {
+export function MenuItemForm({
+  item,
+  onSaved,
+  onCancel,
+  defaultCategory,
+}: MenuItemFormProps) {
   const isEdit = !!item;
   const addItemMutation = useAddItem();
   const updateItemMutation = useUpdateItem();
@@ -89,7 +96,7 @@ export function MenuItemForm({ item, onSaved, onCancel }: MenuItemFormProps) {
     bigToInput(item?.vatRate) || "8",
   );
   const [category, setCategory] = useState<string>(
-    item?.category ?? CATEGORY_OPTIONS[0],
+    item?.category ?? defaultCategory ?? CATEGORY_OPTIONS[0],
   );
   const [image, setImage] = useState<ProcessedImage | null>(null);
   const [visible, setVisible] = useState<boolean>(item?.visible ?? true);

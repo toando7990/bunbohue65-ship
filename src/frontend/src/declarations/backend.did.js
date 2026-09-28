@@ -509,6 +509,11 @@ export const idlService = IDL.Service({
   'listPromotions' : IDL.Func([IDL.Text], [Result_11], ['query']),
   'listRegistrationPromos' : IDL.Func([IDL.Text], [Result_10], ['query']),
   'listRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
+  'listRestaurantPriceOverrides' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))))],
+      ['query'],
+    ),
   'listSalesPromos' : IDL.Func([IDL.Text], [Result_9], ['query']),
   'markPaymentExpired' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
   'markPickedUp' : IDL.Func([IDL.Text], [Result], []),
@@ -527,6 +532,11 @@ export const idlService = IDL.Service({
   'setPaymentMode' : IDL.Func([IDL.Text], [Result_7], []),
   'setRestaurantPriceOverride' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Nat],
+      [Result_7],
+      [],
+    ),
+  'setRestaurantPriceOverrides' : IDL.Func(
+      [IDL.Text, IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
       [Result_7],
       [],
     ),
@@ -1145,6 +1155,11 @@ export const idlFactory = ({ IDL }) => {
     'listPromotions' : IDL.Func([IDL.Text], [Result_11], ['query']),
     'listRegistrationPromos' : IDL.Func([IDL.Text], [Result_10], ['query']),
     'listRestaurants' : IDL.Func([], [IDL.Vec(Restaurant)], ['query']),
+    'listRestaurantPriceOverrides' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))))],
+        ['query'],
+      ),
     'listSalesPromos' : IDL.Func([IDL.Text], [Result_9], ['query']),
     'markPaymentExpired' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'markPickedUp' : IDL.Func([IDL.Text], [Result], []),
@@ -1163,6 +1178,11 @@ export const idlFactory = ({ IDL }) => {
     'setPaymentMode' : IDL.Func([IDL.Text], [Result_7], []),
     'setRestaurantPriceOverride' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Nat],
+        [Result_7],
+        [],
+      ),
+    'setRestaurantPriceOverrides' : IDL.Func(
+        [IDL.Text, IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
         [Result_7],
         [],
       ),

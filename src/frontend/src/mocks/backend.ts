@@ -111,6 +111,7 @@ export const mockBackend: backendInterface = {
   listPendingPaymentOrders: async () => [],
   listPaidOrdersForPickup: async () => [],
   listRestaurants: async () => [],
+  listRestaurantPriceOverrides: async () => [],
   markPickedUp: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   markPaymentExpired: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   pruneOldOrdersNow: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
@@ -122,6 +123,10 @@ export const mockBackend: backendInterface = {
   sendVerificationCode: async () => ({ __kind__: "ok", ok: null }),
   setPaymentMode: async () => ({ __kind__: "ok", ok: null }),
   setRestaurantPriceOverride: async () => ({
+    __kind__: "err",
+    err: "Mock: không hỗ trợ",
+  }),
+  setRestaurantPriceOverrides: async () => ({
     __kind__: "err",
     err: "Mock: không hỗ trợ",
   }),

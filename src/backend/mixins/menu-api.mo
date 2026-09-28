@@ -155,6 +155,23 @@ mixin (
     MenuLib.setRestaurantPriceOverride(overrides, restaurantId, itemId, price);
   };
 
+  // Admin only. Lưu nhiều giá riêng của 1 nhà hàng một lần (price 0 = bỏ).
+  public shared ({ caller }) func setRestaurantPriceOverrides(
+    restaurantId : Text,
+    entries : [(Text, Nat)],
+  ) : async Result.Result<(), Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Admin only");
+    };
+    MenuLib.setRestaurantPriceOverrides(overrides, restaurantId, entries);
+  };
+
+  // Admin only. Toàn bộ giá riêng theo nhà hàng: [(restaurantId, [(itemId, price)])].
+  public query ({ caller }) func listRestaurantPriceOverrides() : async [(Text, [(Text, Nat)])] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) return [];
+    MenuLib.listRestaurantPriceOverrides(overrides);
+  };
+
   // Return visible menu items with price overrides applied for a specific
   // restaurant. Ảnh luôn rỗng — lấy riêng qua getItemImage(itemId).
   public query func getMenuForRestaurant(restaurantId : Text) : async [CoreTypes.MenuItem] {

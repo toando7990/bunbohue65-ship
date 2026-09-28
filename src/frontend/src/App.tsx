@@ -17,7 +17,7 @@ import { DeviceManager } from "@/pages/DeviceManager";
 import { DriverPaymentScreen } from "@/pages/DriverPaymentScreen";
 import { EnterpriseManagementPage } from "@/pages/EnterpriseManagementPage";
 import GioiThieu from "@/pages/GioiThieu";
-import { MenuManager } from "@/pages/MenuManager";
+import { MenuRestaurantPage } from "@/pages/MenuRestaurantPage";
 import OrderHistory from "@/pages/OrderHistory";
 import OrderList from "@/pages/OrderList";
 import OrderTracker from "@/pages/OrderTracker";
@@ -25,7 +25,6 @@ import OrderingPartners from "@/pages/OrderingPartners";
 import Profile from "@/pages/Profile";
 import PromotionManager from "@/pages/PromotionManager";
 import RegistrationPromoManager from "@/pages/RegistrationPromoManager";
-import RestaurantManager from "@/pages/RestaurantManager";
 import SalesPromoManager from "@/pages/SalesPromoManager";
 import {
   Outlet,
@@ -351,7 +350,17 @@ const adminMenuRoute = createRoute({
   path: "/admin/menu",
   component: () => (
     <AdminGate>
-      <MenuManager />
+      <MenuRestaurantPage initialTab="menu" />
+    </AdminGate>
+  ),
+});
+
+const adminMenuRestaurantRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin/thuc-don",
+  component: () => (
+    <AdminGate>
+      <MenuRestaurantPage />
     </AdminGate>
   ),
 });
@@ -361,7 +370,7 @@ const adminRestaurantsRoute = createRoute({
   path: "/admin/restaurants",
   component: () => (
     <AdminGate>
-      <RestaurantManager />
+      <MenuRestaurantPage initialTab="restaurants" />
     </AdminGate>
   ),
 });
@@ -451,6 +460,7 @@ const router = createRouter({
     adminDevicesRoute,
     adminMenuRoute,
     adminRestaurantsRoute,
+    adminMenuRestaurantRoute,
     adminPromotionsRoute,
     adminRegistrationPromoRoute,
     adminSalesPromoRoute,

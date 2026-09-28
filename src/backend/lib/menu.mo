@@ -173,7 +173,8 @@ module {
       .map(func((_id : Text, r : Types.Restaurant)) : Types.Restaurant = r);
   };
 
-  // Set a price override for a (restaurantId, itemId) pair.
+  // Set a price override for a (restaurantId, itemId) pair. price = 0 nghĩa
+  // là BỎ giá riêng (về giá chung) — trước đây 0 bị lưu thật thành giá 0đ.
   public func setRestaurantPriceOverride(
     overrides : Overrides,
     restaurantId : Text,
@@ -182,16 +183,47 @@ module {
   ) : Result.Result<(), Text> {
     switch (overrides.get(restaurantId)) {
       case null {
+        if (price == 0) return #ok;
         let inner = Map.empty<Text, Nat>();
         inner.add(itemId, price);
         overrides.add(restaurantId, inner);
       };
       case (?inner) {
-        inner.add(itemId, price);
-        overrides.add(restaurantId, inner);
+        if (price == 0) {
+          inner.remove(itemId);
+          if (inner.isEmpty()) overrides.remove(restaurantId);
+        } else {
+          inner.add(itemId, price);
+        };
       };
     };
     #ok;
+  };
+
+  // Lưu nhiều giá riêng một lần cho 1 nhà hàng (price 0 = bỏ giá riêng).
+  public func setRestaurantPriceOverrides(
+    overrides : Overrides,
+    restaurantId : Text,
+    entries : [(Text, Nat)],
+  ) : Result.Result<(), Text> {
+    for ((itemId, price) in entries.values()) {
+      ignore setRestaurantPriceOverride(overrides, restaurantId, itemId, price);
+    };
+    #ok;
+  };
+
+  // Toàn bộ giá riêng (bỏ qua giá 0 cũ còn sót) — cho trang quản trị.
+  public func listRestaurantPriceOverrides(
+    overrides : Overrides,
+  ) : [(Text, [(Text, Nat)])] {
+    let all = overrides.toArray();
+    Array.map<(Text, Map.Map<Text, Nat>), (Text, [(Text, Nat)])>(
+      all,
+      func(e) {
+        let positive = Array.filter<(Text, Nat)>(e.1.toArray(), func(x) { x.1 > 0 });
+        (e.0, positive);
+      },
+    );
   };
 
   // Return visible menu items with price overrides applied for a specific
@@ -210,7 +242,8 @@ module {
           case (?inner) {
             switch (inner.get(i.itemId)) {
               case null { i };
-              case (?price) { { i with price = price } };
+              // Giá riêng 0 (dữ liệu cũ do "Bỏ override") = dùng giá chung.
+              case (?price) { if (price == 0) { i } else { { i with price = price } } };
             };
           };
         };

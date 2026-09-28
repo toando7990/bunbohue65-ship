@@ -255,7 +255,7 @@ export async function updateItem(
 }
 
 // Bật/tắt hiển thị món CHỈ đổi field visible, KHÔNG đụng tới ảnh — dùng cho
-// MenuItemTable.tsx thay vì updateItem() để tránh gửi nhầm ảnh rỗng (item.image
+// components/menu/MenuTab.tsx thay vì updateItem() để tránh gửi nhầm ảnh rỗng (item.image
 // từ listMenus() giờ luôn rỗng, xem getItemImage) đè lên ảnh thật đã lưu.
 export async function setItemVisible(
   actor: Backend,
@@ -344,6 +344,23 @@ export async function listRestaurants(actor: Backend): Promise<Restaurant[]> {
 
 export async function getRestaurants(actor: Backend): Promise<Restaurant[]> {
   return actor.getRestaurants();
+}
+
+// Giá riêng theo nhà hàng: Map restaurantId → Map itemId → giá (VND).
+export async function listRestaurantPriceOverrides(
+  actor: Backend,
+): Promise<Map<string, Map<string, bigint>>> {
+  const rows = await actor.listRestaurantPriceOverrides();
+  return new Map(rows.map(([rid, items]) => [rid, new Map(items)]));
+}
+
+// Lưu nhiều giá riêng của 1 nhà hàng một lần. price 0n = bỏ giá riêng.
+export async function setRestaurantPriceOverrides(
+  actor: Backend,
+  restaurantId: string,
+  entries: Array<[string, bigint]>,
+): Promise<void> {
+  unwrap(await actor.setRestaurantPriceOverrides(restaurantId, entries));
 }
 
 export async function setRestaurantPriceOverride(

@@ -451,6 +451,10 @@ export interface _SERVICE {
   'listPromotions' : ActorMethod<[string], Result_11>,
   'listRegistrationPromos' : ActorMethod<[string], Result_10>,
   'listRestaurants' : ActorMethod<[], Array<Restaurant>>,
+  'listRestaurantPriceOverrides' : ActorMethod<
+    [],
+    Array<[string, Array<[string, bigint]>]>
+  >,
   'listSalesPromos' : ActorMethod<[string], Result_9>,
   'markPaymentExpired' : ActorMethod<[string, string], Result>,
   /**
@@ -481,6 +485,10 @@ export interface _SERVICE {
   'setPaymentMode' : ActorMethod<[string], Result_7>,
   'setRestaurantPriceOverride' : ActorMethod<
     [string, string, bigint],
+    Result_7
+  >,
+  'setRestaurantPriceOverrides' : ActorMethod<
+    [string, Array<[string, bigint]>],
     Result_7
   >,
   /**

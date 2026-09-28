@@ -610,6 +610,7 @@ export interface backendInterface {
     listPromotions(deviceId: string): Promise<Result_11>;
     listRegistrationPromos(deviceId: string): Promise<Result_10>;
     listRestaurants(): Promise<Array<Restaurant>>;
+    listRestaurantPriceOverrides(): Promise<Array<[string, Array<[string, bigint]>]>>;
     listSalesPromos(deviceId: string): Promise<Result_9>;
     markPaymentExpired(orderId: string, hmac: string): Promise<Result>;
     /**
@@ -636,6 +637,7 @@ export interface backendInterface {
      */
     setPaymentMode(mode: string): Promise<Result_7>;
     setRestaurantPriceOverride(restaurantId: string, itemId: string, price: bigint): Promise<Result_7>;
+    setRestaurantPriceOverrides(restaurantId: string, entries: Array<[string, bigint]>): Promise<Result_7>;
     /**
      * / Admin-only update: set the global store open/close hours. Rejects any
      * / caller that is not an admin with #err. Returns #ok on success, #err if the
@@ -1611,6 +1613,18 @@ export class Backend implements backendInterface {
             return from_candid_Result_10_n79(this._uploadFile, this._downloadFile, result);
         }
     }
+    async listRestaurantPriceOverrides(): Promise<Array<[string, Array<[string, bigint]>]>> {
+        if (this.processError) {
+            try {
+                return await this.actor.listRestaurantPriceOverrides();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await this.actor.listRestaurantPriceOverrides();
+        }
+    }
     async listRestaurants(): Promise<Array<Restaurant>> {
         if (this.processError) {
             try {
@@ -1804,6 +1818,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.setRestaurantPriceOverride(arg0, arg1, arg2);
+            return from_candid_Result_7_n35(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async setRestaurantPriceOverrides(arg0: string, arg1: Array<[string, bigint]>): Promise<Result_7> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setRestaurantPriceOverrides(arg0, arg1);
+                return from_candid_Result_7_n35(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setRestaurantPriceOverrides(arg0, arg1);
             return from_candid_Result_7_n35(this._uploadFile, this._downloadFile, result);
         }
     }

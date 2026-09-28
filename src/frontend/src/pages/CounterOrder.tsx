@@ -6,7 +6,7 @@
 //
 // GIÁ MÓN: dùng useMenuForRestaurant(restaurantId) — áp dụng ĐÚNG giá
 // override riêng của nhà hàng gắn với thiết bị (setRestaurantPriceOverride,
-// PriceOverrideEditor.tsx), KHÁC useMenus() (giá chung, không override) mà
+// tab Thực đơn → "Xem giá tại"), KHÁC useMenus() (giá chung, không override) mà
 // CreateOrder.tsx (đặt online) đang dùng — đúng mục đích: phân biệt được
 // giá bán online và giá bán tại quầy của cùng 1 món, theo từng nhà hàng.
 //

@@ -94,10 +94,9 @@ const ADMIN_NAV: NavItem[] = [
     icon: ShieldCheck,
     adminOnly: true,
   },
-  { to: "/admin/menu", label: "Menu", icon: ShieldCheck, adminOnly: true },
   {
-    to: "/admin/restaurants",
-    label: "Nhà hàng",
+    to: "/admin/thuc-don",
+    label: "Thực đơn & Nhà hàng",
     icon: ShieldCheck,
     adminOnly: true,
   },

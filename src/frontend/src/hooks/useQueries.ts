@@ -45,6 +45,7 @@ import {
   listMenus as listMenusFn,
   listMyVouchers as listMyVouchersFn,
   listOrders as listOrdersFn,
+  listRestaurantPriceOverrides as listPriceOverridesFn,
   listPromotions as listPromotionsFn,
   listRegistrationPromos as listRegistrationPromosFn,
   listRestaurants as listRestaurantsFn,
@@ -53,6 +54,7 @@ import {
   revokeDevice as revokeDeviceFn,
   setItemVisible as setItemVisibleFn,
   setRestaurantPriceOverride as setOverrideFn,
+  setRestaurantPriceOverrides as setOverridesFn,
   setPaymentMode as setPaymentModeFn,
   setStoreHours as setStoreHoursFn,
   setVpsSecret as setVpsSecretFn,
@@ -188,7 +190,7 @@ export function useUpdateItem() {
 }
 
 // Bật/tắt hiển thị món — CHỈ đổi field visible, KHÔNG đụng tới ảnh. Dùng cho
-// MenuItemTable.tsx thay vì useUpdateItem() để tránh gửi nhầm ảnh rỗng đè
+// components/menu/MenuTab.tsx thay vì useUpdateItem() để tránh gửi nhầm ảnh rỗng đè
 // lên ảnh thật (item.image từ danh sách giờ luôn rỗng — xem useItemImage).
 export function useSetItemVisible() {
   const qc = useQueryClient();
@@ -268,7 +270,42 @@ export function useDeleteRestaurant() {
       if (!actor) throw new Error("Actor not ready");
       return deleteRestaurantFn(actor, restaurantId);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["restaurants"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["restaurants"] });
+      qc.invalidateQueries({ queryKey: ["priceOverrides"] });
+    },
+  });
+}
+
+// Toàn bộ giá riêng: Map restaurantId → Map itemId → giá (admin).
+export function useRestaurantPriceOverrides() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["priceOverrides"],
+    queryFn: () =>
+      actor
+        ? listPriceOverridesFn(actor)
+        : Promise.resolve(new Map<string, Map<string, bigint>>()),
+    enabled: !!actor && !isFetching,
+  });
+}
+
+// Lưu nhiều giá riêng của 1 nhà hàng một lần (0n = về giá chung).
+export function useSaveRestaurantPrices() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (args: {
+      restaurantId: string;
+      entries: Array<[string, bigint]>;
+    }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return setOverridesFn(actor, args.restaurantId, args.entries);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["priceOverrides"] });
+      qc.invalidateQueries({ queryKey: ["menu"] });
+    },
   });
 }
 
