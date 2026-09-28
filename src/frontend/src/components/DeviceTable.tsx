@@ -1,5 +1,8 @@
-// DeviceTable — bảng thiết bị với columns deviceId, restaurantId, role, activatedAt,
-// active status, nút Thu hồi. UI tiếng Việt.
+// DeviceTable — bảng thiết bị (trang Quản lý thiết bị, giao diện đã duyệt):
+// Nhân viên (tên + SĐT + ngày kích hoạt + mã thiết bị) · Vai trò · Nhà hàng
+// (hoặc Phạm vi cho thiết bị doanh nghiệp) · Trạng thái · Thao tác.
+// Thiết bị đang hoạt động → "Thu hồi"; đã thu hồi → "Xoá" (xoá hẳn khỏi
+// canister). Việc xác nhận do trang cha đảm nhiệm.
 
 import { type Device, DeviceRole } from "@/backend";
 import { Button } from "@/components/ui/button";
@@ -11,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, ShieldOff } from "lucide-react";
+import { Loader2, ShieldOff, Trash2 } from "lucide-react";
 
 const ROLE_LABELS: Record<DeviceRole, string> = {
   [DeviceRole.admin]: "Quản trị",
@@ -49,17 +52,26 @@ function truncateId(id: string, max = 14): string {
 export interface DeviceTableProps {
   devices: Device[];
   isLoading?: boolean;
-  onRevoke?: (deviceId: string) => void;
-  revokingDeviceId?: string | null;
+  onRevoke?: (device: Device) => void;
+  onDelete?: (device: Device) => void;
+  busyDeviceId?: string | null;
   emptyMessage?: string;
+  // "restaurant": cột Nhà hàng (tên lấy từ restaurantNames); "scope": cột
+  // Phạm vi = "Toàn chuỗi" khi thiết bị không gắn nhà hàng (Kế toán/Báo cáo),
+  // còn Hàng đợi thanh toán gắn nhà hàng thì hiện tên nhà hàng.
+  placeColumn?: "restaurant" | "scope";
+  restaurantNames?: Map<string, string>;
 }
 
 export function DeviceTable({
   devices,
   isLoading = false,
   onRevoke,
-  revokingDeviceId = null,
+  onDelete,
+  busyDeviceId = null,
   emptyMessage = "Chưa có thiết bị nào.",
+  placeColumn = "restaurant",
+  restaurantNames,
 }: DeviceTableProps) {
   if (isLoading) {
     return (
@@ -76,7 +88,7 @@ export function DeviceTable({
   if (!devices || devices.length === 0) {
     return (
       <div
-        className="flex flex-col items-center justify-center gap-2 py-10 text-center"
+        className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border py-10 text-center"
         data-ocid="device.table.empty_state"
       >
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
@@ -86,63 +98,73 @@ export function DeviceTable({
 
   return (
     <div
-      className="overflow-hidden rounded-lg border border-border"
+      className="overflow-x-auto rounded-lg border border-border bg-card"
       data-ocid="device.table"
     >
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/40">
             <TableHead className="pl-3">Nhân viên</TableHead>
-            <TableHead>SĐT</TableHead>
-            <TableHead>Nhà hàng</TableHead>
             <TableHead>Vai trò</TableHead>
-            <TableHead>Kích hoạt lúc</TableHead>
-            <TableHead className="text-center">Trạng thái</TableHead>
-            <TableHead className="pr-3 text-right">Thao tác</TableHead>
+            <TableHead>
+              {placeColumn === "scope" ? "Phạm vi" : "Nhà hàng"}
+            </TableHead>
+            <TableHead>Trạng thái</TableHead>
+            <TableHead className="pr-3 text-right">
+              <span className="sr-only">Thao tác</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {devices.map((device, index) => {
-            const isRevoking = revokingDeviceId === device.deviceId;
+            const busy = busyDeviceId === device.deviceId;
             return (
               <TableRow
                 key={device.deviceId}
+                className={device.active ? "" : "text-muted-foreground"}
                 data-ocid={`device.table.row.${index}`}
               >
                 <TableCell className="pl-3">
-                  <p className="text-sm font-medium text-foreground">
+                  <p
+                    className={`text-sm font-medium ${device.active ? "text-foreground" : ""}`}
+                  >
                     {device.name || "Chưa có tên"}
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    {device.phone || "—"} · kích hoạt{" "}
+                    {formatTimestamp(device.activatedAt)}
+                  </p>
                   <span
-                    className="font-mono text-xs text-muted-foreground"
+                    className="font-mono text-[11px] text-muted-foreground"
                     title={device.deviceId}
                   >
                     {truncateId(device.deviceId)}
                   </span>
                 </TableCell>
-                <TableCell className="text-sm text-foreground">
-                  {device.phone || "—"}
+                <TableCell>
+                  <span className="rounded-full bg-info/10 px-2 py-0.5 text-xs text-info">
+                    {ROLE_LABELS[device.role] ?? device.role}
+                  </span>
                 </TableCell>
-                <TableCell className="text-sm text-foreground">
-                  {device.restaurantId || "—"}
+                <TableCell className="text-sm">
+                  {device.restaurantId
+                    ? restaurantNames?.get(device.restaurantId) ||
+                      device.restaurantId
+                    : placeColumn === "scope"
+                      ? "Toàn chuỗi"
+                      : "—"}
                 </TableCell>
-                <TableCell className="text-sm text-foreground">
-                  {ROLE_LABELS[device.role] ?? device.role}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatTimestamp(device.activatedAt)}
-                </TableCell>
-                <TableCell className="text-center">
+                <TableCell>
                   {device.active ? (
                     <span
-                      className="badge-success inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium"
+                      className="badge-success inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium"
                       data-ocid={`device.table.status.${index}`}
                     >
-                      Kích hoạt
+                      Đang hoạt động
                     </span>
                   ) : (
                     <span
-                      className="badge-destructive inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium"
+                      className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
                       data-ocid={`device.table.status.${index}`}
                     >
                       Đã thu hồi
@@ -150,17 +172,17 @@ export function DeviceTable({
                   )}
                 </TableCell>
                 <TableCell className="pr-3 text-right">
-                  {device.active && onRevoke ? (
+                  {device.active && onRevoke && (
                     <Button
                       type="button"
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
-                      onClick={() => onRevoke(device.deviceId)}
-                      disabled={isRevoking}
+                      onClick={() => onRevoke(device)}
+                      disabled={busy}
                       data-ocid={`device.table.revoke_button.${index}`}
-                      aria-label={`Thu hồi thiết bị ${truncateId(device.deviceId)}`}
+                      aria-label={`Thu hồi thiết bị ${device.name || truncateId(device.deviceId)}`}
                     >
-                      {isRevoking ? (
+                      {busy ? (
                         <Loader2
                           className="h-3.5 w-3.5 animate-spin"
                           aria-hidden="true"
@@ -170,8 +192,28 @@ export function DeviceTable({
                       )}
                       Thu hồi
                     </Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                  {!device.active && onDelete && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDelete(device)}
+                      disabled={busy}
+                      className="border-destructive/40 text-destructive hover:text-destructive"
+                      data-ocid={`device.table.delete_button.${index}`}
+                      aria-label={`Xoá thiết bị ${device.name || truncateId(device.deviceId)}`}
+                    >
+                      {busy ? (
+                        <Loader2
+                          className="h-3.5 w-3.5 animate-spin"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      )}
+                      Xoá
+                    </Button>
                   )}
                 </TableCell>
               </TableRow>

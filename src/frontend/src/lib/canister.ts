@@ -5,6 +5,7 @@
 import { type Backend, createActor } from "@/backend";
 import {
   BookingStatus,
+  type CleanupCounts,
   type Device,
   DeviceRole,
   InvoiceStatus,
@@ -149,6 +150,39 @@ export async function revokeDevice(
   deviceId: string,
 ): Promise<Device> {
   return unwrap(await actor.revokeDevice(deviceId));
+}
+
+// Xoá hẳn 1 thiết bị ĐÃ THU HỒI (canister từ chối thiết bị đang hoạt động).
+export async function deleteRevokedDevice(
+  actor: Backend,
+  deviceId: string,
+): Promise<void> {
+  unwrap(await actor.deleteRevokedDevice(deviceId));
+}
+
+// Số mục có thể dọn: mã hết hạn / thiết bị thu hồi cấp nhà hàng / cấp DN.
+export async function getDeviceCleanupCounts(
+  actor: Backend,
+): Promise<CleanupCounts> {
+  return actor.getDeviceCleanupCounts();
+}
+
+// Dọn dẹp gộp — trả số đã xoá mỗi loại.
+export async function cleanupDeviceStore(
+  actor: Backend,
+  opts: {
+    expiredCodes: boolean;
+    restaurantDevices: boolean;
+    enterpriseDevices: boolean;
+  },
+): Promise<CleanupCounts> {
+  return unwrap(
+    await actor.cleanupDeviceStore(
+      opts.expiredCodes,
+      opts.restaurantDevices,
+      opts.enterpriseDevices,
+    ),
+  );
 }
 
 export async function cleanupExpiredActivations(

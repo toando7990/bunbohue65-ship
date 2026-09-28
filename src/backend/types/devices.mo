@@ -19,6 +19,16 @@ module {
 
   // Enterprise device roles (subset of DeviceRole). Used by role-gating
   // helpers to decide which business APIs an enterprise device may call.
+  // Số mục có thể dọn (nút "Dọn dẹp" ở trang Quản lý thiết bị) / số mục
+  // đã dọn. restaurantDevices = thiết bị ĐÃ THU HỒI cấp nhà hàng (admin /
+  // thu ngân / tài xế); enterpriseDevices = thiết bị ĐÃ THU HỒI cấp doanh
+  // nghiệp (hàng đợi thanh toán / kế toán / báo cáo bán hàng & KM).
+  public type CleanupCounts = {
+    expiredCodes : Nat;
+    restaurantDevices : Nat;
+    enterpriseDevices : Nat;
+  };
+
   public type EnterpriseRole = {
     #paymentQueue;
     #accounting;

@@ -57,6 +57,25 @@ export interface Cell {
     value: Value;
     name: string;
 }
+export interface CleanupCounts {
+    enterpriseDevices: bigint;
+    expiredCodes: bigint;
+    restaurantDevices: bigint;
+}
+export type Result_CleanupCounts = {
+    __kind__: "ok";
+    ok: CleanupCounts;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_Unit = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface Device {
     active: boolean;
     activatedAt: bigint;
@@ -508,8 +527,11 @@ export interface backendInterface {
     cancelOrder(orderId: string, hmac: string): Promise<Result>;
     changeOrderRestaurant(orderId: string, newRestaurantId: string, hmac: string): Promise<Result>;
     claimOrderEmail(orderId: string, email: string): Promise<Result>;
+    cleanupDeviceStore(expiredCodes: boolean, restaurantDevices: boolean, enterpriseDevices: boolean): Promise<Result_CleanupCounts>;
     cleanupExpiredActivations(): Promise<bigint>;
     cleanupOrderByDevice(deviceId: string, orderId: string): Promise<Result>;
+    deleteRevokedDevice(deviceId: DeviceId): Promise<Result_Unit>;
+    getDeviceCleanupCounts(): Promise<CleanupCounts>;
     countVouchersByProgram(programCode: string): Promise<bigint>;
     createOrder(orderId: string, restaurantId: string, cusName: string, cusPhone: string, cusAddress: string, cusTaxCode: string, receiverEmail: string, items: Array<OrderItem>, amount: bigint, goodsAmount: bigint, shippingFee: bigint, taxTotal: bigint, ahamoveOrderId: string, tingeeQrId: string, sharedLink: string, tingeeQrCode: string, pickupCode: string, kmDiscountAmount: bigint, voucherDiscountAmount: bigint, hmac: string): Promise<Result>;
     createPromotion(deviceId: string, name: string, startDate: string, endDate: string, daysOfWeek: Array<boolean>, timeSlots: Array<TimeSlot>, dailyOrderLimit: bigint, perCustomerDailyLimit: bigint, tiers: Array<DiscountTier>, termsUrl: string): Promise<Result_4>;
@@ -847,6 +869,47 @@ export class Backend implements backendInterface {
             const result = await this.actor.claimOrderEmail(arg0, arg1);
             return from_candid_Result_n20(this._uploadFile, this._downloadFile, result);
         }
+    }
+    async cleanupDeviceStore(arg0: boolean, arg1: boolean, arg2: boolean): Promise<Result_CleanupCounts> {
+        const call = async (): Promise<Result_CleanupCounts> => {
+            const result = await this.actor.cleanupDeviceStore(arg0, arg1, arg2);
+            return "ok" in result ? { __kind__: "ok", ok: result.ok } : { __kind__: "err", err: result.err };
+        };
+        if (this.processError) {
+            try {
+                return await call();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        }
+        return call();
+    }
+    async deleteRevokedDevice(arg0: DeviceId): Promise<Result_Unit> {
+        const call = async (): Promise<Result_Unit> => {
+            const result = await this.actor.deleteRevokedDevice(arg0);
+            return "ok" in result ? { __kind__: "ok", ok: null } : { __kind__: "err", err: result.err };
+        };
+        if (this.processError) {
+            try {
+                return await call();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        }
+        return call();
+    }
+    async getDeviceCleanupCounts(): Promise<CleanupCounts> {
+        if (this.processError) {
+            try {
+                return await this.actor.getDeviceCleanupCounts();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        }
+        return this.actor.getDeviceCleanupCounts();
     }
     async cleanupExpiredActivations(): Promise<bigint> {
         if (this.processError) {

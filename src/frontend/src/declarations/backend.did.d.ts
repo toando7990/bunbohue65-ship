@@ -17,6 +17,11 @@ export type BookingStatus = { 'cancelled' : null } |
   { 'pickedUp' : null } |
   { 'confirmed' : null };
 export interface Cell { 'value' : Value, 'name' : string }
+export interface CleanupCounts {
+  'enterpriseDevices' : bigint,
+  'expiredCodes' : bigint,
+  'restaurantDevices' : bigint,
+}
 export interface Device {
   'active' : boolean,
   'activatedAt' : bigint,
@@ -298,8 +303,17 @@ export interface _SERVICE {
   'cancelOrder' : ActorMethod<[string, string], Result>,
   'changeOrderRestaurant' : ActorMethod<[string, string, string], Result>,
   'claimOrderEmail' : ActorMethod<[string, string], Result>,
+  'cleanupDeviceStore' : ActorMethod<
+    [boolean, boolean, boolean],
+    { 'ok' : CleanupCounts } | { 'err' : string }
+  >,
   'cleanupExpiredActivations' : ActorMethod<[], bigint>,
   'cleanupOrderByDevice' : ActorMethod<[string, string], Result>,
+  'deleteRevokedDevice' : ActorMethod<
+    [DeviceId],
+    { 'ok' : null } | { 'err' : string }
+  >,
+  'getDeviceCleanupCounts' : ActorMethod<[], CleanupCounts>,
   'countVouchersByProgram' : ActorMethod<[string], bigint>,
   'createOrder' : ActorMethod<
     [

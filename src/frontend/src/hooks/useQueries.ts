@@ -7,6 +7,7 @@ import {
   activateDevice as activateDeviceFn,
   addItem as addItemFn,
   addRestaurant as addRestaurantFn,
+  cleanupDeviceStore as cleanupDeviceStoreFn,
   cleanupExpiredActivations as cleanupFn,
   cleanupOrderByDevice as cleanupOrderByDeviceFn,
   countVouchersByProgram as countVouchersByProgramFn,
@@ -17,12 +18,14 @@ import {
   deletePromotion as deletePromotionFn,
   deleteRegistrationPromo as deleteRegistrationPromoFn,
   deleteRestaurant as deleteRestaurantFn,
+  deleteRevokedDevice as deleteRevokedDeviceFn,
   deleteSalesPromo as deleteSalesPromoFn,
   generateActivationCode as genCodeFn,
   getCanisterIdText as getCanisterIdFn,
   getCurrentPromotion as getCurrentPromotionFn,
   getCurrentRegistrationPromo as getCurrentRegistrationPromoFn,
   getCurrentSalesPromo as getCurrentSalesPromoFn,
+  getDeviceCleanupCounts as getDeviceCleanupCountsFn,
   getItemImage as getItemImageFn,
   getKmDailyCount as getKmDailyCountFn,
   getKmUsageCount as getKmUsageCountFn,
@@ -346,6 +349,55 @@ export function useRevokeDevice() {
       return revokeDeviceFn(actor, deviceId);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] }),
+  });
+}
+
+// Xoá hẳn 1 thiết bị đã thu hồi (canister từ chối thiết bị đang hoạt động).
+export function useDeleteRevokedDevice() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (deviceId: string) => {
+      if (!actor) throw new Error("Actor not ready");
+      return deleteRevokedDeviceFn(actor, deviceId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["devices"] });
+      qc.invalidateQueries({ queryKey: ["deviceCleanupCounts"] });
+    },
+  });
+}
+
+// Số mục có thể dọn — nút "Dọn dẹp" (badge) + hộp xem trước.
+export function useDeviceCleanupCounts() {
+  const { actor, isFetching } = useActorOrNull();
+  return useQuery({
+    queryKey: ["deviceCleanupCounts"],
+    queryFn: () => {
+      if (!actor) throw new Error("Actor not ready");
+      return getDeviceCleanupCountsFn(actor);
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+// Dọn dẹp gộp: mã hết hạn + thiết bị thu hồi cấp nhà hàng / doanh nghiệp.
+export function useCleanupDeviceStore() {
+  const qc = useQueryClient();
+  const { actor } = useActorOrNull();
+  return useMutation({
+    mutationFn: (opts: {
+      expiredCodes: boolean;
+      restaurantDevices: boolean;
+      enterpriseDevices: boolean;
+    }) => {
+      if (!actor) throw new Error("Actor not ready");
+      return cleanupDeviceStoreFn(actor, opts);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["devices"] });
+      qc.invalidateQueries({ queryKey: ["deviceCleanupCounts"] });
+    },
   });
 }
 

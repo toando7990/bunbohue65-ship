@@ -24,6 +24,9 @@ mixin (
     };
     // Fresh PRNG state per call, seeded lazily from Time.now() inside
     // generateCode. Codes vary across calls because Time.now() advances.
+    // Tự dọn mã hết hạn / đã dùng mỗi lần tạo mã mới — không cần admin
+    // nhớ bấm "Dọn dẹp" cho loại rác này.
+    ignore DevicesLib.cleanupExpiredActivations(pendingActivations, Int.abs(Time.now()));
     let prng = DevicesLib.newPrngState();
     #ok(DevicesLib.createPendingActivation(pendingActivations, restaurantId, role, prng));
   };
@@ -60,6 +63,44 @@ mixin (
       return #err("Admin only");
     };
     DevicesLib.revokeDevice(devices, deviceId);
+  };
+
+  // Xoá HẲN 1 thiết bị ĐÃ THU HỒI (giảm bộ nhớ canister). Admin only.
+  // Thiết bị đang hoạt động bị từ chối — phải thu hồi trước.
+  public shared ({ caller }) func deleteRevokedDevice(
+    deviceId : Common.DeviceId,
+  ) : async Result.Result<(), Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Admin only");
+    };
+    DevicesLib.deleteRevokedDevice(devices, deviceId);
+  };
+
+  // Số mục có thể dọn (nút "Dọn dẹp" + hộp xem trước). Admin only —
+  // người khác nhận toàn 0.
+  public query ({ caller }) func getDeviceCleanupCounts() : async Devices.CleanupCounts {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return { expiredCodes = 0; restaurantDevices = 0; enterpriseDevices = 0 };
+    };
+    DevicesLib.countCleanupCandidates(pendingActivations, devices, Int.abs(Time.now()));
+  };
+
+  // Dọn dẹp gộp: mã kích hoạt hết hạn/đã dùng + thiết bị đã thu hồi cấp
+  // nhà hàng / cấp doanh nghiệp (chọn từng loại). Thiết bị đang hoạt động
+  // và mã còn hạn KHÔNG BAO GIỜ bị xoá. Admin only. Trả số đã xoá mỗi loại.
+  public shared ({ caller }) func cleanupDeviceStore(
+    expiredCodes : Bool,
+    restaurantDevices : Bool,
+    enterpriseDevices : Bool,
+  ) : async Result.Result<Devices.CleanupCounts, Text> {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Admin only");
+    };
+    #ok({
+      expiredCodes = if (expiredCodes) DevicesLib.cleanupExpiredActivations(pendingActivations, Int.abs(Time.now())) else 0;
+      restaurantDevices = if (restaurantDevices) DevicesLib.purgeRevokedDevices(devices, false) else 0;
+      enterpriseDevices = if (enterpriseDevices) DevicesLib.purgeRevokedDevices(devices, true) else 0;
+    });
   };
 
   // Remove expired/used pending activations. Admin only. Returns count.

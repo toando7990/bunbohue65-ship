@@ -354,8 +354,27 @@ export const idlService = IDL.Service({
       [],
     ),
   'claimOrderEmail' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+  'cleanupDeviceStore' : IDL.Func(
+      [IDL.Bool, IDL.Bool, IDL.Bool],
+      [IDL.Variant({ 'ok' : IDL.Record({
+        'enterpriseDevices' : IDL.Nat,
+        'expiredCodes' : IDL.Nat,
+        'restaurantDevices' : IDL.Nat,
+      }), 'err' : IDL.Text })],
+      [],
+    ),
   'cleanupExpiredActivations' : IDL.Func([], [IDL.Nat], []),
   'cleanupOrderByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+  'deleteRevokedDevice' : IDL.Func(
+      [DeviceId],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'getDeviceCleanupCounts' : IDL.Func([], [IDL.Record({
+        'enterpriseDevices' : IDL.Nat,
+        'expiredCodes' : IDL.Nat,
+        'restaurantDevices' : IDL.Nat,
+      })], ['query']),
   'countVouchersByProgram' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
   'createOrder' : IDL.Func(
       [
@@ -967,8 +986,27 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'claimOrderEmail' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+    'cleanupDeviceStore' : IDL.Func(
+        [IDL.Bool, IDL.Bool, IDL.Bool],
+        [IDL.Variant({ 'ok' : IDL.Record({
+        'enterpriseDevices' : IDL.Nat,
+        'expiredCodes' : IDL.Nat,
+        'restaurantDevices' : IDL.Nat,
+      }), 'err' : IDL.Text })],
+        [],
+      ),
     'cleanupExpiredActivations' : IDL.Func([], [IDL.Nat], []),
     'cleanupOrderByDevice' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+    'deleteRevokedDevice' : IDL.Func(
+        [DeviceId],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'getDeviceCleanupCounts' : IDL.Func([], [IDL.Record({
+        'enterpriseDevices' : IDL.Nat,
+        'expiredCodes' : IDL.Nat,
+        'restaurantDevices' : IDL.Nat,
+      })], ['query']),
     'countVouchersByProgram' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     'createOrder' : IDL.Func(
         [

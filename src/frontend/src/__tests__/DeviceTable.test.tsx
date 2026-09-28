@@ -4,9 +4,10 @@
 // shows one row per device with its role, activation time, and an active
 // status badge, plus a "Thu hồi" (revoke) action. The accepted behavior this
 // protects:
-//   - an active device shows the "Kích hoạt" badge and a revoke button;
-//   - a revoked device shows the "Đã thu hồi" badge and NO revoke button;
-//   - clicking the revoke button calls onRevoke with that device's id.
+//   - an active device shows the "Đang hoạt động" badge and a revoke button;
+//   - a revoked device shows the "Đã thu hồi" badge, NO revoke button, and a
+//     "Xoá" button (xoá hẳn khỏi canister);
+//   - clicking revoke / delete calls onRevoke / onDelete with that device.
 //
 // These are the device-management behaviors the request builds on and must
 // not regress: revoked devices stay visible in the admin list with the
@@ -37,10 +38,13 @@ describe("DeviceTable admin device list", () => {
     vi.clearAllMocks();
   });
 
-  it("shows the 'Kích hoạt' badge and a revoke button for an active device", () => {
+  it("shows the 'Đang hoạt động' badge and a revoke button for an active device", () => {
     render(<DeviceTable devices={[makeDevice()]} onRevoke={vi.fn()} />);
 
-    expect(screen.getByText("Kích hoạt")).toBeInTheDocument();
+    expect(screen.getByText("Đang hoạt động")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Xoá/i }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Thu hồi/i }),
     ).toBeInTheDocument();
@@ -66,7 +70,46 @@ describe("DeviceTable admin device list", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Thu hồi/i }));
 
-    expect(onRevoke).toHaveBeenCalledWith("dev-abc123");
+    expect(onRevoke).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceId: "dev-abc123" }),
+    );
+  });
+
+  it("offers 'Xoá' for a revoked device and calls onDelete with it", () => {
+    const onDelete = vi.fn();
+    render(
+      <DeviceTable
+        devices={[makeDevice({ active: false })]}
+        onRevoke={vi.fn()}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Xoá/i }));
+
+    expect(onDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceId: "dev-abc123" }),
+    );
+  });
+
+  it("shows the restaurant name and 'Toàn chuỗi' scope", () => {
+    render(
+      <DeviceTable
+        devices={[
+          makeDevice({ deviceId: "d1", restaurantId: "R1" }),
+          makeDevice({
+            deviceId: "d2",
+            restaurantId: "",
+            role: DeviceRole.accounting,
+          }),
+        ]}
+        placeColumn="scope"
+        restaurantNames={new Map([["R1", "Bún bò Q1"]])}
+      />,
+    );
+
+    expect(screen.getByText("Bún bò Q1")).toBeInTheDocument();
+    expect(screen.getByText("Toàn chuỗi")).toBeInTheDocument();
   });
 
   it("renders both active and revoked devices in the same list", () => {

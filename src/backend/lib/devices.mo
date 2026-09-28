@@ -143,6 +143,58 @@ module {
     };
   };
 
+  // Xoá HẲN 1 thiết bị ĐÃ THU HỒI khỏi bộ nhớ canister. Thiết bị đang hoạt
+  // động → từ chối (phải thu hồi trước) — không thể xoá nhầm máy đang dùng.
+  public func deleteRevokedDevice(
+    store : DevicesStore,
+    deviceId : Common.DeviceId,
+  ) : Result.Result<(), Text> {
+    switch (store.get(deviceId)) {
+      case null { #err("Not found") };
+      case (?d) {
+        if (d.active) {
+          #err("Device is active - revoke it first");
+        } else {
+          store.remove(deviceId);
+          #ok(());
+        };
+      };
+    };
+  };
+
+  // Xoá hàng loạt thiết bị ĐÃ THU HỒI theo cấp: enterprise = true → vai trò
+  // doanh nghiệp, false → vai trò cấp nhà hàng. Trả số thiết bị đã xoá.
+  public func purgeRevokedDevices(store : DevicesStore, enterprise : Bool) : Nat {
+    var count = 0;
+    for ((id, d) in store.toArray().values()) {
+      if (not d.active and isEnterpriseRole(d.role) == enterprise) {
+        store.remove(id);
+        count += 1;
+      };
+    };
+    count;
+  };
+
+  // Đếm mục có thể dọn (không xoá gì).
+  public func countCleanupCandidates(
+    pendingStore : PendingActivationsStore,
+    devicesStore : DevicesStore,
+    now : Common.Timestamp,
+  ) : Devices.CleanupCounts {
+    var expiredCodes = 0;
+    for ((_code, a) in pendingStore.toArray().values()) {
+      if (now >= a.expiresAt or a.used) expiredCodes += 1;
+    };
+    var restaurantDevices = 0;
+    var enterpriseDevices = 0;
+    for ((_id, d) in devicesStore.toArray().values()) {
+      if (not d.active) {
+        if (isEnterpriseRole(d.role)) enterpriseDevices += 1 else restaurantDevices += 1;
+      };
+    };
+    { expiredCodes; restaurantDevices; enterpriseDevices };
+  };
+
   // Remove expired or used pending activations; returns count removed.
   public func cleanupExpiredActivations(
     store : PendingActivationsStore,
