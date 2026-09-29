@@ -8,7 +8,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { useAuth, useEnterpriseRole } from "@/hooks/useAuth";
 import { loadEnterpriseActivation } from "@/lib/enterprise-activation";
 import { AdminPanel } from "@/pages/AdminPanel";
-import { AdminPromoDashboard } from "@/pages/AdminPromoDashboard";
 import { AnalyticsDashboard } from "@/pages/AnalyticsDashboard";
 import { ClaimOrder } from "@/pages/ClaimOrder";
 import CounterOrder from "@/pages/CounterOrder";
@@ -23,9 +22,7 @@ import OrderList from "@/pages/OrderList";
 import OrderTracker from "@/pages/OrderTracker";
 import OrderingPartners from "@/pages/OrderingPartners";
 import Profile from "@/pages/Profile";
-import PromotionManager from "@/pages/PromotionManager";
-import RegistrationPromoManager from "@/pages/RegistrationPromoManager";
-import SalesPromoManager from "@/pages/SalesPromoManager";
+import { PromoManagerPage } from "@/pages/PromoManagerPage";
 import {
   Outlet,
   RouterProvider,
@@ -375,12 +372,22 @@ const adminRestaurantsRoute = createRoute({
   ),
 });
 
+const adminPromoManagerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin/khuyen-mai",
+  component: () => (
+    <AdminGate>
+      <PromoManagerPage />
+    </AdminGate>
+  ),
+});
+
 const adminPromotionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/promotions",
   component: () => (
     <AdminGate>
-      <PromotionManager />
+      <PromoManagerPage initialKind="gio" />
     </AdminGate>
   ),
 });
@@ -390,7 +397,7 @@ const adminRegistrationPromoRoute = createRoute({
   path: "/admin/registration-promo",
   component: () => (
     <AdminGate>
-      <RegistrationPromoManager />
+      <PromoManagerPage initialKind="dangky" />
     </AdminGate>
   ),
 });
@@ -400,7 +407,7 @@ const adminSalesPromoRoute = createRoute({
   path: "/admin/sales-promo",
   component: () => (
     <AdminGate>
-      <SalesPromoManager />
+      <PromoManagerPage initialKind="doanhso" />
     </AdminGate>
   ),
 });
@@ -420,7 +427,7 @@ const adminPromoDashboardRoute = createRoute({
   path: "/admin/theo-doi-km",
   component: () => (
     <AdminGate>
-      <AdminPromoDashboard />
+      <PromoManagerPage />
     </AdminGate>
   ),
 });
@@ -461,6 +468,7 @@ const router = createRouter({
     adminMenuRoute,
     adminRestaurantsRoute,
     adminMenuRestaurantRoute,
+    adminPromoManagerRoute,
     adminPromotionsRoute,
     adminRegistrationPromoRoute,
     adminSalesPromoRoute,

@@ -101,26 +101,8 @@ const ADMIN_NAV: NavItem[] = [
     adminOnly: true,
   },
   {
-    to: "/admin/promotions",
-    label: "Khuyến mại",
-    icon: Percent,
-    adminOnly: true,
-  },
-  {
-    to: "/admin/registration-promo",
-    label: "KM đăng ký",
-    icon: Percent,
-    adminOnly: true,
-  },
-  {
-    to: "/admin/sales-promo",
-    label: "KM doanh số",
-    icon: Percent,
-    adminOnly: true,
-  },
-  {
-    to: "/admin/theo-doi-km",
-    label: "Theo dõi KM",
+    to: "/admin/khuyen-mai",
+    label: "Quản lý khuyến mại",
     icon: Percent,
     adminOnly: true,
   },
