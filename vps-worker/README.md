@@ -488,7 +488,7 @@ tự chuyển hãng, trạng thái chung), `src/routes/delivery.js`. Cài đặt
 |-----|----------|-------|
 | `AHAMOVE_API_KEY` | ✓ | API key Ahamove (body `api_key` khi lấy token) |
 | `AHAMOVE_PHONE` | ✓ | SĐT tài khoản Ahamove (body `mobile`, tự đổi sang dạng 84…) |
-| `AHAMOVE_ENV` | optional | `production` = máy chủ thật; mặc định máy chủ thử nghiệm (`partner-apistg`) |
+| `AHAMOVE_ENV` | optional | Mặc định MÁY CHỦ THẬT (`partner-api`); đặt `staging` để dùng máy chủ thử nghiệm (`partner-apistg`) với key thử nghiệm |
 | `AHAMOVE_BASE_URL` | optional | Ghi đè base URL (không kèm `/v3`) |
 | `AHAMOVE_SERVICE_ID` | optional | Mã dịch vụ, mặc định `HAN-BIKE` |
 | `AHAMOVE_AUTO_DISPATCH` | optional | `true` = cho phép TỰ ĐẶT tài xế Ahamove thật (phát sinh phí). Mặc định tắt |

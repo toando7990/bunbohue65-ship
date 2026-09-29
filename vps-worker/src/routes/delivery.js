@@ -18,7 +18,9 @@ const PURPOSE = 'delivery';
 const REFRESH_ON_READ_MS = 20 * 1000;
 
 router.use('/order/:id/delivery', rateLimit({ windowMs: 60000, max: 60, message: 'Too many requests' }));
-router.use('/orders/delivery-status', rateLimit({ windowMs: 60000, max: 60, message: 'Too many requests' }));
+// Thẻ đơn /driver ở mọi nhà hàng poll 15s (qua cùng 1 proxy → cùng IP) —
+// chỉ đọc SQLite, giới hạn rộng.
+router.use('/orders/delivery-status', rateLimit({ windowMs: 60000, max: 600, message: 'Too many requests' }));
 
 router.get('/order/:id/delivery', async (req, res, next) => {
   try {
@@ -27,7 +29,7 @@ router.get('/order/:id/delivery', async (req, res, next) => {
     // Lượt đang chạy lâu chưa làm mới (webhook chưa có) → làm mới ngay.
     const active = db.prepare('SELECT * FROM deliveries WHERE order_id = ? AND ended = 0 ORDER BY id DESC').get(orderId);
     if (active && Date.now() - (active.refreshed_at || 0) >= REFRESH_ON_READ_MS) {
-      await delivery.refreshRow(db, active);
+      await delivery.refreshRow(db, active, { background: true });
     }
     res.json({ ok: true, delivery: delivery.publicStatus(db, orderId) });
   } catch (e) {
@@ -60,15 +62,22 @@ function verifyAhamoveWebhook(req, res, next) {
   next();
 }
 
-router.post('/webhook/ahamove', verifyAhamoveWebhook, async (req, res) => {
+// Tài liệu Ahamove không ghi rõ phương thức — nhận POST/PUT (JSON) và GET
+// (query ?_id=…).
+async function handleAhamoveWebhook(req, res) {
   // Trả 200 ngay; xử lý sau để Ahamove không phải chờ.
   res.json({ ok: true });
+  const body = req.method === 'GET' ? req.query || {} : req.body || {};
   try {
-    await delivery.onAhamoveWebhook(req.app.locals.db, req.body || {});
+    const r = await delivery.onAhamoveWebhook(req.app.locals.db, body);
+    if (!r.ok) console.warn('[webhook/ahamove] bỏ qua:', r.error, JSON.stringify(body).slice(0, 200));
   } catch (e) {
     console.error('[webhook/ahamove] lỗi xử lý:', e.message);
   }
-});
+}
+router.post('/webhook/ahamove', verifyAhamoveWebhook, handleAhamoveWebhook);
+router.put('/webhook/ahamove', verifyAhamoveWebhook, handleAhamoveWebhook);
+router.get('/webhook/ahamove', verifyAhamoveWebhook, handleAhamoveWebhook);
 
 router.get('/admin/delivery', requireAdminTicket(PURPOSE), async (req, res, next) => {
   try {

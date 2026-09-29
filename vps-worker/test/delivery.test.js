@@ -34,7 +34,8 @@ function makeFakes() {
     getQuotation: async () => ({ quotationId: 'Q1', feeVnd: lalamove.fee, distanceMeters: 3000, pickupStopId: 'S1', dropStopId: 'S2' }),
     placeOrder: async (a) => {
       calls.push(['lalamove.place', a]);
-      if (lalamove.failPlace) throw new Error('422 invalid');
+      if (lalamove.failPlace === 'timeout') throw Object.assign(new Error('timeout of 30000ms exceeded'), { status: null });
+      if (lalamove.failPlace) throw Object.assign(new Error('422 invalid'), { status: 422 });
       return { lalamoveOrderId: 'LL-1', driverId: '', shareLink: 'https://ll/s', status: 'ASSIGNING_DRIVER' };
     },
     getOrderDetails: async () => ({ status: lalamove.status, driverId: lalamove.driverId, shareLink: 'https://ll/s' }),
@@ -42,7 +43,7 @@ function makeFakes() {
     cancelOrder: async (id) => { calls.push(['lalamove.cancel', id]); return true; },
   };
   const aha = {
-    ENV: 'staging',
+    getEnv: () => 'staging',
     SERVICE_ID: 'HAN-BIKE',
     isConfigured: () => true,
     fee: 24000,
@@ -54,13 +55,15 @@ function makeFakes() {
     checkConnection: async () => ({ ok: true }),
   };
   const canister = {
+    bookingStatus: 'confirmed',
+    getOrderStatus: async () => ({ ok: { bookingStatus: { [canister.bookingStatus]: null } } }),
     listRestaurants: async () => [{ restaurantId: 'R1', name: 'Cơ sở 1', address: '65 Trần Thái Tông', phone: '0901', lat: 21.03, lng: 105.79, visible: true }],
   };
   delivery.deps.lalamove = lalamove;
   delivery.deps.ahamove = aha;
   delivery.deps.canister = canister;
   delivery.deps.now = () => clock;
-  return { lalamove, aha, calls };
+  return { lalamove, aha, canister, calls };
 }
 
 function insertOrder(db, id = 'ORD-1') {
@@ -295,4 +298,167 @@ test('ahamove: chuẩn hoá SĐT + dữ liệu đơn', () => {
   assert.equal(n.driverName, 'Hùng');
   assert.equal(n.dropStatus, 'COMPLETED');
   assert.equal(n.subStatus, 'ARRIVED');
+});
+
+test('đơn bị huỷ trong hệ thống → huỷ luôn bên hãng', async () => {
+  const db = freshDb();
+  const { lalamove, calls } = makeFakes();
+  lalamove.fee = 90000;
+  insertOrder(db);
+  await delivery.dispatch(db, 'ORD-1');
+  db.prepare("UPDATE orders SET booking_status = 'cancelled'").run();
+  await delivery.tick(db);
+  assert.equal(calls.some((c) => c[0] === 'ahamove.cancel'), true);
+  const row = db.prepare('SELECT * FROM deliveries').get();
+  assert.equal(row.ended, 1);
+  assert.equal(row.end_reason, 'Đơn đã huỷ trong hệ thống');
+});
+
+test('đơn chưa đặt được lượt nào (lỗi lúc tạo) → tick thử lại', async () => {
+  const db = freshDb();
+  const { lalamove } = makeFakes();
+  lalamove.fee = 90000;
+  insertOrder(db, 'ORD-9');
+  clock += 2 * 60 * 1000;
+  await delivery.tick(db);
+  assert.equal(delivery.publicStatus(db, 'ORD-9').provider, 'ahamove');
+  // Đơn quá 20 phút → không thử nữa.
+  insertOrder(db, 'ORD-OLD');
+  clock += 25 * 60 * 1000;
+  await delivery.tick(db);
+  assert.equal(delivery.publicStatus(db, 'ORD-OLD'), null);
+});
+
+test('đặt lỗi KHÔNG RÕ kết quả (hết giờ chờ) → không đặt hãng kia', async () => {
+  const db = freshDb();
+  const { lalamove, calls } = makeFakes();
+  lalamove.fee = 10000;
+  lalamove.failPlace = 'timeout';
+  insertOrder(db);
+  const r = await delivery.dispatch(db, 'ORD-1');
+  assert.equal(r.ok, false);
+  assert.match(r.error, /Không rõ Lalamove/);
+  assert.equal(calls.some((c) => c[0] === 'ahamove.create'), false);
+  // tick cũng không thử lại
+  clock += 3 * 60 * 1000;
+  await delivery.tick(db);
+  assert.equal(calls.some((c) => c[0] === 'ahamove.create'), false);
+  const st = delivery.publicStatus(db, 'ORD-1');
+  assert.equal(st.allFailed, true);
+  assert.equal(st.uncertain, true);
+  assert.equal(st.provider, 'lalamove');
+});
+
+test('chuyển hãng: hãng mới báo giá lỗi → GIỮ lượt cũ (không huỷ)', async () => {
+  const db = freshDb();
+  const { lalamove, aha, calls } = makeFakes();
+  lalamove.fee = 10000;
+  insertOrder(db);
+  await delivery.dispatch(db, 'ORD-1'); // Lalamove
+  aha.estimate = async () => { throw new Error('Ahamove sập'); };
+  clock += 8 * 60 * 1000;
+  await delivery.tick(db);
+  assert.equal(calls.some((c) => c[0] === 'lalamove.cancel'), false);
+  const st = delivery.publicStatus(db, 'ORD-1');
+  assert.equal(st.provider, 'lalamove');
+  assert.equal(st.status, 'finding');
+  assert.equal(st.allFailed, false);
+});
+
+test('canister báo đơn đã huỷ → huỷ bên hãng, không chuyển hãng', async () => {
+  const db = freshDb();
+  const { lalamove, canister, calls } = makeFakes();
+  lalamove.fee = 10000;
+  insertOrder(db);
+  await delivery.dispatch(db, 'ORD-1');
+  canister.bookingStatus = 'cancelled';
+  clock += 8 * 60 * 1000;
+  await delivery.tick(db);
+  assert.equal(calls.some((c) => c[0] === 'lalamove.cancel'), true);
+  assert.equal(calls.some((c) => c[0] === 'ahamove.create'), false);
+  assert.equal(db.prepare('SELECT booking_status FROM orders').get().booking_status, 'cancelled');
+});
+
+test('canister báo đơn đã huỷ trước khi đặt → không đặt', async () => {
+  const db = freshDb();
+  const { canister, calls } = makeFakes();
+  canister.bookingStatus = 'cancelled';
+  insertOrder(db);
+  const r = await delivery.dispatch(db, 'ORD-1');
+  assert.equal(r.ok, false);
+  assert.equal(calls.length, 0);
+});
+
+test('đơn Lalamove cũ (legacy) chỉ theo dõi, không tự chuyển hãng', async () => {
+  const db = freshDb();
+  const { calls } = makeFakes();
+  insertOrder(db);
+  db.prepare("UPDATE orders SET lalamove_order_id = 'LL-OLD', lalamove_status = 'ASSIGNING_DRIVER'").run();
+  initSchema(db);
+  clock += 30 * 60 * 1000;
+  await delivery.tick(db);
+  assert.equal(calls.some((c) => c[0] === 'lalamove.cancel' || c[0] === 'ahamove.create'), false);
+});
+
+test('hãng trả thiếu trạng thái → giữ trạng thái cũ', async () => {
+  const db = freshDb();
+  const { lalamove } = makeFakes();
+  lalamove.fee = 1000;
+  insertOrder(db);
+  await delivery.dispatch(db, 'ORD-1');
+  lalamove.status = 'PICKED_UP';
+  await delivery.refreshRow(db, db.prepare('SELECT * FROM deliveries').get());
+  lalamove.status = '';
+  await delivery.refreshRow(db, db.prepare('SELECT * FROM deliveries').get());
+  assert.equal(delivery.publicStatus(db, 'ORD-1').status, 'delivering');
+});
+
+test('làm mới không ghi đè lượt đã kết thúc (tranh chấp với tick)', async () => {
+  const db = freshDb();
+  const { lalamove } = makeFakes();
+  lalamove.fee = 1000;
+  insertOrder(db);
+  await delivery.dispatch(db, 'ORD-1');
+  const stale = db.prepare('SELECT * FROM deliveries').get();
+  db.prepare("UPDATE deliveries SET ended = 1, unified = 'cancelled'").run();
+  await delivery.refreshRow(db, stale);
+  const row = db.prepare('SELECT * FROM deliveries').get();
+  assert.equal(row.ended, 1);
+  assert.equal(row.unified, 'cancelled');
+});
+
+test('lỗi lấy token Ahamove (chưa gửi đơn) → vẫn được đặt hãng kia', async () => {
+  const db = freshDb();
+  const { lalamove, aha, calls } = makeFakes();
+  lalamove.fee = 90000;
+  aha.createOrder = async () => { throw Object.assign(new Error('Ahamove token: timeout'), { status: null, preRequest: true }); };
+  insertOrder(db);
+  const r = await delivery.dispatch(db, 'ORD-1');
+  assert.equal(r.provider, 'lalamove');
+  assert.equal(calls.some((c) => c[0] === 'lalamove.place'), true);
+});
+
+test('canister báo đã lấy món (pickedUp) → không chuyển hãng', async () => {
+  const db = freshDb();
+  const { lalamove, canister, calls } = makeFakes();
+  lalamove.fee = 10000;
+  insertOrder(db);
+  await delivery.dispatch(db, 'ORD-1');
+  canister.bookingStatus = 'pickedUp';
+  clock += 8 * 60 * 1000;
+  await delivery.tick(db);
+  assert.equal(calls.some((c) => c[0] === 'lalamove.cancel' || c[0] === 'ahamove.create'), false);
+});
+
+test('làm mới trễ của lượt đã bị tick kết thúc KHÔNG đặt thêm lần nữa', async () => {
+  const db = freshDb();
+  const { lalamove, aha, calls } = makeFakes();
+  lalamove.fee = 90000;
+  insertOrder(db);
+  await delivery.dispatch(db, 'ORD-1'); // Ahamove
+  const stale = db.prepare('SELECT * FROM deliveries').get();
+  db.prepare("UPDATE deliveries SET ended = 1, unified = 'cancelled'").run();
+  aha.info = { status: 'CANCELLED' };
+  await delivery.refreshRow(db, stale);
+  assert.equal(calls.some((c) => c[0] === 'lalamove.place'), false);
 });

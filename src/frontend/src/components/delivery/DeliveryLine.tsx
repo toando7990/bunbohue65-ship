@@ -55,9 +55,11 @@ export function DeliveryLine({
           {driver?.plate ? ` · ${driver.plate}` : ""}
           {driver?.name || driver?.plate ? " · " : ""}
           <b>
-            {failed
-              ? "Chưa có tài xế — cần tự đặt"
-              : info.statusLabel.toLowerCase()}
+            {info.uncertain
+              ? `Không rõ đã đặt được chưa — kiểm tra app ${info.providerName}`
+              : failed
+                ? "Chưa có tài xế — cần tự đặt"
+                : info.statusLabel.toLowerCase()}
           </b>
         </span>
       </div>

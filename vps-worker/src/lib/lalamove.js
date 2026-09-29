@@ -212,7 +212,7 @@ async function placeOrder({
 
   let res;
   try {
-    res = await client.post(path, body, { headers });
+    res = await client.post(path, body, { headers, timeout: 30000 });
   } catch (err) {
     if (err.response) {
       console.error(

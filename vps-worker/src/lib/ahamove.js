@@ -12,7 +12,7 @@
 //
 // Biến môi trường:
 //   AHAMOVE_API_KEY, AHAMOVE_PHONE (bắt buộc)
-//   AHAMOVE_ENV=production | staging (mặc định staging — an toàn)
+//   AHAMOVE_ENV=staging → máy chủ thử nghiệm; không đặt = MÁY CHỦ THẬT
 //   AHAMOVE_BASE_URL (tuỳ chọn, ghi đè; không kèm /v3)
 //   AHAMOVE_SERVICE_ID (mặc định HAN-BIKE)
 // Phí ship trừ ví doanh nghiệp (payment_method BALANCE) — giống Lalamove.
@@ -20,17 +20,31 @@
 
 const axios = require('axios');
 
-const ENV = process.env.AHAMOVE_ENV === 'production' ? 'production' : 'staging';
-const BASE_URL = (
-  process.env.AHAMOVE_BASE_URL ||
-  (ENV === 'production' ? 'https://partner-api.ahamove.com' : 'https://partner-apistg.ahamove.com')
-).replace(/\/+$/, '');
+// Máy chủ: AHAMOVE_BASE_URL (ghi đè) > AHAMOVE_ENV=staging (máy chủ thử
+// nghiệm) > mặc định MÁY CHỦ THẬT (partner-api). Không tự đổi máy chủ —
+// tránh key thật lỡ chạy sang máy chủ thử nghiệm (đơn "ảo"). Đặt tài xế
+// thật vẫn cần AHAMOVE_AUTO_DISPATCH=true.
+const SERVERS = {
+  production: 'https://partner-api.ahamove.com',
+  staging: 'https://partner-apistg.ahamove.com',
+};
+const FIXED_BASE = (process.env.AHAMOVE_BASE_URL || '').replace(/\/+$/, '');
+const ENV_NAME = process.env.AHAMOVE_ENV === 'staging' ? 'staging' : 'production';
+const candidates = [{ env: ENV_NAME, base: FIXED_BASE || SERVERS[ENV_NAME] }];
+let active = candidates[0];
+const clients = new Map();
+function clientFor(c) {
+  if (!clients.has(c.base)) clients.set(c.base, axios.create({ baseURL: `${c.base}/v3`, timeout: 15000 }));
+  return clients.get(c.base);
+}
+function getEnv() {
+  return active.env;
+}
+
 const API_KEY = process.env.AHAMOVE_API_KEY || '';
 const PHONE = process.env.AHAMOVE_PHONE || '';
 const SERVICE_ID = process.env.AHAMOVE_SERVICE_ID || 'HAN-BIKE';
 const PAYMENT_METHOD = 'BALANCE';
-
-const client = axios.create({ baseURL: `${BASE_URL}/v3`, timeout: 15000 });
 
 class AhamoveError extends Error {
   constructor(message, status, body) {
@@ -70,7 +84,7 @@ function jwtExpMs(token) {
 async function fetchToken() {
   if (!isConfigured()) throw new AhamoveError('Thiếu AHAMOVE_API_KEY / AHAMOVE_PHONE', null, null);
   try {
-    const res = await client.post('/accounts/token', { mobile: toAhaPhone(PHONE), api_key: API_KEY });
+    const res = await clientFor(active).post('/accounts/token', { mobile: toAhaPhone(PHONE), api_key: API_KEY });
     const token = res.data && res.data.token;
     if (!token) throw new AhamoveError('Ahamove không trả token', res.status, res.data);
     // Không đọc được exp → coi như sống 1 giờ.
@@ -102,9 +116,16 @@ function wrap(op, err) {
 // Gọi API có token; 401 → lấy token mới và thử lại đúng 1 lần.
 async function call(op, config) {
   for (let attempt = 0; attempt < 2; attempt++) {
-    const token = await getToken(attempt > 0);
+    let token;
     try {
-      const res = await client.request({
+      token = await getToken(attempt > 0);
+    } catch (e) {
+      // Lỗi ở bước lấy token = CHƯA gửi yêu cầu chính → chắc chắn chưa tạo đơn.
+      e.preRequest = true;
+      throw e;
+    }
+    try {
+      const res = await clientFor(active).request({
         ...config,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(config.headers || {}) },
       });
@@ -124,7 +145,8 @@ function buildPath({ pickup, drop }) {
       lng: Number(pickup.lng),
       address: pickup.address || '',
       name: pickup.name || 'Nhà hàng',
-      mobile: toAhaPhone(pickup.phone),
+      // SĐT trống → dùng SĐT tài khoản Ahamove (Ahamove bắt buộc mobile).
+      mobile: toAhaPhone(pickup.phone) || toAhaPhone(PHONE),
       remarks: pickup.remarks || '',
     },
     {
@@ -132,7 +154,7 @@ function buildPath({ pickup, drop }) {
       lng: Number(drop.lng),
       address: drop.address || '',
       name: drop.name || 'Khách',
-      mobile: toAhaPhone(drop.phone),
+      mobile: toAhaPhone(drop.phone) || toAhaPhone(PHONE),
       remarks: drop.remarks || '',
     },
   ];
@@ -171,6 +193,7 @@ async function createOrder({ pickup, drop, remarks, trackingNumber }) {
   const data = await call('create', {
     method: 'POST',
     url: '/orders',
+    timeout: 30000,
     data: {
       order_time: 0,
       path,
@@ -235,7 +258,7 @@ async function checkConnection() {
 }
 
 module.exports = {
-  ENV,
+  getEnv,
   SERVICE_ID,
   isConfigured,
   toAhaPhone,

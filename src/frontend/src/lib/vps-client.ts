@@ -544,6 +544,9 @@ export interface DeliveryInfo {
   } | null;
   /** true = không còn hãng nào để thử — nhà hàng sẽ liên hệ khách. */
   allFailed: boolean;
+  /** true = lần đặt gần nhất lỗi mạng, KHÔNG rõ hãng đã nhận đơn chưa —
+   * nhân viên kiểm tra app hãng trước khi tự đặt (tránh 2 tài xế). */
+  uncertain?: boolean;
   endReason?: string;
   attempts: number;
 }

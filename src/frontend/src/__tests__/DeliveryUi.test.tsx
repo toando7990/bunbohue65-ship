@@ -183,6 +183,27 @@ describe("DeliveryLine (thẻ đơn /driver)", () => {
     );
   });
 
+  it("lỗi mạng không rõ kết quả → nhắc kiểm tra app hãng", () => {
+    render(
+      <DeliveryLine
+        info={{
+          ...base,
+          status: "place_failed",
+          allFailed: true,
+          uncertain: true,
+          provider: "lalamove",
+          providerName: "Lalamove",
+          driver: null,
+          switched: null,
+        }}
+        ocid="line"
+      />,
+    );
+    expect(screen.getByTestId("line")).toHaveTextContent(
+      "Không rõ đã đặt được chưa — kiểm tra app Lalamove",
+    );
+  });
+
   it("không có thông tin → không hiện gì", () => {
     const { container } = render(<DeliveryLine info={undefined} />);
     expect(container).toBeEmptyDOMElement();

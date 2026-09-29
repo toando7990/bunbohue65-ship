@@ -458,15 +458,19 @@ function initSchema(db) {
     refreshed_at  INTEGER NOT NULL DEFAULT 0,
     assigned_at   INTEGER,
     picked_at     INTEGER,
-    completed_at  INTEGER
+    completed_at  INTEGER,
+    legacy        INTEGER NOT NULL DEFAULT 0 -- 1 = đơn Lalamove cũ trước nâng cấp: chỉ theo dõi, không tự chuyển hãng
   )`);
+  if (!db.prepare('PRAGMA table_info(deliveries)').all().some((c) => c.name === 'legacy')) {
+    db.exec('ALTER TABLE deliveries ADD COLUMN legacy INTEGER NOT NULL DEFAULT 0');
+  }
   db.exec('CREATE INDEX IF NOT EXISTS idx_deliveries_order ON deliveries(order_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_deliveries_active ON deliveries(ended, provider)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_deliveries_external ON deliveries(provider, external_id)');
   // Đơn Lalamove cũ (trước khi có bảng deliveries) → 1 dòng lịch sử, để
   // "Theo dõi đơn" dùng chung 1 đường đọc. Chạy 1 lần (bỏ qua đơn đã có).
   db.exec(`INSERT INTO deliveries (order_id, attempt, provider, external_id, raw_status, unified,
-      driver_id, share_link, fee, ended, created_at, updated_at)
+      driver_id, share_link, fee, ended, created_at, updated_at, legacy)
     SELECT o.order_id, 1, 'lalamove', o.lalamove_order_id, o.lalamove_status,
       CASE o.lalamove_status
         WHEN 'ON_GOING' THEN 'to_pickup' WHEN 'PICKED_UP' THEN 'delivering'
@@ -475,7 +479,7 @@ function initSchema(db) {
         ELSE 'finding' END,
       o.lalamove_driver_id, o.lalamove_share_link, o.shipping_fee,
       CASE WHEN o.lalamove_status IN ('COMPLETED','CANCELED','REJECTED','EXPIRED') THEN 1 ELSE 0 END,
-      o.updated_at, o.updated_at
+      o.updated_at, o.updated_at, 1
     FROM orders o
     WHERE o.lalamove_order_id <> ''
       AND NOT EXISTS (SELECT 1 FROM deliveries d WHERE d.order_id = o.order_id)`);
