@@ -1008,8 +1008,6 @@ export default function CreateOrder() {
                 <div
                   className="flex flex-col gap-2"
                   data-ocid="create_order.voucher_selector"
-                  role="radiogroup"
-                  aria-label="Phiếu giảm giá"
                 >
                   <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                     Phiếu giảm giá
@@ -1028,8 +1026,7 @@ export default function CreateOrder() {
                       <button
                         key={opt.code ?? "none"}
                         type="button"
-                        role="radio"
-                        aria-checked={on}
+                        aria-pressed={on}
                         onClick={() =>
                           cartDiscounts.setSelectedVoucherCode(opt.code)
                         }
