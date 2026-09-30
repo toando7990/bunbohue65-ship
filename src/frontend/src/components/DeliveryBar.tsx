@@ -116,8 +116,10 @@ export function DeliveryBar({
       {/* Luôn giữ trong trang (chỉ ẩn khi thu gọn) — không mất trạng thái
           đang chọn/thêm địa chỉ dở khi đóng/mở lại. */}
       <div
-        hidden={!open}
-        className="mt-3 flex flex-col gap-3"
+        // Ẩn bằng class (KHÔNG dùng thuộc tính hidden — class "flex" của
+        // Tailwind đè display:none của hidden nên khối vẫn hiện ra).
+        aria-hidden={!open}
+        className={cn("mt-3 flex-col gap-3", open ? "flex" : "hidden")}
         data-ocid="create_order.restaurant_card"
       >
         {children}
