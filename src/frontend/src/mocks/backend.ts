@@ -64,6 +64,10 @@ export const mockBackend: backendInterface = {
   applyPromotion: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   applyPromotionCounter: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   applyVoucher: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
+  releaseVoucher: async () => ({
+    __kind__: "err",
+    err: "Mock: không hỗ trợ",
+  }),
   listMyVouchers: async () => [],
   createRegistrationPromo: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
   updateRegistrationPromo: async () => ({ __kind__: "err", err: "Mock: không hỗ trợ" }),
