@@ -8,7 +8,7 @@
 // rỗng KHÔNG CÓ role nào, khiến hàm LUÔN trả về mảng rỗng — đây chính là
 // nguyên nhân "Hàng đợi thanh toán" không hiển thị đơn nào ở /driver.
 
-import { createActor } from "@/backend";
+import { BookingStatus, createActor } from "@/backend";
 import { listPaidOrdersForPickup as listPaidOrdersForPickupFn } from "@/lib/canister";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +19,10 @@ export function usePendingOrders(restaurantId: string | undefined) {
     queryKey: ["orders", "pending", restaurantId],
     queryFn: async () => {
       if (!actor || !restaurantId) return [];
-      return actor.listPendingPaymentOrders(restaurantId);
+      const orders = await actor.listPendingPaymentOrders(restaurantId);
+      // Đơn đặt món từ xa ở trạng thái #pending = khách CHƯA bấm "Đặt tài
+      // xế" (VPS lib/customer-step.js) → chưa hiện ở hàng đợi thanh toán.
+      return orders.filter((o) => o.bookingStatus !== BookingStatus.pending);
     },
     enabled: !!actor && !isFetching && !!restaurantId,
     refetchInterval: 5000,

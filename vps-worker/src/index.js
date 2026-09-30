@@ -48,6 +48,8 @@ const orderPromoInfoRoutes = require('./routes/order-promo-info');
 const mapsConfigRoutes = require('./routes/maps-config');
 const driverPickupLookupRoutes = require('./routes/driver-pickup-lookup');
 const deliveryRoutes = require('./routes/delivery');
+const customerStepRoutes = require('./routes/customer-step');
+const customerStep = require('./lib/customer-step');
 const delivery = require('./lib/delivery');
 
 const cronJobs = [];
@@ -103,6 +105,7 @@ app.use('/', orderPromoInfoRoutes);
 app.use('/', mapsConfigRoutes);
 app.use('/', driverPickupLookupRoutes);
 app.use('/', deliveryRoutes);
+app.use('/', customerStepRoutes);
 app.use('/', analyticsRoutes);
 
 // Error handler
@@ -152,6 +155,9 @@ cronJobs.push(cron.schedule('*/30 * * * * *', async () => {
   if (shutdown.shuttingDown || deliveryTickRunning) return;
   deliveryTickRunning = true;
   try {
+    // Tự huỷ đơn quá 10 phút khách chưa bấm "Đặt tài xế" (trước delivery
+    // tick để lượt huỷ được xử lý cùng nhịp).
+    await customerStep.tick(db);
     await delivery.tick(db);
   } catch (e) {
     console.error('[cron] delivery tick lỗi:', e.message);

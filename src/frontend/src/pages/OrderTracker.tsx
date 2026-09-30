@@ -9,13 +9,18 @@
 import type { Restaurant } from "@/backend";
 import { ChangeRestaurantDialog } from "@/components/ChangeRestaurantDialog";
 import { CopyOrderIdButton } from "@/components/CopyOrderIdButton";
+import { CustomerStepPanel } from "@/components/CustomerStepPanel";
 import { StatusBadge } from "@/components/StatusBadge";
 import { DeliveryTrackingPanel } from "@/components/delivery/DeliveryTrackingPanel";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
 import { useGetOrder, useRestaurants } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
-import { getDeliveryStatus, getInvoice } from "@/lib/vps-client";
-import type { DeliveryInfo } from "@/lib/vps-client";
+import {
+  getCustomerStep,
+  getDeliveryStatus,
+  getInvoice,
+} from "@/lib/vps-client";
+import type { CustomerStepState, DeliveryInfo } from "@/lib/vps-client";
 import type { Order, OrderStatus } from "@/types";
 import { BookingStatus, InvoiceStatus, PaymentStatus } from "@/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -149,6 +154,15 @@ export default function OrderTracker() {
     queryFn: () => getDeliveryStatus(orderId as string),
     enabled: !!orderId,
     refetchInterval: 10000,
+  });
+  // Bước khách chọn "Đặt tài xế" / "Huỷ đơn" (VPS lib/customer-step.js) —
+  // poll 5s để đồng hồ đếm ngược và trạng thái tự huỷ luôn khớp VPS.
+  const { data: customerStep, refetch: refetchCustomerStep } = useQuery({
+    queryKey: ["customerStep", orderId],
+    queryFn: () => getCustomerStep(orderId as string),
+    enabled: !!orderId,
+    refetchInterval: 5000,
+    retry: false,
   });
   const queryClient = useQueryClient();
   const [invoiceState, setInvoiceState] = useState<InvoiceState>({
@@ -337,6 +351,14 @@ export default function OrderTracker() {
             queryClient.invalidateQueries({ queryKey: ["order", orderId] })
           }
           deliveryInfo={deliveryInfo}
+          customerStep={customerStep}
+          onCustomerStepChanged={() => {
+            refetchCustomerStep();
+            refetch();
+            queryClient.invalidateQueries({
+              queryKey: ["deliveryStatus", orderId],
+            });
+          }}
         />
       )}
     </section>
@@ -357,6 +379,10 @@ interface OrderStatusViewProps {
   // mạng, null khi đơn chưa gọi tài xế (chưa bật tự đặt hoặc đơn tự đặt
   // tài xế bằng app ngoài) → giữ timeline 2 bước dự phòng.
   deliveryInfo: DeliveryInfo | null | undefined;
+  // Bước "Đặt tài xế" / "Huỷ đơn" của khách — undefined khi chưa tải/lỗi
+  // hoặc đơn không áp dụng (đơn cũ, đơn quầy).
+  customerStep?: CustomerStepState;
+  onCustomerStepChanged?: () => void;
 }
 
 export function OrderStatusView({
@@ -370,6 +396,8 @@ export function OrderStatusView({
   onDownloadInvoice,
   onRestaurantChanged,
   deliveryInfo,
+  customerStep,
+  onCustomerStepChanged,
 }: OrderStatusViewProps) {
   const [changeRestaurantOpen, setChangeRestaurantOpen] = useState(false);
   const booking = status.bookingStatus as BookingStatus;
@@ -381,9 +409,23 @@ export function OrderStatusView({
   // trước đây cũng bật nút này, nhưng bấm vào chắc chắn báo lỗi vì chưa hề
   // có invoice_id/PDF nào tồn tại.
   const canDownloadInvoice = invoice === InvoiceStatus.invoiced;
+  // Đơn còn chờ khách chọn / đã bị huỷ ở bước này → ẩn thông tin đặt tài
+  // xế + hành trình giao (chưa có tài xế nào được gọi).
+  const step = customerStep?.step ?? "";
+  const waitingChoice = step === "awaiting";
+  const stoppedByCustomer = step === "cancelled" || step === "expired";
 
   return (
     <div className="mt-6 space-y-6">
+      {order && (
+        <CustomerStepPanel
+          orderId={order.orderId}
+          state={customerStep}
+          shippingFee={Number(order.shippingFee)}
+          onChanged={() => onCustomerStepChanged?.()}
+        />
+      )}
+
       {/* Trạng thái — chỉ hiển thị "Thanh toán" */}
       <div
         className="rounded-lg border border-border bg-card p-5 shadow-sm"
@@ -413,7 +455,7 @@ export function OrderStatusView({
       </div>
 
       {/* Thông tin để dán vào app ngoài — địa chỉ nhà hàng + tổng tiền */}
-      {order && (
+      {order && !waitingChoice && !stoppedByCustomer && (
         <div
           className="rounded-lg border border-border bg-card p-5 shadow-sm"
           data-ocid="order_tracker.copy_panel"
@@ -544,7 +586,8 @@ export function OrderStatusView({
       {/* Hành trình giao hàng — theo dõi Lalamove / Ahamove khi đơn đã
           được tự động gọi tài xế; nếu không thì giữ timeline 2 bước dự
           phòng (tài xế tự đặt qua app ngoài). */}
-      {!isCancelled && deliveryInfo ? (
+      {waitingChoice || stoppedByCustomer ? null : !isCancelled &&
+        deliveryInfo ? (
         <DeliveryTrackingPanel info={deliveryInfo} />
       ) : (
         <div

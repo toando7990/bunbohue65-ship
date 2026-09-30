@@ -8,9 +8,19 @@
 // thực được — tránh lặp lại bằng cách hiện đúng dữ liệu thật, tự cập nhật
 // khi có thêm/bớt chi nhánh, không cần sửa code mỗi lần đổi.
 
-import { useRestaurants } from "@/hooks/useQueries";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useRestaurants } from "@/hooks/useQueries";
+import { BUSINESS_PEOPLE, FOOD_SAFETY_CERT } from "@/lib/company-info";
+import {
+  BadgeCheck,
   Building2,
+  FileImage,
   Globe,
   Info,
   Loader2,
@@ -18,7 +28,9 @@ import {
   Phone,
   ScrollText,
   Store,
+  UserRound,
 } from "lucide-react";
+import { useState } from "react";
 
 const TERMS: string[] = [
   "Các chương trình khuyến mại chỉ áp dụng cho khách hàng đã xác thực email qua mã OTP.",
@@ -32,6 +44,8 @@ const TERMS: string[] = [
 export default function GioiThieu() {
   const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
   const visibleRestaurants = (restaurants ?? []).filter((r) => r.visible);
+  const [certOpen, setCertOpen] = useState(false);
+  const certValid = Date.now() < FOOD_SAFETY_CERT.validUntil.getTime();
 
   return (
     <section
@@ -96,6 +110,43 @@ export default function GioiThieu() {
               69 đường Láng, P. Đống Đa, Tp. Hà Nội
             </span>
           </div>
+          <div
+            className="flex items-start gap-3 px-4 py-3 text-sm"
+            data-ocid="gioi_thieu.owner"
+          >
+            <UserRound
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span className="w-20 shrink-0 text-muted-foreground">
+              Chủ doanh nghiệp
+            </span>
+            <span className="font-medium text-foreground">
+              {BUSINESS_PEOPLE.owner}
+            </span>
+          </div>
+          <div
+            className="flex items-start gap-3 px-4 py-3 text-sm"
+            data-ocid="gioi_thieu.website_operator"
+          >
+            <Globe
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span className="w-20 shrink-0 text-muted-foreground">
+              Vận hành website
+            </span>
+            <span className="font-medium text-foreground">
+              {BUSINESS_PEOPLE.websiteOperator}
+              <br />
+              <a
+                href={`tel:${BUSINESS_PEOPLE.websiteOperatorPhone.replace(/\s/g, "")}`}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                {BUSINESS_PEOPLE.websiteOperatorPhone}
+              </a>
+            </span>
+          </div>
           <div className="flex items-start gap-3 px-4 py-3 text-sm">
             <Phone
               className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
@@ -127,6 +178,80 @@ export default function GioiThieu() {
             </a>
           </div>
         </div>
+      </div>
+
+      {/* Giấy chứng nhận cơ sở đủ điều kiện ATTP — thông tin dạng chữ;
+          ảnh gốc chỉ hiện khi khách bấm nút (theo bản xem trước đã duyệt). */}
+      <div className="mt-6" data-ocid="gioi_thieu.food_safety_cert">
+        <h3 className="mb-3 flex items-center gap-1.5 font-display text-base font-bold text-foreground">
+          <BadgeCheck className="h-4 w-4 text-primary" aria-hidden="true" />
+          Giấy chứng nhận an toàn thực phẩm
+        </h3>
+        <div className="rounded-xl border border-border bg-card p-4 text-sm">
+          <span
+            className={
+              certValid
+                ? "inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent"
+                : "inline-flex items-center gap-1.5 rounded-full bg-destructive/15 px-2.5 py-0.5 text-[11px] font-bold text-destructive"
+            }
+          >
+            <span
+              className={
+                certValid
+                  ? "h-1.5 w-1.5 rounded-full bg-accent"
+                  : "h-1.5 w-1.5 rounded-full bg-destructive"
+              }
+              aria-hidden="true"
+            />
+            {certValid
+              ? `Còn hiệu lực đến ${FOOD_SAFETY_CERT.validUntilText}`
+              : `Đã hết hạn từ ${FOOD_SAFETY_CERT.validUntilText}`}
+          </span>
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+            <dt className="text-muted-foreground">Số</dt>
+            <dd className="font-mono font-medium text-foreground">
+              {FOOD_SAFETY_CERT.number}
+            </dd>
+            <dt className="text-muted-foreground">Cơ quan cấp</dt>
+            <dd className="font-medium text-foreground">
+              {FOOD_SAFETY_CERT.issuer}
+            </dd>
+            <dt className="text-muted-foreground">Ngày cấp</dt>
+            <dd className="font-medium text-foreground">
+              {FOOD_SAFETY_CERT.issuedText} · hiệu lực 3 năm
+            </dd>
+            <dt className="text-muted-foreground">Loại hình</dt>
+            <dd className="font-medium text-foreground">
+              {FOOD_SAFETY_CERT.scope}
+            </dd>
+          </dl>
+          <button
+            type="button"
+            onClick={() => setCertOpen(true)}
+            data-ocid="gioi_thieu.view_cert_button"
+            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition-smooth hover:bg-secondary"
+          >
+            <FileImage className="h-4 w-4" aria-hidden="true" />
+            Xem giấy chứng nhận gốc
+          </button>
+        </div>
+        <Dialog open={certOpen} onOpenChange={setCertOpen}>
+          <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto p-3 sm:p-4">
+            <DialogHeader>
+              <DialogTitle>Giấy chứng nhận ATTP</DialogTitle>
+              <DialogDescription>
+                Số {FOOD_SAFETY_CERT.number} — {FOOD_SAFETY_CERT.issuer}
+              </DialogDescription>
+            </DialogHeader>
+            {certOpen && (
+              <img
+                src={FOOD_SAFETY_CERT.imageUrl}
+                alt={`Giấy chứng nhận cơ sở đủ điều kiện an toàn thực phẩm số ${FOOD_SAFETY_CERT.number}`}
+                className="w-full rounded-md border border-border"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Chuỗi cửa hàng — lấy thật từ hệ thống, không hardcode. Dạng

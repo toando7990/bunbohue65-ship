@@ -426,6 +426,19 @@ function initSchema(db) {
   //  - orders.delivery_provider / delivery_order_id: lượt giao HIỆN TẠI;
   //  - bảng deliveries: MỖI lần gọi tài xế 1 dòng (kể cả lượt bị huỷ để
   //    chuyển hãng) — lịch sử + thống kê cho thẻ "Giao hàng" ở /admin.
+  // Khách tự chọn "Đặt tài xế" / "Huỷ đơn" sau khi đặt món từ xa
+  // (lib/customer-step.js):
+  //  customer_step     '' (đơn cũ / đơn quầy — không áp dụng) | awaiting
+  //                    (chờ khách chọn) | dispatched (khách bấm Đặt tài xế)
+  //                    | cancelled (khách huỷ) | expired (quá hạn tự huỷ)
+  //  step_deadline     hạn chót (ms) để khách bấm "Đặt tài xế"
+  //  dispatched_at     lúc khách bấm "Đặt tài xế" (mốc thử lại đặt tài xế)
+  //  cancel_reason     lý do huỷ khách chọn / lý do tự huỷ
+  if (!colNames.has('customer_step')) db.exec("ALTER TABLE orders ADD COLUMN customer_step TEXT NOT NULL DEFAULT ''");
+  if (!colNames.has('step_deadline')) db.exec('ALTER TABLE orders ADD COLUMN step_deadline INTEGER');
+  if (!colNames.has('dispatched_at')) db.exec('ALTER TABLE orders ADD COLUMN dispatched_at INTEGER');
+  if (!colNames.has('cancel_reason')) db.exec("ALTER TABLE orders ADD COLUMN cancel_reason TEXT NOT NULL DEFAULT ''");
+
   if (!colNames.has('cus_lat')) db.exec('ALTER TABLE orders ADD COLUMN cus_lat REAL');
   if (!colNames.has('cus_lng')) db.exec('ALTER TABLE orders ADD COLUMN cus_lng REAL');
   if (!colNames.has('delivery_provider')) {

@@ -517,7 +517,11 @@ async function retryUndispatched(db, settings) {
     `SELECT o.order_id FROM orders o
      WHERE o.cus_lat IS NOT NULL AND o.cus_lng IS NOT NULL
        AND o.booking_status NOT IN ('cancelled', 'completed')
-       AND o.created_at >= ? AND o.created_at <= ?
+       -- Đơn mới: chỉ khi khách đã bấm "Đặt tài xế" (lib/customer-step.js);
+       -- mốc thời gian là lúc khách bấm. Đơn cũ (customer_step='') giữ
+       -- nguyên mốc created_at.
+       AND o.customer_step IN ('', 'dispatched')
+       AND COALESCE(o.dispatched_at, o.created_at) >= ? AND COALESCE(o.dispatched_at, o.created_at) <= ?
        AND NOT EXISTS (SELECT 1 FROM deliveries d WHERE d.order_id = o.order_id)`,
   ).all(now - 20 * 60 * 1000, now - 60 * 1000);
   for (const { order_id: id } of rows) {

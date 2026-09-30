@@ -16,7 +16,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const canister = require('../lib/canister');
-const delivery = require('../lib/delivery');
+const customerStep = require('../lib/customer-step');
 const { generatePickupCode } = require('../lib/pickup-code');
 const { rateLimit } = require('../middleware/rate-limit');
 
@@ -194,6 +194,11 @@ router.post('/order/create', async (req, res, next) => {
       });
     }
 
+    // Đơn giao tận nơi (có toạ độ khách, không phải đơn quầy) → chờ khách
+    // chọn "Đặt tài xế" / "Huỷ đơn" (lib/customer-step.js).
+    const isDeliveryOrder = !isCounterOrder && cusLat !== null && cusLng !== null;
+    if (isDeliveryOrder) customerStep.markAwaiting(db, orderId);
+
     // 3b. Upsert khách hàng vào bảng customers (email là khóa chính).
     //     Chỉ lưu khi có email; cập nhật tên/SĐT nếu khách đã tồn tại.
     if (receiverEmail) {
@@ -236,18 +241,16 @@ router.post('/order/create', async (req, res, next) => {
       console.error('[create] canister createOrder error:', e.message, '— retry queue sẽ xử lý');
     }
 
-    // 5. Tự động đặt tài xế (Lalamove / Ahamove — lib/delivery.js): chọn
-    // hãng theo cài đặt "Giao hàng" ở /admin, tự chuyển hãng khi lỗi. Chỉ
-    // đơn giao tận nơi (có toạ độ khách, không phải đơn quầy) và chỉ hãng
-    // bật LALAMOVE_AUTO_DISPATCH / AHAMOVE_AUTO_DISPATCH. Chạy nền — KHÔNG
-    // chặn trả kết quả tạo đơn; lỗi chỉ ghi log (nhà hàng vẫn tự đặt tài
-    // xế thủ công được như trước).
-    if (!isCounterOrder && cusLat !== null && cusLng !== null) {
-      setImmediate(() => {
-        delivery.dispatch(db, orderId).then((r) => {
-          if (!r.ok) console.warn('[create] chưa tự đặt được tài xế:', orderId, r.error);
-        });
-      });
+    // 5. Đơn giao tận nơi: KHÔNG tự gọi tài xế nữa — chờ khách bấm "Đặt
+    // tài xế" hoặc "Huỷ đơn" trong "Theo dõi đơn" (tối đa 10 phút, quá hạn
+    // tự huỷ). Đơn ở trạng thái #pending nên /driver chưa hiện trong hàng
+    // đợi thanh toán. Xem lib/customer-step.js.
+    let stepDeadline = null;
+    if (isDeliveryOrder) {
+      if (canisterOk) await customerStep.pushPending(orderId);
+      // canisterOk=false: retry queue tạo đơn rồi tự đưa về #pending
+      // (customerStep.syncAfterCanisterCreate).
+      stepDeadline = db.prepare('SELECT step_deadline FROM orders WHERE order_id = ?').get(orderId)?.step_deadline ?? null;
     }
 
     // Frontend contract: { orderId, ok, error? }
@@ -257,6 +260,8 @@ router.post('/order/create', async (req, res, next) => {
       orderId,
       ok: true,
       pendingSync: !canisterOk,
+      // Hạn chót (ms) để khách bấm "Đặt tài xế"; null = đơn không áp dụng.
+      stepDeadline,
       error: canisterOk ? undefined : `canister sync pending: ${canisterError}`,
     });
   } catch (e) {

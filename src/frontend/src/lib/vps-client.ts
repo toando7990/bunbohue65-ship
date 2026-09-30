@@ -256,6 +256,54 @@ export async function changeOrderRestaurant(
   });
 }
 
+// Khách tự chọn "Đặt tài xế" / "Huỷ đơn" sau khi đặt món từ xa (VPS
+// lib/customer-step.js). step: "" = đơn không áp dụng (đơn cũ/đơn quầy);
+// awaiting = chờ khách chọn (quá deadline tự huỷ); dispatched = đã đặt tài
+// xế; cancelled = khách huỷ; expired = tự huỷ vì quá 10 phút.
+export type CustomerStep =
+  | ""
+  | "awaiting"
+  | "dispatched"
+  | "cancelled"
+  | "expired";
+export interface CustomerStepState {
+  ok: boolean;
+  step: CustomerStep;
+  deadline: number | null;
+  serverNow: number;
+  canDispatch: boolean;
+  canCancel: boolean;
+  cancelReason: string;
+  cancelledAt: number | null;
+}
+export async function getCustomerStep(
+  orderId: string,
+): Promise<CustomerStepState> {
+  return vpsFetch<CustomerStepState>({
+    method: "GET",
+    path: `/order/${encodeURIComponent(orderId)}/customer-step`,
+  });
+}
+export async function customerRequestDispatch(
+  orderId: string,
+): Promise<CustomerStepState> {
+  return vpsFetch<CustomerStepState>({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/customer-step/dispatch`,
+    body: {},
+  });
+}
+export async function customerCancelOrder(
+  orderId: string,
+  reason: string,
+): Promise<CustomerStepState> {
+  return vpsFetch<CustomerStepState>({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/customer-step/cancel`,
+    body: { reason },
+  });
+}
+
 // Xác nhận thanh toán thủ công bằng ảnh (khi webhook Tingee không hoạt
 // động) — VPS tự đọc chữ trong ảnh (OCR), CHỈ đánh dấu đã thanh toán nếu
 // khớp CẢ số tiền lẫn mã tài khoản QR của đơn — CHẶN HẲN nếu không khớp

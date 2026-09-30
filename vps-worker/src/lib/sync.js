@@ -83,6 +83,9 @@ function startRetryQueue(db) {
           if (result?.ok) {
             db.prepare(`UPDATE orders SET canister_synced = 1, updated_at = ? WHERE order_id = ?`)
               .run(Date.now(), row.order_id);
+            // Đơn giao tận nơi đang chờ khách / đã huỷ → đưa canister về
+            // đúng trạng thái (createOrder luôn tạo #confirmed).
+            await require('./customer-step').syncAfterCanisterCreate(db, row.order_id);
           } else {
             db.prepare(`UPDATE orders SET retry_count = retry_count + 1, last_retry_at = ?, updated_at = ? WHERE order_id = ?`)
               .run(Date.now(), Date.now(), row.order_id);
