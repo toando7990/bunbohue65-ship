@@ -113,14 +113,15 @@ export function DeliveryBar({
           </span>
         </button>
       </div>
-      {open && (
-        <div
-          className="mt-3 flex flex-col gap-3"
-          data-ocid="create_order.restaurant_card"
-        >
-          {children}
-        </div>
-      )}
+      {/* Luôn giữ trong trang (chỉ ẩn khi thu gọn) — không mất trạng thái
+          đang chọn/thêm địa chỉ dở khi đóng/mở lại. */}
+      <div
+        hidden={!open}
+        className="mt-3 flex flex-col gap-3"
+        data-ocid="create_order.restaurant_card"
+      >
+        {children}
+      </div>
     </div>
   );
 }

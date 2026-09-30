@@ -191,6 +191,8 @@ export default function CreateOrder() {
 
   // Gợi ý gọi thêm — hiện 1 lần khi khách thêm món đầu tiên vào giỏ.
   const [upsellItems, setUpsellItems] = useState<MenuItem[]>([]);
+  // Nhà hàng phục vụ tính được ở lần render gần nhất (xem handleQuantityChange).
+  const orderRestaurantIdRef = useRef("");
 
   const selectedRestaurant: Restaurant | undefined = restaurants?.find(
     (r) => r.restaurantId === restaurantId,
@@ -268,11 +270,13 @@ export default function CreateOrder() {
   const handleQuantityChange = useCallback(
     (itemId: string, delta: number) => {
       // Chưa chọn nhà hàng → chặn thêm món, nhắc khách chọn nhà hàng trước (bước 1).
-      if (delta > 0 && !restaurantId) {
+      // Nhà hàng đã xác định nhưng state restaurantId chưa kịp cập nhật
+      // (effect bên dưới chạy sau lần render) → vẫn cho thêm món.
+      if (delta > 0 && !restaurantId && !orderRestaurantIdRef.current) {
         toast.error("Vui lòng chọn nhà hàng trước khi thêm món.");
         document
           .querySelector('[data-ocid="create_order.delivery_bar"]')
-          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+          ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
         return;
       }
 
@@ -356,6 +360,7 @@ export default function CreateOrder() {
       ) ?? null)
     : null;
   const orderRestaurant = favoriteRestaurant ?? nearestRestaurant;
+  orderRestaurantIdRef.current = orderRestaurant?.restaurantId ?? "";
   // Nhà hàng gần nhất khác nhà hàng yêu thích đang chọn — hiển thị gợi ý
   // đổi cho khách biết có lựa chọn khác gần hơn (không tự động đổi).
   const nearestIsDifferentFromFavorite =
@@ -369,8 +374,11 @@ export default function CreateOrder() {
       setRestaurantId(orderRestaurant.restaurantId);
       // Đổi nhà hàng (VD khách đổi địa chỉ sang khu vực khác) → xoá giỏ
       // hàng cũ, cùng hành vi đã có khi khách tự đổi nhà hàng trước đây.
-      setCart({});
-      setUpsellItems([]);
+      // Lần xác định nhà hàng ĐẦU TIÊN (restaurantId còn rỗng) thì giữ giỏ.
+      if (restaurantId) {
+        setCart({});
+        setUpsellItems([]);
+      }
     }
   }, [orderRestaurant?.restaurantId]);
 

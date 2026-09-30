@@ -16,21 +16,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useRestaurants } from "@/hooks/useQueries";
-import { BUSINESS_PEOPLE, FOOD_SAFETY_CERT } from "@/lib/company-info";
+import {
+  BUSINESS_PEOPLE,
+  COMPANY_INFO,
+  FOOD_SAFETY_CERT,
+} from "@/lib/company-info";
 import {
   BadgeCheck,
-  Building2,
+  ChevronDown,
   FileImage,
-  Globe,
-  Info,
   Loader2,
-  MapPin,
+  Navigation,
   Phone,
-  ScrollText,
-  Store,
-  UserRound,
 } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 const TERMS: string[] = [
   "Các chương trình khuyến mại chỉ áp dụng cho khách hàng đã xác thực email qua mã OTP.",
@@ -41,231 +40,149 @@ const TERMS: string[] = [
   "Quyết định của Doanh nghiệp về các tranh chấp liên quan đến khuyến mại là quyết định cuối cùng.",
 ];
 
+// Mục mở/đóng dùng chung (bản xem trước đã duyệt: thông tin doanh nghiệp,
+// giấy chứng nhận, điều khoản thu gọn; nội dung giữ nguyên).
+function Section({
+  title,
+  ocid,
+  id,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  ocid: string;
+  id?: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details
+      id={id}
+      open={defaultOpen}
+      className="group rounded-xl border border-border bg-card px-4 shadow-sm"
+      data-ocid={ocid}
+    >
+      <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-2 text-sm font-bold text-foreground">
+        {title}
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      <div className="pb-4">{children}</div>
+    </details>
+  );
+}
+
+function InfoRow({
+  label,
+  children,
+  ocid,
+}: {
+  label: string;
+  children: ReactNode;
+  ocid?: string;
+}) {
+  return (
+    <div
+      className="grid grid-cols-[7.5rem_1fr] gap-3 border-t border-border py-2.5 text-sm first:border-t-0"
+      data-ocid={ocid}
+    >
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-words font-medium text-foreground">
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+function tel(phone: string): string {
+  return `tel:${phone.replace(/[^\d+]/g, "")}`;
+}
+
+function mapsUrl(r: { lat: number; lng: number; address: string }): string {
+  const hasCoords =
+    Number.isFinite(r.lat) &&
+    Number.isFinite(r.lng) &&
+    !(r.lat === 0 && r.lng === 0);
+  const q = hasCoords ? `${r.lat},${r.lng}` : r.address;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+
 export default function GioiThieu() {
   const { data: restaurants, isLoading: restaurantsLoading } = useRestaurants();
   const visibleRestaurants = (restaurants ?? []).filter((r) => r.visible);
   const [certOpen, setCertOpen] = useState(false);
   const certValid = Date.now() < FOOD_SAFETY_CERT.validUntil.getTime();
+  // Trang này còn làm "Link Điều khoản" cho các chương trình khuyến mại —
+  // mở sẵn mục điều khoản khi link có #dieu-khoan.
+  const termsFromLink =
+    typeof window !== "undefined" && window.location.hash === "#dieu-khoan";
 
   return (
     <section
-      className="mx-auto w-full max-w-2xl px-4 py-8 md:px-6"
+      className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6 md:px-6 md:py-8"
       data-ocid="gioi_thieu.page"
     >
-      <header className="mb-6 flex items-center gap-2">
-        <Info className="h-6 w-6 text-primary" aria-hidden="true" />
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-          Giới thiệu
-        </h1>
+      <h1 className="sr-only">Giới thiệu</h1>
+
+      {/* Đầu trang: logo + khẩu hiệu + gọi hotline + huy hiệu ATTP. */}
+      <header className="flex items-center gap-3">
+        <img
+          src="/assets/images/logo-mark.png"
+          alt=""
+          className="h-14 w-14 shrink-0 rounded-full object-contain"
+        />
+        <div className="min-w-0">
+          <p className="font-display text-lg font-bold text-foreground">
+            Bún Bò Huế 65
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Hương vị Huế truyền thống, gói trọn trong từng tô bún
+          </p>
+        </div>
       </header>
-
-      <div className="rounded-xl border border-border bg-gradient-to-br from-primary/5 to-accent/5 p-5">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-accent">
-          Về chúng tôi
-        </p>
-        <h2 className="mb-2 font-display text-lg font-bold leading-snug text-foreground">
-          Hương vị Huế truyền thống, gói trọn trong từng tô bún
-        </h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          Bún Bò Huế 65 mang đến hương vị đậm đà, chuẩn vị cố đô — từ nước dùng
-          ninh xương nhiều giờ đến từng loại rau thơm được tuyển chọn kỹ lưỡng
-          mỗi ngày.
-        </p>
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        Bún Bò Huế 65 mang đến hương vị đậm đà, chuẩn vị cố đô — từ nước dùng
+        ninh xương nhiều giờ đến từng loại rau thơm được tuyển chọn kỹ lưỡng mỗi
+        ngày.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <a
+          href={tel(COMPANY_INFO.phone)}
+          data-ocid="gioi_thieu.hotline_button"
+          className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-gradient-primary px-3 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90"
+        >
+          <Phone className="h-4 w-4" aria-hidden="true" />
+          {COMPANY_INFO.phone}
+        </a>
+        <button
+          type="button"
+          onClick={() => setCertOpen(true)}
+          data-ocid="gioi_thieu.cert_badge"
+          className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-md border bg-card px-3 text-sm font-semibold transition-smooth hover:bg-secondary ${
+            certValid
+              ? "border-accent text-accent"
+              : "border-destructive text-destructive"
+          }`}
+        >
+          <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+          ATTP {FOOD_SAFETY_CERT.number.split("/").slice(0, 2).join("/")}
+        </button>
       </div>
 
-      {/* Thông tin doanh nghiệp */}
-      <div className="mt-6" data-ocid="gioi_thieu.business_info">
-        <h3 className="mb-3 flex items-center gap-1.5 font-display text-base font-bold text-foreground">
-          <Building2 className="h-4 w-4 text-primary" aria-hidden="true" />
-          Thông tin doanh nghiệp
-        </h3>
-        <div className="divide-y divide-border rounded-xl border border-border bg-card">
-          <div className="flex items-start gap-3 px-4 py-3 text-sm">
-            <Building2
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="w-20 shrink-0 text-muted-foreground">Đơn vị</span>
-            <span className="font-medium text-foreground">
-              Công ty TNHH Thực phẩm Gia Khánh (Gia Khánh Foods)
-            </span>
-          </div>
-          <div className="flex items-start gap-3 px-4 py-3 text-sm">
-            <ScrollText
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="w-20 shrink-0 text-muted-foreground">
-              Mã số thuế
-            </span>
-            <span className="font-medium text-foreground">0111063397</span>
-          </div>
-          <div className="flex items-start gap-3 px-4 py-3 text-sm">
-            <MapPin
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="w-20 shrink-0 text-muted-foreground">Trụ sở</span>
-            <span className="font-medium text-foreground">
-              69 đường Láng, P. Đống Đa, Tp. Hà Nội
-            </span>
-          </div>
-          <div
-            className="flex items-start gap-3 px-4 py-3 text-sm"
-            data-ocid="gioi_thieu.owner"
-          >
-            <UserRound
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="w-20 shrink-0 text-muted-foreground">
-              Chủ doanh nghiệp
-            </span>
-            <span className="font-medium text-foreground">
-              {BUSINESS_PEOPLE.owner}
-            </span>
-          </div>
-          <div
-            className="flex items-start gap-3 px-4 py-3 text-sm"
-            data-ocid="gioi_thieu.website_operator"
-          >
-            <Globe
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="w-20 shrink-0 text-muted-foreground">
-              Vận hành website
-            </span>
-            <span className="font-medium text-foreground">
-              {BUSINESS_PEOPLE.websiteOperator}
-              <br />
-              <a
-                href={`tel:${BUSINESS_PEOPLE.websiteOperatorPhone.replace(/\s/g, "")}`}
-                className="text-primary underline-offset-2 hover:underline"
-              >
-                {BUSINESS_PEOPLE.websiteOperatorPhone}
-              </a>
-            </span>
-          </div>
-          <div className="flex items-start gap-3 px-4 py-3 text-sm">
-            <Phone
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="w-20 shrink-0 text-muted-foreground">Hotline</span>
-            <a
-              href="tel:0838656865"
-              className="font-medium text-primary underline-offset-2 hover:underline"
-            >
-              0838 656 865
-            </a>
-          </div>
-          <div className="flex items-start gap-3 px-4 py-3 text-sm">
-            <Globe
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="w-20 shrink-0 text-muted-foreground">
-              Đặt món online
-            </span>
-            <a
-              href="https://www.bunbohue65.com"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium text-primary underline-offset-2 hover:underline"
-            >
-              https://www.bunbohue65.com
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* Giấy chứng nhận cơ sở đủ điều kiện ATTP — thông tin dạng chữ;
-          ảnh gốc chỉ hiện khi khách bấm nút (theo bản xem trước đã duyệt). */}
-      <div className="mt-6" data-ocid="gioi_thieu.food_safety_cert">
-        <h3 className="mb-3 flex items-center gap-1.5 font-display text-base font-bold text-foreground">
-          <BadgeCheck className="h-4 w-4 text-primary" aria-hidden="true" />
-          Giấy chứng nhận an toàn thực phẩm
-        </h3>
-        <div className="rounded-xl border border-border bg-card p-4 text-sm">
-          <span
-            className={
-              certValid
-                ? "inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent"
-                : "inline-flex items-center gap-1.5 rounded-full bg-destructive/15 px-2.5 py-0.5 text-[11px] font-bold text-destructive"
-            }
-          >
-            <span
-              className={
-                certValid
-                  ? "h-1.5 w-1.5 rounded-full bg-accent"
-                  : "h-1.5 w-1.5 rounded-full bg-destructive"
-              }
-              aria-hidden="true"
-            />
-            {certValid
-              ? `Còn hiệu lực đến ${FOOD_SAFETY_CERT.validUntilText}`
-              : `Đã hết hạn từ ${FOOD_SAFETY_CERT.validUntilText}`}
-          </span>
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
-            <dt className="text-muted-foreground">Số</dt>
-            <dd className="font-mono font-medium text-foreground">
-              {FOOD_SAFETY_CERT.number}
-            </dd>
-            <dt className="text-muted-foreground">Cơ quan cấp</dt>
-            <dd className="font-medium text-foreground">
-              {FOOD_SAFETY_CERT.issuer}
-            </dd>
-            <dt className="text-muted-foreground">Ngày cấp</dt>
-            <dd className="font-medium text-foreground">
-              {FOOD_SAFETY_CERT.issuedText} · hiệu lực 3 năm
-            </dd>
-            <dt className="text-muted-foreground">Loại hình</dt>
-            <dd className="font-medium text-foreground">
-              {FOOD_SAFETY_CERT.scope}
-            </dd>
-          </dl>
-          <button
-            type="button"
-            onClick={() => setCertOpen(true)}
-            data-ocid="gioi_thieu.view_cert_button"
-            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition-smooth hover:bg-secondary"
-          >
-            <FileImage className="h-4 w-4" aria-hidden="true" />
-            Xem giấy chứng nhận gốc
-          </button>
-        </div>
-        <Dialog open={certOpen} onOpenChange={setCertOpen}>
-          <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto p-3 sm:p-4">
-            <DialogHeader>
-              <DialogTitle>Giấy chứng nhận ATTP</DialogTitle>
-              <DialogDescription>
-                Số {FOOD_SAFETY_CERT.number} — {FOOD_SAFETY_CERT.issuer}
-              </DialogDescription>
-            </DialogHeader>
-            {certOpen && (
-              <img
-                src={FOOD_SAFETY_CERT.imageUrl}
-                alt={`Giấy chứng nhận cơ sở đủ điều kiện an toàn thực phẩm số ${FOOD_SAFETY_CERT.number}`}
-                className="w-full rounded-md border border-border"
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Chuỗi cửa hàng — lấy thật từ hệ thống, không hardcode. Dạng
-          BẢNG (theo bản xem trước đã duyệt) — 3 cột: Chi nhánh/Địa chỉ/SĐT,
-          cuộn ngang nếu tràn màn hình nhỏ. */}
-      <div className="mt-6" data-ocid="gioi_thieu.restaurant_chain">
-        <h3 className="mb-1 flex items-center gap-1.5 font-display text-base font-bold text-foreground">
-          <Store className="h-4 w-4 text-primary" aria-hidden="true" />
+      {/* Chuỗi cửa hàng — lấy thật từ hệ thống (không hardcode), dạng
+          thẻ có nút Gọi + Chỉ đường thay cho bảng phải kéo ngang. */}
+      <div
+        className="flex flex-col gap-2.5"
+        data-ocid="gioi_thieu.restaurant_chain"
+      >
+        <h2 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
           Chuỗi cửa hàng
-        </h3>
-        <p className="mb-3 text-xs text-muted-foreground">
-          Bảng động — tự cập nhật khi thêm/bớt chi nhánh trong hệ thống, không
-          cần sửa giao diện.
-        </p>
+          {visibleRestaurants.length > 0
+            ? ` · ${visibleRestaurants.length} chi nhánh`
+            : ""}
+        </h2>
         {restaurantsLoading ? (
           <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -276,71 +193,167 @@ export default function GioiThieu() {
             Chưa có thông tin chi nhánh.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-primary/5">
-                  <th className="whitespace-nowrap border-b border-border px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-primary">
-                    Chi nhánh
-                  </th>
-                  <th className="whitespace-nowrap border-b border-border px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-primary">
-                    Địa chỉ
-                  </th>
-                  <th className="whitespace-nowrap border-b border-border px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-primary">
-                    SĐT
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleRestaurants.map((r) => (
-                  <tr
-                    key={r.restaurantId}
-                    className="last:[&>td]:border-b-0"
-                    data-ocid={`gioi_thieu.restaurant.${r.restaurantId}`}
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {visibleRestaurants.map((r) => (
+              <div
+                key={r.restaurantId}
+                className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3.5 shadow-sm"
+                data-ocid={`gioi_thieu.restaurant.${r.restaurantId}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-bold text-foreground">{r.name}</p>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold text-accent">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-accent"
+                      aria-hidden="true"
+                    />
+                    Đang hoạt động
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {r.address || "—"}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {r.phone ? (
+                    <a
+                      href={tel(r.phone)}
+                      className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-md border border-border text-sm font-semibold text-foreground transition-smooth hover:bg-secondary"
+                    >
+                      <Phone className="h-4 w-4" aria-hidden="true" />
+                      Gọi
+                    </a>
+                  ) : (
+                    <span />
+                  )}
+                  <a
+                    href={mapsUrl(r)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-md border border-border text-sm font-semibold text-foreground transition-smooth hover:bg-secondary"
                   >
-                    <td className="border-b border-border px-3 py-3 align-top">
-                      <p className="font-bold text-foreground">{r.name}</p>
-                      <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-bold text-accent">
-                        <span
-                          className="h-1.5 w-1.5 rounded-full bg-accent"
-                          aria-hidden="true"
-                        />
-                        Đang hoạt động
-                      </span>
-                    </td>
-                    <td className="border-b border-border px-3 py-3 align-top text-muted-foreground">
-                      {r.address || "—"}
-                    </td>
-                    <td className="border-b border-border px-3 py-3 align-top text-muted-foreground">
-                      {r.phone || "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    <Navigation className="h-4 w-4" aria-hidden="true" />
+                    Chỉ đường
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Điều khoản khuyến mại */}
-      <div className="mt-6" data-ocid="gioi_thieu.promotion_terms">
-        <h3 className="mb-3 flex items-center gap-1.5 font-display text-base font-bold text-foreground">
-          <ScrollText className="h-4 w-4 text-primary" aria-hidden="true" />
-          Điều khoản khuyến mại
-        </h3>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <ol className="flex flex-col gap-3">
-            {TERMS.map((term, i) => (
-              <li key={term} className="flex gap-3 text-sm leading-relaxed">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-                  {i + 1}
-                </span>
-                <span className="text-foreground">{term}</span>
-              </li>
-            ))}
-          </ol>
+      <Section title="Thông tin doanh nghiệp" ocid="gioi_thieu.business_info">
+        <dl>
+          <InfoRow label="Đơn vị">{COMPANY_INFO.name}</InfoRow>
+          <InfoRow label="Mã số thuế">
+            <span className="font-mono">{COMPANY_INFO.taxCode}</span>
+          </InfoRow>
+          <InfoRow label="Trụ sở">{COMPANY_INFO.address}</InfoRow>
+          <InfoRow label="Chủ doanh nghiệp" ocid="gioi_thieu.owner">
+            {BUSINESS_PEOPLE.owner}
+          </InfoRow>
+          <InfoRow label="Vận hành website" ocid="gioi_thieu.website_operator">
+            {BUSINESS_PEOPLE.websiteOperator} ·{" "}
+            <a
+              href={tel(BUSINESS_PEOPLE.websiteOperatorPhone)}
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {BUSINESS_PEOPLE.websiteOperatorPhone}
+            </a>
+          </InfoRow>
+          <InfoRow label="Hotline">
+            <a
+              href={tel(COMPANY_INFO.phone)}
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {COMPANY_INFO.phone}
+            </a>
+          </InfoRow>
+          <InfoRow label="Đặt món online">
+            <a
+              href="https://www.bunbohue65.com"
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              www.bunbohue65.com
+            </a>
+          </InfoRow>
+        </dl>
+      </Section>
+
+      <Section
+        title="Giấy chứng nhận an toàn thực phẩm"
+        ocid="gioi_thieu.food_safety_cert"
+      >
+        <div className="flex flex-col gap-3 text-sm">
+          <span
+            className={
+              certValid
+                ? "inline-flex w-fit items-center gap-1.5 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent"
+                : "inline-flex w-fit items-center gap-1.5 rounded-full bg-destructive/15 px-2.5 py-0.5 text-[11px] font-bold text-destructive"
+            }
+          >
+            {certValid
+              ? `Còn hiệu lực đến ${FOOD_SAFETY_CERT.validUntilText}`
+              : `Đã hết hạn từ ${FOOD_SAFETY_CERT.validUntilText}`}
+          </span>
+          <dl>
+            <InfoRow label="Số">
+              <span className="font-mono">{FOOD_SAFETY_CERT.number}</span>
+            </InfoRow>
+            <InfoRow label="Cơ quan cấp">{FOOD_SAFETY_CERT.issuer}</InfoRow>
+            <InfoRow label="Ngày cấp">
+              {FOOD_SAFETY_CERT.issuedText} · hiệu lực 3 năm
+            </InfoRow>
+            <InfoRow label="Loại hình">{FOOD_SAFETY_CERT.scope}</InfoRow>
+          </dl>
+          <button
+            type="button"
+            onClick={() => setCertOpen(true)}
+            data-ocid="gioi_thieu.view_cert_button"
+            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition-smooth hover:bg-secondary"
+          >
+            <FileImage className="h-4 w-4" aria-hidden="true" />
+            Xem giấy chứng nhận gốc
+          </button>
         </div>
-      </div>
+      </Section>
+
+      <Section
+        title={`Điều khoản khuyến mại (${TERMS.length})`}
+        ocid="gioi_thieu.promotion_terms"
+        id="dieu-khoan"
+        defaultOpen={termsFromLink}
+      >
+        <ol className="flex flex-col gap-3">
+          {TERMS.map((term, i) => (
+            <li key={term} className="flex gap-3 text-sm leading-relaxed">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+                {i + 1}
+              </span>
+              <span className="text-foreground">{term}</span>
+            </li>
+          ))}
+        </ol>
+      </Section>
+
+      <Dialog open={certOpen} onOpenChange={setCertOpen}>
+        <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto p-3 sm:p-4">
+          <DialogHeader>
+            <DialogTitle>Giấy chứng nhận ATTP</DialogTitle>
+            <DialogDescription>
+              Số {FOOD_SAFETY_CERT.number} — {FOOD_SAFETY_CERT.issuer}
+            </DialogDescription>
+          </DialogHeader>
+          {certOpen && (
+            <img
+              src={FOOD_SAFETY_CERT.imageUrl}
+              alt={`Giấy chứng nhận cơ sở đủ điều kiện an toàn thực phẩm số ${FOOD_SAFETY_CERT.number}`}
+              className="w-full rounded-md border border-border"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

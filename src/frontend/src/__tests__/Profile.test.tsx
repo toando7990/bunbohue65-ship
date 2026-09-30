@@ -10,6 +10,14 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockGetCustomer = vi.fn();
+// Trang "Tôi" có lối tắt <Link> (Lịch sử, Giới thiệu) — mock đơn giản,
+// không cần router thật.
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children }: { children: React.ReactNode }) => (
+    <a href="/">{children}</a>
+  ),
+}));
+
 vi.mock("@/lib/vps-client", () => ({
   getCustomer: (...args: unknown[]) => mockGetCustomer(...args),
   updateCustomer: vi.fn(),

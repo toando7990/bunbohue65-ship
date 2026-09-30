@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { DeliveryTrackingPanel } from "@/components/delivery/DeliveryTrackingPanel";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
 import { useGetOrder, useRestaurants } from "@/hooks/useQueries";
+import { customerStatus } from "@/lib/customer-order-status";
 import { cn } from "@/lib/utils";
 import {
   getCustomerStep,
@@ -29,6 +30,7 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Copy,
   Download,
@@ -49,37 +51,8 @@ type InvoiceState =
   | { kind: "success"; url: string }
   | { kind: "error"; message: string };
 
-// Bước hành trình giao hàng — chỉ còn 2 bước, "Tài xế đã thanh toán và nhận hàng" là bước kết thúc.
-interface TimelineStep {
-  key: string;
-  label: string;
-  description: string;
-  icon: typeof Clock;
-}
-
-const TIMELINE: TimelineStep[] = [
-  {
-    key: "waiting",
-    label: "Chờ tài xế thanh toán",
-    description: "Tài xế đang đến nhận hàng và thanh toán.",
-    icon: Clock,
-  },
-  {
-    key: BookingStatus.pickedUp,
-    label: "Tài xế đã thanh toán và nhận hàng",
-    description: "Tài xế đã nhận hàng — đơn hoàn tất.",
-    icon: Truck,
-  },
-];
-
-// Vị trí bước hiện tại trong timeline 2 bước. pickedUp (và completed) là bước kết
-// thúc; mọi trạng thái trước đó đều đang ở bước "Chờ tài xế thanh toán".
-function stepIndex(status: BookingStatus): number {
-  if (status === BookingStatus.pickedUp || status === BookingStatus.completed) {
-    return 1;
-  }
-  return 0;
-}
+// Thanh 4 bước ở khối trạng thái (khi chưa có tài xế).
+const PROGRESS_LABELS = ["Đã đặt", "Có tài xế", "Lấy món", "Đã giao"];
 
 // Định dạng số tiền VND từ bigint (đơn vị đồng).
 function formatVnd(amount: bigint): string {
@@ -237,7 +210,7 @@ export default function OrderTracker() {
           className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium text-muted-foreground transition-smooth hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Danh sách
+          Đơn của tôi
         </Link>
         <button
           type="button"
@@ -255,7 +228,7 @@ export default function OrderTracker() {
       </div>
 
       <h1
-        className="font-display text-2xl font-semibold tracking-tight md:text-3xl"
+        className="font-display text-xl font-semibold tracking-tight md:text-2xl"
         data-ocid="order_tracker.title"
       >
         Theo dõi đơn
@@ -404,19 +377,109 @@ export function OrderStatusView({
   const payment = status.paymentStatus as PaymentStatus;
   const invoice = status.invoiceStatus as InvoiceStatus;
   const isCancelled = booking === BookingStatus.cancelled;
-  const currentStep = stepIndex(booking);
-  // Chỉ bật nút khi hoá đơn ĐÃ phát hành thành công — trạng thái 'failed'
-  // trước đây cũng bật nút này, nhưng bấm vào chắc chắn báo lỗi vì chưa hề
-  // có invoice_id/PDF nào tồn tại.
+  // Chỉ bật nút khi hoá đơn ĐÃ phát hành thành công.
   const canDownloadInvoice = invoice === InvoiceStatus.invoiced;
-  // Đơn còn chờ khách chọn / đã bị huỷ ở bước này → ẩn thông tin đặt tài
-  // xế + hành trình giao (chưa có tài xế nào được gọi).
+  // Đơn còn chờ khách chọn / đã bị huỷ ở bước này → chưa có tài xế nào
+  // được gọi: ẩn mã nhận hàng/QR và hành trình giao.
   const step = customerStep?.step ?? "";
   const waitingChoice = step === "awaiting";
   const stoppedByCustomer = step === "cancelled" || step === "expired";
+  const cs = customerStatus(status, deliveryInfo);
+  const showDeliveryPanel = !isCancelled && !!deliveryInfo;
+  const showPickup =
+    !!order?.pickupCode &&
+    payment !== PaymentStatus.paid &&
+    !waitingChoice &&
+    !stoppedByCustomer &&
+    !isCancelled;
+  const restaurantName =
+    restaurants.find((r) => r.restaurantId === order?.restaurantId)?.name ?? "";
 
   return (
-    <div className="mt-6 space-y-6">
+    <div className="mt-4 space-y-4">
+      {/* Khối trạng thái ở đầu (bản xem trước đã duyệt). Đã gọi tài xế →
+          dùng DeliveryTrackingPanel (4 bước, tài xế + nút Gọi, bản đồ);
+          chưa có tài xế → khối trạng thái gọn với thanh 4 bước. */}
+      {showDeliveryPanel && deliveryInfo ? (
+        <DeliveryTrackingPanel info={deliveryInfo} />
+      ) : (
+        <div
+          className="rounded-xl border border-border bg-card p-4 shadow-sm"
+          data-ocid="order_tracker.timeline_panel"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Trạng thái</p>
+              <p
+                className={cn(
+                  "font-display text-lg font-bold",
+                  isCancelled ? "text-destructive" : "text-foreground",
+                )}
+                data-ocid="order_tracker.status_label"
+              >
+                {cs.label}
+              </p>
+            </div>
+            <span
+              className="inline-flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
+              data-ocid="order_tracker.poll_indicator"
+            >
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  isFetching ? "bg-warning" : "bg-success",
+                )}
+                aria-hidden="true"
+              />
+              {isFetching ? "Đang cập nhật…" : lastUpdated}
+            </span>
+          </div>
+          {isCancelled ? (
+            <div
+              className="mt-3 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+              data-ocid="order_tracker.cancelled_state"
+            >
+              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Đơn hàng đã bị huỷ.
+            </div>
+          ) : (
+            <div className="mt-3" data-ocid="order_tracker.progress">
+              <div className="grid grid-cols-4 gap-1">
+                {PROGRESS_LABELS.map((label, i) => (
+                  <span
+                    key={label}
+                    className={cn(
+                      "h-1.5 rounded-full",
+                      i < cs.done
+                        ? "bg-accent"
+                        : i === cs.current
+                          ? "bg-gradient-to-r from-accent from-50% to-border to-50%"
+                          : "bg-border",
+                    )}
+                  />
+                ))}
+              </div>
+              <div className="mt-1.5 grid grid-cols-4 text-center text-[10.5px] text-muted-foreground">
+                {PROGRESS_LABELS.map((label, i) => (
+                  <span
+                    key={label}
+                    className={cn(
+                      i === cs.current && "font-bold text-foreground",
+                    )}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="mt-3 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Thanh toán tiền món</span>
+            <StatusBadge status={payment} size="sm" />
+          </div>
+        </div>
+      )}
+
       {order && (
         <CustomerStepPanel
           orderId={order.orderId}
@@ -426,117 +489,148 @@ export function OrderStatusView({
         />
       )}
 
-      {/* Trạng thái — chỉ hiển thị "Thanh toán" */}
-      <div
-        className="rounded-lg border border-border bg-card p-5 shadow-sm"
-        data-ocid="order_tracker.status_panel"
-      >
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="font-display text-lg font-semibold">Trạng thái</h2>
-          <span
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
-            data-ocid="order_tracker.poll_indicator"
-          >
-            <span
-              className={cn(
-                "h-2 w-2 rounded-full",
-                isFetching ? "bg-warning" : "bg-success",
-              )}
+      {/* Đơn hàng — danh sách món + tổng (trước đây màn hình chi tiết chưa
+          có). */}
+      {order && (
+        <details
+          open
+          className="group rounded-xl border border-border bg-card px-4 shadow-sm"
+          data-ocid="order_tracker.order_summary"
+        >
+          <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-2 font-semibold">
+            <span>
+              Đơn hàng ·{" "}
+              <span data-ocid="order_tracker.total_amount">
+                {formatVnd(order.amount + order.shippingFee)}
+              </span>
+            </span>
+            <ChevronDown
+              className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180"
               aria-hidden="true"
             />
-            {isFetching ? "Đang cập nhật…" : `Cập nhật ${lastUpdated}`}
-          </span>
-        </div>
+          </summary>
+          <div className="flex flex-col gap-1.5 pb-4 text-sm">
+            {order.items.map((it, i) => (
+              <div
+                key={it.itemId || i}
+                className={cn(
+                  "flex justify-between gap-3",
+                  it.name === "Dụng cụ đựng đồ ăn" &&
+                    "text-xs text-muted-foreground",
+                )}
+              >
+                <span>
+                  {Number(it.quantity)}× {it.name}
+                </span>
+                <span className="shrink-0 font-mono">
+                  {formatVnd(it.price * it.quantity)}
+                </span>
+              </div>
+            ))}
+            {order.kmDiscountAmount + order.voucherDiscountAmount > 0n && (
+              <div className="flex justify-between gap-3 text-destructive">
+                <span>Khuyến mại + phiếu giảm giá</span>
+                <span className="shrink-0 font-mono">
+                  −
+                  {formatVnd(
+                    order.kmDiscountAmount + order.voucherDiscountAmount,
+                  )}
+                </span>
+              </div>
+            )}
+            {order.shippingFee > 0n && (
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Phí ship</span>
+                <span className="shrink-0 font-mono">
+                  {formatVnd(order.shippingFee)}
+                </span>
+              </div>
+            )}
+            <div className="mt-1 flex justify-between gap-3 border-t border-border pt-2 font-bold">
+              <span>Tổng thanh toán</span>
+              <span className="font-mono text-[oklch(var(--bbh-gold))]">
+                {formatVnd(order.amount + order.shippingFee)}
+              </span>
+            </div>
+          </div>
+        </details>
+      )}
 
-        <div className="mt-4 flex flex-col gap-1">
-          <span className="text-xs text-muted-foreground">Thanh toán</span>
-          <StatusBadge status={payment} size="md" />
-        </div>
-      </div>
-
-      {/* Thông tin để dán vào app ngoài — địa chỉ nhà hàng + tổng tiền */}
-      {order && !waitingChoice && !stoppedByCustomer && (
-        <div
-          className="rounded-lg border border-border bg-card p-5 shadow-sm"
-          data-ocid="order_tracker.copy_panel"
+      {/* Mã nhận hàng + QR cho tài xế — thu gọn (tài xế đọc mã / nhân viên
+          quét QR bằng camera điện thoại khi tới lấy món). */}
+      {order && showPickup && (
+        <details
+          className="group rounded-xl border border-border bg-card px-4 shadow-sm"
+          data-ocid="order_tracker.pickup_section"
         >
-          <h2 className="font-display text-lg font-semibold">
-            Thông tin đặt tài xế
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Sao chép thông tin bên dưới để dán vào app đặt tài xế bên ngoài.
-          </p>
-
-          <div className="mt-4 space-y-4">
-            {/* Mã nhận hàng — báo cho tài xế bằng cách của bạn (gọi điện,
-                nhắn tin...); tài xế đọc lại cho nhân viên quán khi đến lấy
-                hàng để xác nhận thanh toán. Ẩn sau khi đã thanh toán xong. */}
-            {order.pickupCode && payment !== PaymentStatus.paid && (
-              <div className="flex items-start justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 p-3">
-                <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <KeyRound
-                      className="h-3.5 w-3.5 shrink-0 text-primary"
-                      aria-hidden="true"
-                    />
-                    Mã nhận hàng — báo tài xế khi đến lấy hàng
-                  </p>
-                  <p
-                    className="mt-1 font-mono text-lg font-bold tracking-[0.2em] text-foreground"
-                    data-ocid="order_tracker.pickup_code"
-                  >
-                    {order.pickupCode}
-                  </p>
-                </div>
-                <CopyButton
-                  value={order.pickupCode}
-                  label="Sao chép mã nhận hàng"
+          <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-2 font-semibold">
+            <span className="flex items-center gap-2">
+              <KeyRound className="h-4 w-4 text-primary" aria-hidden="true" />
+              Mã nhận hàng & QR cho tài xế
+            </span>
+            <ChevronDown
+              className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+          <div className="flex flex-col gap-3 pb-4">
+            <div className="flex items-center justify-between gap-3">
+              <p
+                className="font-mono text-lg font-bold tracking-[0.2em] text-foreground"
+                data-ocid="order_tracker.pickup_code"
+              >
+                {order.pickupCode}
+              </p>
+              <CopyButton
+                value={order.pickupCode}
+                label="Sao chép mã nhận hàng"
+              />
+            </div>
+            <div
+              className="flex flex-col items-center gap-2"
+              data-ocid="order_tracker.pickup_qr"
+            >
+              <p className="text-xs text-muted-foreground">
+                Nhân viên quán quét QR này bằng camera điện thoại
+              </p>
+              <div className="rounded-lg bg-white p-2">
+                <QRCodeCanvas
+                  value={`${window.location.origin}/driver?scan_order=${encodeURIComponent(order.orderId)}&scan_code=${encodeURIComponent(order.pickupCode)}`}
+                  size={160}
                 />
               </div>
-            )}
+            </div>
+          </div>
+        </details>
+      )}
 
-            {/* QR "nhận hàng" — mã hoá 1 ĐƯỜNG LINK trỏ về /driver kèm
-                orderId + pickupCode (thay vì JSON thuần trước đây) —
-                cho phép NHÂN VIÊN QUÁN dùng CAMERA GỐC của điện thoại
-                (không phải camera trong trình duyệt, hay bị từ chối
-                quyền trên 1 số thiết bị) quét trực tiếp: điện thoại tự
-                nhận diện đây là link, mở thẳng /driver và tự động hiện
-                đúng đơn + điền sẵn mã nhận hàng — không cần bấm nút
-                "Quét QR nhận hàng" (camera trong trình duyệt) nữa,
-                dù tính năng đó vẫn còn làm phương án dự phòng. Dùng
-                window.location.origin — luôn đúng domain thật đang
-                chạy, không hard-code. */}
-            {order.pickupCode && payment !== PaymentStatus.paid && (
-              <div
-                className="flex flex-col items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-4"
-                data-ocid="order_tracker.pickup_qr"
-              >
-                <p className="text-xs text-muted-foreground">
-                  QR nhận hàng — đưa cho tài xế mang tới quán
-                </p>
-                <div className="rounded-lg bg-white p-2">
-                  <QRCodeCanvas
-                    value={`${window.location.origin}/driver?scan_order=${encodeURIComponent(order.orderId)}&scan_code=${encodeURIComponent(order.pickupCode)}`}
-                    size={160}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Địa chỉ nhà hàng */}
+      {/* Nhà hàng — địa chỉ + đổi nhà hàng khi đặt nhầm. */}
+      {order && (
+        <details
+          className="group rounded-xl border border-border bg-card px-4 shadow-sm"
+          data-ocid="order_tracker.copy_panel"
+        >
+          <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-2 font-semibold">
+            <span className="min-w-0 truncate">
+              Nhà hàng{restaurantName ? ` · ${restaurantName}` : ""}
+            </span>
+            <ChevronDown
+              className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+          <div className="flex flex-col gap-3 pb-4">
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  Địa chỉ nhà hàng
-                </p>
-                <p
-                  className="mt-1 break-words text-sm font-medium text-foreground"
-                  data-ocid="order_tracker.restaurant_address"
-                >
-                  {restaurantAddress || "—"}
-                </p>
-              </div>
+              <p
+                className="flex min-w-0 items-start gap-1.5 break-words text-sm text-foreground"
+                data-ocid="order_tracker.restaurant_address"
+              >
+                <MapPin
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                {restaurantAddress || "—"}
+              </p>
               {restaurantAddress && (
                 <CopyButton
                   value={restaurantAddress}
@@ -544,13 +638,11 @@ export function OrderStatusView({
                 />
               )}
             </div>
-
-            {/* Ẩn khi đã gọi tài xế (hoặc chưa biết chắc — đang
-                tải/lỗi mạng): tài xế đã được điều tới nhà hàng hiện tại,
-                đổi nhà hàng lúc này sẽ làm tài xế tới sai chỗ. VPS cũng
+            {/* Ẩn khi đã gọi tài xế (hoặc chưa biết chắc — đang tải/lỗi
+                mạng): tài xế đã được điều tới nhà hàng hiện tại. VPS cũng
                 chặn thêm 1 lớp (routes/order-restaurant.js). */}
-            {order &&
-              payment === PaymentStatus.unpaid &&
+            {payment === PaymentStatus.unpaid &&
+              !isCancelled &&
               deliveryInfo !== undefined &&
               !deliveryInfo && (
                 <button
@@ -562,143 +654,31 @@ export function OrderStatusView({
                   Đặt nhầm nhà hàng? Chuyển sang nhà hàng khác
                 </button>
               )}
-
-            {/* Tổng tiền hàng */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Tổng tiền hàng</p>
-                <p
-                  className="mt-1 font-display text-lg font-bold text-primary"
-                  data-ocid="order_tracker.total_amount"
-                >
-                  {formatVnd(order.amount)}
-                </p>
-              </div>
-              <CopyButton
-                value={formatVnd(order.amount)}
-                label="Sao chép tổng tiền hàng"
-              />
-            </div>
           </div>
-        </div>
+        </details>
       )}
 
-      {/* Hành trình giao hàng — theo dõi Lalamove / Ahamove khi đơn đã
-          được tự động gọi tài xế; nếu không thì giữ timeline 2 bước dự
-          phòng (tài xế tự đặt qua app ngoài). */}
-      {waitingChoice || stoppedByCustomer ? null : !isCancelled &&
-        deliveryInfo ? (
-        <DeliveryTrackingPanel info={deliveryInfo} />
-      ) : (
-        <div
-          className="rounded-lg border border-border bg-card p-5 shadow-sm"
-          data-ocid="order_tracker.timeline_panel"
+      {/* Hoá đơn — cuối trang. */}
+      <div data-ocid="order_tracker.actions_panel">
+        <button
+          type="button"
+          onClick={onDownloadInvoice}
+          disabled={!canDownloadInvoice || invoiceState.kind === "loading"}
+          data-ocid="order_tracker.invoice_button"
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-smooth hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <h2 className="font-display text-lg font-semibold">
-            Hành trình giao
-          </h2>
-          {isCancelled ? (
-            <div
-              className="mt-4 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-              data-ocid="order_tracker.cancelled_state"
-            >
-              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
-              Đơn hàng đã bị huỷ.
-            </div>
+          {invoiceState.kind === "loading" ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            <ol className="mt-4 space-y-1">
-              {TIMELINE.map((step, i) => {
-                const Icon = step.icon;
-                const isDone = i < currentStep;
-                const isCurrent = i === currentStep;
-                const isFuture = i > currentStep;
-                return (
-                  <li
-                    key={step.key}
-                    data-ocid={`order_tracker.timeline.step.${i + 1}`}
-                    className="relative flex gap-3 pb-4 last:pb-0"
-                  >
-                    {/* Connector line */}
-                    {i < TIMELINE.length - 1 && (
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          "absolute left-[15px] top-8 h-[calc(100%-1.5rem)] w-0.5",
-                          isDone ? "bg-success" : "bg-border",
-                        )}
-                      />
-                    )}
-                    <span
-                      className={cn(
-                        "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-smooth",
-                        isDone &&
-                          "border-success bg-success text-success-foreground",
-                        isCurrent &&
-                          "border-primary bg-primary text-primary-foreground",
-                        isFuture &&
-                          "border-border bg-card text-muted-foreground",
-                      )}
-                    >
-                      {isDone ? (
-                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                      ) : isCurrent ? (
-                        <Loader2
-                          className="h-4 w-4 animate-spin"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Icon className="h-4 w-4" aria-hidden="true" />
-                      )}
-                    </span>
-                    <div className="min-w-0 flex-1 pt-1">
-                      <p
-                        className={cn(
-                          "text-sm font-medium",
-                          isFuture && "text-muted-foreground",
-                        )}
-                      >
-                        {step.label}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {step.description}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
+            <Download className="h-4 w-4" aria-hidden="true" />
           )}
-        </div>
-      )}
-
-      {/* Hành động */}
-      <div
-        className="rounded-lg border border-border bg-card p-5 shadow-sm"
-        data-ocid="order_tracker.actions_panel"
-      >
-        <h2 className="font-display text-lg font-semibold">Hành động</h2>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          {/* Tải hoá đơn — VPS /order/:id/invoice */}
-          <button
-            type="button"
-            onClick={onDownloadInvoice}
-            disabled={!canDownloadInvoice || invoiceState.kind === "loading"}
-            data-ocid="order_tracker.invoice_button"
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-smooth hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {invoiceState.kind === "loading" ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <Download className="h-4 w-4" aria-hidden="true" />
-            )}
-            Tải hoá đơn
-          </button>
-        </div>
-
-        {/* Invoice feedback */}
+          {canDownloadInvoice
+            ? "Tải hoá đơn"
+            : "Tải hoá đơn (sau khi thanh toán)"}
+        </button>
         {invoiceState.kind === "error" && (
           <p
-            className="mt-3 flex items-center gap-1.5 text-sm text-destructive"
+            className="mt-2 flex items-center gap-1.5 text-sm text-destructive"
             data-ocid="order_tracker.invoice_error"
             role="alert"
           >
@@ -708,16 +688,11 @@ export function OrderStatusView({
         )}
         {invoiceState.kind === "success" && (
           <p
-            className="mt-3 flex items-center gap-1.5 text-sm text-success"
+            className="mt-2 flex items-center gap-1.5 text-sm text-success"
             data-ocid="order_tracker.invoice_success"
           >
             <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
             Đã mở hoá đơn trong tab mới.
-          </p>
-        )}
-        {!canDownloadInvoice && invoiceState.kind === "idle" && (
-          <p className="mt-3 text-xs text-muted-foreground">
-            Hoá đơn sẽ khả dụng sau khi đơn hoàn tất thanh toán.
           </p>
         )}
       </div>

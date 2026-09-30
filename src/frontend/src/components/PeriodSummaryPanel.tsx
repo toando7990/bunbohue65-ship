@@ -4,7 +4,7 @@
 // nữa để đạt mức thưởng tiếp theo" (dựa trên getCurrentSalesPromo — canister
 // chỉ cung cấp cấu hình mức, phần "còn thiếu bao nhiêu" tính ở đây).
 
-import { OrderCard } from "@/components/OrderCard";
+import { CustomerOrderCard } from "@/components/CustomerOrderCard";
 import { useCurrentSalesPromo } from "@/hooks/useQueries";
 import { toOrder } from "@/lib/order-mapping";
 import { getPeriodSummary } from "@/lib/vps-client";
@@ -118,12 +118,11 @@ export function PeriodSummaryPanel({ email, period }: PeriodSummaryPanelProps) {
           data-ocid={`order_history.period_summary.${period}.grid`}
         >
           {orders.map((order, i) => (
-            <OrderCard
+            <CustomerOrderCard
               key={order.orderId}
               order={order}
               index={i + 1}
-              hidePickupCode
-              disableDetailLink
+              mode="history"
             />
           ))}
         </div>

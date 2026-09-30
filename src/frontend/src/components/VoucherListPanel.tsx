@@ -32,9 +32,14 @@ function vnDateKeyNow(): string {
 
 export interface VoucherListPanelProps {
   email: string;
+  /** "scroll": dải vé kéo ngang gọn (trang "Tôi"); mặc định lưới thẻ. */
+  layout?: "grid" | "scroll";
 }
 
-export function VoucherListPanel({ email }: VoucherListPanelProps) {
+export function VoucherListPanel({
+  email,
+  layout = "grid",
+}: VoucherListPanelProps) {
   const { data, isLoading, isError } = useMyVouchers(email);
   const vouchers = data ?? [];
   const today = vnDateKeyNow();
@@ -75,6 +80,54 @@ export function VoucherListPanel({ email }: VoucherListPanelProps) {
           Phiếu giảm giá được tự động gửi khi bạn đăng ký lần đầu hoặc đạt mức
           doanh số tuần/tháng.
         </p>
+      </div>
+    );
+  }
+
+  if (layout === "scroll") {
+    return (
+      <div
+        className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1"
+        data-ocid="order_history.voucher_list"
+      >
+        {vouchers.map((v) => {
+          const expired = !v.used && today > v.endDate;
+          const usable = !v.used && !expired;
+          return (
+            <div
+              key={v.code}
+              className={`flex w-40 shrink-0 flex-col gap-0.5 rounded-xl border-[1.5px] border-dashed bg-card p-3 ${
+                usable ? "border-accent" : "border-border opacity-60"
+              }`}
+              data-ocid={`order_history.voucher.${v.code}`}
+            >
+              <span
+                className={`font-mono text-lg font-bold ${usable ? "text-[oklch(var(--bbh-gold))]" : "text-muted-foreground"}`}
+              >
+                {formatVnd(Number(v.value))}
+              </span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {v.code}
+              </span>
+              <span
+                className={`text-xs ${usable ? "text-muted-foreground" : "font-semibold text-muted-foreground"}`}
+                data-ocid={
+                  v.used
+                    ? "voucher.status.used"
+                    : expired
+                      ? "voucher.status.expired"
+                      : "voucher.status.valid"
+                }
+              >
+                {v.used
+                  ? "Đã sử dụng"
+                  : expired
+                    ? "Đã hết hạn"
+                    : `HSD ${formatDate(v.endDate)}`}
+              </span>
+            </div>
+          );
+        })}
       </div>
     );
   }

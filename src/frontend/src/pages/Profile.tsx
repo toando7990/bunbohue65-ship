@@ -29,7 +29,18 @@ import {
   updateCustomer,
 } from "@/lib/vps-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Mail, User } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import {
+  ChevronRight,
+  Heart,
+  History,
+  Info,
+  Loader2,
+  Mail,
+  MapPin,
+  User,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -74,6 +85,9 @@ export default function Profile() {
   const restaurantsQuery = useRestaurants();
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
   const [saving, setSaving] = useState(false);
+  // Bảng trượt sửa hồ sơ + phần địa chỉ nhận hàng (mở/đóng tại chỗ).
+  const [editOpen, setEditOpen] = useState(false);
+  const [addressesOpen, setAddressesOpen] = useState(false);
 
   // Tự điền khi tải xong hồ sơ đã có — chỉ điền 1 lần lúc mới tải xong,
   // không ghi đè nếu khách đang gõ dở (cùng nguyên tắc đã áp dụng ở
@@ -124,6 +138,7 @@ export default function Profile() {
       );
       queryClient.invalidateQueries({ queryKey: ["customer", identityEmail] });
       toast.success("Đã lưu thông tin của bạn.");
+      setEditOpen(false);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Không thể lưu thông tin.",
@@ -139,6 +154,27 @@ export default function Profile() {
   function handleNotifyKmToggle(checked: boolean) {
     if (!checked || verifiedEmail) {
       setNotifyKm(checked);
+      // Công tắc nằm ngoài form (danh sách cài đặt) → lưu ngay khi đã có
+      // hồ sơ, không cần bấm "Lưu thông tin".
+      if (name.trim() && phone.trim()) {
+        updateCustomer(
+          identityEmail,
+          name.trim(),
+          phone.trim(),
+          checked,
+          favoriteRestaurantId,
+        )
+          .then(() =>
+            queryClient.invalidateQueries({
+              queryKey: ["customer", identityEmail],
+            }),
+          )
+          .catch((err) =>
+            toast.error(
+              err instanceof Error ? err.message : "Không lưu được cài đặt.",
+            ),
+          );
+      }
       return;
     }
     setVerifyingForNotify(true);
@@ -194,153 +230,317 @@ export default function Profile() {
     }
   }
 
+  const savedName = customerQuery.data?.name ?? "";
+  const savedPhone = customerQuery.data?.phone ?? "";
+  const favoriteName =
+    (restaurantsQuery.data ?? []).find(
+      (r) => r.restaurantId === favoriteRestaurantId,
+    )?.name ?? "";
+  const initial = (savedName.trim().split(/\s+/).pop() ?? "").charAt(0);
+
   return (
     <section
-      className="mx-auto w-full max-w-lg px-4 py-8 md:px-6"
+      className="mx-auto w-full max-w-lg px-4 py-6 md:px-6 md:py-8"
       data-ocid="profile.page"
     >
-      <header className="mb-6">
-        <h1
-          className="flex items-center gap-2 font-display text-2xl font-semibold tracking-tight md:text-3xl"
-          data-ocid="profile.title"
-        >
-          <User className="h-6 w-6 text-primary" aria-hidden="true" />
-          Thông tin của bạn
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Thông tin này dùng để tự điền khi đặt món, không cần nhập lại mỗi lần.
-        </p>
-      </header>
+      <h1 className="sr-only" data-ocid="profile.title">
+        Thông tin của bạn
+      </h1>
 
-      <form
-        onSubmit={handleSave}
-        className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5"
-        data-ocid="profile.form"
+      {/* Thẻ hồ sơ (bản xem trước đã duyệt) — bấm "Sửa" mở bảng trượt từ
+          dưới lên chứa form như cũ. */}
+      <div
+        className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm"
+        data-ocid="profile.card"
       >
-        {verifiedEmail && (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="profile-email">Email (đã xác thực)</Label>
-            <Input
-              id="profile-email"
-              type="email"
-              value={verifiedEmail}
-              disabled
-              data-ocid="profile.email_input"
-            />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-primary font-display text-xl font-bold text-primary-foreground">
+          {initial ? (
+            initial.toUpperCase()
+          ) : (
+            <User className="h-6 w-6" aria-hidden="true" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-base font-bold text-foreground">
+            {savedName || "Khách mới"}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {savedPhone || "Chưa có số điện thoại"}
+          </p>
+          {verifiedEmail ? (
+            <p className="truncate text-xs text-muted-foreground">
+              {verifiedEmail}{" "}
+              <span className="font-semibold text-success">✓ đã xác thực</span>
+            </p>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditOpen(true)}
+          data-ocid="profile.edit_button"
+          className="min-h-[40px] shrink-0 px-2 text-sm font-semibold text-primary"
+        >
+          {savedName ? "Sửa" : "Thêm"}
+        </button>
+      </div>
+
+      {verifiedEmail && (
+        <div className="mt-5" data-ocid="profile.vouchers_section">
+          <h2 className="mb-2.5 font-display text-base font-bold tracking-tight">
+            Phiếu giảm giá của bạn
+          </h2>
+          <VoucherListPanel email={verifiedEmail} layout="scroll" />
+        </div>
+      )}
+
+      {/* Cài đặt — danh sách gọn; bấm từng dòng mở phần chỉnh sửa. */}
+      <div className="mt-5 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <button
+          type="button"
+          onClick={() => setAddressesOpen((v) => !v)}
+          aria-expanded={addressesOpen}
+          data-ocid="profile.addresses_row"
+          className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+            <MapPin className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1 text-sm font-medium">
+            Địa chỉ nhận hàng
+          </span>
+          <ChevronRight
+            className={`h-4 w-4 text-muted-foreground transition-transform ${addressesOpen ? "rotate-90" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
+        {addressesOpen && (
+          <div
+            className="border-t border-border p-3"
+            data-ocid="profile.delivery_address_section"
+          >
+            {verifiedEmail ? (
+              <DeliveryAddressPanel email={verifiedEmail} />
+            ) : (
+              <GuestAddressPanel guestEmail={guestEmail} />
+            )}
           </div>
         )}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="profile-name">Họ tên</Label>
-          <Input
-            id="profile-name"
-            type="text"
-            autoComplete="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nguyễn Văn A"
-            aria-invalid={!!errors.name}
-            data-ocid="profile.name_input"
+        <button
+          type="button"
+          onClick={() => setEditOpen(true)}
+          data-ocid="profile.favorite_row"
+          className="flex w-full items-center gap-3 border-t border-border px-4 py-3 text-left"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+            <Heart className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium">
+              Nhà hàng yêu thích
+            </span>
+            <span className="block truncate text-xs text-muted-foreground">
+              {favoriteName || "Tự động chọn nhà hàng gần nhất"}
+            </span>
+          </span>
+          <ChevronRight
+            className="h-4 w-4 text-muted-foreground"
+            aria-hidden="true"
           />
-          {errors.name && (
-            <p className="text-xs font-medium text-destructive" role="alert">
-              {errors.name}
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="profile-phone">Số điện thoại</Label>
-          <Input
-            id="profile-phone"
-            type="tel"
-            autoComplete="tel"
-            inputMode="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="0912345678"
-            aria-invalid={!!errors.phone}
-            data-ocid="profile.phone_input"
-          />
-          {errors.phone && (
-            <p className="text-xs font-medium text-destructive" role="alert">
-              {errors.phone}
-            </p>
-          )}
-        </div>
-        <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-muted/30 p-3 text-sm">
+        </button>
+        <label className="flex cursor-pointer items-center gap-3 border-t border-border px-4 py-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+            <Mail className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium">
+              Email thông báo khuyến mại
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              Báo trước 15 phút khi khung giờ khuyến mại bắt đầu
+              {verifiedEmail ? "" : " (cần xác thực email)"}
+            </span>
+          </span>
           <input
             type="checkbox"
             checked={notifyKm}
             onChange={(e) => handleNotifyKmToggle(e.target.checked)}
-            className="mt-0.5 h-4 w-4 accent-primary"
+            className="peer sr-only"
             data-ocid="profile.notify_km_checkbox"
           />
-          <span>
-            <span className="flex items-center gap-1.5 font-medium">
-              <Mail className="h-3.5 w-3.5" aria-hidden="true" />
-              Nhận thông báo khuyến mại qua email
-            </span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              Tuỳ chọn — cần xác thực email để gửi thông báo trước 15 phút mỗi
-              khi khung giờ khuyến mãi sắp bắt đầu.
-            </span>
-          </span>
+          <span
+            aria-hidden="true"
+            className="relative h-6 w-10 shrink-0 rounded-full bg-border transition-colors after:absolute after:left-[3px] after:top-[3px] after:h-[18px] after:w-[18px] after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:bg-accent peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-ring"
+          />
         </label>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="profile-favorite-restaurant">
-            Nhà hàng yêu thích
-          </Label>
-          <select
-            id="profile-favorite-restaurant"
-            value={favoriteRestaurantId}
-            onChange={(e) => setFavoriteRestaurantId(e.target.value)}
-            className="h-10 rounded-md border border-border bg-card px-3 text-sm"
-            data-ocid="profile.favorite_restaurant_select"
-          >
-            <option value="">Không chọn — tự động chọn gần nhất</option>
-            {(restaurantsQuery.data ?? [])
-              .filter((r) => r.visible)
-              .map((r) => (
-                <option key={r.restaurantId} value={r.restaurantId}>
-                  {r.name}
-                </option>
-              ))}
-          </select>
-          <p className="text-xs text-muted-foreground">
-            Khi đặt món từ xa, hệ thống sẽ ưu tiên chọn nhà hàng này thay vì tự
-            động chọn nhà hàng gần nhất.
-          </p>
-        </div>
-        <Button
-          type="submit"
-          disabled={saving || customerQuery.isLoading}
-          data-ocid="profile.save_button"
-        >
-          {saving && (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          )}
-          Lưu thông tin
-        </Button>
-      </form>
-
-      <div className="mt-6" data-ocid="profile.delivery_address_section">
-        <h2 className="mb-3 font-display text-lg font-semibold tracking-tight">
-          Địa chỉ nhận hàng
-        </h2>
-        {verifiedEmail ? (
-          <DeliveryAddressPanel email={verifiedEmail} />
-        ) : (
-          <GuestAddressPanel guestEmail={guestEmail} />
-        )}
       </div>
 
-      {verifiedEmail && (
-        <div className="mt-6" data-ocid="profile.vouchers_section">
-          <h2 className="mb-3 font-display text-lg font-semibold tracking-tight">
-            Phiếu giảm giá của bạn
-          </h2>
-          <VoucherListPanel email={verifiedEmail} />
-        </div>
-      )}
+      {/* Lối tắt (không có "Đối tác đặt món" — theo yêu cầu). */}
+      <nav
+        className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+        aria-label="Lối tắt"
+      >
+        <Link
+          to="/history"
+          data-ocid="profile.link_history"
+          className="flex items-center gap-3 px-4 py-3 text-sm font-medium"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+            <History className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span className="flex-1">Lịch sử đặt đơn</span>
+          <ChevronRight
+            className="h-4 w-4 text-muted-foreground"
+            aria-hidden="true"
+          />
+        </Link>
+        <Link
+          to="/gioi-thieu"
+          data-ocid="profile.link_about"
+          className="flex items-center gap-3 border-t border-border px-4 py-3 text-sm font-medium"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+            <Info className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span className="flex-1">Giới thiệu · Giấy chứng nhận ATTP</span>
+          <ChevronRight
+            className="h-4 w-4 text-muted-foreground"
+            aria-hidden="true"
+          />
+        </Link>
+      </nav>
+
+      {/* Bảng trượt sửa hồ sơ. Form LUÔN nằm trong trang (chỉ ẩn/hiện) để
+          giữ nguyên dữ liệu đang gõ dở khi đóng/mở lại. */}
+      <div
+        className={`fixed inset-0 z-50 transition-opacity ${editOpen ? "opacity-100" : "pointer-events-none invisible opacity-0"}`}
+        aria-hidden={!editOpen}
+      >
+        <button
+          type="button"
+          aria-label="Đóng"
+          tabIndex={editOpen ? 0 : -1}
+          onClick={() => setEditOpen(false)}
+          className="absolute inset-0 bg-black/40"
+        />
+        <section
+          aria-labelledby="profile-sheet-title"
+          className={`absolute inset-x-0 bottom-0 mx-auto max-h-[90vh] max-w-lg overflow-y-auto rounded-t-2xl bg-background p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-elevated transition-transform ${editOpen ? "translate-y-0" : "translate-y-full"}`}
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h2
+              id="profile-sheet-title"
+              className="font-display text-lg font-bold"
+            >
+              Thông tin của bạn
+            </h2>
+            <button
+              type="button"
+              onClick={() => setEditOpen(false)}
+              aria-label="Đóng"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+          <form
+            onSubmit={handleSave}
+            className="flex flex-col gap-4"
+            data-ocid="profile.form"
+          >
+            {verifiedEmail && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="profile-email">Email (đã xác thực)</Label>
+                <Input
+                  id="profile-email"
+                  type="email"
+                  value={verifiedEmail}
+                  disabled
+                  data-ocid="profile.email_input"
+                />
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-name">Họ tên</Label>
+              <Input
+                id="profile-name"
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nguyễn Văn A"
+                aria-invalid={!!errors.name}
+                data-ocid="profile.name_input"
+              />
+              {errors.name && (
+                <p
+                  className="text-xs font-medium text-destructive"
+                  role="alert"
+                >
+                  {errors.name}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-phone">Số điện thoại</Label>
+              <Input
+                id="profile-phone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="0912345678"
+                aria-invalid={!!errors.phone}
+                data-ocid="profile.phone_input"
+              />
+              {errors.phone && (
+                <p
+                  className="text-xs font-medium text-destructive"
+                  role="alert"
+                >
+                  {errors.phone}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-favorite-restaurant">
+                Nhà hàng yêu thích
+              </Label>
+              <select
+                id="profile-favorite-restaurant"
+                value={favoriteRestaurantId}
+                onChange={(e) => setFavoriteRestaurantId(e.target.value)}
+                className="h-10 rounded-md border border-border bg-card px-3 text-sm"
+                data-ocid="profile.favorite_restaurant_select"
+              >
+                <option value="">Không chọn — tự động chọn gần nhất</option>
+                {(restaurantsQuery.data ?? [])
+                  .filter((r) => r.visible)
+                  .map((r) => (
+                    <option key={r.restaurantId} value={r.restaurantId}>
+                      {r.name}
+                    </option>
+                  ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Khi đặt món từ xa, hệ thống ưu tiên chọn nhà hàng này thay vì tự
+                động chọn nhà hàng gần nhất.
+              </p>
+            </div>
+            <Button
+              type="submit"
+              className="min-h-[48px] bg-gradient-primary text-primary-foreground"
+              disabled={saving || customerQuery.isLoading}
+              data-ocid="profile.save_button"
+            >
+              {saving && (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              )}
+              Lưu thông tin
+            </Button>
+          </form>
+        </section>
+      </div>
 
       <EmailVerificationDialog
         open={verifyDialogOpen}

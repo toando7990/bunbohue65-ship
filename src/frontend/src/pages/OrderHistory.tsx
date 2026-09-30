@@ -16,11 +16,12 @@
 // nhận hàng của đơn cũ đã hết hạn và /track/:orderId cũng không tra được
 // đơn đã bị canister xoá.
 
+import { CustomerOrderCard } from "@/components/CustomerOrderCard";
 import { EmailVerificationDialog } from "@/components/EmailVerificationDialog";
-import { OrderCard } from "@/components/OrderCard";
 import { PeriodSummaryPanel } from "@/components/PeriodSummaryPanel";
 import { SalesProgressPanel } from "@/components/SalesProgressPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { dayLabel } from "@/lib/customer-order-status";
 import { toOrder } from "@/lib/order-mapping";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import { getOrderHistory } from "@/lib/vps-client";
@@ -52,7 +53,17 @@ export default function OrderHistory() {
     refetchOnWindowFocus: false,
   });
 
-  const results = (data ?? []).map(toOrder);
+  const results = (data ?? [])
+    .map(toOrder)
+    .sort((a, b) => Number(b.createdAt - a.createdAt));
+  // Nhóm đơn theo ngày đặt ("Hôm qua · 29/09", "27/09"…).
+  const groups: { label: string; orders: typeof results }[] = [];
+  for (const o of results) {
+    const label = dayLabel(o.createdAt);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.orders.push(o);
+    else groups.push({ label, orders: [o] });
+  }
   // QUAN TRỌNG: kiểm tra results.length TRƯỚC isError. React Query giữ lại
   // `data` của lần tải thành công gần nhất kể cả khi 1 lần refetch nền sau
   // đó bị lỗi (isError=true nhưng data vẫn còn) — nếu ưu tiên isError trước,
@@ -61,21 +72,20 @@ export default function OrderHistory() {
 
   return (
     <section
-      className="mx-auto w-full max-w-7xl px-4 py-8 md:px-6"
+      className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8"
       data-ocid="order_history.page"
     >
-      <header className="mb-6">
+      <header className="mb-4">
         <h1
           className="flex items-center gap-2 font-display text-2xl font-semibold tracking-tight md:text-3xl"
           data-ocid="order_history.title"
         >
-          <History className="h-6 w-6 text-primary" aria-hidden="true" />
           Lịch sử đặt đơn
         </h1>
       </header>
 
       {searchedEmail && (
-        <div className="mb-6">
+        <div className="mb-4">
           <SalesProgressPanel email={searchedEmail} />
         </div>
       )}
@@ -108,9 +118,9 @@ export default function OrderHistory() {
         </div>
       ) : (
         <Tabs defaultValue="history" data-ocid="order_history.tabs">
-          <TabsList>
+          <TabsList className="mb-4 grid w-full grid-cols-3">
             <TabsTrigger value="history" data-ocid="order_history.tab.history">
-              Lịch sử
+              Đơn đã đặt
             </TabsTrigger>
             <TabsTrigger value="week" data-ocid="order_history.tab.week">
               Tuần này
@@ -130,17 +140,25 @@ export default function OrderHistory() {
                   {results.length} đơn hàng
                 </p>
                 <div
-                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  className="flex flex-col gap-4"
                   data-ocid="order_history.grid"
                 >
-                  {results.map((order, i) => (
-                    <OrderCard
-                      key={order.orderId}
-                      order={order}
-                      index={i + 1}
-                      hidePickupCode
-                      disableDetailLink
-                    />
+                  {groups.map((g) => (
+                    <div key={g.label} className="flex flex-col gap-2.5">
+                      <h2 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {g.label}
+                      </h2>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {g.orders.map((order) => (
+                          <CustomerOrderCard
+                            key={order.orderId}
+                            order={order}
+                            index={results.indexOf(order) + 1}
+                            mode="history"
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </>
