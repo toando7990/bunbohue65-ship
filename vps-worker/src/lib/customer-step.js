@@ -17,6 +17,10 @@
 // delivery.cancelForCancelledOrders() làm ở nhịp tick kế tiếp — cùng cơ
 // chế đã dùng cho đơn bị huỷ ở nơi khác.
 //
+// Đơn đã dùng phiếu giảm giá bị khách huỷ / tự huỷ → hoàn phiếu (canister
+// releaseVoucher, giữ hạn dùng cũ). Lỗi tạm thời → tick thử lại tới khi
+// xong (voucher_release='pending'); canister từ chối hẳn → 'failed'.
+//
 // Đơn cũ (customer_step='') và đơn quầy KHÔNG bị ảnh hưởng.
 
 const canister = require('./canister');
@@ -86,7 +90,38 @@ function publicState(db, orderId) {
     canCancel,
     cancelReason: o.cancel_reason || '',
     cancelledAt: ['cancelled', 'expired'].includes(step) ? o.updated_at : null,
+    voucher: o.voucher_code
+      ? {
+          code: o.voucher_code,
+          amount: o.voucher_discount_amount || 0,
+          // '' = chưa huỷ; pending = đang hoàn; released = đã hoàn; failed
+          release: o.voucher_release || '',
+          endDate: o.voucher_end_date || '',
+        }
+      : null,
   };
+}
+
+// Hoàn phiếu của đơn (nếu có). Gọi sau khi đơn đã chuyển sang huỷ.
+async function releaseVoucher(db, orderId) {
+  const o = getOrder(db, orderId);
+  if (!o || !o.voucher_code || !o.receiver_email) return;
+  if (o.voucher_release === 'released' || o.voucher_release === 'failed') return;
+  db.prepare("UPDATE orders SET voucher_release = 'pending' WHERE order_id = ?").run(orderId);
+  try {
+    const r = await deps.canister.releaseVoucher(o.receiver_email, o.voucher_code);
+    if (r && r.ok !== undefined) {
+      db.prepare("UPDATE orders SET voucher_release = 'released', voucher_end_date = ? WHERE order_id = ?")
+        .run(String(r.ok || ''), orderId);
+      console.log('[customer-step] đã hoàn phiếu', o.voucher_code, 'của đơn', orderId);
+    } else if (r && r.err !== undefined && r.err !== 'Invalid HMAC') {
+      // Phiếu không tồn tại / sai email — thử lại cũng vô ích.
+      db.prepare("UPDATE orders SET voucher_release = 'failed' WHERE order_id = ?").run(orderId);
+      console.warn('[customer-step] không hoàn được phiếu', o.voucher_code, r.err);
+    }
+  } catch (e) {
+    console.warn('[customer-step] hoàn phiếu lỗi (sẽ thử lại):', orderId, e.message);
+  }
 }
 
 async function cancelOnCanister(orderId) {
@@ -160,6 +195,7 @@ async function cancelByCustomer(db, orderId, reason) {
      WHERE order_id = ?`,
   ).run(text, now, orderId);
   await cancelOnCanister(orderId);
+  await releaseVoucher(db, orderId);
   return { ok: true };
 }
 
@@ -172,6 +208,7 @@ async function expireOrder(db, o) {
   if (changed) {
     console.log('[customer-step] tự huỷ đơn quá hạn:', o.order_id);
     await cancelOnCanister(o.order_id);
+    await releaseVoucher(db, o.order_id);
   }
 }
 
@@ -181,6 +218,11 @@ async function tick(db) {
     `SELECT * FROM orders WHERE customer_step = 'awaiting' AND step_deadline IS NOT NULL AND step_deadline <= ?`,
   ).all(deps.now());
   for (const o of rows) await expireOrder(db, o);
+  // Hoàn phiếu còn dở (lần trước lỗi mạng / canister tạm lỗi).
+  const pending = db.prepare(
+    `SELECT order_id FROM orders WHERE voucher_release = 'pending' AND customer_step IN ('cancelled', 'expired')`,
+  ).all();
+  for (const { order_id: id } of pending) await releaseVoucher(db, id);
 }
 
 // Retry queue vừa tạo được đơn trên canister (createOrder mặc định

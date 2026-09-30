@@ -236,6 +236,11 @@ const IDL_FACTORY = ({ IDL }) => {
       [IDL.Variant({ ok: IDL.Nat, err: IDL.Text })],
       [],
     ),
+    releaseVoucher: IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Variant({ ok: IDL.Text, err: IDL.Text })],
+      [],
+    ),
   });
 };
 
@@ -567,7 +572,17 @@ async function applyVoucher(email, code, orderAmount) {
   return await actor.applyVoucher(email, code, BigInt(orderAmountInt), hmacSig);
 }
 
+// releaseVoucher — hoàn phiếu (đánh dấu CHƯA DÙNG) khi đơn đã dùng phiếu bị
+// khách huỷ / tự huỷ quá 10 phút (lib/customer-step.js). Trả { ok: "YYYYMMDD"
+// ngày hết hạn } | { err }. Idempotent phía canister.
+async function releaseVoucher(email, code) {
+  const actor = getActor();
+  const hmacSig = hmac.signReleaseVoucher(VPS_SECRET, email, code);
+  return await actor.releaseVoucher(email, code, hmacSig);
+}
+
 module.exports = {
+  releaseVoucher,
   getActor, createOrder, updateStatus, updatePaymentStatus,
   updateInvoiceStatus, updateOrderQr, markPaymentExpired, getOrderStatus, listPendingPaymentOrders, cancelOrder,
   getMenuForRestaurant, getPaymentMode, applyPromotion, issueSalesBonus, applyVoucher, changeOrderRestaurant,

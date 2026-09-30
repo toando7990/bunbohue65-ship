@@ -438,6 +438,12 @@ function initSchema(db) {
   if (!colNames.has('step_deadline')) db.exec('ALTER TABLE orders ADD COLUMN step_deadline INTEGER');
   if (!colNames.has('dispatched_at')) db.exec('ALTER TABLE orders ADD COLUMN dispatched_at INTEGER');
   if (!colNames.has('cancel_reason')) db.exec("ALTER TABLE orders ADD COLUMN cancel_reason TEXT NOT NULL DEFAULT ''");
+  // Hoàn phiếu giảm giá khi khách huỷ / tự huỷ (lib/customer-step.js):
+  //  voucher_release   '' (không áp dụng) | pending (chờ hoàn, tick thử lại)
+  //                    | released (đã hoàn) | failed (canister từ chối hẳn)
+  //  voucher_end_date  hạn dùng phiếu "YYYYMMDD" (canister trả về khi hoàn)
+  if (!colNames.has('voucher_release')) db.exec("ALTER TABLE orders ADD COLUMN voucher_release TEXT NOT NULL DEFAULT ''");
+  if (!colNames.has('voucher_end_date')) db.exec("ALTER TABLE orders ADD COLUMN voucher_end_date TEXT NOT NULL DEFAULT ''");
 
   if (!colNames.has('cus_lat')) db.exec('ALTER TABLE orders ADD COLUMN cus_lat REAL');
   if (!colNames.has('cus_lng')) db.exec('ALTER TABLE orders ADD COLUMN cus_lng REAL');

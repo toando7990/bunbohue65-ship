@@ -275,6 +275,14 @@ export interface CustomerStepState {
   canCancel: boolean;
   cancelReason: string;
   cancelledAt: number | null;
+  // Phiếu giảm giá đơn đã dùng (null = không dùng phiếu). release: '' chưa
+  // huỷ | pending đang hoàn | released đã hoàn | failed không hoàn được.
+  voucher?: {
+    code: string;
+    amount: number;
+    release: "" | "pending" | "released" | "failed";
+    endDate: string;
+  } | null;
 }
 export async function getCustomerStep(
   orderId: string,

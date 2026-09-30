@@ -24,8 +24,8 @@ import {
   useKmUsageCount,
 } from "@/hooks/useQueries";
 import { getVerifiedEmail } from "@/lib/verification-storage";
-import { CalendarRange, Clock, Mail } from "lucide-react";
-import { useState } from "react";
+import { CalendarRange, ChevronDown, Clock, Mail } from "lucide-react";
+import { type ReactNode, useState } from "react";
 
 function formatVnd(n: bigint | number): string {
   try {
@@ -46,7 +46,20 @@ function formatDateShort(yyyymmdd: string): string {
   return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}`;
 }
 
-export function PromotionBanner() {
+// collapsible: trang đặt món từ xa — chỉ hiện 1 dòng (tên + mức giảm cao
+// nhất + đếm ngược), bấm "Chi tiết" mới mở các mức, thanh tiến trình và
+// `details` (dòng chạy KM đăng ký/khách thân thiết). Khi không có Giờ Vàng
+// nào hôm nay, hiện `hiddenFallback` thay vào (để dòng chạy KM không mất).
+export function PromotionBanner({
+  collapsible = false,
+  details,
+  hiddenFallback,
+}: {
+  collapsible?: boolean;
+  details?: ReactNode;
+  hiddenFallback?: ReactNode;
+} = {}) {
+  const [expanded, setExpanded] = useState(false);
   const { data: promotion } = useCurrentPromotion();
   // Chỉ áp dụng cho kênh đặt từ xa — chương trình có thể đang active nhưng
   // bị tắt riêng cho kênh này (enabledOnline=false, đặt tại quầy vẫn dùng
@@ -71,7 +84,7 @@ export function PromotionBanner() {
   );
 
   if (countdown.kind === "hidden" || !promotion) {
-    return null;
+    return hiddenFallback ? <>{hiddenFallback}</> : null;
   }
 
   const sortedTiers = [...promotion.tiers].sort(
@@ -79,6 +92,11 @@ export function PromotionBanner() {
   );
 
   const isActive = countdown.kind === "active";
+  const showDetails = !collapsible || expanded;
+  const maxDiscount = sortedTiers.reduce(
+    (m, t) => (Number(t.discountAmount) > m ? Number(t.discountAmount) : m),
+    0,
+  );
 
   const dailyPercent =
     dailyCount !== undefined && promotion.dailyOrderLimit > 0n
@@ -99,11 +117,11 @@ export function PromotionBanner() {
   return (
     <>
       <div
-        className={
+        className={`${collapsible ? "" : "mb-4 "}rounded-md border ${
           isActive
-            ? "mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3"
-            : "mb-4 rounded-md border border-warning/30 bg-warning/10 p-3"
-        }
+            ? "border-destructive/30 bg-destructive/10"
+            : "border-warning/30 bg-warning/10"
+        } ${collapsible && !expanded ? "px-3 py-2" : "p-3"}`}
         data-ocid="promotion_banner"
         data-ocid-state={countdown.kind}
       >
@@ -128,69 +146,97 @@ export function PromotionBanner() {
               ? `${promotion.name} — còn ${countdown.formatted}`
               : `${promotion.name} bắt đầu sau ${countdown.formatted}`}
           </span>
+          {collapsible && (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              data-ocid="promotion_banner.toggle"
+              className="ml-auto inline-flex min-h-[32px] shrink-0 items-center gap-1 text-xs font-semibold text-primary"
+            >
+              {expanded ? "Thu gọn" : "Chi tiết"}
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+                aria-hidden="true"
+              />
+            </button>
+          )}
         </div>
-
-        {/* Mỗi mức khuyến mại 1 dòng riêng — nổi bật hơn bản gộp chung 1
-            câu trước đây. */}
-        {sortedTiers.length > 0 && (
-          <div className="mt-2 flex flex-col gap-1.5">
-            {sortedTiers.map((t) => (
-              <div
-                key={t.minOrderValue.toString()}
-                className="flex items-center justify-between rounded-md bg-card px-2.5 py-1.5"
-                data-ocid="promotion_banner.tier_row"
-              >
-                <span className="text-xs font-medium text-foreground">
-                  Đơn từ {formatVnd(t.minOrderValue)}
-                </span>
-                <span className="font-display text-sm font-bold text-destructive">
-                  −{formatVnd(t.discountAmount)}
-                </span>
-              </div>
-            ))}
-          </div>
+        {collapsible && !expanded && maxDiscount > 0 && (
+          <p
+            className="mt-0.5 pl-6 text-xs text-foreground"
+            data-ocid="promotion_banner.summary"
+          >
+            Giảm tới {formatVnd(maxDiscount)} cho đơn đủ điều kiện
+          </p>
         )}
 
-        {/* 2 thanh tiến trình cùng 1 hàng, phân biệt màu — chỉ hiện khi
-            đang trong khung giờ KM (isActive), giống logic cũ. */}
-        {isActive && dailyCount !== undefined && (
-          <div className="mt-2.5 flex gap-2.5">
-            <div className="min-w-0 flex-1">
-              <div className="mb-0.5 flex items-baseline justify-between">
-                <span className="text-[10px] text-muted-foreground">
-                  Toàn hệ thống
-                </span>
-                <span className="font-display text-[11px] font-bold text-[oklch(0.5_0.15_250)]">
-                  {dailyCount.toString()}/{promotion.dailyOrderLimit.toString()}
-                </span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
-                <div
-                  className="h-full rounded-full bg-[oklch(0.62_0.14_250)] transition-all"
-                  style={{ width: `${dailyPercent}%` }}
-                />
-              </div>
-            </div>
-            {verifiedEmail && customerCount !== undefined && (
-              <div className="min-w-0 flex-1">
-                <div className="mb-0.5 flex items-baseline justify-between">
-                  <span className="text-[10px] text-muted-foreground">
-                    Của bạn
-                  </span>
-                  <span className="font-display text-[11px] font-bold text-success">
-                    {customerCount.toString()}/
-                    {promotion.perCustomerDailyLimit.toString()}
-                  </span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
+        {showDetails && (
+          <>
+            {/* Mỗi mức khuyến mại 1 dòng riêng — nổi bật hơn bản gộp chung 1
+            câu trước đây. */}
+            {sortedTiers.length > 0 && (
+              <div className="mt-2 flex flex-col gap-1.5">
+                {sortedTiers.map((t) => (
                   <div
-                    className="h-full rounded-full bg-success transition-all"
-                    style={{ width: `${customerPercent}%` }}
-                  />
-                </div>
+                    key={t.minOrderValue.toString()}
+                    className="flex items-center justify-between rounded-md bg-card px-2.5 py-1.5"
+                    data-ocid="promotion_banner.tier_row"
+                  >
+                    <span className="text-xs font-medium text-foreground">
+                      Đơn từ {formatVnd(t.minOrderValue)}
+                    </span>
+                    <span className="font-display text-sm font-bold text-destructive">
+                      −{formatVnd(t.discountAmount)}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
-          </div>
+
+            {/* 2 thanh tiến trình cùng 1 hàng, phân biệt màu — chỉ hiện khi
+            đang trong khung giờ KM (isActive), giống logic cũ. */}
+            {isActive && dailyCount !== undefined && (
+              <div className="mt-2.5 flex gap-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-0.5 flex items-baseline justify-between">
+                    <span className="text-[10px] text-muted-foreground">
+                      Toàn hệ thống
+                    </span>
+                    <span className="font-display text-[11px] font-bold text-[oklch(0.5_0.15_250)]">
+                      {dailyCount.toString()}/
+                      {promotion.dailyOrderLimit.toString()}
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
+                    <div
+                      className="h-full rounded-full bg-[oklch(0.62_0.14_250)] transition-all"
+                      style={{ width: `${dailyPercent}%` }}
+                    />
+                  </div>
+                </div>
+                {verifiedEmail && customerCount !== undefined && (
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-0.5 flex items-baseline justify-between">
+                      <span className="text-[10px] text-muted-foreground">
+                        Của bạn
+                      </span>
+                      <span className="font-display text-[11px] font-bold text-success">
+                        {customerCount.toString()}/
+                        {promotion.perCustomerDailyLimit.toString()}
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
+                      <div
+                        className="h-full rounded-full bg-success transition-all"
+                        style={{ width: `${customerPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {/* Nhắc xác thực — CHỈ hiện khi CHƯA xác thực (giữ nguyên hành
@@ -218,30 +264,35 @@ export function PromotionBanner() {
 
         {/* Thời hạn hiệu lực + Điều khoản — chuyển xuống góc dưới bên
             phải (trước đây nằm giữa, ngay dưới các mức KM). */}
-        <div className="mt-2.5 flex items-center justify-end gap-3">
-          {promotion.termsUrl && (
-            <a
-              href={promotion.termsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
-              data-ocid="promotion_banner.terms_link"
+        {showDetails && (
+          <div className="mt-2.5 flex items-center justify-end gap-3">
+            {promotion.termsUrl && (
+              <a
+                href={promotion.termsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                data-ocid="promotion_banner.terms_link"
+              >
+                Điều khoản
+              </a>
+            )}
+            <span
+              className="flex items-center gap-1 text-[10px] text-muted-foreground"
+              data-ocid="promotion_banner.validity"
             >
-              Điều khoản
-            </a>
-          )}
-          <span
-            className="flex items-center gap-1 text-[10px] text-muted-foreground"
-            data-ocid="promotion_banner.validity"
-          >
-            <CalendarRange
-              className="h-2.5 w-2.5 shrink-0"
-              aria-hidden="true"
-            />
-            {formatDateShort(promotion.startDate)} –{" "}
-            {formatDateShort(promotion.endDate)}
-          </span>
-        </div>
+              <CalendarRange
+                className="h-2.5 w-2.5 shrink-0"
+                aria-hidden="true"
+              />
+              {formatDateShort(promotion.startDate)} –{" "}
+              {formatDateShort(promotion.endDate)}
+            </span>
+          </div>
+        )}
+        {collapsible && expanded && details && (
+          <div className="mt-3">{details}</div>
+        )}
       </div>
 
       <EmailVerificationDialog

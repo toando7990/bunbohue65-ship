@@ -51,4 +51,19 @@ mixin (
     };
     VoucherLib.applyVoucher(vouchers, email, code, orderAmount, Time.now());
   };
+
+  // VPS gọi (HMAC-verified) khi đơn ĐÃ DÙNG phiếu bị khách huỷ hoặc tự huỷ
+  // vì quá 10 phút chưa đặt tài xế → phiếu quay lại "chưa dùng". HMAC
+  // payload: "release|email|code". Trả ngày hết hạn phiếu "YYYYMMDD".
+  public shared func releaseVoucher(
+    email : Text,
+    code : Text,
+    hmac : Types.Hmac,
+  ) : async Result.Result<Text, Text> {
+    let payload = "release|" # email # "|" # code;
+    if (not HmacLib.verifyHmac(secretState.vpsSecret, secretState.vpsSecretPrevious, payload, hmac)) {
+      return #err("Invalid HMAC");
+    };
+    VoucherLib.releaseVoucher(vouchers, email, code);
+  };
 };

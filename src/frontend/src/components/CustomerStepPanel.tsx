@@ -12,7 +12,14 @@ import {
   customerRequestDispatch,
 } from "@/lib/vps-client";
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, Bike, Clock, Loader2, XCircle } from "lucide-react";
+import {
+  AlertCircle,
+  Bike,
+  Clock,
+  Loader2,
+  Ticket,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 const CANCEL_REASONS = [
@@ -53,6 +60,88 @@ function useCountdown(state: CustomerStepState | undefined): number | null {
   }, [active]);
   if (!active || !state?.deadline) return null;
   return Math.max(0, state.deadline - (now + offset));
+}
+
+function formatVnd(n: number): string {
+  return `${n.toLocaleString("vi-VN")}đ`;
+}
+
+// "YYYYMMDD" → "DD/MM/YYYY"
+function formatYmd(ymd: string): string {
+  if (ymd.length !== 8) return ymd;
+  return `${ymd.slice(6, 8)}/${ymd.slice(4, 6)}/${ymd.slice(0, 4)}`;
+}
+
+// Hôm nay theo giờ Việt Nam, dạng "YYYYMMDD" (so với hạn phiếu).
+function vnTodayYmd(): string {
+  const d = new Date(Date.now() + 7 * 3600 * 1000);
+  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+// Dòng thông báo hoàn phiếu trên màn hình đơn đã huỷ.
+function VoucherRefundLine({
+  voucher,
+}: {
+  voucher: NonNullable<CustomerStepState["voucher"]>;
+}) {
+  const code = <span className="font-mono">{voucher.code}</span>;
+  if (voucher.release === "released") {
+    const outdated = !!voucher.endDate && voucher.endDate < vnTodayYmd();
+    if (outdated) {
+      return (
+        <p
+          className="flex items-start gap-2 rounded-md bg-warning/15 p-3 text-sm text-foreground"
+          data-ocid="customer_step.voucher_outdated"
+        >
+          <Ticket
+            className="mt-0.5 h-4 w-4 shrink-0 text-warning"
+            aria-hidden="true"
+          />
+          <span>
+            Phiếu {code} đã được hoàn lại nhưng{" "}
+            <b className="text-warning">
+              đã hết hạn ngày {formatYmd(voucher.endDate)}
+            </b>{" "}
+            nên không dùng lại được.
+          </span>
+        </p>
+      );
+    }
+    return (
+      <p
+        className="flex items-start gap-2 rounded-md border border-accent/30 bg-card p-3 text-sm text-foreground"
+        data-ocid="customer_step.voucher_released"
+      >
+        <Ticket
+          className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+          aria-hidden="true"
+        />
+        <span>
+          <b className="text-accent">Đã hoàn lại phiếu giảm giá</b> {code} (
+          {formatVnd(voucher.amount)})
+          {voucher.endDate
+            ? `. Dùng được đến ${formatYmd(voucher.endDate)}`
+            : ""}
+          , xem ở mục Thông tin của bạn.
+        </span>
+      </p>
+    );
+  }
+  if (voucher.release === "pending") {
+    return (
+      <p
+        className="flex items-start gap-2 rounded-md bg-muted p-3 text-sm text-foreground"
+        data-ocid="customer_step.voucher_pending"
+      >
+        <Loader2
+          className="mt-0.5 h-4 w-4 shrink-0 animate-spin"
+          aria-hidden="true"
+        />
+        <span>Đang hoàn lại phiếu giảm giá {code}…</span>
+      </p>
+    );
+  }
+  return null;
 }
 
 function mmss(ms: number): string {
@@ -119,6 +208,11 @@ export function CustomerStepPanel({
           {state.cancelledAt ? ` lúc ${formatClock(state.cancelledAt)}` : ""}.
           Bạn chưa bị trừ tiền.
         </p>
+        {state.voucher && (
+          <div className="mt-3">
+            <VoucherRefundLine voucher={state.voucher} />
+          </div>
+        )}
         <Link
           to="/"
           data-ocid="customer_step.reorder"
@@ -143,6 +237,7 @@ export function CustomerStepPanel({
         {confirming ? (
           <CancelConfirm
             orderId={orderId}
+            voucher={state.voucher ?? null}
             reason={reason}
             setReason={setReason}
             busy={busy === "cancel"}
@@ -194,6 +289,7 @@ export function CustomerStepPanel({
       {confirming ? (
         <CancelConfirm
           orderId={orderId}
+          voucher={state.voucher ?? null}
           reason={reason}
           setReason={setReason}
           busy={busy === "cancel"}
@@ -229,13 +325,15 @@ export function CustomerStepPanel({
       )}
       {remaining !== null && (
         <p
-          className="flex items-center gap-1.5 text-sm text-destructive"
+          className="flex items-start gap-1.5 text-sm text-destructive"
           data-ocid="customer_step.countdown"
         >
-          <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
-          Đơn tự huỷ sau{" "}
-          <span className="font-mono font-bold">{mmss(remaining)}</span> nếu bạn
-          chưa bấm “Đặt tài xế”.
+          <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>
+            Đơn tự huỷ sau{" "}
+            <span className="font-mono font-bold">{mmss(remaining)}</span> nếu
+            bạn chưa bấm “Đặt tài xế”.
+          </span>
         </p>
       )}
       {error && <ErrorLine message={error} />}
@@ -245,6 +343,7 @@ export function CustomerStepPanel({
 
 function CancelConfirm({
   orderId,
+  voucher,
   reason,
   setReason,
   busy,
@@ -252,6 +351,7 @@ function CancelConfirm({
   onConfirm,
 }: {
   orderId: string;
+  voucher: CustomerStepState["voucher"] | null;
   reason: string;
   setReason: (r: string) => void;
   busy: boolean;
@@ -269,6 +369,22 @@ function CancelConfirm({
       <p className="text-sm text-muted-foreground">
         Đơn sẽ được huỷ ở nhà hàng. Bạn chưa bị trừ tiền.
       </p>
+      {voucher && (
+        <p
+          className="flex items-start gap-2 rounded-md bg-accent/10 p-3 text-sm text-foreground"
+          data-ocid="customer_step.voucher_will_refund"
+        >
+          <Ticket
+            className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+            aria-hidden="true"
+          />
+          <span>
+            Phiếu giảm giá <span className="font-mono">{voucher.code}</span> (
+            {formatVnd(voucher.amount)}) sẽ được <b>hoàn lại</b> để dùng cho đơn
+            sau.
+          </span>
+        </p>
+      )}
       <label
         htmlFor="customer-step-reason"
         className="text-xs text-muted-foreground"

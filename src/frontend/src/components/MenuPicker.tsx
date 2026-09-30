@@ -7,7 +7,7 @@ import { useItemImage } from "@/hooks/useQueries";
 import { cn, imageBytesToDataUrl } from "@/lib/utils";
 import type { MenuItem } from "@/types";
 import { Minus, Plus, Search, UtensilsCrossed } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { type ReactNode, memo, useEffect, useMemo, useState } from "react";
 
 export interface CartLine {
   itemId: string;
@@ -47,6 +47,14 @@ interface MenuPickerProps {
    */
   externalQuery?: string;
   onExternalQueryChange?: (query: string) => void;
+  /**
+   * Thẻ món gọn (trang đặt món từ xa, theo bản xem trước đã duyệt): ảnh tỉ
+   * lệ 4:3 thay vì vuông, nút +/− ở góc DƯỚI ảnh (gần ngón cái), bỏ dòng
+   * "Đã gồm VAT" ở từng món — thay bằng 1 ghi chú chung ở `listHeading`.
+   */
+  compactCards?: boolean;
+  /** Tiêu đề hiện giữa ô tìm kiếm và lưới món. */
+  listHeading?: ReactNode;
 }
 
 const ALL_CATEGORY = "Tất cả";
@@ -69,12 +77,14 @@ const MenuCard = memo(function MenuCard({
   onQuantityChange,
   disabled,
   index,
+  compact = false,
 }: {
   item: MenuItem;
   quantity: number;
   onQuantityChange: (itemId: string, delta: number) => void;
   disabled?: boolean;
   index: number;
+  compact?: boolean;
 }) {
   // Ảnh lấy RIÊNG qua getItemImage(itemId) — listMenus()/getMenuForRestaurant()
   // không còn kèm ảnh (tránh vượt giới hạn kích thước phản hồi IC 3MB).
@@ -95,7 +105,8 @@ const MenuCard = memo(function MenuCard({
     >
       <div
         className={cn(
-          "relative aspect-square w-full overflow-hidden rounded-xl bg-muted",
+          "relative w-full overflow-hidden rounded-xl bg-muted",
+          compact ? "aspect-[4/3]" : "aspect-square",
           quantity > 0 && "ring-2 ring-accent",
         )}
       >
@@ -125,7 +136,10 @@ const MenuCard = memo(function MenuCard({
             disabled={disabled}
             aria-label={`Thêm ${item.name}`}
             data-ocid={`menu_picker.increase_button.${index}`}
-            className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            className={cn(
+              "absolute right-2 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50",
+              compact ? "bottom-2 h-10 w-10" : "top-2 h-9 w-9",
+            )}
           >
             <Plus className="h-5 w-5" aria-hidden="true" strokeWidth={2.5} />
           </button>
@@ -134,7 +148,10 @@ const MenuCard = memo(function MenuCard({
              trên thẻ, không cần mở giỏ hàng. Nền accent (xanh lá) để phân biệt
              rõ với nút "+" (đỏ) lúc chưa chọn. */
           <div
-            className="absolute right-2 top-2 flex items-center overflow-hidden rounded-full bg-accent text-accent-foreground shadow-md"
+            className={cn(
+              "absolute right-2 flex items-center overflow-hidden rounded-full bg-accent text-accent-foreground shadow-md",
+              compact ? "bottom-2" : "top-2",
+            )}
             data-ocid={`menu_picker.stepper.${index}`}
           >
             <button
@@ -143,7 +160,10 @@ const MenuCard = memo(function MenuCard({
               disabled={disabled}
               aria-label={`Giảm số lượng ${item.name}`}
               data-ocid={`menu_picker.decrease_button.${index}`}
-              className="flex h-8 w-8 items-center justify-center transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn(
+                "flex items-center justify-center transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50",
+                compact ? "h-9 w-9" : "h-8 w-8",
+              )}
             >
               <Minus className="h-4 w-4" aria-hidden="true" strokeWidth={2.5} />
             </button>
@@ -159,7 +179,10 @@ const MenuCard = memo(function MenuCard({
               disabled={disabled}
               aria-label={`Thêm ${item.name}`}
               data-ocid={`menu_picker.increase_button.${index}`}
-              className="flex h-8 w-8 items-center justify-center transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn(
+                "flex items-center justify-center transition-smooth hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50",
+                compact ? "h-9 w-9" : "h-8 w-8",
+              )}
             >
               <Plus className="h-4 w-4" aria-hidden="true" strokeWidth={2.5} />
             </button>
@@ -174,9 +197,11 @@ const MenuCard = memo(function MenuCard({
         <p className="mt-1 font-mono text-sm font-bold text-foreground">
           {formatVnd(item.price)}
         </p>
-        <p className="text-[11px] text-muted-foreground">
-          Đã gồm VAT {Number(item.vatRate)}%
-        </p>
+        {!compact && (
+          <p className="text-[11px] text-muted-foreground">
+            Đã gồm VAT {Number(item.vatRate)}%
+          </p>
+        )}
       </div>
     </article>
   );
@@ -193,6 +218,8 @@ export function MenuPicker({
   gridColsClassName = "grid-cols-2",
   externalQuery,
   onExternalQueryChange,
+  compactCards = false,
+  listHeading,
 }: MenuPickerProps) {
   const [internalQuery, setInternalQuery] = useState("");
   // Controlled (externalQuery+onExternalQueryChange truyền vào) hay tự
@@ -315,6 +342,8 @@ export function MenuPicker({
         </div>
       )}
 
+      {listHeading}
+
       {!fixedCategory && !groupByCategory && (
         <div
           className="flex flex-wrap gap-1.5"
@@ -372,6 +401,7 @@ export function MenuPicker({
                 quantity={cart[item.itemId] ?? 0}
                 onQuantityChange={onQuantityChange}
                 disabled={disabled}
+                compact={compactCards}
               />
             ))}
           </div>
@@ -398,6 +428,7 @@ export function MenuPicker({
               quantity={cart[item.itemId] ?? 0}
               onQuantityChange={onQuantityChange}
               disabled={disabled}
+              compact={compactCards}
             />
           ))}
         </div>

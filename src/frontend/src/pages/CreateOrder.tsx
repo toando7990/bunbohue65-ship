@@ -22,6 +22,7 @@
 
 import type { CustomerFormValues } from "@/components/CustomerForm";
 import { DeliveryAddressSelector } from "@/components/DeliveryAddressSelector";
+import { DeliveryBar } from "@/components/DeliveryBar";
 import { MenuPicker } from "@/components/MenuPicker";
 import { NearestRestaurantDisplay } from "@/components/NearestRestaurantDisplay";
 import { PromoMarquee } from "@/components/PromoMarquee";
@@ -70,7 +71,6 @@ import {
   Sparkles,
   User,
   UtensilsCrossed,
-  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -271,7 +271,7 @@ export default function CreateOrder() {
       if (delta > 0 && !restaurantId) {
         toast.error("Vui lòng chọn nhà hàng trước khi thêm món.");
         document
-          .querySelector('[data-ocid="create_order.restaurant_card"]')
+          .querySelector('[data-ocid="create_order.delivery_bar"]')
           ?.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
       }
@@ -611,48 +611,49 @@ export default function CreateOrder() {
   return (
     <div className="bbh-order-theme bg-background text-foreground">
       <section
-        className="mx-auto w-full max-w-2xl px-4 py-6 pb-28 md:px-6 md:py-10"
+        className="mx-auto w-full max-w-2xl px-4 pb-44 md:px-6 md:pb-32"
         data-ocid="create_order.page"
       >
-        <header className="mb-4 flex flex-col gap-2.5">
-          <PromotionBanner />
-          <PromoMarquee />
-        </header>
+        {/* Thanh "Giao tới" gọn (bản xem trước đã duyệt): địa chỉ + nhà
+            hàng + thời gian + phí ship trong 1 thanh dính dưới header; bấm
+            "Đổi" mở khối chọn địa chỉ / thông tin nhà hàng đầy đủ như cũ. */}
+        <DeliveryBar
+          address={selectedAddress}
+          restaurantName={orderRestaurant?.name ?? null}
+          isQuoteLoading={shipQuoteLoading}
+          shippingFee={shipQuote?.shippingFee ?? null}
+          estimatedDeliveryMinutes={shipQuote?.estimatedDeliveryMinutes ?? null}
+        >
+          <DeliveryAddressSelector
+            verifiedEmail={verifiedEmail}
+            guestEmail={guestEmail}
+            selectedAddressId={selectedAddress?.id ?? null}
+            onSelectAddress={setSelectedAddress}
+          />
+          <NearestRestaurantDisplay
+            restaurantName={orderRestaurant?.name ?? null}
+            restaurantAddress={orderRestaurant?.address ?? null}
+            isLoading={restaurantsLoading}
+            hasNoResult={!restaurantsLoading && !orderRestaurant}
+            shippingFee={shipQuote?.shippingFee ?? null}
+            estimatedDeliveryMinutes={
+              shipQuote?.estimatedDeliveryMinutes ?? null
+            }
+            isQuoteLoading={shipQuoteLoading}
+            isFavorite={!!favoriteRestaurant}
+            nearestIsDifferentFromFavorite={nearestIsDifferentFromFavorite}
+          />
+        </DeliveryBar>
 
-        <div className="flex flex-col gap-6">
-          {/* Chọn nhà hàng + món — không còn bọc trong khung Card (đúng
-              theo bản xem trước đã duyệt: bỏ viền/bóng thừa, để món nằm
-              thẳng trên nền trang, hiện được nhiều món hơn). 1 đường kẻ
-              mảnh phân tách nhẹ với phần trên thay cho khung card cũ.
-              Hành vi giữ nguyên: menu hiện sẵn ngay từ đầu, không phụ
-              thuộc đã chọn nhà hàng hay chưa — chỉ chặn ở bước THÊM MÓN
-              (xem handleQuantityChange). */}
+        <div className="mt-4 flex flex-col gap-4">
+          {/* Giờ Vàng thu gọn 1 dòng — "Chi tiết" mở các mức + dòng chạy KM
+              đăng ký/khách thân thiết. Không có Giờ Vàng → chỉ hiện dòng chạy. */}
+          <PromotionBanner
+            collapsible
+            details={<PromoMarquee flush />}
+            hiddenFallback={<PromoMarquee flush />}
+          />
           <div data-ocid="create_order.menu_card">
-            <hr className="mb-5 border-border" />
-            <div
-              className="mb-4 flex flex-col gap-3"
-              data-ocid="create_order.restaurant_card"
-            >
-              <DeliveryAddressSelector
-                verifiedEmail={verifiedEmail}
-                guestEmail={guestEmail}
-                selectedAddressId={selectedAddress?.id ?? null}
-                onSelectAddress={setSelectedAddress}
-              />
-              <NearestRestaurantDisplay
-                restaurantName={orderRestaurant?.name ?? null}
-                restaurantAddress={orderRestaurant?.address ?? null}
-                isLoading={restaurantsLoading}
-                hasNoResult={!restaurantsLoading && !orderRestaurant}
-                shippingFee={shipQuote?.shippingFee ?? null}
-                estimatedDeliveryMinutes={
-                  shipQuote?.estimatedDeliveryMinutes ?? null
-                }
-                isQuoteLoading={shipQuoteLoading}
-                isFavorite={!!favoriteRestaurant}
-                nearestIsDifferentFromFavorite={nearestIsDifferentFromFavorite}
-              />
-            </div>
             <MenuPicker
               menu={menu}
               isLoading={menuLoading}
@@ -660,90 +661,108 @@ export default function CreateOrder() {
               onQuantityChange={handleQuantityChange}
               disabled={submitting}
               groupByCategory
+              compactCards
+              listHeading={
+                <div className="flex items-baseline justify-between">
+                  <h2 className="font-display text-base font-bold">Thực đơn</h2>
+                  <span className="text-[11px] text-muted-foreground">
+                    Giá đã gồm VAT
+                  </span>
+                </div>
+              }
             />
           </div>
         </div>
 
         {/* Gợi ý gọi thêm */}
-        {upsellItems.length > 0 && (
+        {/* Khối đáy gộp (bản xem trước đã duyệt): gợi ý món phụ gắn liền
+            thanh giỏ hàng — không còn 2 khung nổi chồng nhau che món. Mobile
+            nằm trên thanh điều hướng đáy (Layout.tsx) — bottom-[calc(5rem+
+            safe-area)]; desktop không có thanh đó nên bottom-4. Gợi ý dạng
+            chip chọn nhiều: bấm để thêm, bấm lại để bỏ. */}
+        {(itemCount > 0 || upsellItems.length > 0) && (
           <div
-            className="fixed inset-x-4 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-40 mx-auto max-w-2xl rounded-xl border border-border bg-card p-3 shadow-elevated animate-fade-rise md:bottom-24"
-            data-ocid="create_order.upsell_strip"
+            className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-2xl flex-col gap-2 md:bottom-4"
+            data-ocid="create_order.bottom_dock"
           >
-            <div className="mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-[oklch(var(--bbh-gold))]">
-                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                Gọi thêm cho tròn vị?
-              </span>
+            {upsellItems.length > 0 && (
+              <div
+                className="rounded-xl border border-border bg-card p-2.5 shadow-elevated animate-fade-rise"
+                data-ocid="create_order.upsell_strip"
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-[oklch(var(--bbh-gold))]">
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                    Gọi thêm cho tròn vị? (chọn nhiều)
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Ẩn gợi ý"
+                    onClick={() => setUpsellItems([])}
+                    className="min-h-[28px] px-1 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Ẩn
+                  </button>
+                </div>
+                <div
+                  className="flex gap-2 overflow-x-auto pb-0.5"
+                  data-ocid="create_order.upsell_scroll"
+                >
+                  {upsellItems.map((m) => {
+                    const qty = cart[m.itemId] ?? 0;
+                    const on = qty > 0;
+                    return (
+                      <button
+                        key={m.itemId}
+                        type="button"
+                        aria-pressed={on}
+                        aria-label={on ? `Bỏ ${m.name}` : `Thêm ${m.name}`}
+                        onClick={() =>
+                          handleQuantityChange(m.itemId, on ? -qty : 1)
+                        }
+                        className={`inline-flex min-h-[36px] shrink-0 items-center gap-1 rounded-full border px-3 text-xs transition-smooth ${
+                          on
+                            ? "border-accent bg-accent/10 font-bold text-accent"
+                            : "border-transparent bg-secondary text-secondary-foreground"
+                        }`}
+                      >
+                        {on ? "✓" : "+"} {m.name}{" "}
+                        <span className="opacity-80">
+                          {formatVnd(Number(m.price))}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {itemCount > 0 && (
               <button
                 type="button"
-                aria-label="Đóng gợi ý"
-                onClick={() => setUpsellItems([])}
-                className="text-muted-foreground hover:text-foreground"
+                onClick={() => setCartOpen(true)}
+                className="flex items-center justify-between rounded-2xl bg-gradient-primary px-5 py-3.5 text-primary-foreground shadow-elevated"
+                data-ocid="create_order.open_cart_button"
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                <span className="flex flex-col items-start">
+                  <span className="text-xs opacity-90">
+                    {itemCount} món
+                    {shipQuote && shipQuote.shippingFee > 0
+                      ? " · đã gồm ship"
+                      : ""}
+                  </span>
+                  <span className="font-display text-base font-bold">
+                    {formatVnd(totalAmount + (shipQuote?.shippingFee ?? 0))}
+                  </span>
+                </span>
+                <span className="flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold">
+                  <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                  Xem giỏ hàng
+                </span>
               </button>
-            </div>
-            <div
-              className="flex gap-2 overflow-x-auto pb-0.5"
-              data-ocid="create_order.upsell_scroll"
-            >
-              {upsellItems.map((m) => (
-                <div
-                  key={m.itemId}
-                  className="flex w-28 shrink-0 flex-col gap-1.5 rounded-lg bg-secondary p-2"
-                >
-                  <p className="line-clamp-2 text-xs font-semibold leading-snug">
-                    {m.name}
-                  </p>
-                  <div className="mt-auto flex items-center justify-between gap-1">
-                    <p className="text-[11px] text-muted-foreground">
-                      {formatVnd(Number(m.price))}
-                    </p>
-                    <button
-                      type="button"
-                      aria-label={`Thêm ${m.name}`}
-                      onClick={() => {
-                        handleQuantityChange(m.itemId, 1);
-                        setUpsellItems((prev) =>
-                          prev.filter((x) => x.itemId !== m.itemId),
-                        );
-                      }}
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            )}
           </div>
         )}
 
-        {/* Thanh giỏ hàng nổi — đẩy lên trên thanh điều hướng đáy (mobile,
-            Layout.tsx) bằng bottom-[calc(...)] + env(safe-area-inset-bottom);
-            desktop không có thanh điều hướng đáy nên giữ nguyên bottom-4. */}
-        {itemCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-gradient-primary px-5 py-4 text-primary-foreground shadow-elevated md:bottom-4"
-            data-ocid="create_order.open_cart_button"
-          >
-            <span className="flex flex-col items-start">
-              <span className="text-xs opacity-90">{itemCount} món</span>
-              <span className="font-display text-base font-bold">
-                {formatVnd(totalAmount + (shipQuote?.shippingFee ?? 0))}
-              </span>
-            </span>
-            <span className="flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-semibold">
-              <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-              Xem giỏ hàng
-            </span>
-          </button>
-        )}
-
-        {/* Bottom sheet: giỏ hàng + thông tin khách + đặt đơn */}
         <Sheet open={cartOpen} onOpenChange={setCartOpen}>
           <SheetContent
             side="bottom"
@@ -751,7 +770,10 @@ export default function CreateOrder() {
             data-ocid="create_order.cart_sheet"
           >
             <SheetHeader>
-              <SheetTitle className="font-display">Giỏ hàng của bạn</SheetTitle>
+              <SheetTitle className="font-display">
+                Giỏ hàng · {cartLines.reduce((sum, l) => sum + l.quantity, 0)}{" "}
+                món
+              </SheetTitle>
             </SheetHeader>
 
             <div className="flex flex-col gap-4 pb-4">
@@ -762,10 +784,30 @@ export default function CreateOrder() {
                 {displayCartLines.map((l) => {
                   const isUtensil =
                     !!utensilLine && l.item.itemId === utensilLine.item.itemId;
+                  // Phí dụng cụ: 1 dòng nhỏ tự động theo số bát, không có +/−.
+                  if (isUtensil) {
+                    return (
+                      <li
+                        key={l.item.itemId}
+                        className="flex items-center gap-3 text-xs text-muted-foreground"
+                        data-ocid="create_order.utensil_line"
+                      >
+                        <span className="w-11 shrink-0 text-center text-base">
+                          🥡
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          {l.item.name} × {l.quantity} (tự động theo số bát)
+                        </span>
+                        <span className="font-mono">
+                          {formatVnd(Number(l.item.price) * l.quantity)}
+                        </span>
+                      </li>
+                    );
+                  }
                   return (
                     <li
                       key={l.item.itemId}
-                      className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm"
+                      className="flex items-center gap-3 text-sm"
                     >
                       <CartLineThumbnail item={l.item} />
                       <div className="min-w-0 flex-1">
@@ -773,7 +815,7 @@ export default function CreateOrder() {
                           {l.item.name}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatVnd(Number(l.item.price))} × {l.quantity}
+                          {formatVnd(Number(l.item.price))}
                         </p>
                       </div>
                       {isUtensil ? (
@@ -788,7 +830,7 @@ export default function CreateOrder() {
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-11 w-11"
+                            className="h-10 w-10"
                             onClick={() =>
                               handleQuantityChange(l.item.itemId, -1)
                             }
@@ -802,7 +844,7 @@ export default function CreateOrder() {
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-11 w-11"
+                            className="h-10 w-10"
                             onClick={() =>
                               handleQuantityChange(l.item.itemId, 1)
                             }
@@ -817,8 +859,8 @@ export default function CreateOrder() {
               </ul>
 
               <div>
-                <h3 className="mb-2 text-sm font-semibold">
-                  Thông tin khách hàng
+                <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Người nhận
                 </h3>
                 {verifiedEmail ? (
                   profileComplete ? (
@@ -831,7 +873,9 @@ export default function CreateOrder() {
                           {customer.cusName} · {customer.cusPhone}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {customer.receiverEmail}
+                          {selectedAddress
+                            ? `📍 ${selectedAddress.label ? `${selectedAddress.label} · ` : ""}${selectedAddress.address}`
+                            : customer.receiverEmail}
                         </p>
                       </div>
                       <Link
@@ -924,7 +968,7 @@ export default function CreateOrder() {
                   hiển thị — số tiền thật vẫn do canister xác nhận lúc đặt
                   đơn (applyPromotion/applyVoucher), không đổi logic đã có. */}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Tổng tiền hàng</span>
+                <span className="text-muted-foreground">Tiền hàng</span>
                 <span className="font-mono">{formatVnd(totalAmount)}</span>
               </div>
 
@@ -962,34 +1006,58 @@ export default function CreateOrder() {
 
               {cartDiscounts.validVouchers.length > 0 && (
                 <div
-                  className="flex flex-col gap-1.5"
+                  className="flex flex-col gap-2"
                   data-ocid="create_order.voucher_selector"
+                  role="radiogroup"
+                  aria-label="Phiếu giảm giá"
                 >
-                  <Label
-                    htmlFor="create-order-voucher-select"
-                    className="text-xs text-muted-foreground"
-                  >
+                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                     Phiếu giảm giá
-                  </Label>
-                  <select
-                    id="create-order-voucher-select"
-                    value={cartDiscounts.selectedVoucherCode ?? ""}
-                    onChange={(e) =>
-                      cartDiscounts.setSelectedVoucherCode(
-                        e.target.value || null,
-                      )
-                    }
-                    className="h-9 rounded-md border border-border bg-card px-2 text-sm"
-                    data-ocid="create_order.voucher_select"
-                  >
-                    <option value="">Không dùng phiếu</option>
-                    {cartDiscounts.validVouchers.map((v) => (
-                      <option key={v.code} value={v.code}>
-                        Giảm {formatVnd(Number(v.value))} (HSD{" "}
-                        {formatVoucherDate(v.endDate)})
-                      </option>
-                    ))}
-                  </select>
+                  </h3>
+                  {[
+                    ...cartDiscounts.validVouchers.map((v) => ({
+                      code: v.code as string | null,
+                      label: `Giảm ${formatVnd(Number(v.value))}`,
+                      sub: `HSD ${formatVoucherDate(v.endDate)}`,
+                    })),
+                    { code: null, label: "Không dùng phiếu", sub: "" },
+                  ].map((opt) => {
+                    const on =
+                      (cartDiscounts.selectedVoucherCode ?? null) === opt.code;
+                    return (
+                      <button
+                        key={opt.code ?? "none"}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() =>
+                          cartDiscounts.setSelectedVoucherCode(opt.code)
+                        }
+                        data-ocid={`create_order.voucher_option.${opt.code ?? "none"}`}
+                        className={`flex min-h-[44px] items-center justify-between gap-2 rounded-lg border-[1.5px] px-3 py-2 text-left text-sm transition-smooth ${
+                          on
+                            ? "border-accent bg-accent/10"
+                            : "border-border bg-card hover:bg-secondary"
+                        }`}
+                      >
+                        <span>
+                          {opt.code ? (
+                            <>
+                              🎟️ <b>{opt.label}</b>{" "}
+                              <span className="text-xs text-muted-foreground">
+                                · {opt.sub}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              {opt.label}
+                            </span>
+                          )}
+                        </span>
+                        {on && <span className="font-bold text-accent">✓</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
@@ -1019,6 +1087,15 @@ export default function CreateOrder() {
                 </span>
               </div>
 
+              <p
+                className="rounded-md bg-info/10 px-3 py-2.5 text-xs text-foreground"
+                data-ocid="create_order.next_step_note"
+              >
+                ℹ️ Sau khi đặt, bạn có <b>10 phút</b> để bấm <b>Đặt tài xế</b>{" "}
+                hoặc <b>Huỷ đơn</b>. Huỷ đơn thì phiếu giảm giá (nếu có) được
+                hoàn lại.
+              </p>
+
               <div className="sticky bottom-0 -mx-6 border-t border-border bg-background px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
                 {storeClosed && (
                   <p
@@ -1031,7 +1108,7 @@ export default function CreateOrder() {
                 )}
                 <Button
                   type="button"
-                  className="min-h-[48px] w-full bg-gradient-primary text-primary-foreground"
+                  className="min-h-[52px] w-full bg-gradient-primary text-base font-bold text-primary-foreground"
                   onClick={handleSubmit}
                   disabled={
                     submitting ||

@@ -155,4 +155,27 @@ module {
       };
     };
   };
+
+  // Hoàn lại phiếu (đánh dấu CHƯA DÙNG) khi đơn đã dùng phiếu bị khách huỷ
+  // / tự huỷ quá hạn (VPS lib/customer-step.js). Idempotent: phiếu đã ở
+  // trạng thái chưa dùng vẫn trả #ok. Giữ nguyên hạn dùng cũ (không gia
+  // hạn). Trả về ngày hết hạn "YYYYMMDD" để hiển thị cho khách.
+  public func releaseVoucher(
+    store : VoucherTypes.VoucherStore,
+    email : Text,
+    code : Text,
+  ) : Result.Result<Text, Text> {
+    switch (store.get(code)) {
+      case null { #err("Không tìm thấy phiếu giảm giá") };
+      case (?voucher) {
+        if (voucher.email != email.toLower()) {
+          return #err("Phiếu không thuộc về email này");
+        };
+        if (voucher.used) {
+          store.add(code, { voucher with used = false });
+        };
+        #ok(voucher.endDate);
+      };
+    };
+  };
 };

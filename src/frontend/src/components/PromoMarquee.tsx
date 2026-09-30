@@ -34,7 +34,7 @@ function formatVnd(n: bigint | number): string {
   }
 }
 
-export function PromoMarquee() {
+export function PromoMarquee({ flush = false }: { flush?: boolean } = {}) {
   const { data: registrationPromo } = useCurrentRegistrationPromo();
   const { data: salesPromo } = useCurrentSalesPromo();
 
@@ -106,7 +106,7 @@ export function PromoMarquee() {
 
   return (
     <div
-      className="relative mb-4 overflow-hidden rounded-md border border-border bg-gradient-to-r from-accent/10 to-primary/10 py-2.5"
+      className={`relative ${flush ? "" : "mb-4 "}overflow-hidden rounded-md border border-border bg-gradient-to-r from-accent/10 to-primary/10 py-2.5`}
       data-ocid="promo_marquee"
     >
       <div className="flex w-max animate-promo-marquee">
