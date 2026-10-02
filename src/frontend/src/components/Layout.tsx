@@ -17,6 +17,7 @@ import {
 } from "@/contexts/DeviceHeaderContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useGetStoreHours, useIsStoreOpen } from "@/hooks/useQueries";
+import { PAUSED_TITLE, isStorePaused } from "@/lib/store-paused";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
@@ -26,6 +27,7 @@ import {
   Info,
   LogOut,
   type LucideIcon,
+  Pause,
   Percent,
   ScrollText,
   ShieldCheck,
@@ -189,6 +191,24 @@ function StoreHoursBar() {
 
   const storeClosed = storeOpen === false;
   const pad = (n: bigint) => String(Number(n)).padStart(2, "0");
+
+  // Giờ mở = giờ đóng → tạm ngưng nhận đơn trực tuyến (lib/store-paused.ts).
+  if (storeClosed && isStorePaused(storeHours)) {
+    return (
+      <div
+        className="border-t border-warning/40 bg-warning/15 px-4 py-1.5 md:px-6"
+        data-ocid="nav.store_hours_bar"
+      >
+        <div
+          className="mx-auto flex w-full max-w-7xl items-center gap-1.5 text-xs font-semibold text-[oklch(0.45_0.12_60)]"
+          data-ocid="nav.store_hours_bar.paused"
+        >
+          <Pause className="h-3.5 w-3.5" aria-hidden="true" />
+          {PAUSED_TITLE}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

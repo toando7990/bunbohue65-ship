@@ -27,6 +27,7 @@ import { MenuPicker } from "@/components/MenuPicker";
 import { NearestRestaurantDisplay } from "@/components/NearestRestaurantDisplay";
 import { PromoMarquee } from "@/components/PromoMarquee";
 import { PromotionBanner } from "@/components/PromotionBanner";
+import { StorePausedNotice } from "@/components/StorePausedNotice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,7 @@ import {
 import { fullAddress } from "@/lib/address-format";
 import { findNearest } from "@/lib/geo";
 import { getOrCreateGuestEmail } from "@/lib/guest-identity";
+import { isStorePaused } from "@/lib/store-paused";
 import { imageBytesToDataUrl } from "@/lib/utils";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import {
@@ -152,6 +154,8 @@ export default function CreateOrder() {
   const { data: storeOpen } = useIsStoreOpen();
   const storeClosed = storeOpen === false;
   const { data: storeHours } = useGetStoreHours();
+  // Giờ mở = giờ đóng (VD 00:00–00:00) → tạm ngưng nhận đơn trực tuyến.
+  const storePaused = storeClosed && isStorePaused(storeHours);
   const openHourNum = storeHours ? Number(storeHours.openHour) : undefined;
   const openMinuteNum = storeHours ? Number(storeHours.openMinute) : undefined;
   const { formatted: countdownText } = useOpenCountdown(
@@ -644,43 +648,60 @@ export default function CreateOrder() {
         {/* Thanh "Giao tới" gọn (bản xem trước đã duyệt): địa chỉ + nhà
             hàng + thời gian + phí ship trong 1 thanh dính dưới header; bấm
             "Đổi" mở khối chọn địa chỉ / thông tin nhà hàng đầy đủ như cũ. */}
-        <DeliveryBar
-          address={selectedAddress}
-          restaurantName={orderRestaurant?.name ?? null}
-          isQuoteLoading={shipQuoteLoading}
-          shippingFee={shipQuote?.shippingFee ?? null}
-          estimatedDeliveryMinutes={shipQuote?.estimatedDeliveryMinutes ?? null}
-        >
-          <DeliveryAddressSelector
-            verifiedEmail={verifiedEmail}
-            guestEmail={guestEmail}
-            selectedAddressId={selectedAddress?.id ?? null}
-            onSelectAddress={setSelectedAddress}
-          />
-          <NearestRestaurantDisplay
+        {storePaused ? (
+          <StorePausedNotice />
+        ) : (
+          <DeliveryBar
+            address={selectedAddress}
             restaurantName={orderRestaurant?.name ?? null}
-            restaurantAddress={orderRestaurant?.address ?? null}
-            isLoading={restaurantsLoading}
-            hasNoResult={!restaurantsLoading && !orderRestaurant}
+            isQuoteLoading={shipQuoteLoading}
             shippingFee={shipQuote?.shippingFee ?? null}
             estimatedDeliveryMinutes={
               shipQuote?.estimatedDeliveryMinutes ?? null
             }
-            isQuoteLoading={shipQuoteLoading}
-            isFavorite={!!favoriteRestaurant}
-            nearestIsDifferentFromFavorite={nearestIsDifferentFromFavorite}
-          />
-        </DeliveryBar>
+          >
+            <DeliveryAddressSelector
+              verifiedEmail={verifiedEmail}
+              guestEmail={guestEmail}
+              selectedAddressId={selectedAddress?.id ?? null}
+              onSelectAddress={setSelectedAddress}
+            />
+            <NearestRestaurantDisplay
+              restaurantName={orderRestaurant?.name ?? null}
+              restaurantAddress={orderRestaurant?.address ?? null}
+              isLoading={restaurantsLoading}
+              hasNoResult={!restaurantsLoading && !orderRestaurant}
+              shippingFee={shipQuote?.shippingFee ?? null}
+              estimatedDeliveryMinutes={
+                shipQuote?.estimatedDeliveryMinutes ?? null
+              }
+              isQuoteLoading={shipQuoteLoading}
+              isFavorite={!!favoriteRestaurant}
+              nearestIsDifferentFromFavorite={nearestIsDifferentFromFavorite}
+            />
+          </DeliveryBar>
+        )}
 
         <div className="mt-4 flex flex-col gap-4">
           {/* Giờ Vàng thu gọn 1 dòng — "Chi tiết" mở các mức + dòng chạy KM
               đăng ký/khách thân thiết. Không có Giờ Vàng → chỉ hiện dòng chạy. */}
-          <PromotionBanner
-            collapsible
-            details={<PromoMarquee flush />}
-            hiddenFallback={<PromoMarquee flush />}
-          />
-          <div data-ocid="create_order.menu_card">
+          {!storePaused && (
+            <PromotionBanner
+              collapsible
+              details={<PromoMarquee flush />}
+              hiddenFallback={<PromoMarquee flush />}
+            />
+          )}
+          {/* Tạm ngưng: thực đơn chỉ để tham khảo — mờ, không bấm được. */}
+          <div
+            data-ocid="create_order.menu_card"
+            aria-disabled={storePaused || undefined}
+            className={
+              storePaused
+                ? "pointer-events-none select-none opacity-40 grayscale-[.5]"
+                : undefined
+            }
+          >
             <MenuPicker
               menu={menu}
               isLoading={menuLoading}
@@ -691,7 +712,9 @@ export default function CreateOrder() {
               compactCards
               listHeading={
                 <div className="flex items-baseline justify-between">
-                  <h2 className="font-display text-base font-bold">Thực đơn</h2>
+                  <h2 className="font-display text-base font-bold">
+                    {storePaused ? "Thực đơn tham khảo" : "Thực đơn"}
+                  </h2>
                   <span className="text-[11px] text-muted-foreground">
                     Giá đã gồm VAT
                   </span>
@@ -707,7 +730,7 @@ export default function CreateOrder() {
             nằm trên thanh điều hướng đáy (Layout.tsx) — bottom-[calc(5rem+
             safe-area)]; desktop không có thanh đó nên bottom-4. Gợi ý dạng
             chip chọn nhiều: bấm để thêm, bấm lại để bỏ. */}
-        {(itemCount > 0 || upsellItems.length > 0) && (
+        {!storePaused && (itemCount > 0 || upsellItems.length > 0) && (
           <div
             className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-2xl flex-col gap-2 md:bottom-4"
             data-ocid="create_order.bottom_dock"
