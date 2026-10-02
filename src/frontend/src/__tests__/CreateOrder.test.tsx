@@ -51,6 +51,7 @@ vi.mock("@/lib/vps-client", () => ({
   create: (...args: unknown[]) => mockCreate(...args),
   getCustomer: (...args: unknown[]) => mockGetCustomer(...args),
   quote: (...args: unknown[]) => mockQuote(...args),
+  checkNoShow: async () => ({ ok: true, count: 0, lastAt: null }),
 }));
 
 vi.mock("@/lib/verification-storage", () => ({

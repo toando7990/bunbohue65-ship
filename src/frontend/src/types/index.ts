@@ -267,6 +267,8 @@ export interface VpsHistoryOrder {
   // Trạng thái hoá đơn Bkav ("none" | "invoiced" | "failed") — cấp nhà hàng
   // dùng để bật nút "In lại phiếu" chỉ khi đã phát hành hoá đơn.
   invoiceStatus?: string;
+  /** Nhân viên đã đánh dấu khách bỏ đơn (chỉ có ở lịch sử nhà hàng). */
+  noShow?: boolean;
   createdAt: number;
   kmDiscountAmount: number;
   voucherDiscountAmount: number;

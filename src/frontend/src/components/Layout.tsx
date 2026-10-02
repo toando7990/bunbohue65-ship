@@ -27,6 +27,7 @@ import {
   LogOut,
   type LucideIcon,
   Percent,
+  ScrollText,
   ShieldCheck,
   Smartphone,
   Store,
@@ -73,6 +74,7 @@ const PRIMARY_NAV: NavItem[] = [
   },
   { to: "/ordering-partners", label: "Đối tác đặt món", icon: Store },
   { to: "/gioi-thieu", label: "Giới thiệu", icon: Info },
+  { to: "/dieu-khoan", label: "Điều khoản", icon: ScrollText },
 ];
 
 // 4 mục "lõi" — chuyển xuống thanh điều hướng cố định ở đáy màn hình

@@ -444,6 +444,11 @@ function initSchema(db) {
   //  voucher_end_date  hạn dùng phiếu "YYYYMMDD" (canister trả về khi hoàn)
   if (!colNames.has('voucher_release')) db.exec("ALTER TABLE orders ADD COLUMN voucher_release TEXT NOT NULL DEFAULT ''");
   if (!colNames.has('voucher_end_date')) db.exec("ALTER TABLE orders ADD COLUMN voucher_end_date TEXT NOT NULL DEFAULT ''");
+  // Điều khoản giao dịch mục 9 — khách bỏ đơn: ghi nhận IP lúc đặt đơn +
+  // nhân viên đánh dấu bỏ đơn (lib/no-show.js). Chỉ cảnh báo, không chặn.
+  if (!colNames.has('customer_ip')) db.exec("ALTER TABLE orders ADD COLUMN customer_ip TEXT NOT NULL DEFAULT ''");
+  if (!colNames.has('no_show_at')) db.exec('ALTER TABLE orders ADD COLUMN no_show_at INTEGER');
+  if (!colNames.has('no_show_by')) db.exec("ALTER TABLE orders ADD COLUMN no_show_by TEXT NOT NULL DEFAULT ''");
 
   if (!colNames.has('cus_lat')) db.exec('ALTER TABLE orders ADD COLUMN cus_lat REAL');
   if (!colNames.has('cus_lng')) db.exec('ALTER TABLE orders ADD COLUMN cus_lng REAL');

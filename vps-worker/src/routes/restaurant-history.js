@@ -86,7 +86,7 @@ router.get('/orders/restaurant-history', (req, res) => {
     `SELECT order_id, restaurant_id, cus_name, cus_phone, amount, goods_amount,
             shipping_fee, ahamove_order_id,
             booking_status, payment_status, payment_method, invoice_status, created_at,
-            km_discount_amount, voucher_discount_amount
+            km_discount_amount, voucher_discount_amount, no_show_at
      FROM orders
      WHERE restaurant_id = ? AND created_at >= ?
      ORDER BY created_at DESC
@@ -149,6 +149,8 @@ router.get('/orders/restaurant-history', (req, res) => {
     kmDiscountAmount: r.km_discount_amount,
     voucherDiscountAmount: r.voucher_discount_amount,
     items: itemsByOrder.get(r.order_id) || [],
+    // Nhân viên đã đánh dấu khách bỏ đơn (routes/no-show.js).
+    noShow: !!r.no_show_at,
   }));
 
   res.json({

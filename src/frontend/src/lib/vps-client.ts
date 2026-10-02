@@ -726,6 +726,30 @@ export async function getPeriodSummary(
 // Lịch sử đơn hàng theo nhà hàng — dùng cho tab "Lịch sử đơn hàng" trên
 // /driver. period: 'today' | 'week' (tuần này, Thứ 2 - hiện tại) | 'month'
 // (tháng này, ngày 1 - hiện tại).
+// Khách bỏ đơn (Điều khoản giao dịch mục 9): nhân viên /driver đánh dấu;
+// trang đặt món hỏi trước để hiện cảnh báo. Chỉ cảnh báo, không chặn đơn.
+export async function markNoShow(
+  orderId: string,
+  deviceId: string,
+  undo = false,
+): Promise<{ ok: boolean; noShow: boolean }> {
+  return vpsFetch<{ ok: boolean; noShow: boolean }>({
+    method: "POST",
+    path: `/order/${encodeURIComponent(orderId)}/no-show`,
+    body: { deviceId, undo },
+  });
+}
+export async function checkNoShow(
+  email: string,
+  phone: string,
+): Promise<{ ok: boolean; count: number; lastAt: number | null }> {
+  const q = new URLSearchParams({ email, phone }).toString();
+  return vpsFetch<{ ok: boolean; count: number; lastAt: number | null }>({
+    method: "GET",
+    path: `/customers/no-show-check?${q}`,
+  });
+}
+
 export async function getRestaurantHistory(
   restaurantId: string,
   period: RestaurantHistoryPeriod,

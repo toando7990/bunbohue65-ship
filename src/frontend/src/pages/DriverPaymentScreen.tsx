@@ -259,7 +259,11 @@ export function DriverPaymentScreen() {
             payingOrderId={activeOrder?.orderId ?? null}
           />
         ) : (
-          <DriverOrderHistory restaurantId={restaurantId} period={activeTab} />
+          <DriverOrderHistory
+            restaurantId={restaurantId}
+            period={activeTab}
+            deviceId={deviceId}
+          />
         )}
       </div>
 

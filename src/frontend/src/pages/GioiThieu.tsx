@@ -337,6 +337,17 @@ export default function GioiThieu() {
         </ol>
       </Section>
 
+      <a
+        href="/dieu-khoan"
+        data-ocid="gioi_thieu.terms_link"
+        className="flex min-h-[48px] items-center justify-between rounded-xl border border-border bg-card px-4 text-sm font-bold text-foreground shadow-sm"
+      >
+        Điều khoản giao dịch & thông tin cá nhân
+        <span className="text-muted-foreground" aria-hidden="true">
+          ›
+        </span>
+      </a>
+
       <Dialog open={certOpen} onOpenChange={setCertOpen}>
         <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto p-3 sm:p-4">
           <DialogHeader>

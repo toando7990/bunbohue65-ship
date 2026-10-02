@@ -27,10 +27,10 @@ import {
   type PaymentMethodFilter,
   matchesPaymentMethod,
 } from "@/lib/payment-method";
-import { getRestaurantHistory } from "@/lib/vps-client";
+import { getRestaurantHistory, markNoShow } from "@/lib/vps-client";
 import type { RestaurantHistoryPeriod } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { History, Loader2, Printer, Search, X } from "lucide-react";
+import { History, Loader2, Printer, Search, UserX, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -51,9 +51,12 @@ function formatVnd(n: number): string {
 export function DriverOrderHistory({
   restaurantId,
   period,
+  deviceId,
 }: {
   restaurantId: string;
   period: RestaurantHistoryPeriod;
+  /** Thiết bị /driver đang dùng — cần để đánh dấu "Khách bỏ đơn". */
+  deviceId?: string | null;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   // Lọc theo hình thức thanh toán (cấp nhà hàng) — lọc trên dữ liệu gốc từ
@@ -83,6 +86,38 @@ export function DriverOrderHistory({
       .filter((o) => o.invoiceStatus === "invoiced")
       .map((o) => o.orderId),
   );
+  // Đơn giao tận nơi đã bị đánh dấu khách bỏ đơn (Điều khoản mục 9 — chỉ
+  // cảnh báo khách ở lần đặt sau + VPS đã lưu IP lúc đặt).
+  const noShowIds = new Set(
+    methodFiltered.filter((o) => o.noShow).map((o) => o.orderId),
+  );
+  const deliveryIds = new Set(
+    methodFiltered
+      .filter(
+        (o) =>
+          o.bookingStatus !== "cancelled" &&
+          (Number(o.shippingFee ?? 0) > 0 || !!o.ahamoveOrderId),
+      )
+      .map((o) => o.orderId),
+  );
+  const [noShowBusyId, setNoShowBusyId] = useState<string | null>(null);
+  async function handleNoShow(orderId: string, undo: boolean) {
+    if (!deviceId) return;
+    setNoShowBusyId(orderId);
+    try {
+      await markNoShow(orderId, deviceId, undo);
+      toast.success(
+        undo ? "Đã bỏ đánh dấu bỏ đơn." : "Đã ghi nhận khách bỏ đơn.",
+      );
+      await refetch();
+    } catch (err) {
+      toast.error("Không ghi nhận được", {
+        description: err instanceof Error ? err.message : "Lỗi không xác định.",
+      });
+    } finally {
+      setNoShowBusyId(null);
+    }
+  }
   const [reprintingId, setReprintingId] = useState<string | null>(null);
   async function handleReprint(orderId: string) {
     setReprintingId(orderId);
@@ -237,6 +272,26 @@ export function DriverOrderHistory({
                   )}
                   In lại phiếu
                 </button>
+                {deviceId && deliveryIds.has(order.orderId) && (
+                  <button
+                    type="button"
+                    disabled={noShowBusyId === order.orderId}
+                    onClick={() =>
+                      handleNoShow(order.orderId, noShowIds.has(order.orderId))
+                    }
+                    data-ocid={`driver_history.no_show_button.${i + 1}`}
+                    className={`inline-flex items-center justify-center gap-1.5 self-end rounded-lg border px-3 py-1.5 text-xs font-medium transition-smooth disabled:opacity-50 ${
+                      noShowIds.has(order.orderId)
+                        ? "border-destructive/40 bg-destructive/10 text-destructive"
+                        : "border-border bg-card text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <UserX className="h-3.5 w-3.5" aria-hidden="true" />
+                    {noShowIds.has(order.orderId)
+                      ? "Đã ghi nhận bỏ đơn · Bỏ đánh dấu"
+                      : "Khách bỏ đơn"}
+                  </button>
+                )}
               </div>
             );
           })}

@@ -52,6 +52,7 @@ import { getOrCreateGuestEmail } from "@/lib/guest-identity";
 import { imageBytesToDataUrl } from "@/lib/utils";
 import { getVerifiedEmail } from "@/lib/verification-storage";
 import {
+  checkNoShow as vpsCheckNoShow,
   create as vpsCreate,
   getCustomer as vpsGetCustomer,
   quote as vpsQuote,
@@ -615,6 +616,24 @@ export default function CreateOrder() {
   // 1 áp dụng cho CẢ khách mới, không còn phụ thuộc profileComplete/email
   // xác thực (xem ghi chú trong applyPromotion, backend/mixins/promotion-api.mo).
   const cartDiscounts = useCartDiscounts(itemsTotal, identityEmail);
+  // Cảnh báo khách từng bỏ đơn (Điều khoản mục 9) — chỉ cảnh báo, không
+  // chặn. Khớp email / SĐT / IP ở VPS; chỉ hỏi khi mở giỏ hàng.
+  const [noShow, setNoShow] = useState<{ count: number } | null>(null);
+  const noShowPhone = customer.cusPhone.trim();
+  useEffect(() => {
+    if (!cartOpen) return;
+    let cancelled = false;
+    vpsCheckNoShow(identityEmail, noShowPhone)
+      .then((r) => {
+        if (!cancelled && r && typeof r.count === "number") setNoShow(r);
+      })
+      .catch(() => {
+        // Không kiểm tra được thì thôi — chỉ là cảnh báo.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cartOpen, identityEmail, noShowPhone]);
 
   return (
     <div className="bbh-order-theme bg-background text-foreground">
@@ -1092,6 +1111,24 @@ export default function CreateOrder() {
                 </span>
               </div>
 
+              {noShow && noShow.count > 0 && (
+                <p
+                  className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2.5 text-xs text-foreground"
+                  role="alert"
+                  data-ocid="create_order.no_show_warning"
+                >
+                  ⚠️ Trước đây có <b>{noShow.count} đơn</b> đã đặt tài xế nhưng
+                  không nhận hàng. Vui lòng chỉ đặt khi chắc chắn nhận món — xem{" "}
+                  <a
+                    href="/dieu-khoan"
+                    className="font-semibold text-primary underline underline-offset-2"
+                  >
+                    Điều khoản giao dịch, mục 9
+                  </a>
+                  .
+                </p>
+              )}
+
               <p
                 className="rounded-md bg-info/10 px-3 py-2.5 text-xs text-foreground"
                 data-ocid="create_order.next_step_note"
@@ -1102,6 +1139,26 @@ export default function CreateOrder() {
               </p>
 
               <div className="sticky bottom-0 -mx-6 border-t border-border bg-background px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+                <p
+                  className="mb-2 text-center text-[11px] leading-snug text-muted-foreground"
+                  data-ocid="create_order.terms_consent"
+                >
+                  Bấm “Đặt đơn” nghĩa là bạn đồng ý{" "}
+                  <a
+                    href="/dieu-khoan"
+                    className="font-semibold text-primary underline underline-offset-2"
+                  >
+                    Điều khoản giao dịch
+                  </a>{" "}
+                  và{" "}
+                  <a
+                    href="/dieu-khoan#thong-tin-ca-nhan"
+                    className="font-semibold text-primary underline underline-offset-2"
+                  >
+                    Chính sách thông tin cá nhân
+                  </a>
+                  .
+                </p>
                 {storeClosed && (
                   <p
                     className="mb-2 text-center text-sm font-medium text-destructive"

@@ -17,6 +17,7 @@ const express = require('express');
 const crypto = require('crypto');
 const canister = require('../lib/canister');
 const customerStep = require('../lib/customer-step');
+const { clientIp } = require('../lib/client-ip');
 const { generatePickupCode } = require('../lib/pickup-code');
 const { rateLimit } = require('../middleware/rate-limit');
 
@@ -197,6 +198,11 @@ router.post('/order/create', async (req, res, next) => {
     // Đơn giao tận nơi (có toạ độ khách, không phải đơn quầy) → chờ khách
     // chọn "Đặt tài xế" / "Huỷ đơn" (lib/customer-step.js).
     const isDeliveryOrder = !isCounterOrder && cusLat !== null && cusLng !== null;
+    // IP lúc đặt đơn — Điều khoản giao dịch mục 8/9 (phòng chống đơn ảo,
+    // bỏ đơn; làm bằng chứng khi tranh chấp). Đơn quầy không cần.
+    if (!isCounterOrder) {
+      db.prepare('UPDATE orders SET customer_ip = ? WHERE order_id = ?').run(clientIp(req), orderId);
+    }
     if (isDeliveryOrder) customerStep.markAwaiting(db, orderId);
 
     // 3b. Upsert khách hàng vào bảng customers (email là khóa chính).

@@ -13,6 +13,7 @@ import { ClaimOrder } from "@/pages/ClaimOrder";
 import CounterOrder from "@/pages/CounterOrder";
 import CreateOrder from "@/pages/CreateOrder";
 import { DeviceManager } from "@/pages/DeviceManager";
+import DieuKhoan from "@/pages/DieuKhoan";
 import { DriverPaymentScreen } from "@/pages/DriverPaymentScreen";
 import { EnterpriseManagementPage } from "@/pages/EnterpriseManagementPage";
 import GioiThieu from "@/pages/GioiThieu";
@@ -300,6 +301,12 @@ const gioiThieuRoute = createRoute({
   component: () => <GioiThieu />,
 });
 
+const dieuKhoanRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/dieu-khoan",
+  component: () => <DieuKhoan />,
+});
+
 const orderingPartnersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/ordering-partners",
@@ -460,6 +467,7 @@ const router = createRouter({
     historyRoute,
     profileRoute,
     gioiThieuRoute,
+    dieuKhoanRoute,
     orderingPartnersRoute,
     driverRoute,
     counterRoute,

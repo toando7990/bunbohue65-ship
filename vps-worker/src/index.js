@@ -49,6 +49,7 @@ const mapsConfigRoutes = require('./routes/maps-config');
 const driverPickupLookupRoutes = require('./routes/driver-pickup-lookup');
 const deliveryRoutes = require('./routes/delivery');
 const customerStepRoutes = require('./routes/customer-step');
+const noShowRoutes = require('./routes/no-show');
 const customerStep = require('./lib/customer-step');
 const delivery = require('./lib/delivery');
 
@@ -106,6 +107,7 @@ app.use('/', mapsConfigRoutes);
 app.use('/', driverPickupLookupRoutes);
 app.use('/', deliveryRoutes);
 app.use('/', customerStepRoutes);
+app.use('/', noShowRoutes);
 app.use('/', analyticsRoutes);
 
 // Error handler

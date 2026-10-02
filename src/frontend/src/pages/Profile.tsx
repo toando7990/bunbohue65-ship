@@ -38,6 +38,7 @@ import {
   Loader2,
   Mail,
   MapPin,
+  ScrollText,
   User,
   X,
 } from "lucide-react";
@@ -402,6 +403,22 @@ export default function Profile() {
             <Info className="h-4 w-4" aria-hidden="true" />
           </span>
           <span className="flex-1">Giới thiệu · Giấy chứng nhận ATTP</span>
+          <ChevronRight
+            className="h-4 w-4 text-muted-foreground"
+            aria-hidden="true"
+          />
+        </Link>
+        <Link
+          to="/dieu-khoan"
+          data-ocid="profile.link_terms"
+          className="flex items-center gap-3 border-t border-border px-4 py-3 text-sm font-medium"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+            <ScrollText className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span className="flex-1">
+            Điều khoản giao dịch & thông tin cá nhân
+          </span>
           <ChevronRight
             className="h-4 w-4 text-muted-foreground"
             aria-hidden="true"
